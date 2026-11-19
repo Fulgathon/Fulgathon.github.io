@@ -1,0 +1,82 @@
+---
+// 02 Votul abonaților.
+import SectionHead from './SectionHead.astro';
+import Emote from './Emote.astro';
+import { v, iff } from '../lib/ssr';
+import { views } from '../lib/views';
+import { sample } from '../data/sample';
+import { site } from '../data/site';
+const cond = "'Barlow Condensed', sans-serif";
+const banner = 'display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; padding: 18px 20px; background: #0B1018;';
+const emoteStyle = 'flex: none; width: 52px; height: 63px; object-fit: contain';
+---
+<section id="vote" aria-labelledby="h-vote" style="position: relative; z-index: 1; background: #0A0E15; border-top: 1px solid #1A2230; border-bottom: 1px solid #1A2230">
+  <div style="max-width: 1280px; margin: 0 auto; padding: clamp(56px, 8cqi, 112px) clamp(20px, 4cqi, 40px)">
+    <SectionHead tag="02" bignum="02" title="Votul abonaților" id="h-vote">
+      <div style="text-align: left">
+        <p style="margin: 0; font-size: 14px; font-weight: 600; color: #8C97A8">Runda {sample.voteRound} se închide în</p>
+        <p data-text="roundLeft" style={`margin: 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 40px; line-height: 1; font-variant-numeric: tabular-nums`}>{v.roundLeft}</p>
+      </div>
+    </SectionHead>
+    <p style="margin: 18px 0 0; max-width: 640px; font-size: 17px; color: #AEB8C7">Fiecare abonat are un vot pe rundă. Când se închide runda, provocarea câștigătoare se face live, pe stream.</p>
+
+    <div style="margin-top: 28px">
+      <div {...iff('isOut')} style={`${banner} border: 2px solid #9146FF`}>
+        <Emote style={emoteStyle} />
+        <div style="flex: 1 1 260px; min-width: 0">
+          <p style="margin: 0; font-weight: 700; font-size: 18px">Votul e doar pentru abonați</p>
+          <p style="margin: 2px 0 0; font-size: 15px; color: #AEB8C7">Conectează-te cu Twitch ca să-ți verificăm abonamentul. Vedem doar numele tău și dacă ești abonat.</p>
+        </div>
+        <button type="button" class="btn-twitch" data-action="login" style={`min-height: 52px; padding: 0 22px; font-family: ${cond}; font-weight: 800; font-size: 19px; text-transform: uppercase`}>Conectează-te cu Twitch</button>
+      </div>
+      <div {...iff('isNonsub')} style={`${banner} border: 2px solid var(--ice)`}>
+        <Emote style={emoteStyle} />
+        <div style="flex: 1 1 260px; min-width: 0">
+          <p style="margin: 0; font-weight: 700; font-size: 18px">Ești conectat, dar încă nu ești abonat</p>
+          <p style="margin: 2px 0 0; font-size: 15px; color: #AEB8C7">Abonează-te ca să votezi. Subul tău adaugă și timp pe cronometru.</p>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px">
+          <a class="btn-red" href={site.links.subscribe} style={`min-height: 52px; display: inline-flex; align-items: center; padding: 0 22px; font-family: ${cond}; font-weight: 800; font-size: 19px; text-transform: uppercase; text-decoration: none`}>Abonează-te</a>
+          <button type="button" class="btn-ghost" data-action="becomeSub" style="min-height: 52px; padding: 0 18px; font-weight: 600">M-am abonat, verifică iar</button>
+        </div>
+      </div>
+      <p {...iff('isSub')} style="margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 16px; color: #AEB8C7">
+        <span style={`padding: 2px 10px; transform: skewX(-12deg); background: var(--ice); color: #04101A; font-family: ${cond}; font-weight: 800; letter-spacing: 0.04em`}>ABONAT · TIER 1</span>
+        <span data-text="voteHint">{v.voteHint}</span>
+      </p>
+    </div>
+
+    <div role="tablist" aria-label="Provocări" data-region="voteTabs" style="margin-top: 28px; display: flex; flex-wrap: wrap; gap: 0 28px; border-bottom: 1px solid #1A2230" set:html={views.voteTabs(v)} />
+
+    <div role="tabpanel" id="panel-vote-open" aria-labelledby="tab-vote-open" {...iff('tabOpen')}>
+      <ol data-region="challenges" style="list-style: none; margin: 0; padding: 0" set:html={views.challenges(v)} />
+    </div>
+
+    <div role="tabpanel" id="panel-vote-next" aria-labelledby="tab-vote-next" {...iff('tabNext')}>
+      <ol style="list-style: none; margin: 0; padding: 0">
+        {sample.upNext.map((u) => (
+          <li style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 24px; padding: 20px 16px; border-bottom: 1px solid #1A2230">
+            <span style={`flex: none; width: 36px; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 34px; line-height: 1; color: var(--ice)`}>{u.n}</span>
+            <span style="flex: 1 1 260px; min-width: 0">
+              <span style="display: block; font-weight: 700; font-size: 18px">{u.title}</span>
+              <span style="display: block; font-size: 15px; color: #8C97A8">A câștigat runda {u.round} cu {u.pct} din voturi</span>
+            </span>
+            <span style={`flex: none; font-family: ${cond}; font-weight: 800; font-size: 22px; text-transform: uppercase`}>{u.when}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+
+    <div role="tabpanel" id="panel-vote-done" aria-labelledby="tab-vote-done" {...iff('tabDone')}>
+      <ol style="list-style: none; margin: 0; padding: 0">
+        {sample.completed.map((d) => (
+          <li style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 24px; padding: 20px 16px; border-bottom: 1px solid #1A2230">
+            <span style={`flex: none; padding: 1px 8px; transform: skewX(-12deg); background: #1A2230; color: #AEB8C7; font-family: ${cond}; font-weight: 800; font-size: 14px; letter-spacing: 0.06em`}>{d.when}</span>
+            <span style="flex: 1 1 240px; min-width: 0; font-weight: 700; font-size: 18px; text-decoration: line-through; text-decoration-color: var(--ice); text-decoration-thickness: 2px">{d.title}</span>
+            <a href={site.links.clip} aria-label={`Vezi clipul: ${d.title}`} style={`flex: none; min-height: 44px; display: inline-flex; align-items: center; gap: 8px; font-family: ${cond}; font-weight: 800; font-size: 18px; text-transform: uppercase; text-decoration: none`}>Vezi clipul →</a>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </div>
+</section>

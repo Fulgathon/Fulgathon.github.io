@@ -1,0 +1,68 @@
+---
+// 07 Joacă și tu: bingo + suggestion form.
+import SectionHead from './SectionHead.astro';
+import Emote from './Emote.astro';
+import { v, iff } from '../lib/ssr';
+import { views } from '../lib/views';
+import { site } from '../data/site';
+const cond = "'Barlow Condensed', sans-serif";
+const h3 = `margin: 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 32px; text-transform: uppercase`;
+const emoteStyle = 'flex: none; width: 44px; height: 54px; object-fit: contain';
+---
+<section id="joaca" aria-labelledby="h-joaca" style="position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 0 clamp(20px, 4cqi, 40px) clamp(56px, 8cqi, 112px)">
+  <SectionHead tag="07" bignum="07" title="Joacă și tu" id="h-joaca">
+    <p style="margin: 0; max-width: 420px; font-size: 17px; color: #AEB8C7">Bingo pe parcursul stream-ului și propuneri pentru următoarele runde de vot.</p>
+  </SectionHead>
+  <div style="margin-top: 32px; display: flex; flex-wrap: wrap; gap: 32px 48px">
+
+    <div style="flex: 3 1 520px; min-width: 0">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px">
+        <h3 style={h3}>Bingo de subathon</h3>
+        <span style="font-size: 15px; color: #8C97A8"><strong data-text="markedCount" style="color: #F2F5FA">{v.markedCount}</strong> / 16 bifate</span>
+      </div>
+      <p style="margin: 4px 0 0; font-size: 15px; color: #AEB8C7">Bifează ce se întâmplă pe stream. Faci o linie completă și intri la extragerea pentru {site.bingoPrize}.</p>
+      <div data-region="bingo" style="margin-top: 16px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px" set:html={views.bingo(v)} />
+      <div role="status">
+        <div {...iff('isBingo')} style="margin-top: 12px; display: flex; align-items: center; gap: 14px; padding: 14px; background: #0B1018; border: 2px solid var(--ice)">
+          <Emote style={emoteStyle} />
+          <div>
+            <p style={`margin: 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 28px; line-height: 1; text-transform: uppercase; color: #FFFFFF`}>Bingo!</p>
+            <p style="margin: 2px 0 0; font-size: 15px; color: #AEB8C7">Scrie <strong style="color: #F2F5FA">!bingo</strong> în chat ca să intri la extragere.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex: 2 1 360px; min-width: 0">
+      <h3 style={h3}>Propune o provocare</h3>
+      <p style="margin: 4px 0 0; font-size: 15px; color: #AEB8C7">Doar pentru abonați. Moderatorii aleg cele mai bune idei pentru următoarea rundă de vot.</p>
+      <div style="margin-top: 16px">
+        <div {...iff('suggestForm')}>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600; color: #AEB8C7">Ideea ta
+            <textarea id="suggestion" class="field" rows="4" maxlength="140" data-input="suggestion" placeholder="ex: Vorbește doar în rime 30 de minute" style="padding: 12px; resize: vertical; min-height: 120px"></textarea>
+          </label>
+          <div style="margin-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px">
+            <span style="font-size: 13px; color: #7D8899"><span data-text="suggestLen">{v.suggestLen}</span> / 140</span>
+            <button type="button" class="btn-primary" data-action="sendSuggestion" style={`min-height: 50px; padding: 0 22px; font-family: ${cond}; font-weight: 800; font-size: 19px; text-transform: uppercase`}>Trimite la moderatori</button>
+          </div>
+        </div>
+        <div {...iff('suggestSent')} role="status" style="display: flex; align-items: center; gap: 14px; padding: 16px; border: 2px solid var(--ice)">
+          <Emote style={emoteStyle} />
+          <div style="flex: 1 1 auto">
+            <p style="margin: 0; font-weight: 700">Am trimis-o la moderatori</p>
+            <p style="margin: 2px 0 0; font-size: 15px; color: #AEB8C7">Dacă e aleasă, apare în următoarea rundă de vot.</p>
+          </div>
+          <button type="button" class="btn-ghost" data-action="newSuggestion" style="min-height: 44px; padding: 0 14px; font-weight: 600">Încă una</button>
+        </div>
+        <div {...iff('suggestLocked')} style="display: flex; flex-direction: column; align-items: flex-start; gap: 14px; padding: 22px; border: 2px dashed #2A3445">
+          <span style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: #AEB8C7">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" aria-hidden="true"><rect x="5" y="11" width="14" height="10"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+            <span data-text="suggestLockText">{v.suggestLockText}</span>
+          </span>
+          <button type="button" class="btn-twitch" data-action="login" {...iff('isOut')} style={`min-height: 50px; padding: 0 20px; font-family: ${cond}; font-weight: 800; font-size: 19px; text-transform: uppercase`}>Conectează-te cu Twitch</button>
+          <a class="btn-red" href={site.links.subscribe} {...iff('isNonsub')} style={`min-height: 50px; display: inline-flex; align-items: center; padding: 0 20px; font-family: ${cond}; font-weight: 800; font-size: 19px; text-transform: uppercase; text-decoration: none`}>Abonează-te pe Twitch</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

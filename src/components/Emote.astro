@@ -1,0 +1,8 @@
+---
+// The emote image, used in toasts, banners, results and the wheel hub.
+import { Image } from 'astro:assets';
+import emote from '../../assets/emote.png';
+interface Props { style: string; eager?: boolean }
+const { style, eager = false } = Astro.props;
+---
+<Image src={emote} alt="" style={style} loading={eager ? 'eager' : 'lazy'} />

@@ -1,0 +1,106 @@
+/* Ported from the <helmet> style block in design/Main.dc.html.
+   Dropped: rules for elements the owner removed (Christmas light bulbs,
+   chrome lettering, the reverse marquee band). */
+
+:root { --ice: #3FD0FF; }
+html { background: #050608; }
+body { margin: 0; background: #050608; }
+* { box-sizing: border-box; }
+a { color: var(--ice); }
+a:hover { color: #FFFFFF; }
+button { font: inherit; cursor: pointer; }
+input, select, textarea { font: inherit; }
+
+/* State-driven visibility: [hidden] must beat inline display values. */
+[hidden] { display: none !important; }
+
+:focus-visible { outline: 2px solid var(--ice); outline-offset: 2px; }
+
+.skip-link { position: absolute; left: 12px; top: -200px; z-index: 50; padding: 12px 18px; background: var(--ice); color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 18px; text-transform: uppercase; text-decoration: none; }
+.skip-link:focus { top: 12px; color: #04101A; }
+
+.snow { position: absolute; inset: 0; pointer-events: none; opacity: .85; background-image: radial-gradient(1.5px 1.5px at 20px 30px, #FFFFFF, transparent 70%), radial-gradient(1.2px 1.2px at 90px 120px, rgba(255,255,255,.85), transparent 70%), radial-gradient(2px 2px at 160px 60px, #FFFFFF, transparent 70%), radial-gradient(1.2px 1.2px at 230px 190px, rgba(255,255,255,.8), transparent 70%), radial-gradient(1.8px 1.8px at 60px 220px, rgba(255,255,255,.9), transparent 70%), radial-gradient(1px 1px at 200px 250px, rgba(255,255,255,.7), transparent 70%); background-size: 260px 260px; animation: snowfall 55s linear infinite; }
+.snow-front { position: absolute; inset: 0; pointer-events: none; z-index: 6; opacity: .6; background-image: radial-gradient(3px 3px at 40px 60px, #FFFFFF, transparent 70%), radial-gradient(2.5px 2.5px at 230px 150px, rgba(255,255,255,.9), transparent 70%), radial-gradient(3.5px 3.5px at 130px 310px, rgba(255,255,255,.85), transparent 70%), radial-gradient(2.5px 2.5px at 340px 40px, rgba(255,255,255,.9), transparent 70%), radial-gradient(3px 3px at 300px 260px, rgba(255,255,255,.8), transparent 70%); background-size: 400px 400px; animation: snowfront 26s linear infinite; }
+@keyframes snowfall { from { background-position: 0 0; } to { background-position: 260px 1300px; } }
+@keyframes snowfront { from { background-position: 0 0; } to { background-position: -400px 1600px; } }
+@keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.float { animation: floaty 7s ease-in-out infinite; }
+.marquee { display: flex; width: max-content; animation: marquee 50s linear infinite; }
+.ice-text { display: inline-block; padding-right: .06em; background: linear-gradient(180deg, #FFFFFF 18%, #CDF2FF 58%, var(--ice) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.beam { position: absolute; top: -80px; width: min(46cqi, 620px); height: min(120cqi, 1500px); transform-origin: 50% 0; transform: translateX(-50%) rotate(-14deg); background: linear-gradient(180deg, rgba(63,208,255,.22) 0%, rgba(63,208,255,.06) 45%, rgba(63,208,255,0) 80%); clip-path: polygon(46% 0, 54% 0, 100% 100%, 0 100%); filter: blur(6px); pointer-events: none; mix-blend-mode: screen; animation: sweep 11s ease-in-out infinite alternate; }
+.beam-b { animation-direction: alternate-reverse; opacity: .7; }
+@keyframes sweep { from { transform: translateX(-50%) rotate(-18deg); } to { transform: translateX(-50%) rotate(18deg); } }
+.zap { animation: zap 4s ease-in-out infinite; }
+@keyframes zap { 0%, 100% { filter: drop-shadow(0 0 0 rgba(92,203,255,0)); } 44% { filter: drop-shadow(0 0 30px rgba(92,203,255,.55)); } 48% { filter: drop-shadow(0 0 6px rgba(92,203,255,.15)); } 53% { filter: drop-shadow(0 0 38px rgba(92,203,255,.65)); } 70% { filter: drop-shadow(0 0 10px rgba(92,203,255,.2)); } }
+.glint { position: absolute; top: 0; bottom: 0; left: 0; width: 55%; background: linear-gradient(105deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.22) 50%, rgba(255,255,255,0) 100%); transform: translateX(-140%); animation: glint 6s ease-in-out infinite; pointer-events: none; }
+@keyframes glint { 0%, 72% { transform: translateX(-140%); } 100% { transform: translateX(280%); } }
+.pop { position: absolute; top: 0; padding: 4px 10px; white-space: nowrap; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 19px; background: #050608; border: 2px solid var(--ice); color: #F2F5FA; opacity: 0; animation: rise 8s ease-out infinite; pointer-events: none; }
+@keyframes rise { 0% { opacity: 0; transform: translateY(10px); } 10% { opacity: 1; } 65% { opacity: 1; } 100% { opacity: 0; transform: translateY(-120px); } }
+.corner { position: absolute; width: 22px; height: 22px; border: 0 solid var(--ice); pointer-events: none; }
+.c-tl { top: -1px; left: -1px; border-top-width: 2px; border-left-width: 2px; }
+.c-tr { top: -1px; right: -1px; border-top-width: 2px; border-right-width: 2px; }
+.c-bl { bottom: -1px; left: -1px; border-bottom-width: 2px; border-left-width: 2px; }
+.c-br { bottom: -1px; right: -1px; border-bottom-width: 2px; border-right-width: 2px; }
+.tick { position: absolute; transform-origin: 50% 50%; border-radius: 1px; transition: background .3s; }
+.is-spinning .tick { background: var(--ice) !important; }
+.wheel { transition: transform 4.6s cubic-bezier(0.12, 0.8, 0.18, 1); }
+.logo-slot { display: flex; align-items: center; justify-content: center; text-align: center; border: 1px dashed #2A3445; color: #7D8899; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.ptile { transition: border-color .2s, background .2s; }
+.ptile:hover { border-color: var(--ice); background: #0D131C; }
+.bignum { position: absolute; right: 0; bottom: -8px; z-index: -1; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: clamp(120px, 17cqi, 250px); line-height: .8; color: transparent; -webkit-text-stroke: 2px rgba(92,203,255,.16); pointer-events: none; user-select: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .snow, .snow-front, .float, .marquee, .beam, .zap, .glint, .pop { animation: none; }
+  .pop { display: none; }
+  .wheel, .tick { transition: none; }
+}
+
+.cane { background: linear-gradient(90deg, #1E5BFF 0%, var(--ice) 100%); box-shadow: 0 0 18px rgba(63,208,255,.45); }
+.btn-primary { background: var(--ice); color: #04101A; border: 2px solid var(--ice); transition: background .15s, border-color .15s; }
+.btn-primary:hover { background: #FFFFFF; border-color: #FFFFFF; color: #04101A; }
+.btn-ghost { background: transparent; color: #F2F5FA; border: 2px solid #2A3445; transition: border-color .15s; }
+.btn-ghost:hover { border-color: var(--ice); color: #F2F5FA; }
+.btn-twitch { background: #9146FF; color: #FFFFFF; border: 2px solid #9146FF; transition: filter .15s; }
+.btn-twitch:hover { filter: brightness(1.12); color: #FFFFFF; }
+.btn-red { background: #F2F5FA; color: #050608; border: 2px solid #F2F5FA; transition: background .15s, border-color .15s; }
+.btn-red:hover { background: var(--ice); border-color: var(--ice); color: #050608; }
+.field { background: #050608; color: #F2F5FA; border: 2px solid #2A3445; transition: border-color .15s; }
+.field:focus { outline: none; border-color: var(--ice); }
+.navlink { white-space: nowrap; color: #AEB8C7; text-decoration: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.navlink:hover { color: #FFFFFF; }
+.cell:hover { border-color: var(--ice); }
+.nav-links { display: flex; }
+.nav-menu { display: none; }
+.nav-cta { display: inline-flex; }
+.hide-sm { display: inline; }
+.g-goals { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 48px; }
+.toast { position: absolute; top: 118px; right: 32px; width: 360px; }
+
+@container page (max-width: 1180px) { .nav-links { display: none; } .nav-menu { display: inline-flex; } }
+/* The navbar must always stay on one row. The container query is the design's
+   breakpoint; app.ts also adds .nav-collapsed whenever the links still don't
+   fit (e.g. logged in with a long Twitch name just above 1180px). */
+.nav-collapsed .nav-links { display: none; }
+.nav-collapsed .nav-menu { display: inline-flex; }
+.chip-name { max-width: 16ch; overflow: hidden; text-overflow: ellipsis; }
+@container page (max-width: 380px) {
+  #main-nav { gap: 8px !important; }
+  .nav-clock { font-size: 19px !important; gap: 0 !important; }
+  .nav-clock svg { display: none; }
+  .nav-login { padding: 0 10px !important; }
+}
+@container page (max-width: 760px) { .g-goals { grid-template-columns: repeat(1, minmax(0, 1fr)); } }
+@container page (max-width: 640px) { .bignum { font-size: 110px; } .nav-cta { display: none; } .hide-sm { display: none; } .toast { top: 112px; right: 12px; width: calc(100% - 24px); } }
+
+/* Demo panel (?demo): not part of the design, only for previewing states. */
+.demo { position: fixed; left: 12px; bottom: 12px; z-index: 40; max-width: calc(100% - 24px); background: #0B1018; border: 1px solid #2A3445; box-shadow: 8px 8px 0 #000000; color: #F2F5FA; font-size: 14px; }
+.demo summary { min-height: 44px; display: flex; align-items: center; gap: 8px; padding: 0 14px; cursor: pointer; list-style: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px; letter-spacing: .08em; text-transform: uppercase; color: var(--ice); }
+.demo summary::-webkit-details-marker { display: none; }
+.demo-body { padding: 0 14px 14px; display: grid; gap: 10px; }
+.demo-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.demo-row > span { width: 72px; color: #8C97A8; font-weight: 600; }
+.demo-row button { min-height: 44px; padding: 0 12px; background: transparent; color: #AEB8C7; border: 2px solid #2A3445; font-weight: 600; }
+.demo-row button[aria-pressed="true"] { background: var(--ice); border-color: var(--ice); color: #04101A; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

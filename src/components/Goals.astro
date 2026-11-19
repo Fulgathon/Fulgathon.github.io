@@ -1,0 +1,12 @@
+---
+// 04 Obiectivele de Crăciun.
+import SectionHead from './SectionHead.astro';
+import { v } from '../lib/ssr';
+import { views } from '../lib/views';
+---
+<section id="goals" aria-labelledby="h-goals" style="position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 0 clamp(20px, 4cqi, 40px) clamp(56px, 8cqi, 112px)">
+  <SectionHead tag="04" bignum="04" title="Obiectivele de Crăciun" id="h-goals">
+    <p style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 24px; text-transform: uppercase"><span data-text="unlockedCount" style="color: var(--ice)">{v.unlockedCount}</span> din 12 bifate</p>
+  </SectionHead>
+  <div class="g-goals" data-region="goals" style="display: grid" set:html={views.goals(v)} />
+</section>

@@ -1,0 +1,31 @@
+---
+// 01 În direct: player and chat placeholders (real embeds come in phase 2).
+import { Image } from 'astro:assets';
+import logo from '../../assets/logo-mascot.webp';
+import SectionHead from './SectionHead.astro';
+const cond = "'Barlow Condensed', sans-serif";
+---
+<!-- The design's scrolling band sat here; the owner removed it. This margin keeps its spacing. -->
+<section id="live" aria-labelledby="h-live" style="position: relative; z-index: 1; max-width: 1280px; margin: clamp(40px, 5cqi, 72px) auto 0; padding: 0 clamp(20px, 4cqi, 40px) clamp(64px, 8cqi, 112px)">
+  <SectionHead tag="01" bignum="01" title="În direct" id="h-live">
+    <button class="btn-ghost" type="button" data-action="popout" style={`min-height: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 0 16px; font-family: ${cond}; font-size: 17px; font-weight: 700; text-transform: uppercase`}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"></path></svg>
+      Player separat
+    </button>
+  </SectionHead>
+  <div style="margin-top: 24px; display: flex; flex-wrap: wrap; gap: 16px">
+    <div style="flex: 3 1 560px; min-width: 0; aspect-ratio: 16 / 9; position: relative; overflow: hidden; background: #0B1018; border: 1px solid #1A2230">
+      <Image src={logo} alt="" aria-hidden="true" widths={[400, 720]} sizes="min(50vw, 480px)" style="position: absolute; left: 50%; top: 50%; width: 62%; height: auto; transform: translate(-50%, -48%); opacity: 0.10" />
+      <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 20px">
+        <span style="width: 72px; height: 72px; display: grid; place-items: center; background: var(--ice); color: #04101A">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4v16l13-8z"></path></svg>
+        </span>
+        <span style="font-size: 15px; color: #8C97A8">Aici apare playerul Twitch</span>
+      </div>
+    </div>
+    <aside aria-label="Chat" style="flex: 1 1 300px; min-width: 0; min-height: 320px; display: flex; flex-direction: column; background: #0B1018; border: 1px solid #1A2230">
+      <div style={`padding: 14px 18px; border-bottom: 1px solid #1A2230; font-family: ${cond}; font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em`}>Chatul stream-ului</div>
+      <div style="flex: 1 1 auto; display: grid; place-items: center; padding: 24px; text-align: center; font-size: 15px; color: #7D8899">Aici apare chatul Twitch</div>
+    </aside>
+  </div>
+</section>

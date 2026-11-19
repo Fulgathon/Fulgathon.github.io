@@ -1,0 +1,31 @@
+---
+// Section heading: skewed ice number tag, big italic title, 2px white rule,
+// faint outlined number behind. `compact` is the smaller two-column variant
+// (Clasament / Programul de Crăciun), which has no right-hand slot.
+interface Props {
+  tag: string;
+  title: string;
+  bignum?: string;
+  compact?: boolean;
+  id?: string;
+}
+const { tag, title, bignum, compact = false, id } = Astro.props;
+const tagStyle = "display: inline-block; transform: skewX(-12deg); background: var(--ice); color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px; padding: 2px 10px; letter-spacing: 0.06em";
+const h2Style = `margin: 12px 0 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; text-transform: uppercase; font-size: ${compact ? 'clamp(36px, 4cqi, 56px)' : 'clamp(40px, 5.6cqi, 76px)'}; line-height: 0.92`;
+---
+{compact ? (
+  <div style="padding-bottom: 18px; border-bottom: 2px solid #F2F5FA; position: relative; z-index: 0">
+    {bignum && <span aria-hidden="true" class="bignum">{bignum}</span>}
+    <span style={tagStyle}>{tag}</span>
+    <h2 id={id} style={h2Style}>{title}</h2>
+  </div>
+) : (
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 16px 32px; padding-bottom: 18px; border-bottom: 2px solid #F2F5FA; position: relative; z-index: 0">
+    <div>
+      {bignum && <span aria-hidden="true" class="bignum">{bignum}</span>}
+      <span style={tagStyle}>{tag}</span>
+      <h2 id={id} style={h2Style}>{title}</h2>
+    </div>
+    <slot />
+  </div>
+)}

@@ -1,0 +1,1161 @@
+{
+  "levels": [
+    "ușor",
+    "mediu",
+    "greu"
+  ],
+  "challenges": [
+    {
+      "id": 1,
+      "category": "craciun",
+      "category_name": "Crăciun și sărbători",
+      "title": "O oră de colinde la karaoke",
+      "how": "Chatul alege colindele, fără skip.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 2,
+      "category": "craciun",
+      "category_name": "Crăciun și sărbători",
+      "title": "Împodobește bradul legat la ochi",
+      "how": "Chatul îl ghidează: „stânga, sus, mai jos”.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 3,
+      "category": "craciun",
+      "category_name": "Crăciun și sărbători",
+      "title": "Scrisoare către Moș Crăciun",
+      "how": "O scrie live și o citește cu voce dramatică.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 4,
+      "category": "craciun",
+      "category_name": "Crăciun și sărbători",
+      "title": "Cadouri cu mănuși de bucătărie",
+      "how": "Împachetează 5 cadouri contra cronometru.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 5,
+      "category": "craciun",
+      "category_name": "Crăciun și sărbători",
+      "title": "Casă din turtă dulce în 20 de minute",
+      "how": "Chatul notează rezultatul de la 1 la 10.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 6,
+      "category": "craciun",
+      "category_name": "Crăciun și sărbători",
+      "title": "Costum de Moș Crăciun 3 ore",
+      "how": "Plus „Ho ho ho!” la fiecare sub.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 7,
+      "category": "craciun",
+      "category_name": "Crăciun și sărbători",
+      "title": "Colindă la telefon",
+      "how": "Sună o rudă sau un prieten și îi cântă o colindă, live.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 8,
+      "category": "craciun",
+      "category_name": "Crăciun și sărbători",
+      "title": "„Crăciun fericit” în 10 limbi",
+      "how": "La fiecare greșeală o ia de la capăt.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 9,
+      "category": "craciun",
+      "category_name": "Crăciun și sărbători",
+      "title": "Pulover urât făcut de mână",
+      "how": "Din ce găsește prin casă, în 30 de minute.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 10,
+      "category": "craciun",
+      "category_name": "Crăciun și sărbători",
+      "title": "Moș Crăciun desenat cu mâna stângă",
+      "how": "Dacă nota chatului e sub 5, desenul devine poză de profil o zi.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 11,
+      "category": "craciun",
+      "category_name": "Crăciun și sărbători",
+      "title": "Reacții la reclame de Crăciun din anii ’90",
+      "how": "Reclame românești vechi, cu nostalgie.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 12,
+      "category": "craciun",
+      "category_name": "Crăciun și sărbători",
+      "title": "Plugușorul recitat pe de rost",
+      "how": "Cu clopoțel și tot tacâmul.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 13,
+      "category": "craciun",
+      "category_name": "Crăciun și sărbători",
+      "title": "Ornament din ce are pe birou",
+      "how": "Apoi stă în brad tot subathonul.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 14,
+      "category": "craciun",
+      "category_name": "Crăciun și sărbători",
+      "title": "Ghicește colinda în 3 secunde",
+      "how": "10 runde; la fiecare ratare, 10 genuflexiuni.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 15,
+      "category": "craciun",
+      "category_name": "Crăciun și sărbători",
+      "title": "Câtă beteală poți purta?",
+      "how": "2 minute să pună pe el cât mai multă beteală.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 16,
+      "category": "gaming",
+      "category_name": "Gaming cu handicap",
+      "title": "Un meci doar cu o mână",
+      "how": "Cealaltă mână stă la spate tot meciul.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 17,
+      "category": "gaming",
+      "category_name": "Gaming cu handicap",
+      "title": "Ecranul cu susul în jos",
+      "how": "15 minute de joc normal, cu imaginea întoarsă.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 18,
+      "category": "gaming",
+      "category_name": "Gaming cu handicap",
+      "title": "Joc legat la ochi",
+      "how": "15 minute, chatul îi spune ce să facă.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 19,
+      "category": "gaming",
+      "category_name": "Gaming cu handicap",
+      "title": "Controller într-un shooter",
+      "how": "Un meci întreg fără mouse și tastatură.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 20,
+      "category": "gaming",
+      "category_name": "Gaming cu handicap",
+      "title": "Volan sau dance pad",
+      "how": "Pentru un joc care nu e făcut pentru așa ceva.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 21,
+      "category": "gaming",
+      "category_name": "Gaming cu handicap",
+      "title": "Sensibilitate la maximum",
+      "how": "Un meci cu mouse-ul pe cea mai mare sensibilitate.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 22,
+      "category": "gaming",
+      "category_name": "Gaming cu handicap",
+      "title": "Sensibilitate la minimum",
+      "how": "Un meci în care o rotație cere tot mousepad-ul.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 23,
+      "category": "gaming",
+      "category_name": "Gaming cu handicap",
+      "title": "Doar pistol sau doar cuțit",
+      "how": "Un meci fără nicio altă armă.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 24,
+      "category": "gaming",
+      "category_name": "Gaming cu handicap",
+      "title": "Fără HUD și fără minimap",
+      "how": "Un meci pe ghicite.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 25,
+      "category": "gaming",
+      "category_name": "Gaming cu handicap",
+      "title": "Cea mai urâtă grafică posibilă",
+      "how": "Chatul alege setările grafice pentru o oră.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 26,
+      "category": "gaming",
+      "category_name": "Gaming cu handicap",
+      "title": "Speedrun la un joc retro",
+      "how": "Jocul îl alege chatul dintre 3 variante.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 27,
+      "category": "gaming",
+      "category_name": "Gaming cu handicap",
+      "title": "Joc pentru copii, comentat ca la eSports",
+      "how": "20 de minute, cu tot entuziasmul.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 28,
+      "category": "gaming",
+      "category_name": "Gaming cu handicap",
+      "title": "Controale inversate",
+      "how": "W cu S și A cu D schimbate, un meci.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 29,
+      "category": "gaming",
+      "category_name": "Gaming cu handicap",
+      "title": "Câștigă până se termină melodia",
+      "how": "Dacă nu reușește, chatul alege o penalizare.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 30,
+      "category": "gaming",
+      "category_name": "Gaming cu handicap",
+      "title": "Fiecare moarte, 5 genuflexiuni",
+      "how": "Timp de o oră, numărate de chat.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 31,
+      "category": "gaming",
+      "category_name": "Gaming cu handicap",
+      "title": "Cel mai prost cotat joc de pe Steam",
+      "how": "O oră întreagă, fără să îl închidă.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 32,
+      "category": "gaming",
+      "category_name": "Gaming cu handicap",
+      "title": "Horror pe întuneric",
+      "how": "Lumina stinsă, facecam mare pe ecran.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 33,
+      "category": "gaming",
+      "category_name": "Gaming cu handicap",
+      "title": "Ruleta Steam",
+      "how": "3 jocuri la întâmplare din bibliotecă, câte 20 de minute.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 34,
+      "category": "gaming",
+      "category_name": "Gaming cu handicap",
+      "title": "Un meci fără să vorbească",
+      "how": "Comunică doar prin semne și scris.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 35,
+      "category": "gaming",
+      "category_name": "Gaming cu handicap",
+      "title": "Pe cel mai vechi laptop din casă",
+      "how": "Sau pe telefon, un joc ales de chat.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 36,
+      "category": "chat",
+      "category_name": "Chatul decide",
+      "title": "Chatul controlează playlistul",
+      "how": "2 ore, fără drept de skip.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 37,
+      "category": "chat",
+      "category_name": "Chatul decide",
+      "title": "Chatul alege următorul joc",
+      "how": "Dintre 5 variante propuse de moderatori.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 38,
+      "category": "chat",
+      "category_name": "Chatul decide",
+      "title": "Numele personajului",
+      "how": "Chatul îi alege numele în următoarele 3 jocuri.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 39,
+      "category": "chat",
+      "category_name": "Chatul decide",
+      "title": "O postare scrisă de chat",
+      "how": "Pe Instagram sau TikTok, doar cu aprobarea lui.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 40,
+      "category": "chat",
+      "category_name": "Chatul decide",
+      "title": "„Da” la tot",
+      "how": "15 minute în care spune da la orice cere chatul, în limite rezonabile.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 41,
+      "category": "chat",
+      "category_name": "Chatul decide",
+      "title": "Cina aleasă de chat",
+      "how": "Chatul votează meniul serii.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 42,
+      "category": "chat",
+      "category_name": "Chatul decide",
+      "title": "Outfitul de mâine",
+      "how": "Chatul alege din garderoba lui ce poartă a doua zi.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 43,
+      "category": "chat",
+      "category_name": "Chatul decide",
+      "title": "O regulă nouă pentru 24 de ore",
+      "how": "Chatul votează o regulă de stream care ține o zi.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 44,
+      "category": "chat",
+      "category_name": "Chatul decide",
+      "title": "Cuvântul interzis",
+      "how": "Chatul alege un cuvânt; de fiecare dată când îl spune, +1 minut pe cronometru.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 45,
+      "category": "chat",
+      "category_name": "Chatul decide",
+      "title": "Accent regional o oră",
+      "how": "Chatul alege accentul: ardelenesc, moldovenesc, oltenesc.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 46,
+      "category": "chat",
+      "category_name": "Chatul decide",
+      "title": "Comenzi din chat",
+      "how": "Chatul îl conduce în joc cu !stânga, !dreapta, !sari.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 47,
+      "category": "chat",
+      "category_name": "Chatul decide",
+      "title": "Overlay ridicol",
+      "how": "Chatul alege fundalul și overlay-ul pentru o zi.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 48,
+      "category": "chat",
+      "category_name": "Chatul decide",
+      "title": "Poza de profil",
+      "how": "Chatul i-o alege pentru o săptămână.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 49,
+      "category": "chat",
+      "category_name": "Chatul decide",
+      "title": "Ora de culcare",
+      "how": "Chatul votează între două ore stabilite de el.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 50,
+      "category": "chat",
+      "category_name": "Chatul decide",
+      "title": "Cuvântul obligatoriu",
+      "how": "20 de minute în care pune un cuvânt ales de chat în fiecare propoziție.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 51,
+      "category": "mancare",
+      "category_name": "Mâncare și gătit",
+      "title": "Gătește sarmale live",
+      "how": "De la tocat până la gustat, cu chatul ca juriu.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 52,
+      "category": "mancare",
+      "category_name": "Mâncare și gătit",
+      "title": "Dulciuri de Crăciun din alte țări",
+      "how": "Test de gust cu note de la 1 la 10.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 53,
+      "category": "mancare",
+      "category_name": "Mâncare și gătit",
+      "title": "Ghicește mâncarea legat la ochi",
+      "how": "10 lucruri alese de chat (nimic stricat sau periculos).",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 54,
+      "category": "mancare",
+      "category_name": "Mâncare și gătit",
+      "title": "Combinații ciudate",
+      "how": "Cozonac cu muștar, castraveți murați cu ciocolată și altele.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 55,
+      "category": "mancare",
+      "category_name": "Mâncare și gătit",
+      "title": "Aripioare cu sos iute, nivel crescător",
+      "how": "Se oprește când vrea, cu lapte lângă.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 56,
+      "category": "mancare",
+      "category_name": "Mâncare și gătit",
+      "title": "Cea mai bună ciocolată caldă",
+      "how": "Rețeta lui, notată de chat.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 57,
+      "category": "mancare",
+      "category_name": "Mâncare și gătit",
+      "title": "Cină de 3 feluri doar la microunde",
+      "how": "Aperitiv, fel principal și desert.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 58,
+      "category": "mancare",
+      "category_name": "Mâncare și gătit",
+      "title": "Cină din exact 20 de lei",
+      "how": "Cumpărăturile se fac pe stream sau cu bonul arătat.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 59,
+      "category": "mancare",
+      "category_name": "Mâncare și gătit",
+      "title": "O lămâie întreagă",
+      "how": "Fără să se strâmbe; chatul arbitrează.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 60,
+      "category": "mancare",
+      "category_name": "Mâncare și gătit",
+      "title": "Ruleta de bomboane",
+      "how": "O cutie amestecată; ghicește aroma fiecăreia.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 61,
+      "category": "mancare",
+      "category_name": "Mâncare și gătit",
+      "title": "Gătit după indicațiile chatului",
+      "how": "Chatul citește rețeta pas cu pas, el n-o vede.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 62,
+      "category": "mancare",
+      "category_name": "Mâncare și gătit",
+      "title": "Cozonac din magazin sau de casă?",
+      "how": "Degustare oarbă; trebuie să-l ghicească pe cel făcut acasă.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 63,
+      "category": "look",
+      "category_name": "Costume și look",
+      "title": "Costum de spiriduș",
+      "how": "Tot restul zilei: urechi, căciulă, papuci.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 64,
+      "category": "look",
+      "category_name": "Costume și look",
+      "title": "Spray colorat pe păr",
+      "how": "Culoarea o alege chatul; se spală la final.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 65,
+      "category": "look",
+      "category_name": "Costume și look",
+      "title": "Machiaj făcut legat la ochi",
+      "how": "De un prieten sau de partener, cu acordul lor.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 66,
+      "category": "look",
+      "category_name": "Costume și look",
+      "title": "Coarne de ren și nas roșu",
+      "how": "4 ore, inclusiv în meciurile serioase.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 67,
+      "category": "look",
+      "category_name": "Costume și look",
+      "title": "Barbă de Moș pictată pe față",
+      "how": "Cu vopsea de față, toată seara.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 68,
+      "category": "look",
+      "category_name": "Costume și look",
+      "title": "Pictură pe față aleasă de chat",
+      "how": "Dintre 3 modele votate.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 69,
+      "category": "look",
+      "category_name": "Costume și look",
+      "title": "Haine de vară în decembrie",
+      "how": "Șlapi, pantaloni scurți și ochelari de soare, o zi.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 70,
+      "category": "look",
+      "category_name": "Costume și look",
+      "title": "Tatuaj temporar ales de chat",
+      "how": "Pe braț sau pe obraz, până se șterge singur.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 71,
+      "category": "look",
+      "category_name": "Costume și look",
+      "title": "Onesie de Crăciun",
+      "how": "Toată noaptea, inclusiv pe camera de somn.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 72,
+      "category": "look",
+      "category_name": "Costume și look",
+      "title": "Perucă și personaj",
+      "how": "O oră în care e alt personaj, cu perucă și nume nou.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 73,
+      "category": "talente",
+      "category_name": "Muzică și talente",
+      "title": "Colindă în stil manea",
+      "how": "Cu dedicații pentru top gifteri.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 74,
+      "category": "talente",
+      "category_name": "Muzică și talente",
+      "title": "Freestyle rap",
+      "how": "Pe 5 cuvinte date de chat.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 75,
+      "category": "talente",
+      "category_name": "Muzică și talente",
+      "title": "Un dans de pe TikTok",
+      "how": "Îl învață în 30 de minute și îl face pe stream.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 76,
+      "category": "talente",
+      "category_name": "Muzică și talente",
+      "title": "Un instrument pe care nu-l știe",
+      "how": "Cântă „O, brad frumos” la xilofon sau fluier.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 77,
+      "category": "talente",
+      "category_name": "Muzică și talente",
+      "title": "5 imitații de vedete românești",
+      "how": "Chatul ghicește pe cine imită.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 78,
+      "category": "talente",
+      "category_name": "Muzică și talente",
+      "title": "Portretul unui viewer în 5 minute",
+      "how": "Viewerul e ales la întâmplare din chat.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 79,
+      "category": "talente",
+      "category_name": "Muzică și talente",
+      "title": "Un minut de beatbox",
+      "how": "Notat de chat de la 1 la 10.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 80,
+      "category": "talente",
+      "category_name": "Muzică și talente",
+      "title": "Poveste de culcare cu voci",
+      "how": "Citește o poveste cu câte o voce pentru fiecare personaj.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 81,
+      "category": "talente",
+      "category_name": "Muzică și talente",
+      "title": "10 figurine origami",
+      "how": "În 30 de minute, după tutoriale.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 82,
+      "category": "talente",
+      "category_name": "Muzică și talente",
+      "title": "Învață să jongleze",
+      "how": "Cu 3 mingi, până la finalul stream-ului.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 83,
+      "category": "talente",
+      "category_name": "Muzică și talente",
+      "title": "Poezie cu numele top gifterilor",
+      "how": "Scrisă live, cu rimă obligatorie.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 84,
+      "category": "talente",
+      "category_name": "Muzică și talente",
+      "title": "Karaoke cu hituri românești din anii 2000",
+      "how": "Chatul alege lista.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 85,
+      "category": "irl",
+      "category_name": "IRL și provocări fizice",
+      "title": "Baie cu gheață",
+      "how": "Maximum 3 minute, cu prosop și haine calde lângă.",
+      "level": "greu",
+      "votable": true
+    },
+    {
+      "id": 86,
+      "category": "irl",
+      "category_name": "IRL și provocări fizice",
+      "title": "Duș rece",
+      "how": "Doar fața pe cameră, reacții live.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 87,
+      "category": "irl",
+      "category_name": "IRL și provocări fizice",
+      "title": "Găleată cu gheață, afară",
+      "how": "În zăpadă, cu tot chatul numărând.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 88,
+      "category": "irl",
+      "category_name": "IRL și provocări fizice",
+      "title": "100 de flotări într-o oră",
+      "how": "Împărțite cum vrea, numărate de chat.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 89,
+      "category": "irl",
+      "category_name": "IRL și provocări fizice",
+      "title": "Plank cât ține o melodie",
+      "how": "Melodia o alege chatul (și o va alege lungă).",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 90,
+      "category": "irl",
+      "category_name": "IRL și provocări fizice",
+      "title": "Om de zăpadă",
+      "how": "Afară dacă ninge, din ce are în casă dacă nu.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 91,
+      "category": "irl",
+      "category_name": "IRL și provocări fizice",
+      "title": "Bătaie cu zăpadă",
+      "how": "Stream IRL cu prietenii.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 92,
+      "category": "irl",
+      "category_name": "IRL și provocări fizice",
+      "title": "5 minute afară în tricou",
+      "how": "Cu termometrul pe ecran.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 93,
+      "category": "irl",
+      "category_name": "IRL și provocări fizice",
+      "title": "Stream IRL la târgul de Crăciun",
+      "how": "Chatul alege ce gustă și ce cumpără.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 94,
+      "category": "irl",
+      "category_name": "IRL și provocări fizice",
+      "title": "Tier 3 = 10 genuflexiuni",
+      "how": "Timp de o oră, la fiecare sub de Tier 3.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 95,
+      "category": "irl",
+      "category_name": "IRL și provocări fizice",
+      "title": "Yoga ghidată de chat",
+      "how": "20 de minute, poziții alese de chat.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 96,
+      "category": "irl",
+      "category_name": "IRL și provocări fizice",
+      "title": "Plimbare de noapte prin oraș",
+      "how": "IRL printre luminițele de Crăciun.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 97,
+      "category": "cringe",
+      "category_name": "Râsete și cringe",
+      "title": "Postările vechi de pe Facebook",
+      "how": "Le citește pe ale lui, din 2012 sau mai vechi, cu voce tare.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 98,
+      "category": "cringe",
+      "category_name": "Râsete și cringe",
+      "title": "Reacție la clipurile lui vechi",
+      "how": "Cele mai jenante momente alese de moderatori.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 99,
+      "category": "cringe",
+      "category_name": "Râsete și cringe",
+      "title": "Try not to laugh",
+      "how": "Clipuri trimise de chat; la fiecare râs, apă rece pe față.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 100,
+      "category": "cringe",
+      "category_name": "Râsete și cringe",
+      "title": "„La mulți ani” fără motiv",
+      "how": "Sună un prieten și i-l cântă, deși nu e ziua lui.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 101,
+      "category": "cringe",
+      "category_name": "Râsete și cringe",
+      "title": "Vorbește doar în rime",
+      "how": "30 de minute, inclusiv în joc.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 102,
+      "category": "cringe",
+      "category_name": "Râsete și cringe",
+      "title": "Vorbește la persoana a treia",
+      "how": "O oră: „Iceman crede că…”.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 103,
+      "category": "cringe",
+      "category_name": "Râsete și cringe",
+      "title": "Prezentator de știri",
+      "how": "Citește „știrile” scrise de chat, serios, ca la TV.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 104,
+      "category": "cringe",
+      "category_name": "Râsete și cringe",
+      "title": "Reclamă TV improvizată",
+      "how": "La un obiect ales de chat, în 2 minute.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 105,
+      "category": "cringe",
+      "category_name": "Râsete și cringe",
+      "title": "ASMR de Crăciun",
+      "how": "10 minute cu beteală, globuri și hârtie de cadou.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 106,
+      "category": "cringe",
+      "category_name": "Râsete și cringe",
+      "title": "Telenovelă cu jucării",
+      "how": "10 minute, toate vocile făcute de el.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 107,
+      "category": "cringe",
+      "category_name": "Râsete și cringe",
+      "title": "Scena cu capcanele din „Singur acasă”",
+      "how": "Rejucată în cameră, cu ce are la îndemână.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 108,
+      "category": "cringe",
+      "category_name": "Râsete și cringe",
+      "title": "Accent britanic exagerat",
+      "how": "15 minute vorbind doar în engleză.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 109,
+      "category": "comunitate",
+      "category_name": "Cu comunitatea",
+      "title": "Jocuri cu viewerii",
+      "how": "2 ore de lobby custom, oricine poate intra.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 110,
+      "category": "comunitate",
+      "category_name": "Cu comunitatea",
+      "title": "Galeria comunității",
+      "how": "Reacții la desenele trimise de viewers.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 111,
+      "category": "comunitate",
+      "category_name": "Cu comunitatea",
+      "title": "Meme-uri despre Iceman",
+      "how": "Reacție la meme-urile făcute de comunitate.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 112,
+      "category": "comunitate",
+      "category_name": "Cu comunitatea",
+      "title": "Întrebări fără filtru",
+      "how": "30 de minute de Q&A; el decide la ce răspunde.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 113,
+      "category": "comunitate",
+      "category_name": "Cu comunitatea",
+      "title": "Clipul săptămânii",
+      "how": "Comunitatea votează; câștigătorul primește VIP.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 114,
+      "category": "comunitate",
+      "category_name": "Cu comunitatea",
+      "title": "Chatul îl învață ceva",
+      "how": "20 de minute: o rețetă, un truc, un cuvânt într-o limbă străină.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 115,
+      "category": "comunitate",
+      "category_name": "Cu comunitatea",
+      "title": "Raid surpriză",
+      "how": "La un streamer român mic, ales de chat.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 116,
+      "category": "comunitate",
+      "category_name": "Cu comunitatea",
+      "title": "Apel video cu un viewer",
+      "how": "Câștigătorul unei extrageri, cu acordul lui.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 117,
+      "category": "comunitate",
+      "category_name": "Cu comunitatea",
+      "title": "Mulțumiri personale",
+      "how": "Câte un mesaj pentru fiecare dintre top 10 gifteri.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 118,
+      "category": "comunitate",
+      "category_name": "Cu comunitatea",
+      "title": "Trivia cu chatul",
+      "how": "20 de întrebări, premiu VIP pentru câștigător.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 119,
+      "category": "comunitate",
+      "category_name": "Cu comunitatea",
+      "title": "Harta comunității",
+      "how": "Viewerii scriu orașul în chat, el le marchează pe hartă.",
+      "level": "ușor",
+      "votable": true
+    },
+    {
+      "id": 120,
+      "category": "comunitate",
+      "category_name": "Cu comunitatea",
+      "title": "Șah contra chatului",
+      "how": "Chatul votează fiecare mutare.",
+      "level": "mediu",
+      "votable": true
+    },
+    {
+      "id": 121,
+      "category": "hardcore",
+      "category_name": "Hardcore, pentru obiectivele mari",
+      "title": "Își rade mustața",
+      "how": "Live, pe stream. Mustața lui e marca înregistrată, deci e mare lucru.",
+      "level": "greu",
+      "votable": false
+    },
+    {
+      "id": 122,
+      "category": "hardcore",
+      "category_name": "Hardcore, pentru obiectivele mari",
+      "title": "Vopsea de păr adevărată",
+      "how": "Culoarea o alege chatul dintre 3 variante aprobate de el.",
+      "level": "greu",
+      "votable": false
+    },
+    {
+      "id": 123,
+      "category": "hardcore",
+      "category_name": "Hardcore, pentru obiectivele mari",
+      "title": "Tunsoare aleasă de chat",
+      "how": "La frizer, în stream IRL.",
+      "level": "greu",
+      "votable": false
+    },
+    {
+      "id": 124,
+      "category": "hardcore",
+      "category_name": "Hardcore, pentru obiectivele mari",
+      "title": "Baie în lacul înghețat",
+      "how": "Scurtă, într-un loc permis, cu cineva care supraveghează.",
+      "level": "greu",
+      "votable": false
+    },
+    {
+      "id": 125,
+      "category": "hardcore",
+      "category_name": "Hardcore, pentru obiectivele mari",
+      "title": "Maraton de 12 ore din cel mai greu joc",
+      "how": "Jocul îl alege chatul.",
+      "level": "greu",
+      "votable": false
+    },
+    {
+      "id": 126,
+      "category": "hardcore",
+      "category_name": "Hardcore, pentru obiectivele mari",
+      "title": "O zi cu mâncare aleasă de chat",
+      "how": "Toate mesele zilei, votate.",
+      "level": "greu",
+      "votable": false
+    },
+    {
+      "id": 127,
+      "category": "hardcore",
+      "category_name": "Hardcore, pentru obiectivele mari",
+      "title": "Tatuaj mic",
+      "how": "Doar dacă îl vrea cu adevărat, din 3 modele propuse de comunitate.",
+      "level": "greu",
+      "votable": false
+    },
+    {
+      "id": 128,
+      "category": "hardcore",
+      "category_name": "Hardcore, pentru obiectivele mari",
+      "title": "24 de ore fără să se plângă",
+      "how": "La fiecare plângere, +5 minute pe cronometru.",
+      "level": "greu",
+      "votable": false
+    }
+  ]
+}

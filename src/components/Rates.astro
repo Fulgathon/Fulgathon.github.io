@@ -1,0 +1,47 @@
+---
+// 05 Cum adaugi timp.
+import SectionHead from './SectionHead.astro';
+const cond = "'Barlow Condensed', sans-serif";
+const subs: [string, string, boolean][] = [
+  ['Tier 1 / Prime', '+1 min', false],
+  ['Tier 2', '+2 min', false],
+  ['Tier 3', '+5 min', true],
+  ['Sub cadou', '+1 min / sub', false],
+];
+const other: [string, string][] = [
+  ['Donație 25 lei', '+1 min'],
+  ['400 de biți', '+1 min'],
+];
+const row = 'display: flex; align-items: baseline; gap: 12px; padding: 12px 0';
+const name = 'font-size: 19px; font-weight: 600';
+const dots = 'flex: 1 1 auto; border-bottom: 2px dotted #2A3445';
+const val = `font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 32px; line-height: 1`;
+---
+<section id="tarife" aria-labelledby="h-tarife" style="position: relative; z-index: 1; background: #0A0E15; border-top: 1px solid #1A2230; border-bottom: 1px solid #1A2230">
+  <div style="max-width: 1280px; margin: 0 auto; padding: clamp(56px, 8cqi, 112px) clamp(20px, 4cqi, 40px)">
+    <SectionHead tag="05" bignum="05" title="Cum adaugi timp" id="h-tarife">
+      <p style="margin: 0; max-width: 440px; font-size: 17px; color: #AEB8C7">Suburile adaugă timp, contează la obiective și deblochează votul. Donațiile și biții adaugă doar timp.</p>
+    </SectionHead>
+    <div style="margin-top: 32px; display: flex; flex-wrap: wrap; gap: 24px 64px">
+      <div style="flex: 1 1 420px; min-width: 0">
+        <h3 style={`margin: 0 0 6px; font-family: ${cond}; font-weight: 800; font-size: 20px; text-transform: uppercase; color: var(--ice)`}>Suburi</h3>
+        {subs.map(([n, t, ice]) => (
+          <div style={row}><span style={name}>{n}</span><span aria-hidden="true" style={dots}></span><span style={ice ? `${val}; color: var(--ice)` : val}>{t}</span></div>
+        ))}
+      </div>
+      <div style="flex: 1 1 420px; min-width: 0">
+        <h3 style={`margin: 0 0 6px; font-family: ${cond}; font-weight: 800; font-size: 20px; text-transform: uppercase; color: #FFFFFF`}>Donații și biți</h3>
+        {other.map(([n, t]) => (
+          <div style={row}><span style={name}>{n}</span><span aria-hidden="true" style={dots}></span><span style={val}>{t}</span></div>
+        ))}
+        <div style="margin-top: 20px; background: #0B1018; border: 1px solid #1A2230">
+          <div class="cane" aria-hidden="true" style="height: 6px"></div>
+          <div style="padding: 16px 18px">
+            <p style={`margin: 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 24px; text-transform: uppercase`}>Ora dublă</p>
+            <p style="margin: 4px 0 0; font-size: 15px; color: #AEB8C7">O oră pe zi, anunțată pe Discord cu 30 de minute înainte. În ora asta, tot ce adaugi valorează dublu.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
