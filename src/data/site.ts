@@ -24,6 +24,16 @@ export const site = {
     pitch:
       'Partenerul principal al Fulgathonului. [Oferta Zona IT pentru comunitate, de exemplu 10% reducere la periferice de gaming cu codul de mai jos, pe toată durata subathonului.]',
   },
+  /**
+   * Phase 2 backend (Supabase project "fulgathon", Frankfurt).
+   * The publishable key is meant to be public: row level security decides
+   * what it can read, and it can't write anything. Never put the secret /
+   * service_role key in this repo.
+   */
+  supabase: {
+    url: 'https://yvbxtsuddjqqoogdoqrx.supabase.co',
+    publishableKey: 'sb_publishable_6pIaWU842o20RFTazgtv4w_a3joVlhS',
+  },
   contactEmail: '[EMAIL CONTACT]',
   endDate: '[DATA FINALĂ]',
   bingoPrize: '[PREMIU]',

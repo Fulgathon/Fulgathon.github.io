@@ -5,7 +5,7 @@ Static site built with [Astro](https://astro.build), hosted on GitHub Pages.
 
 - Brief: `CLAUDE.md`. Design: `design/` (source) and `docs/design-spec.md` (summary).
 - Challenges for the subscriber vote: `docs/provocari.md` and `data/challenges.json`.
-- Twitch connection plan (phase 2): `docs/twitch-integration.md`.
+- Twitch connection plan (phase 2): `docs/twitch-integration.md`; the Supabase backend: `docs/supabase.md`.
 - Images: `assets/` (the site imports them from there; the `-original` files are not shipped).
 
 ## Run it locally
@@ -44,3 +44,6 @@ the base then becomes `/` automatically.
 | `src/scripts/app.ts` | Browser state, timers and click handlers; updates the page via `data-*` bindings. |
 | `src/components/` | One Astro component per section, ported from `design/Main.dc.html`. |
 | `src/styles/global.css` | Global styles from the design's `<helmet>`. |
+| `supabase/migrations/` | Database schema, functions and seed data for phase 2 (see `docs/supabase.md`). |
+| `src/lib/database.types.ts` | TypeScript types generated from the database. |
+| `scripts/gen-seed.py` | Regenerates the seed migration from the project data. |
