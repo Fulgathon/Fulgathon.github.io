@@ -1,10 +1,11 @@
 // OBS overlay: same live data and maths as the site (Live + derive), drawn as
 // a compact timer box, a goal bar and a pop-up for each new event.
+// ?demo shows the design's sample data and pops a sample event every 10 s,
+// for previewing the layout in OBS before the subathon.
 
-import { emptyData } from '../data/sample';
+import { emptyData, sampleData } from '../data/sample';
 import type { SiteData } from '../data/types';
 import { derive, initialState } from '../lib/derive';
-import { Live } from './live';
 
 const show = new Set((new URLSearchParams(location.search).get('show') ?? 'timer,goal,events').split(','));
 const $ = (id: string) => document.getElementById(id)!;
@@ -39,18 +40,28 @@ function popEvent(time: string, user: string, what: string) {
   hideTimer = window.setTimeout(() => el.classList.remove('show'), 8000);
 }
 
-const live = new Live(data, {
-  onData(patch, first) {
-    data = { ...data, ...patch };
-    const top = data.ticker[0];
-    const key = top ? `${top.time}|${top.user}|${top.what}` : '';
-    // Pop up only events that arrive while the overlay is open.
-    if (!first && top && key !== lastTop && top.time !== '—') popEvent(top.time, top.user, top.what);
-    lastTop = key;
-    draw();
-  },
-  onMe() {},
-});
-void live.start();
+if (new URLSearchParams(location.search).has('demo')) {
+  data = sampleData(Date.now());
+  let i = 0;
+  const next = () => { const t = data.ticker[i++ % data.ticker.length]; popEvent(t.time, t.user, t.what); };
+  window.setTimeout(next, 600);
+  window.setInterval(next, 10_000);
+} else {
+  void import('./live').then(({ Live }) => {
+    const live = new Live(data, {
+      onData(patch, first) {
+        data = { ...data, ...patch };
+        const top = data.ticker[0];
+        const key = top ? `${top.time}|${top.user}|${top.what}` : '';
+        // Pop up only events that arrive while the overlay is open.
+        if (!first && top && key !== lastTop && top.time !== '—') popEvent(top.time, top.user, top.what);
+        lastTop = key;
+        draw();
+      },
+      onMe() {},
+    });
+    void live.start();
+  });
+}
 setInterval(draw, 1000);
 draw();
