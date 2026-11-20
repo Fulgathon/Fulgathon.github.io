@@ -36,7 +36,7 @@ function describe(e: Tables<'events'>): string {
   switch (e.kind) {
     case 'sub': return `sub ${tierName(e.tier)}`;
     case 'resub': return `resub ${tierName(e.tier)}`;
-    case 'gift': return n === 1 ? 'a dăruit un sub' : `a dăruit ${count(n, 'sub', 'suburi')}`;
+    case 'gift': return n === 1 ? 'a dăruit un sub' : `a dăruit ${count(n, 'sub', 'subs')}`;
     case 'bits': return count(n, 'bit', 'biți');
     case 'donation': return `donație ${amount(n)} ${!e.currency || e.currency === 'RON' ? 'lei' : e.currency}`;
     default: return 'timp adăugat';
@@ -58,6 +58,7 @@ export class Live {
   private pending = new Set<string>();
   private timer: number | undefined;
   private handlers: LiveHandlers;
+  private subChecked = false;
 
   constructor(initial: SiteData, handlers: LiveHandlers) {
     this.data = initial;
@@ -88,6 +89,7 @@ export class Live {
         status: t.status as SiteData['status'],
         startsAt: ms(t.starts_at), endsAt: ms(t.ends_at),
         pausedUntil: ms(t.paused_until), scheduledEnd: ms(t.scheduled_end),
+        doubleFrom: ms(t.double_from), doubleUntil: ms(t.double_until),
       };
     },
     stats: async () => {
@@ -222,9 +224,15 @@ export class Live {
     const { data: { session } } = await this.db.auth.getSession();
     if (!session) { this.handlers.onMe(null); return; }
     const [{ data: v }, { data: ws }] = await Promise.all([
-      this.db.from('viewers').select('login, display_name, is_subscriber').eq('id', session.user.id).maybeSingle(),
+      this.db.from('viewers').select('login, display_name, is_subscriber, sub_checked_at').eq('id', session.user.id).maybeSingle(),
       this.db.rpc('wheel_status'),
     ]);
+    // First visit after login (or an old answer): ask Twitch whether they're subscribed.
+    const checkedAt = v?.sub_checked_at ? Date.parse(v.sub_checked_at) : 0;
+    if (v && !this.subChecked && Date.now() - checkedAt > 10 * 60_000) {
+      this.subChecked = true;
+      void this.checkSub();
+    }
     let myVote: string | null = null;
     if (this.data.round) {
       const { data: vote } = await this.db.from('votes').select('challenge_id')

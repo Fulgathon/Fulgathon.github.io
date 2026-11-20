@@ -8,6 +8,14 @@ const remainingSeconds = 3 * 86400 + 14 * 3600 + 27 * 60 + 52;
 const startsInSeconds = 6 * 86400 + 9 * 3600 + 41 * 60 + 8;
 const roundOffset = 2538;
 
+/** Next 21:00 local time, for the demo's "Ora dublă azi la 21:00". */
+function next21(now: number) {
+  const d = new Date(now);
+  d.setHours(21, 0, 0, 0);
+  if (d.getTime() <= now) d.setDate(d.getDate() + 1);
+  return d.getTime();
+}
+
 /** The design's sample, with times made absolute from `now`. */
 export function sampleData(now: number): SiteData {
   return {
@@ -16,11 +24,13 @@ export function sampleData(now: number): SiteData {
     endsAt: now + remainingSeconds * 1000,
     pausedUntil: null,
     scheduledEnd: null,
+    doubleFrom: next21(now),
+    doubleUntil: next21(now) + 3600_000,
     subs: 1284,
     raised: '24.600 lei',
     goals: defaultGoals,
     ticker: [
-      { time: '+10:00', user: 'snowdrift_tv', what: 'a dăruit 10 suburi', color: 'var(--ice)' },
+      { time: '+10:00', user: 'snowdrift_tv', what: 'a dăruit 10 subs', color: 'var(--ice)' },
       { time: '+5:00', user: 'frostbyte_77', what: 'sub Tier 3', color: 'var(--ice)' },
       { time: '+1:00', user: 'mistletoe_mike', what: 'donație 25 lei', color: '#FFFFFF' },
       { time: '+2:00', user: 'polarpixel', what: 'sub Tier 2', color: 'var(--ice)' },
@@ -83,6 +93,8 @@ export function emptyData(): SiteData {
     endsAt: null,
     pausedUntil: null,
     scheduledEnd: null,
+    doubleFrom: null,
+    doubleUntil: null,
     subs: 0,
     raised: '0 lei',
     goals: defaultGoals,

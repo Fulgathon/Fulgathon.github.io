@@ -22,6 +22,9 @@ export interface SiteData {
   endsAt: number | null;
   pausedUntil: number | null;
   scheduledEnd: number | null;
+  /** "Ora dublă" window (epoch ms). */
+  doubleFrom: number | null;
+  doubleUntil: number | null;
   subs: number;
   raised: string;
   goals: Goal[];

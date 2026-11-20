@@ -88,29 +88,35 @@ Secrets go in the dashboards, never in this repo or in chat.
    - Site URL: `https://fulgathon.github.io`
    - Redirect URLs: add `https://fulgathon.github.io/**` and `http://localhost:4321/**`
 
+## Edge Functions (deployed)
+
+Source in `supabase/functions/`, shared Twitch helpers in `_shared/twitch.ts`.
+All are deployed with `verify_jwt = false` and authenticate themselves.
+
+| Function | Called by | Does |
+| --- | --- | --- |
+| `twitch-eventsub` | Twitch EventSub webhooks | Verifies the HMAC signature, records subs/resubs/gifts/bits via `record_event`, sets stream online/offline |
+| `twitch-auth` | Iceman, via the button on `/mod` | Twitch OAuth for the broadcaster, stores the token in Vault, (re)creates the six EventSub subscriptions |
+| `check-sub` | The site, after login and "M-am abonat, verifică iar" | Checks the viewer's sub with the broadcaster token, updates `viewers.is_subscriber` |
+| `watch-time` | pg_cron every 5 min (`x-cron-secret`) | Chatters list + sub status → `credit_watch_time` (only while live and online) |
+
+Edge Function secrets to set once: `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`.
+Generated in Vault by the migrations: `eventsub_secret`, `cron_secret`; later
+`twitch_broadcaster_token`.
+
+Scheduled jobs (pg_cron): `fulgathon-minute` (closes finished vote rounds,
+ends the timer at zero) and `fulgathon-watch-time` (every 5 minutes).
+
+Moderator functions (`mod_*`, used by `/mod`) check `viewers.is_moderator`.
+Logins in `private.settings.moderator_logins` (initially `icemanlucky`) become
+moderators on first login.
+
+## Going live
+
+See `docs/go-live.md` for the step-by-step checklist.
+
 ## Still to build
 
-1. ~~**Site wiring**~~ Done: normal visitors get live data (`src/scripts/live.ts`,
-   loaded after first paint) with realtime updates; `?demo` keeps the sample.
-   Login, votes, spins and suggestions call the functions above. **Switch login
-   on** by setting `twitchLogin: true` in `src/data/site.ts` once the Twitch app
-   keys are saved in Supabase; until then the login buttons say "În curând".
-2. **Edge Function `twitch-eventsub`:** receives EventSub webhooks
-   (`channel.subscribe`, `channel.subscription.message`, `channel.subscription.gift`,
-   `channel.cheer`, `stream.online/offline`), verifies the signature, calls
-   `record_event`. Skip `channel.subscribe` events with `is_gift = true`.
-3. **Broadcaster token:** Iceman authorises the app once with
-   `channel:read:subscriptions`, `bits:read`, `moderator:read:chatters`; the
-   token is stored server-side (Edge Function secrets / Vault), not in the site.
-4. **Edge Function `check-sub`:** for the logged-in viewer, asks Twitch
-   whether they're subscribed and updates `viewers.is_subscriber`
-   (also behind "M-am abonat, verifică iar").
-5. **Watch time:** a cron job (pg_cron) every 5 minutes while live calls an
-   Edge Function that fetches the chatters list and calls `credit_watch_time`.
-6. **Donations:** once the provider is chosen, an Edge Function that calls
-   `record_event('donation', 'donation', …)`.
-7. **Moderator tools:** start/close vote rounds, approve suggestions, mark
-   prizes as given.
-
-Open with the owner: final time rates (seeded with the design's values),
-goals, prizes and their weights, start date and `[DATA FINALĂ]`.
+1. **Donations:** once the provider is chosen, an Edge Function that calls
+   `record_event('donation', 'donation', …)`. Until then moderators add the
+   time by hand on `/mod`.

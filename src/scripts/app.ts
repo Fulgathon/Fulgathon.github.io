@@ -276,6 +276,34 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
   toggleSnow: () => set({ showSnow: !state.showSnow }),
 };
 
+// ---- Twitch player and chat: loaded when the Live section comes into view. ----
+function loadEmbeds() {
+  const host = location.hostname;
+  const player = document.getElementById('player-slot');
+  const chat = document.getElementById('chat-slot');
+  const frame = (src: string, title: string) => {
+    const f = document.createElement('iframe');
+    f.src = src;
+    f.title = title;
+    f.allowFullscreen = true;
+    f.setAttribute('allow', 'autoplay; fullscreen');
+    f.style.cssText = 'position: absolute; inset: 0; width: 100%; height: 100%; border: 0';
+    return f;
+  };
+  if (player) player.replaceChildren(frame(`https://player.twitch.tv/?channel=${site.channel}&parent=${host}&muted=true&autoplay=true`, 'Playerul Twitch'));
+  if (chat) {
+    chat.style.cssText = 'flex: 1 1 auto; position: relative; min-height: 420px';
+    chat.replaceChildren(frame(`https://www.twitch.tv/embed/${site.channel}/chat?parent=${host}&darkpopout`, 'Chatul Twitch'));
+  }
+}
+const liveSection = document.getElementById('live');
+if (liveSection && 'IntersectionObserver' in window) {
+  const io = new IntersectionObserver((entries) => {
+    if (entries.some((e) => e.isIntersecting)) { io.disconnect(); loadEmbeds(); }
+  }, { rootMargin: '400px 0px' });
+  io.observe(liveSection);
+}
+
 document.addEventListener('click', (e) => {
   const el = (e.target as Element).closest<HTMLElement>('[data-action]');
   if (!el) return;

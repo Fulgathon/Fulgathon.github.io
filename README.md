@@ -25,6 +25,9 @@ in real time. Add `?demo` to the URL for the design's **sample data** and a smal
 panel for switching the viewer state (logged out / not subscribed / subscriber),
 the stream state (live / starting soon) and the snowfall.
 
+Other pages: `/mod/` (moderators: run the timer, vote rounds, suggestions,
+prizes) and `/overlay/` (OBS Browser Source). Going live: `docs/go-live.md`.
+
 ## Deploy (GitHub Pages)
 
 `.github/workflows/deploy.yml` builds and deploys on every push to `main`.
@@ -49,5 +52,8 @@ the base then becomes `/` automatically.
 | `src/components/` | One Astro component per section, ported from `design/Main.dc.html`. |
 | `src/styles/global.css` | Global styles from the design's `<helmet>`. |
 | `supabase/migrations/` | Database schema, functions and seed data for phase 2 (see `docs/supabase.md`). |
+| `supabase/functions/` | Edge Functions: Twitch EventSub, streamer connect, sub check, watch time. |
+| `src/pages/mod.astro`, `src/scripts/mod.ts` | Moderator page. |
+| `src/pages/overlay.astro`, `src/scripts/overlay.ts` | OBS overlay. |
 | `src/lib/database.types.ts` | TypeScript types generated from the database. |
 | `scripts/gen-seed.py` | Regenerates the seed migration from the project data. |

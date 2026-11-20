@@ -68,6 +68,7 @@ Build the static site so it matches the design, with every interaction working o
 ## Rules
 
 - Romanian copy everywhere visitors see it. Code, comments and docs can be English.
+- Owner's choice: the English words **subs** (not "suburi") and **LIVE** (not "În direct") are used on the site.
 - Keep the look: near-black, electric ice blue (`#3FD0FF`), white; Barlow Condensed italic display type; square corners; snowfall. The owner rejected softer, playful versions as "girly", "AI-looking" and "not professional". Don't drift back to rounded cards, pastels, red-and-white candy-cane stripes, Christmas light strings, chrome lettering or gradient-wash backgrounds.
 - The owner explicitly asked for: the snowfall, the white-to-ice gradient on "FULG" (not chrome), the emote in the middle of the spin wheel, and a **navbar that always stays on one row**.
 - Sponsors stay calm and professional: logos on dark panels, no flashing.

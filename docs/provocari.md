@@ -6,7 +6,7 @@ Lista sursă pentru rundele de vot. Versiunea editabilă: https://claude.ai/arti
 
 - O rundă = 5 provocări: 2 ușoare, 2 medii, 1 grea.
 - Amestecați categoriile în aceeași rundă.
-- Categoria `hardcore` nu intră la vot; e pentru obiectivele mari de suburi.
+- Categoria `hardcore` nu intră la vot; e pentru obiectivele mari de subs.
 - Moderatorii scot ce s-a făcut și adaugă propunerile bune ale abonaților.
 - Iceman are drept de veto oricând.
 

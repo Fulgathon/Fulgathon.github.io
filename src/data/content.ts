@@ -2,8 +2,8 @@
 
 import type { BoardTab, Goal, Prize, TickerItem } from './types';
 
-export const boardUnits: Record<BoardTab, string> = { gifts: 'suburi', bits: 'biți', hours: 'ore' };
-export const boardTabs: [BoardTab, string][] = [['gifts', 'Suburi dăruite'], ['bits', 'Biți'], ['hours', 'Ore văzute']];
+export const boardUnits: Record<BoardTab, string> = { gifts: 'subs', bits: 'biți', hours: 'ore' };
+export const boardTabs: [BoardTab, string][] = [['gifts', 'Subs dăruite'], ['bits', 'Biți'], ['hours', 'Ore văzute']];
 
 /** Ticker while nothing has happened yet. */
 export function placeholderTicker(startText: string): TickerItem[] {
@@ -52,7 +52,7 @@ export const schedule = [
 
 export const bingo = [
   'Rage quit', 'Zice „ultimul joc” și mai joacă 3', 'Pică netul sau OBS-ul', 'Cântă fără să-i ceară nimeni',
-  'Raid cu peste 50 de oameni', 'Mănâncă pe stream', 'Adoarme pe cameră', 'Cineva dăruiește 10+ suburi',
+  'Raid cu peste 50 de oameni', 'Mănâncă pe stream', 'Adoarme pe cameră', 'Cineva dăruiește 10+ subs',
   'Moare în primul minut', 'Vorbește cu microfonul pe mute', 'Chatul spamează același emote', 'A treia cafea a zilei',
   'Un mod dă timeout', 'Râde un minut fără oprire', 'Începe ora dublă', 'Cântă o colindă',
 ];

@@ -22,6 +22,17 @@ const dayMonth = new Intl.DateTimeFormat('ro-RO', { day: 'numeric', month: 'long
 /** "24 decembrie". */
 export const dateRo = (ms: number) => dayMonth.format(new Date(ms));
 
+const hourMin = new Intl.DateTimeFormat('ro-RO', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Bucharest' });
+/** "21:00" (Romanian time). */
+export const timeRo = (ms: number) => hourMin.format(new Date(ms));
+
+/** "azi", "mâine" or "24 decembrie", relative to now (Romanian time). */
+export function dayRo(ms: number, now: number): string {
+  if (dateRo(ms) === dateRo(now)) return 'azi';
+  if (dateRo(ms) === dateRo(now + 86_400_000)) return 'mâine';
+  return dateRo(ms);
+}
+
 /** "acum câteva secunde", "acum 3 min", "acum 2 ore". */
 export function ago(ms: number, now: number): string {
   const s = Math.max(0, Math.floor((now - ms) / 1000));

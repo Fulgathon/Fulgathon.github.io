@@ -41,7 +41,7 @@ const corners = ['c-tl', 'c-tr', 'c-bl', 'c-br'];
     <Image class="zap" src={logo} alt="Icemanlucky" widths={[400, 560, 720, 960, 1120]} sizes="min(72vw, 560px)" quality={72} loading="eager" fetchpriority="high" style="width: 100%; height: auto; display: block" />
   </div>
   <div style="position: relative; z-index: 3; max-width: 760px; margin: clamp(20px, 3cqi, 40px) auto 0; padding: 0 clamp(20px, 4cqi, 40px); text-align: center">
-    <p style="margin: 0 auto; max-width: 560px; font-size: clamp(16px, 1.4cqi, 19px); color: #C9D2DF">Fiecare sub adaugă timp. Cât timp vin suburi, nu ajungem la zero. Altfel, ne oprim pe <strong data-text="endDateText" style="color: #F2F5FA">{v.endDateText}</strong>.</p>
+    <p style="margin: 0 auto; max-width: 560px; font-size: clamp(16px, 1.4cqi, 19px); color: #C9D2DF">Fiecare sub adaugă timp. Cât timp vin subs, nu ajungem la zero. Altfel, ne oprim pe <strong data-text="endDateText" style="color: #F2F5FA">{v.endDateText}</strong>.</p>
     <div style="margin-top: 26px; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px">
       <a class="btn-primary" href={site.links.twitch} style={`flex: 0 1 260px; min-height: 58px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 0 24px; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 23px; text-transform: uppercase; text-decoration: none`}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4v16l13-8z"></path></svg>
@@ -81,7 +81,7 @@ const corners = ['c-tl', 'c-tr', 'c-bl', 'c-br'];
       </div>
       <div style="margin-top: clamp(20px, 3cqi, 32px); display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 16px 0">
         <div style="padding: 4px 20px; border-left: 2px solid #2A3445">
-          <p style={statLabel}>Suburi</p>
+          <p style={statLabel}>Subs</p>
           <p data-text="subsText" style={statValue}>{v.subsText}</p>
         </div>
         <div style="padding: 4px 20px; border-left: 2px solid #2A3445">
@@ -103,7 +103,7 @@ const corners = ['c-tl', 'c-tr', 'c-bl', 'c-br'];
         </div>
       </div>
       <div style="margin-top: 22px; padding-top: 18px; border-top: 1px dashed #2A3445; display: flex; flex-wrap: wrap; gap: 10px 32px; font-size: 15px; color: #AEB8C7">
-        <span><strong style={`font-family: ${cond}; font-weight: 800; font-style: italic; font-size: 18px; color: #FFFFFF; letter-spacing: 0.04em`}>ORA DUBLĂ</strong> azi la 21:00. Tot timpul adăugat valorează dublu.</span>
+        <span {...iff('hasDouble')}><strong style={`font-family: ${cond}; font-weight: 800; font-style: italic; font-size: 18px; color: #FFFFFF; letter-spacing: 0.04em`}>ORA DUBLĂ</strong> <span data-text="doubleText">{v.doubleText}</span></span>
         <span>Final programat: <strong data-text="endDateText" style="color: #F2F5FA">{v.endDateText}</strong>, dacă nu se mai adaugă timp.</span>
         <span style="margin-left: auto; display: inline-flex; align-items: center; gap: 10px; color: #8C97A8">Cronometru oferit de <strong style="font-family: Barlow, sans-serif; font-weight: 700; letter-spacing: 0.06em; color: #F2F5FA">{site.sponsor.logoText}</strong></span>
       </div>

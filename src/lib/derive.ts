@@ -5,7 +5,7 @@
 import { bingo as bingoText, boardTabs as boardTabDefs, boardUnits, placeholderTicker } from '../data/content';
 import { site } from '../data/site';
 import type { BoardTab, SiteData } from '../data/types';
-import { count, dateRo, fmtInt, pad } from './format';
+import { count, dateRo, dayRo, fmtInt, pad, timeRo } from './format';
 
 export type Viewer = 'out' | 'nonsub' | 'sub';
 export type VoteTab = 'open' | 'next' | 'done';
@@ -96,6 +96,13 @@ export function derive(s: State, d: SiteData) {
   const hh = r === null ? '--' : pad(Math.floor((r % 86400) / 3600));
   const mm = r === null ? '--' : pad(Math.floor((r % 3600) / 60));
   const ss = r === null ? '--' : pad(r % 60);
+
+  // "Ora dublă": running now, or the next scheduled one.
+  const doubleNow = d.doubleFrom !== null && d.doubleUntil !== null && s.now >= d.doubleFrom && s.now < d.doubleUntil;
+  const doubleSoon = d.doubleFrom !== null && d.doubleFrom > s.now;
+  const doubleText = doubleNow
+    ? `acum, până la ${timeRo(d.doubleUntil!)}. Tot timpul adăugat valorează dublu.`
+    : doubleSoon ? `${dayRo(d.doubleFrom!, s.now)} la ${timeRo(d.doubleFrom!)}. Tot timpul adăugat valorează dublu.` : '';
 
   const startText = d.startsAt !== null ? dateRo(d.startsAt) : '[DATA DE START]';
   const endDateText = d.scheduledEnd !== null ? dateRo(d.scheduledEnd) : site.endDate;
@@ -232,16 +239,17 @@ export function derive(s: State, d: SiteData) {
     showSnow: s.showSnow,
     dd, hh, mm, ss, navClock: `${dd}:${hh}:${mm}:${ss}`, tickerTwice,
     isLive: live, pops: live ? d.pops : [],
-    statusText: live ? 'ÎN DIRECT' : upcoming ? 'ÎNCEPE CURÂND' : 'ÎNCHEIAT',
+    statusText: live ? 'LIVE' : upcoming ? 'ÎNCEPE CURÂND' : 'ÎNCHEIAT',
     liveBg: live ? '#D5162B' : '#2A3445',
     timerLabel: live ? 'Timp rămas' : upcoming ? 'Începe în' : 'Subathonul s-a încheiat',
     endDateText,
+    hasDouble: doubleNow || doubleSoon, doubleText,
     subsText: fmtInt(subs),
     nextGoalText: fmtInt(nextMark),
     nextGoalTitle: d.goals[nextIdx]?.title ?? '',
     raisedText: zeroed ? '0 lei' : d.raised,
     progressPct: progress.toFixed(1) + '%',
-    progressLabel: fmtInt(subs) + ' / ' + fmtInt(nextMark) + ' suburi',
+    progressLabel: fmtInt(subs) + ' / ' + fmtInt(nextMark) + ' subs',
     goals, unlockedCount, board, boardTabs, boardLabelledBy: 'tab-board-' + tab,
     boardEmpty: board.length === 0,
 

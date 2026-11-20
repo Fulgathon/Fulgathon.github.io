@@ -20,11 +20,11 @@ const val = `font-family: ${cond}; font-weight: 900; font-style: italic; font-si
 <section id="tarife" aria-labelledby="h-tarife" style="position: relative; z-index: 1; background: #0A0E15; border-top: 1px solid #1A2230; border-bottom: 1px solid #1A2230">
   <div style="max-width: 1280px; margin: 0 auto; padding: clamp(56px, 8cqi, 112px) clamp(20px, 4cqi, 40px)">
     <SectionHead tag="05" bignum="05" title="Cum adaugi timp" id="h-tarife">
-      <p style="margin: 0; max-width: 440px; font-size: 17px; color: #AEB8C7">Suburile adaugă timp, contează la obiective și deblochează votul. Donațiile și biții adaugă doar timp.</p>
+      <p style="margin: 0; max-width: 440px; font-size: 17px; color: #AEB8C7">Subs adaugă timp, contează la obiective și deblochează votul. Donațiile și biții adaugă doar timp.</p>
     </SectionHead>
     <div style="margin-top: 32px; display: flex; flex-wrap: wrap; gap: 24px 64px">
       <div style="flex: 1 1 420px; min-width: 0">
-        <h3 style={`margin: 0 0 6px; font-family: ${cond}; font-weight: 800; font-size: 20px; text-transform: uppercase; color: var(--ice)`}>Suburi</h3>
+        <h3 style={`margin: 0 0 6px; font-family: ${cond}; font-weight: 800; font-size: 20px; text-transform: uppercase; color: var(--ice)`}>Subs</h3>
         {subs.map(([n, t, ice]) => (
           <div style={row}><span style={name}>{n}</span><span aria-hidden="true" style={dots}></span><span style={ice ? `${val}; color: var(--ice)` : val}>{t}</span></div>
         ))}

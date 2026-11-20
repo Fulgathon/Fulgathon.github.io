@@ -90,7 +90,7 @@ function goals(v: Vals): string {
 <span style="flex: none; width: 46px; font-family: ${COND}; font-weight: 900; font-style: italic; font-size: 34px; line-height: 1; color: ${g.numColor}">${g.no}</span>
 <div style="flex: 1 1 auto; min-width: 0">
 <p style="margin: 0; font-weight: 700; font-size: 17px; color: ${g.titleColor}; text-decoration: ${g.deco}; text-decoration-color: var(--ice); text-decoration-thickness: 2px">${esc(g.title)}</p>
-<p style="margin: 0; font-size: 14px; color: #7D8899">${g.threshold} suburi</p>
+<p style="margin: 0; font-size: 14px; color: #7D8899">${g.threshold} subs</p>
 ${
   g.current
     ? `<div style="margin-top: 8px; display: flex; align-items: center; gap: 10px">
