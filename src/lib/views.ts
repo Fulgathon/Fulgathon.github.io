@@ -48,7 +48,12 @@ function tabs(
     .join('');
 }
 
+/** A quiet one-line message for an empty list. */
+const emptyRow = (text: string, tag = 'li') =>
+  `<${tag} style="padding: 20px 16px; border-bottom: 1px solid #1A2230; font-size: 16px; color: #8C97A8">${esc(text)}</${tag}>`;
+
 function challenges(v: Vals): string {
+  if (!v.challenges.length) return emptyRow('Prima rundă de vot se deschide odată cu subathonul.');
   return v.challenges
     .map(
       (c) => `<li style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; padding: 20px 16px; border-bottom: 1px solid #1A2230; background: ${c.rowBg}">
@@ -69,7 +74,7 @@ ${
     ? `<button type="button" data-action="vote" data-arg="${esc(c.id)}" data-key="vote-${esc(c.id)}" aria-pressed="${c.pressed}" aria-label="${esc(c.btnLabel)}: ${esc(c.title)}" style="min-height: 48px; min-width: 150px; padding: 0 16px; font-family: ${COND}; font-weight: 800; font-size: 18px; text-transform: uppercase; background: ${c.btnBg}; color: ${c.btnColor}; border: 2px solid ${c.btnBorder}">${esc(c.btnLabel)}</button>`
     : `<span style="min-height: 48px; min-width: 150px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 2px dashed #2A3445; color: #7D8899; font-family: ${COND}; font-weight: 700; font-size: 17px; text-transform: uppercase">
 ${LOCK}
-Doar abonați
+${esc(c.lockText)}
 </span>`
 }
 </div>
@@ -113,6 +118,7 @@ function flakes(v: Vals): string {
 }
 
 function board(v: Vals): string {
+  if (v.boardEmpty) return emptyRow('Încă nu e nimeni în clasament.');
   return v.board
     .map(
       (row) => `<li style="display: flex; align-items: center; gap: 16px; padding: 14px 0; border-bottom: 1px solid #1A2230">
@@ -136,6 +142,63 @@ ${esc(b.text)}
     .join('');
 }
 
+function pops(v: Vals): string {
+  return v.pops
+    .map((pp) => `<span class="pop" style="left: ${pp.left}; animation-delay: ${pp.delay}; border-color: ${pp.color}"><span style="color: ${pp.color}">${esc(pp.time)}</span> ${esc(pp.user)}</span>`)
+    .join('');
+}
+
+function upNext(v: Vals): string {
+  if (!v.upNext.length) return emptyRow('Încă nu a câștigat nicio provocare.');
+  return v.upNext
+    .map(
+      (u) => `<li style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 24px; padding: 20px 16px; border-bottom: 1px solid #1A2230">
+<span style="flex: none; width: 36px; font-family: ${COND}; font-weight: 900; font-style: italic; font-size: 34px; line-height: 1; color: var(--ice)">${u.n}</span>
+<span style="flex: 1 1 260px; min-width: 0">
+<span style="display: block; font-weight: 700; font-size: 18px">${esc(u.title)}</span>
+<span style="display: block; font-size: 15px; color: #8C97A8">A câștigat runda ${u.round} cu ${esc(u.pct)} din voturi</span>
+</span>
+<span style="flex: none; font-family: ${COND}; font-weight: 800; font-size: 22px; text-transform: uppercase">${esc(u.when)}</span>
+</li>`,
+    )
+    .join('');
+}
+
+function completed(v: Vals): string {
+  if (!v.completed.length) return emptyRow('Încă nu s-a făcut nicio provocare.');
+  return v.completed
+    .map(
+      (d) => `<li style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 24px; padding: 20px 16px; border-bottom: 1px solid #1A2230">
+<span style="flex: none; padding: 1px 8px; transform: skewX(-12deg); background: #1A2230; color: #AEB8C7; font-family: ${COND}; font-weight: 800; font-size: 14px; letter-spacing: 0.06em">${esc(d.when)}</span>
+<span style="flex: 1 1 240px; min-width: 0; font-weight: 700; font-size: 18px; text-decoration: line-through; text-decoration-color: var(--ice); text-decoration-thickness: 2px">${esc(d.title)}</span>
+${d.clip ? `<a href="${esc(d.clip)}" aria-label="Vezi clipul: ${esc(d.title)}" style="flex: none; min-height: 44px; display: inline-flex; align-items: center; gap: 8px; font-family: ${COND}; font-weight: 800; font-size: 18px; text-transform: uppercase; text-decoration: none">Vezi clipul →</a>` : ''}
+</li>`,
+    )
+    .join('');
+}
+
+function wheelPrizes(v: Vals): string {
+  return v.prizes
+    .map(
+      (p) => `<div style="position: absolute; left: 50%; top: 50%; width: 50%; height: 0; transform-origin: 0 0; transform: ${p.rot}; display: flex; align-items: center; justify-content: flex-end; padding-right: 8%">
+<span style="transform: translateY(-50%); font-family: ${COND}; font-weight: 800; font-style: italic; font-size: 4.6cqi; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; color: ${p.color}">${esc(p.short)}</span>
+</div>`,
+    )
+    .join('');
+}
+
+function recentWins(v: Vals): string {
+  if (!v.recentWins.length) return emptyRow('Încă nu s-a învârtit roata.');
+  return v.recentWins
+    .map(
+      (w) => `<li style="display: flex; gap: 12px; padding: 9px 0; border-bottom: 1px solid #1A2230">
+<span style="flex: 1 1 auto; min-width: 0"><strong style="color: #F2F5FA">${esc(w.user)}</strong> <span style="color: #8C97A8">a câștigat</span> ${esc(w.prize)}</span>
+<span style="flex: none; color: #7D8899">${esc(w.ago)}</span>
+</li>`,
+    )
+    .join('');
+}
+
 export const views = {
   ticker,
   voteTabs: (v: Vals) => tabs(v.voteTabs, 'vote', '20px', ' letter-spacing: 0.03em;'),
@@ -145,6 +208,11 @@ export const views = {
   boardTabs: (v: Vals) => tabs(v.boardTabs, 'board', '18px', ''),
   board,
   bingo,
+  pops,
+  upNext,
+  completed,
+  wheelPrizes,
+  recentWins,
 };
 
 export type RegionName = keyof typeof views;

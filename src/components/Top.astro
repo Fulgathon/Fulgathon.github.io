@@ -3,7 +3,6 @@
 import Emote from './Emote.astro';
 import { v, iff } from '../lib/ssr';
 import { views } from '../lib/views';
-import { sample } from '../data/sample';
 import { site } from '../data/site';
 
 const links: [string, string, string][] = [
@@ -60,9 +59,9 @@ const cond = "'Barlow Condensed', sans-serif";
       <button type="button" class="btn-twitch nav-login" data-action="login" {...iff('isOut')} style={`min-height: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; font-family: ${cond}; font-size: 17px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em`}>
         Conectează-te
       </button>
-      <button type="button" class="btn-ghost" data-action="logout" {...iff('isIn')} aria-label={`Conectat ca ${sample.viewerName}. Deconectează-te`} style="min-height: 44px; display: inline-flex; align-items: center; gap: 10px; padding: 0 12px 0 6px; font-size: 15px; font-weight: 600">
-        <span style="width: 30px; height: 30px; display: grid; place-items: center; background: #9146FF; color: #FFFFFF; font-weight: 700">{sample.viewerName.charAt(0).toUpperCase()}</span>
-        <span class="hide-sm chip-name">{sample.viewerName}</span>
+      <button type="button" class="btn-ghost" data-action="logout" {...iff('isIn')} aria-label={v.chipLabel} data-attr="aria-label:chipLabel" style="min-height: 44px; display: inline-flex; align-items: center; gap: 10px; padding: 0 12px 0 6px; font-size: 15px; font-weight: 600">
+        <span style="width: 30px; height: 30px; display: grid; place-items: center; background: #9146FF; color: #FFFFFF; font-weight: 700" data-text="viewerInitial">{v.viewerInitial}</span>
+        <span class="hide-sm chip-name" data-text="viewerName">{v.viewerName}</span>
         <span data-text="badgeText" data-style="background:badgeBg;color:badgeColor" style={`padding: 2px 7px; font-family: ${cond}; font-size: 13px; font-weight: 800; letter-spacing: 0.06em; background: ${v.badgeBg}; color: ${v.badgeColor}`}>{v.badgeText}</span>
       </button>
       <a class="btn-primary nav-cta" href={site.links.twitch} style={`align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; font-family: ${cond}; font-size: 17px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; text-decoration: none`}>Urmărește live</a>

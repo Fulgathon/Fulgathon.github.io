@@ -135,6 +135,7 @@ export type Database = {
           position: number
           short_label: string
           weight: number
+          win_label: string
         }
         Insert: {
           full_label: string
@@ -142,6 +143,7 @@ export type Database = {
           position: number
           short_label: string
           weight?: number
+          win_label: string
         }
         Update: {
           full_label?: string
@@ -149,6 +151,7 @@ export type Database = {
           position?: number
           short_label?: string
           weight?: number
+          win_label?: string
         }
         Relationships: []
       }

@@ -33,6 +33,12 @@ export const site = {
   supabase: {
     url: 'https://yvbxtsuddjqqoogdoqrx.supabase.co',
     publishableKey: 'sb_publishable_6pIaWU842o20RFTazgtv4w_a3joVlhS',
+    /**
+     * Turn on once the Twitch app is registered and its keys are saved in
+     * Supabase (Authentication → Providers → Twitch). Until then the login
+     * buttons say it's coming soon.
+     */
+    twitchLogin: false,
   },
   contactEmail: '[EMAIL CONTACT]',
   endDate: '[DATA FINALĂ]',

@@ -3,7 +3,7 @@
 import { Image } from 'astro:assets';
 import logo from '../../assets/logo-mascot.webp';
 import { v, iff } from '../lib/ssr';
-import { sample } from '../data/sample';
+import { views } from '../lib/views';
 import { site } from '../data/site';
 
 const cond = "'Barlow Condensed', sans-serif";
@@ -41,7 +41,7 @@ const corners = ['c-tl', 'c-tr', 'c-bl', 'c-br'];
     <Image class="zap" src={logo} alt="Icemanlucky" widths={[400, 560, 720, 960, 1120]} sizes="min(72vw, 560px)" quality={72} loading="eager" fetchpriority="high" style="width: 100%; height: auto; display: block" />
   </div>
   <div style="position: relative; z-index: 3; max-width: 760px; margin: clamp(20px, 3cqi, 40px) auto 0; padding: 0 clamp(20px, 4cqi, 40px); text-align: center">
-    <p style="margin: 0 auto; max-width: 560px; font-size: clamp(16px, 1.4cqi, 19px); color: #C9D2DF">Fiecare sub adaugă timp. Cât timp vin suburi, nu ajungem la zero. Altfel, ne oprim pe <strong style="color: #F2F5FA">{site.endDate}</strong>.</p>
+    <p style="margin: 0 auto; max-width: 560px; font-size: clamp(16px, 1.4cqi, 19px); color: #C9D2DF">Fiecare sub adaugă timp. Cât timp vin suburi, nu ajungem la zero. Altfel, ne oprim pe <strong data-text="endDateText" style="color: #F2F5FA">{v.endDateText}</strong>.</p>
     <div style="margin-top: 26px; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px">
       <a class="btn-primary" href={site.links.twitch} style={`flex: 0 1 260px; min-height: 58px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 0 24px; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 23px; text-transform: uppercase; text-decoration: none`}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4v16l13-8z"></path></svg>
@@ -60,11 +60,7 @@ const corners = ['c-tl', 'c-tr', 'c-bl', 'c-br'];
     <!-- Scoreboard -->
     <div style="position: relative; margin-top: clamp(40px, 6cqi, 80px); background: rgba(9,12,17,0.94); border: 1px solid #1C2230; padding: clamp(18px, 3cqi, 36px)">
       {corners.map((c) => <span aria-hidden="true" class={`corner ${c}`}></span>)}
-      <div aria-hidden="true" {...iff('isLive')} style="position: absolute; left: 0; right: 0; top: 0; height: 0">
-        {sample.pops.map((pp) => (
-          <span class="pop" style={`left: ${pp.left}; animation-delay: ${pp.delay}; border-color: ${pp.color}`}><span style={`color: ${pp.color}`}>{pp.time}</span> {pp.user}</span>
-        ))}
-      </div>
+      <div aria-hidden="true" {...iff('isLive')} data-region="pops" style="position: absolute; left: 0; right: 0; top: 0; height: 0" set:html={views.pops(v)} />
       <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px">
         <span data-text="timerLabel" style={`font-family: ${cond}; font-size: 18px; font-weight: 800; font-style: italic; letter-spacing: 0.1em; text-transform: uppercase; color: #AEB8C7`}>{v.timerLabel}</span>
         <span data-text="statusText" data-style="background:liveBg" style={`display: inline-flex; align-items: center; gap: 8px; padding: 3px 12px; transform: skewX(-12deg); background: ${v.liveBg}; color: #FFFFFF; font-family: ${cond}; font-size: 15px; font-weight: 800; letter-spacing: 0.08em`}>{v.statusText}</span>
@@ -108,7 +104,7 @@ const corners = ['c-tl', 'c-tr', 'c-bl', 'c-br'];
       </div>
       <div style="margin-top: 22px; padding-top: 18px; border-top: 1px dashed #2A3445; display: flex; flex-wrap: wrap; gap: 10px 32px; font-size: 15px; color: #AEB8C7">
         <span><strong style={`font-family: ${cond}; font-weight: 800; font-style: italic; font-size: 18px; color: #FFFFFF; letter-spacing: 0.04em`}>ORA DUBLĂ</strong> azi la 21:00. Tot timpul adăugat valorează dublu.</span>
-        <span>Final programat: <strong style="color: #F2F5FA">{site.endDate}</strong>, dacă nu se mai adaugă timp.</span>
+        <span>Final programat: <strong data-text="endDateText" style="color: #F2F5FA">{v.endDateText}</strong>, dacă nu se mai adaugă timp.</span>
         <span style="margin-left: auto; display: inline-flex; align-items: center; gap: 10px; color: #8C97A8">Cronometru oferit de <strong style="font-family: Barlow, sans-serif; font-weight: 700; letter-spacing: 0.06em; color: #F2F5FA">{site.sponsor.logoText}</strong></span>
       </div>
     </div>

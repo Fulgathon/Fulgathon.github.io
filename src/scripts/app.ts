@@ -9,21 +9,38 @@
 //   data-region="name"        innerHTML = views[name](vals), only when it changed
 //   data-action="name"        click handler (data-arg is passed along)
 //
-// Phase 2: replace the sample data and the fake login with backend calls;
-// the bindings stay the same.
+// Two modes:
+//   * normal: live data from Supabase (./live.ts, loaded lazily), real actions.
+//   * ?demo:  the design's sample data, actions stay in the browser, and a
+//             panel switches viewer and stream states.
 
-import { sample } from '../data/sample';
+import { emptyData, sampleBingoMarked, sampleData, sampleViewer } from '../data/sample';
 import { site } from '../data/site';
+import type { SiteData } from '../data/types';
 import { derive, initialState, type State } from '../lib/derive';
 import { views, type RegionName } from '../lib/views';
+import type { Live, Me } from './live';
 
 type AnyVals = Record<string, unknown>;
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-const loadedAt = Date.now();
+const demo = new URLSearchParams(location.search).has('demo');
+const BINGO_KEY = 'fulgathon:bingo';
 
-let state: State = initialState(sample);
-state.demo = new URLSearchParams(location.search).has('demo');
+let data: SiteData = emptyData();
+let state: State = { ...initialState(), demo, now: Date.now() };
+let live: Live | null = null;
+
+if (demo) {
+  data = sampleData(state.now);
+  state = {
+    ...state,
+    viewerName: sampleViewer.name, spins: sampleViewer.spins, flakes: sampleViewer.flakes,
+    minutesToNextFlake: sampleViewer.minutesToNextFlake, marked: sampleBingoMarked.slice(), toast: 'goal',
+  };
+} else {
+  state.marked = loadBingo();
+}
 
 const all = <T extends HTMLElement = HTMLElement>(sel: string) => Array.from(document.querySelectorAll<T>(sel));
 const pairs = (spec: string) => spec.split(';').filter(Boolean).map((p) => p.split(':') as [string, string]);
@@ -35,13 +52,13 @@ const attrs = all('[data-attr]').map((el) => ({ el, list: pairs(el.dataset.attr!
 const toggles = all('[data-toggle]').map((el) => ({ el, list: pairs(el.dataset.toggle!) }));
 const regions = all('[data-region]').map((el) => ({ el, name: el.dataset.region as RegionName }));
 
-// The build rendered the regions from the same initial state, so start from
-// those strings and only touch the DOM when something actually changes.
-const initialVals = derive(state, sample);
-const lastHtml = new Map(regions.map(({ el, name }) => [el, views[name](initialVals)]));
+// The build rendered the regions from the empty initial state (src/lib/ssr.ts);
+// start from those strings and only touch the DOM when something changes.
+const builtVals = derive(initialState(), emptyData());
+const lastHtml = new Map(regions.map(({ el, name }) => [el, views[name](builtVals)]));
 
 function render() {
-  const v = derive(state, sample);
+  const v = derive(state, data);
   const vals = v as unknown as AnyVals;
 
   for (const el of texts) {
@@ -85,25 +102,116 @@ document.fonts?.ready.then(fitNav);
 function set(patch: Partial<State>) {
   state = { ...state, ...patch };
   render();
-  if ('viewer' in patch) fitNav();
+  if ('viewer' in patch || 'viewerName' in patch) fitNav();
 }
 
 // Countdowns: derived from the wall clock, so a throttled background tab
 // still shows the right time when it comes back.
-function tick() {
-  const elapsed = Math.floor((Date.now() - loadedAt) / 1000);
-  if (elapsed !== state.elapsed) set({ elapsed });
-}
-setInterval(tick, 250);
+setInterval(() => {
+  const now = Date.now();
+  if (Math.floor(now / 1000) !== Math.floor(state.now / 1000)) set({ now });
+}, 250);
 
+// ---- Bingo is personal: kept in this browser only. ---------------------
+function loadBingo(): boolean[] {
+  try {
+    const saved = JSON.parse(localStorage.getItem(BINGO_KEY) ?? 'null');
+    if (Array.isArray(saved) && saved.length === 16) return saved.map(Boolean);
+  } catch { /* storage blocked */ }
+  return Array(16).fill(false);
+}
+function saveBingo(marked: boolean[]) {
+  if (demo) return;
+  try { localStorage.setItem(BINGO_KEY, JSON.stringify(marked)); } catch { /* storage blocked */ }
+}
+
+// ---- Messages for things that didn't work. ------------------------------
+const errors: Record<string, string> = {
+  not_logged_in: 'Conectează-te cu Twitch mai întâi.',
+  not_subscribed: 'Asta e doar pentru abonați.',
+  round_closed: 'Runda de vot s-a închis.',
+  not_in_round: 'Provocarea nu mai e în runda asta.',
+  no_spins: 'Nu mai ai rotiri. Mai stai puțin!',
+  too_many: 'Ai trimis deja 3 propuneri. Mai încearcă peste câteva minute.',
+};
+function info(eyebrow: string, text: string) {
+  set({ toast: 'info', info: { eyebrow, text } });
+}
+function fail(err: unknown) {
+  const msg = String((err as { message?: string })?.message ?? '');
+  const key = Object.keys(errors).find((k) => msg.includes(k));
+  info('Nu a mers', key ? errors[key] : 'Ceva n-a mers. Încearcă din nou.');
+}
+
+// ---- Live data ----------------------------------------------------------
+const reachedGoals = (d: SiteData) => d.goals.filter((g) => d.subs >= g.threshold).length;
+
+function applyMe(me: Me | null) {
+  if (!me) {
+    set({ viewer: 'out', viewerName: '', spins: 0, flakes: 0, myVote: null, result: null, suggestDone: false });
+    return;
+  }
+  set({
+    viewer: me.isSub ? 'sub' : 'nonsub', viewerName: me.name, myVote: me.myVote,
+    // Don't let a refresh jump the counter while the wheel is still turning.
+    ...(state.spinning ? {} : { spins: me.spins }),
+    flakes: me.flakes, minutesToNextFlake: me.minutesToNextFlake,
+  });
+}
+
+async function startLive() {
+  const { Live } = await import('./live');
+  live = new Live(data, {
+    onData(patch, first) {
+      const before = reachedGoals(data);
+      data = { ...data, ...patch };
+      const live = data.status === 'live';
+      // Like the design: show the latest goal on arrival, and again whenever one unlocks.
+      if (live && ((first && reachedGoals(data) > 0) || (!first && reachedGoals(data) > before))) set({ toast: 'goal' });
+      else render();
+    },
+    onMe: applyMe,
+  });
+  await live.start();
+}
+if (!demo) startLive().catch(() => { /* backend unreachable: the page stays on "starting soon" */ });
+
+// ---- Actions ------------------------------------------------------------
 let spinTimer: number | undefined;
 let copyTimer: number | undefined;
 
+/** Rotate 5 full turns plus the offset that lands segment `idx` under the pointer. */
+function spinTo(idx: number, spinsLeft: number) {
+  const jitter = Math.random() * 30 - 15;
+  const cur = state.wheelDeg;
+  const target = (((360 - (idx * 45 + 22.5 + jitter)) % 360) + 360) % 360;
+  const delta = (((target - (cur % 360)) % 360) + 360) % 360;
+  set({ wheelDeg: cur + 5 * 360 + delta, spinning: true, spins: spinsLeft, result: null });
+  clearTimeout(spinTimer);
+  spinTimer = window.setTimeout(() => {
+    set({ spinning: false, result: idx });
+    void live?.refreshMe();
+  }, reducedMotion.matches ? 300 : 4700);
+}
+
 const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
-  // Stand-in for "Login with Twitch" until phase 2.
-  login: () => set({ viewer: 'sub', menu: false }),
-  logout: () => set({ viewer: 'out', myVote: null, result: null }),
-  becomeSub: () => set({ viewer: 'sub' }),
+  login: () => {
+    if (demo) { set({ viewer: 'sub', menu: false }); return; }
+    if (!site.supabase.twitchLogin || !live) {
+      info('În curând', 'Conectarea cu Twitch se activează înainte de start.');
+      set({ menu: false });
+      return;
+    }
+    live.login().catch(fail);
+  },
+  logout: () => {
+    if (demo) { set({ viewer: 'out', myVote: null, result: null }); return; }
+    live?.logout().catch(fail);
+  },
+  becomeSub: () => {
+    if (demo) { set({ viewer: 'sub' }); return; }
+    live?.checkSub().catch(fail);
+  },
 
   toggleMenu: () => set({ menu: !state.menu }),
   closeMenu: () => set({ menu: false }),
@@ -111,31 +219,37 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
 
   voteTab: (id) => set({ voteTab: id as State['voteTab'] }),
   boardTab: (id) => set({ tab: id as State['tab'] }),
-  vote: (id) => set({ myVote: id, toast: 'vote' }),
+  vote: (id) => {
+    if (demo) { set({ myVote: id, toast: 'vote' }); return; }
+    if (!live || !data.round) return;
+    const previous = state.myVote;
+    set({ myVote: id, toast: 'vote' });  // optimistic; the tally follows via realtime
+    live.vote(data.round.id, Number(id)).catch((err) => { set({ myVote: previous, toast: null }); fail(err); });
+  },
 
   spin: () => {
     if (state.viewer === 'out') { actions.login('', document.body); return; }
     if (state.spinning || state.spins <= 0) return;
-    // Decide the result first, then rotate 5 full turns plus the offset to land on it.
-    const idx = Math.floor(Math.random() * 8);
-    const jitter = Math.random() * 30 - 15;
-    const cur = state.wheelDeg;
-    const target = (((360 - (idx * 45 + 22.5 + jitter)) % 360) + 360) % 360;
-    const delta = (((target - (cur % 360)) % 360) + 360) % 360;
-    set({ wheelDeg: cur + 5 * 360 + delta, spinning: true, spins: state.spins - 1, result: null });
-    clearTimeout(spinTimer);
-    spinTimer = window.setTimeout(() => set({ spinning: false, result: idx }), reducedMotion.matches ? 300 : 4700);
+    if (demo) { spinTo(Math.floor(Math.random() * 8), state.spins - 1); return; }
+    // The server picks the prize; the wheel only animates to it.
+    set({ spinning: true, result: null });
+    live?.spin()
+      .then((r) => spinTo(r.prize_position, r.spins_left))
+      .catch((err) => { set({ spinning: false }); fail(err); });
   },
 
   bingo: (i) => {
     const marked = state.marked.slice();
     marked[Number(i)] = !marked[Number(i)];
+    saveBingo(marked);
     set({ marked });
   },
 
   sendSuggestion: () => {
-    if (state.suggestion.trim()) set({ suggestDone: true });
-    else document.getElementById('suggestion')?.focus();
+    const text = state.suggestion.trim();
+    if (!text) { document.getElementById('suggestion')?.focus(); return; }
+    if (demo) { set({ suggestDone: true }); return; }
+    live?.suggest(text).then(() => set({ suggestDone: true })).catch(fail);
   },
   newSuggestion: () => {
     const field = document.getElementById('suggestion') as HTMLTextAreaElement | null;
@@ -157,8 +271,8 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
   },
 
   // Demo panel (?demo). Switching the viewer resets the vote, like the design.
-  setViewer: (id) => set({ viewer: id as State['viewer'], myVote: null, result: null, menu: false }),
-  setStream: (id) => set({ stream: id as State['stream'] }),
+  setViewer: (id) => { if (demo) set({ viewer: id as State['viewer'], myVote: null, result: null, menu: false }); },
+  setStream: (id) => { if (demo) { data = { ...data, status: id as SiteData['status'] }; render(); } },
   toggleSnow: () => set({ showSnow: !state.showSnow }),
 };
 

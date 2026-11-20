@@ -19,9 +19,11 @@ npm run build      # static site in dist/
 npm run check      # type-check
 ```
 
-Add `?demo` to the URL to get a small panel for switching the viewer state
-(logged out / not subscribed / subscriber), the stream state (live / starting
-soon) and the snowfall. Without `?demo` visitors see "logged out" and "live".
+Normal visitors get **live data** from the Supabase backend (see
+`docs/supabase.md`): timer, ticker, goals, votes, leaderboard and wheel update
+in real time. Add `?demo` to the URL for the design's **sample data** and a small
+panel for switching the viewer state (logged out / not subscribed / subscriber),
+the stream state (live / starting soon) and the snowfall.
 
 ## Deploy (GitHub Pages)
 
@@ -37,7 +39,9 @@ the base then becomes `/` automatically.
 
 | Path | What |
 | --- | --- |
-| `src/data/sample.ts` | All sample data (timer, goals, votes, wheel, leaderboard, bingo…). Phase 2 swaps this for live data. |
+| `src/data/sample.ts` | The design's sample data, used with `?demo`, and the empty first-paint state. |
+| `src/data/content.ts` | Fixed content: schedule, bingo squares, partners, default goals and prizes. |
+| `src/scripts/live.ts` | Live data from Supabase, realtime updates, login, votes, spins, suggestions. |
 | `src/data/site.ts` | Links, sponsor, discount code and the open `[PLACEHOLDERS]`. |
 | `src/lib/derive.ts` | Port of the design's `renderVals()`: state + data → what the page shows. |
 | `src/lib/views.ts` | HTML for the lists that re-render (ticker, vote, goals, leaderboard, bingo). |

@@ -4,10 +4,9 @@ import SectionHead from './SectionHead.astro';
 import Emote from './Emote.astro';
 import { v, iff } from '../lib/ssr';
 import { views } from '../lib/views';
-import { sample } from '../data/sample';
+import { defaultPrizes } from '../data/content';
 const cond = "'Barlow Condensed', sans-serif";
 
-const prizes = sample.prizes.map((p, i) => ({ short: p[0], color: p[2], rot: 'rotate(' + (i * 45 + 22.5 - 90) + 'deg)' }));
 const rim = Array.from({ length: 48 }, (_, i) => {
   const a = (i / 48) * Math.PI * 2;
   const major = i % 6 === 0;
@@ -33,13 +32,7 @@ const emoteStyle = 'flex: none; width: 44px; height: 54px; object-fit: contain';
     <div style="flex: 1 1 360px; min-width: 0; max-width: 500px; margin: 0 auto">
       <div data-toggle="is-spinning:spinning" aria-hidden="true" style="position: relative; width: 100%; aspect-ratio: 1 / 1; container-type: inline-size">
         <div style="position: absolute; left: 50%; top: -10px; transform: translateX(-50%); z-index: 3; width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent; border-top: 30px solid var(--ice); filter: drop-shadow(0 0 8px rgba(63,208,255,0.6))"></div>
-        <div class="wheel" data-style="transform:wheelTransform" style={`position: absolute; inset: 0; border-radius: 50%; border: 4.6cqi solid #0B0F15; box-shadow: 0 0 0 1px #3A4452, inset 0 0 0 1px #3A4452, 0 0 0 6px #050608, 0 0 0 7px #2A3340, 0 0 90px rgba(63,208,255,0.18); overflow: hidden; transform: ${v.wheelTransform}; background: repeating-conic-gradient(rgba(242,245,250,0.22) 0deg 0.7deg, rgba(0,0,0,0) 0.7deg 45deg), conic-gradient(#0A0F16 0deg 45deg, #102233 45deg 90deg, #0A0F16 90deg 135deg, #17456A 135deg 180deg, #0A0F16 180deg 225deg, #102233 225deg 270deg, #0A0F16 270deg 315deg, #161C25 315deg 360deg)`}>
-          {prizes.map((p) => (
-            <div style={`position: absolute; left: 50%; top: 50%; width: 50%; height: 0; transform-origin: 0 0; transform: ${p.rot}; display: flex; align-items: center; justify-content: flex-end; padding-right: 8%`}>
-              <span style={`transform: translateY(-50%); font-family: ${cond}; font-weight: 800; font-style: italic; font-size: 4.6cqi; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; color: ${p.color}`}>{p.short}</span>
-            </div>
-          ))}
-        </div>
+        <div class="wheel" data-style="transform:wheelTransform" style={`position: absolute; inset: 0; border-radius: 50%; border: 4.6cqi solid #0B0F15; box-shadow: 0 0 0 1px #3A4452, inset 0 0 0 1px #3A4452, 0 0 0 6px #050608, 0 0 0 7px #2A3340, 0 0 90px rgba(63,208,255,0.18); overflow: hidden; transform: ${v.wheelTransform}; background: repeating-conic-gradient(rgba(242,245,250,0.22) 0deg 0.7deg, rgba(0,0,0,0) 0.7deg 45deg), conic-gradient(#0A0F16 0deg 45deg, #102233 45deg 90deg, #0A0F16 90deg 135deg, #17456A 135deg 180deg, #0A0F16 180deg 225deg, #102233 225deg 270deg, #0A0F16 270deg 315deg, #161C25 315deg 360deg)`} data-region="wheelPrizes" set:html={views.wheelPrizes(v)} />
         {rim.map((rb) => (
           <span class="tick" style={`left: ${rb.left}; top: ${rb.top}; width: ${rb.w}; height: ${rb.h}; margin-left: ${rb.ml}; margin-top: ${rb.mt}; transform: rotate(${rb.rot}deg); background: ${rb.color}`}></span>
         ))}
@@ -47,7 +40,7 @@ const emoteStyle = 'flex: none; width: 44px; height: 54px; object-fit: contain';
           <Emote style="width: 70%; height: auto" />
         </div>
       </div>
-      <p class="sr-only">Premiile de pe roată: {sample.prizes.map((p) => p[1]).join(', ')}.</p>
+      <p class="sr-only">Premiile de pe roată: {defaultPrizes.map((p) => p[1]).join(', ')}.</p>
     </div>
 
     <div style="flex: 1 1 420px; min-width: 0">
@@ -64,7 +57,7 @@ const emoteStyle = 'flex: none; width: 44px; height: 54px; object-fit: contain';
             <p data-text="spinsText" style={`margin: 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 34px; line-height: 1; text-transform: uppercase`}>{v.spinsText}</p>
             <div role="img" aria-label={v.flakesLabel} data-attr="aria-label:flakesLabel" data-region="flakes" style="display: flex; align-items: center; gap: 6px" set:html={views.flakes(v)} />
           </div>
-          <p style="margin: 6px 0 0; font-size: 15px; color: #8C97A8"><span data-text="flakesLabel">{v.flakesLabel}</span>. Următorul fulg în 38 de minute.</p>
+          <p data-text="flakesNote" style="margin: 6px 0 0; font-size: 15px; color: #8C97A8">{v.flakesNote}</p>
         </div>
         <p {...iff('isOut')} style="margin: 0; font-size: 16px; color: #AEB8C7">Conectează-te cu Twitch ca să-ți vezi fulgii și rotirile.</p>
         <button type="button" class={v.spinClass} data-attr="class:spinClass" data-action="spin" data-text="spinLabel" style={`margin-top: 16px; width: 100%; min-height: 58px; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 24px; text-transform: uppercase; letter-spacing: 0.02em`}>{v.spinLabel}</button>
@@ -80,14 +73,7 @@ const emoteStyle = 'flex: none; width: 44px; height: 54px; object-fit: contain';
       </div>
 
       <h3 style={`margin: 28px 0 0; font-family: ${cond}; font-weight: 800; font-size: 20px; text-transform: uppercase; color: #AEB8C7`}>Ultimele premii</h3>
-      <ul style="list-style: none; margin: 8px 0 0; padding: 0; font-size: 15px">
-        {sample.recentWins.map((w) => (
-          <li style="display: flex; gap: 12px; padding: 9px 0; border-bottom: 1px solid #1A2230">
-            <span style="flex: 1 1 auto; min-width: 0"><strong style="color: #F2F5FA">{w.user}</strong> <span style="color: #8C97A8">a câștigat</span> {w.prize}</span>
-            <span style="flex: none; color: #7D8899">{w.ago}</span>
-          </li>
-        ))}
-      </ul>
+      <ul data-region="recentWins" style="list-style: none; margin: 8px 0 0; padding: 0; font-size: 15px" set:html={views.recentWins(v)} />
     </div>
   </div>
 </section>
