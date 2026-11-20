@@ -1,9 +1,14 @@
 ---
-// OBS overlay: add as a Browser Source (1920×1080, transparent).
-//   https://fulgathon.github.io/overlay/            timer + goal bar + new events
-//   …/overlay/?show=timer                           only the timer
-//   …/overlay/?show=timer,goal                      any combination of timer, goal, events
-//   …/overlay/?demo                                  sample data, for testing the layout in OBS
+// OBS overlay: add as a Browser Source, 1920×1080, transparent background.
+//
+//   https://fulgathon.github.io/overlay/          slim strip, top-right (default)
+//   ?pos=tr | tl | br | bl                        corner: top-right, top-left, bottom-right, bottom-left
+//   ?scale=1.2                                    bigger or smaller (0.6–2)
+//   ?show=timer,goal,events                       which parts (default: all three)
+//   ?style=box                                    the large box instead of the strip
+//   ?demo                                         sample data, for placing it in OBS
+//
+// Parameters combine: …/overlay/?pos=tl&scale=0.9&show=timer,events
 import '@fontsource/barlow-condensed/700.css';
 import '@fontsource/barlow-condensed/800.css';
 import '@fontsource/barlow-condensed/900-italic.css';
@@ -17,43 +22,85 @@ import '@fontsource/barlow/600.css';
     <meta name="robots" content="noindex, nofollow" />
     <title>Overlay · FULGATHON</title>
     <style is:global>
-      :root { --ice: #3FD0FF; }
-      html, body { margin: 0; background: transparent; color: #F2F5FA; font-family: Barlow, sans-serif; }
-      .box { position: fixed; left: 40px; bottom: 40px; width: 620px; padding: 18px 20px 20px; background: rgba(5, 6, 8, 0.86); border: 1px solid rgba(160, 225, 255, 0.35); }
-      .label { display: flex; justify-content: space-between; align-items: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 22px; letter-spacing: .1em; text-transform: uppercase; color: #AEB8C7; }
-      .badge { padding: 2px 10px; transform: skewX(-12deg); background: #2A3445; color: #fff; font-style: normal; font-size: 18px; letter-spacing: .08em; }
+      :root { --ice: #3FD0FF; --scale: 1; --edge: 24px; }
+      html, body { margin: 0; background: transparent; color: #F2F5FA; font-family: Barlow, sans-serif; overflow: hidden; }
+      [hidden] { display: none !important; }
+      .digits-ice { background: linear-gradient(180deg, #FFFFFF 18%, #CDF2FF 58%, var(--ice) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .badge { padding: 1px 8px; transform: skewX(-12deg); background: #2A3445; color: #fff; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: .08em; white-space: nowrap; }
       .badge.live { background: #D5162B; }
-      .clock { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+      .fill { height: 100%; width: 0; background: linear-gradient(90deg, #1E5BFF, var(--ice)); box-shadow: 0 0 10px rgba(63, 208, 255, .45); transition: width .6s ease; }
+
+      /* ---- Slim strip (default) ---- */
+      .compact { position: fixed; display: flex; flex-direction: column; gap: 8px; transform: scale(var(--scale)); }
+      .pos-tr .compact { top: var(--edge); right: var(--edge); align-items: flex-end; transform-origin: top right; }
+      .pos-tl .compact { top: var(--edge); left: var(--edge); align-items: flex-start; transform-origin: top left; }
+      .pos-br .compact { bottom: var(--edge); right: var(--edge); align-items: flex-end; transform-origin: bottom right; flex-direction: column-reverse; }
+      .pos-bl .compact { bottom: var(--edge); left: var(--edge); align-items: flex-start; transform-origin: bottom left; flex-direction: column-reverse; }
+      .strip { width: 400px; padding: 7px 12px 8px; background: rgba(5, 6, 8, 0.78); border: 1px solid rgba(160, 225, 255, 0.28); }
+      .strip-row { display: flex; align-items: center; gap: 10px; }
+      .brand { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 17px; letter-spacing: .02em; line-height: 1; color: #AEB8C7; }
+      .brand b { font-weight: 900; color: var(--ice); }
+      .clock { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 34px; line-height: 1; font-variant-numeric: tabular-nums; padding-right: .06em; }
+      .strip .badge { margin-left: auto; }
+      .goal-line { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+      .goal-line .bar { flex: 1 1 auto; height: 4px; background: #1A2230; }
+      .goal-line span { flex: none; font-size: 13px; font-weight: 600; color: #C9D2DF; white-space: nowrap; }
+      .chip { max-width: 400px; padding: 5px 12px; background: rgba(5, 6, 8, 0.92); border: 2px solid var(--ice); font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 21px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0; transform: translateY(-8px); transition: opacity .35s, transform .35s; }
+      .pos-br .chip, .pos-bl .chip { transform: translateY(8px); }
+      .chip.show { opacity: 1; transform: none; }
+      .chip b { color: var(--ice); }
+
+      /* ---- Large box (?style=box) ---- */
+      .box { position: fixed; left: 40px; bottom: 40px; width: 620px; padding: 18px 20px 20px; background: rgba(5, 6, 8, 0.86); border: 1px solid rgba(160, 225, 255, 0.35); }
+      .box .label { display: flex; justify-content: space-between; align-items: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 22px; letter-spacing: .1em; text-transform: uppercase; color: #AEB8C7; }
+      .box .badge { font-size: 18px; font-style: normal; }
+      .box .clockrow { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
       .tile { flex: 1 1 0; text-align: center; background: linear-gradient(180deg, #16304A 0%, #0C1A2A 50%, #08111C 50.5%, #0A1624 100%); border: 1px solid rgba(160, 225, 255, 0.35); padding: 6px 0 2px; }
-      .digits { display: inline-block; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 92px; line-height: .95; font-variant-numeric: tabular-nums; background: linear-gradient(180deg, #FFFFFF 18%, #CDF2FF 58%, var(--ice) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: .06em; }
+      .tile .digits-ice { display: inline-block; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 92px; line-height: .95; font-variant-numeric: tabular-nums; padding-right: .06em; }
       .unit { display: block; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: .12em; text-transform: uppercase; color: #8C97A8; }
       .sep { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 60px; color: var(--ice); margin-top: -20px; }
-      .goal { margin-top: 14px; }
-      .goal-row { display: flex; justify-content: space-between; gap: 12px; font-size: 18px; font-weight: 600; color: #C9D2DF; }
-      .bar { margin-top: 8px; height: 12px; background: #1A2230; }
-      .fill { height: 100%; background: linear-gradient(90deg, #1E5BFF, var(--ice)); box-shadow: 0 0 18px rgba(63, 208, 255, .45); transition: width .6s ease; }
-      .event { position: fixed; left: 40px; bottom: 300px; padding: 10px 18px; background: #050608; border: 3px solid var(--ice); font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 34px; opacity: 0; transform: translateY(20px); transition: opacity .4s, transform .4s; }
-      .event.show { opacity: 1; transform: none; }
-      .event b { color: var(--ice); }
-      @media (prefers-reduced-motion: reduce) { .fill, .event { transition: none; } }
-      [hidden] { display: none !important; }
+      .box .goal { margin-top: 14px; }
+      .box .goal-row { display: flex; justify-content: space-between; gap: 12px; font-size: 18px; font-weight: 600; color: #C9D2DF; }
+      .box .bar { margin-top: 8px; height: 12px; background: #1A2230; }
+      .box-event { position: fixed; left: 40px; bottom: 300px; padding: 10px 18px; background: #050608; border: 3px solid var(--ice); font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 34px; opacity: 0; transform: translateY(20px); transition: opacity .4s, transform .4s; }
+      .box-event.show { opacity: 1; transform: none; }
+      .box-event b { color: var(--ice); }
+
+      @media (prefers-reduced-motion: reduce) { .fill, .chip, .box-event { transition: none; } }
     </style>
   </head>
-  <body>
-    <div class="event" id="event" aria-live="polite"></div>
-    <div class="box">
-      <div id="timer-part">
-        <div class="label"><span id="label">Timp rămas</span><span class="badge" id="badge">ÎNCEPE CURÂND</span></div>
-        <div class="clock">
-          <div class="tile"><span class="digits" id="dd">--</span><span class="unit">Zile</span></div><span class="sep">:</span>
-          <div class="tile"><span class="digits" id="hh">--</span><span class="unit">Ore</span></div><span class="sep">:</span>
-          <div class="tile"><span class="digits" id="mm">--</span><span class="unit">Minute</span></div><span class="sep">:</span>
-          <div class="tile"><span class="digits" id="ss">--</span><span class="unit">Secunde</span></div>
+  <body class="pos-tr">
+    <!-- Slim strip -->
+    <div class="compact" id="compact">
+      <div class="strip" id="strip">
+        <div class="strip-row" data-part="timer">
+          <span class="brand"><b>FULG</b>ATHON</span>
+          <span class="clock digits-ice" data-clock>--:--:--:--</span>
+          <span class="badge" data-badge>ÎNCEPE CURÂND</span>
+        </div>
+        <div class="goal-line" data-part="goal">
+          <div class="bar"><div class="fill" data-fill></div></div>
+          <span data-progress></span>
         </div>
       </div>
-      <div class="goal" id="goal-part">
-        <div class="goal-row"><span>Urmează: <strong id="goal-title" style="color:#F2F5FA"></strong></span><span id="goal-progress"></span></div>
-        <div class="bar"><div class="fill" id="goal-fill" style="width: 0%"></div></div>
+      <div class="chip" data-event aria-live="polite"></div>
+    </div>
+
+    <!-- Large box (?style=box) -->
+    <div class="box-event" data-event aria-live="polite" hidden></div>
+    <div class="box" id="box" hidden>
+      <div data-part="timer">
+        <div class="label"><span data-label>Timp rămas</span><span class="badge" data-badge>ÎNCEPE CURÂND</span></div>
+        <div class="clockrow">
+          <div class="tile"><span class="digits-ice" data-unit="dd">--</span><span class="unit">Zile</span></div><span class="sep">:</span>
+          <div class="tile"><span class="digits-ice" data-unit="hh">--</span><span class="unit">Ore</span></div><span class="sep">:</span>
+          <div class="tile"><span class="digits-ice" data-unit="mm">--</span><span class="unit">Minute</span></div><span class="sep">:</span>
+          <div class="tile"><span class="digits-ice" data-unit="ss">--</span><span class="unit">Secunde</span></div>
+        </div>
+      </div>
+      <div class="goal" data-part="goal">
+        <div class="goal-row"><span>Urmează: <strong data-goal-title style="color:#F2F5FA"></strong></span><span data-progress></span></div>
+        <div class="bar"><div class="fill" data-fill></div></div>
       </div>
     </div>
     <script>

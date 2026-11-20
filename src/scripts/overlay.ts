@@ -1,46 +1,60 @@
-// OBS overlay: same live data and maths as the site (Live + derive), drawn as
-// a compact timer box, a goal bar and a pop-up for each new event.
+// OBS overlay: same live data and maths as the site (Live + derive).
+// Default is a slim strip in a corner; ?style=box gives the large box.
 // ?demo shows the design's sample data and pops a sample event every 10 s,
-// for previewing the layout in OBS before the subathon.
+// for placing the overlay in OBS before the subathon.
 
 import { emptyData, sampleData } from '../data/sample';
 import type { SiteData } from '../data/types';
 import { derive, initialState } from '../lib/derive';
 
-const show = new Set((new URLSearchParams(location.search).get('show') ?? 'timer,goal,events').split(','));
-const $ = (id: string) => document.getElementById(id)!;
-$('timer-part').hidden = !show.has('timer');
-$('goal-part').hidden = !show.has('goal');
-if (!show.has('timer') && !show.has('goal')) (document.querySelector('.box') as HTMLElement).hidden = true;
+const params = new URLSearchParams(location.search);
+const show = new Set((params.get('show') ?? 'timer,goal,events').split(','));
+const boxStyle = params.get('style') === 'box';
+const pos = ['tr', 'tl', 'br', 'bl'].includes(params.get('pos') ?? '') ? params.get('pos')! : 'tr';
+const scale = Math.min(2, Math.max(0.6, Number(params.get('scale')) || 1));
 
+document.body.className = `pos-${pos}`;
+document.documentElement.style.setProperty('--scale', String(scale));
+
+// Only the chosen style, and only the chosen parts.
+const root = document.getElementById(boxStyle ? 'box' : 'compact')!;
+document.getElementById(boxStyle ? 'compact' : 'box')!.hidden = true;
+root.hidden = false;
+const eventEl = boxStyle ? document.querySelector<HTMLElement>('.box-event')! : root.querySelector<HTMLElement>('.chip')!;
+eventEl.hidden = !show.has('events');
+root.querySelectorAll<HTMLElement>('[data-part]').forEach((el) => { el.hidden = !show.has(el.dataset.part!); });
+if (!show.has('timer') && !show.has('goal')) (boxStyle ? root : document.getElementById('strip')!).hidden = true;
+
+const all = (sel: string) => root.querySelectorAll<HTMLElement>(sel);
 let data: SiteData = emptyData();
 let lastTop = '';
 
 function draw() {
   const v = derive({ ...initialState(), now: Date.now() }, data);
-  for (const k of ['dd', 'hh', 'mm', 'ss'] as const) if ($(k).textContent !== v[k]) $(k).textContent = v[k];
-  $('label').textContent = v.timerLabel;
-  $('badge').textContent = v.statusText;
-  $('badge').classList.toggle('live', v.isLive);
-  $('goal-title').textContent = v.nextGoalTitle;
-  $('goal-progress').textContent = v.progressLabel;
-  ($('goal-fill') as HTMLElement).style.width = v.progressPct;
+  const set = (sel: string, text: string) => all(sel).forEach((el) => { if (el.textContent !== text) el.textContent = text; });
+  set('[data-clock]', v.navClock);
+  for (const k of ['dd', 'hh', 'mm', 'ss'] as const) set(`[data-unit="${k}"]`, v[k]);
+  set('[data-label]', v.timerLabel);
+  set('[data-badge]', v.statusText);
+  all('[data-badge]').forEach((el) => el.classList.toggle('live', v.isLive));
+  set('[data-goal-title]', v.nextGoalTitle);
+  set('[data-progress]', v.progressLabel);
+  all('[data-fill]').forEach((el) => { el.style.width = v.progressPct; });
 }
 
 let hideTimer: number | undefined;
 function popEvent(time: string, user: string, what: string) {
   if (!show.has('events')) return;
-  const el = $('event');
-  el.innerHTML = '';
+  eventEl.innerHTML = '';
   const b = document.createElement('b');
   b.textContent = time;
-  el.append(b, ` ${user} · ${what}`);
-  el.classList.add('show');
+  eventEl.append(b, ` ${user} · ${what}`);
+  eventEl.classList.add('show');
   clearTimeout(hideTimer);
-  hideTimer = window.setTimeout(() => el.classList.remove('show'), 8000);
+  hideTimer = window.setTimeout(() => eventEl.classList.remove('show'), boxStyle ? 8000 : 6000);
 }
 
-if (new URLSearchParams(location.search).has('demo')) {
+if (params.has('demo')) {
   data = sampleData(Date.now());
   let i = 0;
   const next = () => { const t = data.ticker[i++ % data.ticker.length]; popEvent(t.time, t.user, t.what); };

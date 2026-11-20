@@ -10,7 +10,7 @@ Pages:
 | https://fulgathon.github.io/ | Viewers |
 | https://fulgathon.github.io/?demo | Preview with sample data |
 | https://fulgathon.github.io/mod/ | Moderators (Twitch login, moderator accounts only) |
-| https://fulgathon.github.io/overlay/ | OBS Browser Source, 1920×1080 (`?show=timer` for only the clock) |
+| https://fulgathon.github.io/overlay/ | OBS Browser Source, 1920×1080: a slim strip top-right. Options: `?pos=tl/tr/bl/br`, `?scale=0.8`, `?show=timer,goal,events`, `?style=box` (large box), `?demo` (sample data for placing it) |
 
 ## 1. Connect Twitch (once)
 
