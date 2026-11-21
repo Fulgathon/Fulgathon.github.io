@@ -3,16 +3,21 @@
 Everything is built, deployed and tested. What's left is connecting Twitch
 (about 15 minutes, with Iceman), then running the subathon from `/mod`.
 
-Pages:
+Pages (the one-letter addresses forward to the long ones and keep anything
+after `?`, so `/o?pos=bl` opens `/overlay/?pos=bl`):
 
-| URL | For |
-| --- | --- |
-| https://fulgathon.github.io/ | Viewers |
-| https://fulgathon.github.io/?demo | Preview with sample data |
-| https://fulgathon.github.io/mod/ | Moderators (Twitch login, moderator accounts only) |
-| https://fulgathon.github.io/prezentare/ | Guided demo of everything, for presenting (simulated data, never touches the database) |
-| …/?demo · …/mod/?demo · …/overlay/?demo | The same demo per page; all three share one simulated subathon across tabs |
-| https://fulgathon.github.io/overlay/ | OBS Browser Source, 1920×1080: a slim strip top-right. Options: `?pos=tl/tr/bl/br`, `?scale=0.8`, `?show=timer,goal,events`, `?style=box` (large box), `?demo` (sample data for placing it) |
+| Short | Long | For |
+| --- | --- | --- |
+| — | https://fulgathon.github.io/ | Viewers |
+| https://fulgathon.github.io/m | …/mod/ | Moderators (Twitch login, moderator accounts only) |
+| https://fulgathon.github.io/o | …/overlay/ | OBS Browser Source, 1920×1080: a slim strip top-right. Options: `?pos=tl/tr/bl/br`, `?scale=0.8`, `?show=timer,goal,events`, `?style=box` (large box), `?demo` (sample data for placing it) |
+| https://fulgathon.github.io/d | …/?demo | Preview of the site with sample data |
+| https://fulgathon.github.io/p | …/prezentare/ | Guided demo of everything, for presenting (simulated data, never touches the database) |
+| …/m?demo · …/o?demo | …/mod/?demo · …/overlay/?demo | The demo per page; `/d`, `/m?demo`, `/o?demo` and `/p` share one simulated subathon across tabs |
+
+After launch, delete the demo pages: `src/pages/d.astro`, `src/pages/p.astro`
+and `src/pages/prezentare.astro` (plus `src/demo/` and the `?demo` code paths
+if wanted).
 
 ## 1. Connect Twitch (once)
 
@@ -35,7 +40,7 @@ Secrets go only into the dashboards below, never into chat or the repo.
    `TWITCH_CLIENT_SECRET` (same values).
 5. **Switch login on**: `twitchLogin: true` in `src/data/site.ts`, commit, push
    (or ask Claude to).
-6. **Iceman** opens https://fulgathon.github.io/mod/, logs in with Twitch
+6. **Iceman** opens https://fulgathon.github.io/m, logs in with Twitch
    (he's a moderator automatically), clicks **Conectează contul de streamer**
    and approves. The page should say "Gata!" with six events "activ".
 
@@ -47,7 +52,7 @@ Dashboard: https://supabase.com/dashboard/project/yvbxtsuddjqqoogdoqrx
   activity. Upgrade the Fulgathon organization (Pro) for the event.
 - On `/mod`: set the **start date** (countdown on the site) and the
   **scheduled end**; add the other **moderators** by Twitch login.
-- **OBS**: add a Browser Source with `https://fulgathon.github.io/overlay/`, 1920×1080.
+- **OBS**: add a Browser Source with `https://fulgathon.github.io/o`, 1920×1080.
 - Open with Iceman, then tell Claude: time rates (now Tier 1/Prime +1 min,
   Tier 2 +2, Tier 3 +5, gift +1 each, 400 bits +1, 25 lei +1), goals, prizes,
   donation provider, sponsor details, Discord and social links.

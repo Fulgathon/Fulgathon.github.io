@@ -1,0 +1,25 @@
+---
+// One-letter address that forwards to a longer page, keeping any query
+// (?demo, ?pos=bl…) and hash, so /o?pos=bl opens /overlay/?pos=bl.
+interface Props { to: string; title: string }
+const { to, title } = Astro.props;
+const target = import.meta.env.BASE_URL.replace(/\/?$/, '/') + to;
+---
+<!doctype html>
+<html lang="ro">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} · FULGATHON</title>
+    <style>html, body { margin: 0; background: #050608; color: #F2F5FA; font-family: system-ui, sans-serif; } a { color: #3FD0FF; } p { padding: 24px; }</style>
+    <script is:inline define:vars={{ target }}>
+      var q = location.search.slice(1);
+      location.replace(target + (q ? (target.indexOf('?') < 0 ? '?' : '&') + q : '') + location.hash);
+    </script>
+    <meta http-equiv="refresh" content={`0; url=${target}`} />
+  </head>
+  <body>
+    <p><a href={target}>{title} →</a></p>
+  </body>
+</html>

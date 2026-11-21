@@ -29,6 +29,11 @@ Other pages: `/mod/` (moderators: run the timer, vote rounds, suggestions,
 prizes), `/overlay/` (OBS Browser Source) and `/prezentare/` (guided demo of
 everything, for presenting). Going live: `docs/go-live.md`.
 
+**Short addresses:** `/m` → `/mod/`, `/o` → `/overlay/`, `/d` → `/?demo`,
+`/p` → `/prezentare/` (`src/components/ShortLink.astro`; the query string is
+kept, so `/o?pos=bl` and `/m?demo` work). `/d` and `/p` go with the demos
+after launch.
+
 **Demo mode:** `?demo` on `/`, `/mod/` and `/overlay/` runs on a simulated
 backend (`src/demo/backend.ts`) with the same rules as the real one, stored in
 the browser and shared between tabs. Nothing touches the real database.
