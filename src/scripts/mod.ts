@@ -18,6 +18,9 @@ const db = createClient(site.supabase.url, site.supabase.publishableKey, {
 
 const app = document.getElementById('app')!;
 const who = document.getElementById('who')!;
+const dock = document.getElementById('dock')!;
+const dockState = document.getElementById('dockState')!;
+const dockClock = document.getElementById('dockClock')!;
 const msgBox = document.getElementById('msg')!;
 
 const errors: Record<string, string> = {
@@ -151,6 +154,7 @@ function render() {
     ? `${demo ? '<span class="pill ok">Demo</span>' : ''}<span class="muted">Conectat ca <strong style="color:#F2F5FA">${esc(S.me.login)}</strong></span><button class="btn-ghost" data-act="logout">Ieși</button>`
     : '';
 
+  dock.hidden = !S.me?.is_moderator;
   if (!S.me) {
     app.innerHTML = `<div class="card" style="margin-top:20px"><h2>Conectează-te</h2>
       <p>Pagina e pentru moderatorii FULGATHON. Intră cu contul de Twitch.</p>
@@ -169,6 +173,9 @@ function render() {
   const live = t.status === 'live';
   const remaining = live && t.ends_at ? Date.parse(t.ends_at) - (t.paused_until && Date.parse(t.paused_until) > now ? Date.parse(t.paused_until) : now) : 0;
   const st = S.status;
+  dockState.textContent = live ? 'LIVE' : t.status === 'ended' ? 'Încheiat' : 'Curând';
+  dockState.className = `pill ${live ? 'bad' : 'off'}`;
+  dockClock.textContent = live ? left(remaining) : '—';
   const roundOpen = S.round && Date.parse(S.round.closes_at) > now;
   const totalVotes = S.round?.items.reduce((a, x) => a + x.votes, 0) ?? 0;
   const poolOptions = (sel: number) => S.pool.map((c) =>
@@ -176,7 +183,7 @@ function render() {
 
   app.innerHTML = `
   <div class="grid">
-    <section class="card">
+    <section class="card" id="stare">
       <h2>Stare</h2>
       <div class="row">
         <span class="pill ${live ? 'bad' : 'off'}">${live ? 'LIVE' : t.status === 'ended' ? 'Încheiat' : 'Începe curând'}</span>
@@ -192,24 +199,30 @@ function render() {
       <p class="muted">Doar ${esc(st?.broadcaster_login ?? 'streamerul')} poate face asta, o singură dată. Așa ajung pe site subs, gift-urile, biții și statusul live.</p>
     </section>
 
-    <section class="card">
+    <section class="card" id="cronometru">
       <h2>Cronometru</h2>
       ${live ? `
         <div class="row">
-          <button class="btn-ghost" data-act="add" data-min="1">+1 min</button>
-          <button class="btn-ghost" data-act="add" data-min="5">+5 min</button>
-          <button class="btn-ghost" data-act="add" data-min="10">+10 min</button>
-          <button class="btn-ghost" data-act="add" data-min="-5">−5 min</button>
-          <input class="field" type="number" id="addMin" placeholder="min" aria-label="Minute de adăugat">
-          <button class="btn-primary" data-act="addCustom">Adaugă</button>
+          <div class="quick">
+            <button class="btn-ghost" data-act="add" data-min="1">+1 min</button>
+            <button class="btn-ghost" data-act="add" data-min="5">+5 min</button>
+            <button class="btn-ghost" data-act="add" data-min="10">+10 min</button>
+            <button class="btn-ghost" data-act="add" data-min="-5">−5 min</button>
+          </div>
+          <div class="pair">
+            <input class="field" type="number" inputmode="numeric" id="addMin" placeholder="min" aria-label="Minute de adăugat">
+            <button class="btn-primary" data-act="addCustom">Adaugă</button>
+          </div>
         </div>
         <div class="row">
-          <input class="field" type="number" id="freezeMin" value="5" aria-label="Minute înghețat">
-          <button class="btn-ghost" data-act="freeze">Îngheață cronometrul</button>
+          <div class="pair">
+            <input class="field" type="number" inputmode="numeric" id="freezeMin" value="5" aria-label="Minute înghețat">
+            <button class="btn-ghost" data-act="freeze">Îngheață cronometrul</button>
+          </div>
         </div>
         <div class="row">
           <label class="inline">Ora dublă de la<input class="field" type="datetime-local" id="dblFrom"></label>
-          <label class="inline">Minute<input class="field" type="number" id="dblMin" value="60"></label>
+          <label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="dblMin" value="60"></label>
           <button class="btn-ghost" data-act="double">Programează</button>
           <button class="btn-ghost" data-act="doubleNow">Ora dublă acum</button>
         </div>
@@ -228,7 +241,7 @@ function render() {
       `}
     </section>
 
-    <section class="card wide">
+    <section class="card wide" id="vot">
       <h2>Runda de vot</h2>
       ${S.round ? `
         <p class="muted" style="margin-top:0">Runda ${S.round.number} · ${roundOpen ? `se închide la ${when(S.round.closes_at)}` : 'închisă'} · ${totalVotes} voturi</p>
@@ -241,33 +254,33 @@ function render() {
         ${S.draft.map((id, i) => `<div class="row"><select class="field" data-draft="${i}" aria-label="Provocarea ${i + 1}">${poolOptions(id)}</select></div>`).join('')}
         <div class="row">
           <button class="btn-ghost" data-act="reroll">Alege altele</button>
-          <label class="inline">Minute<input class="field" type="number" id="roundMin" value="60"></label>
+          <label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="roundMin" value="60"></label>
           <button class="btn-primary" data-act="openRound">Deschide runda</button>
         </div>` : ''}
     </section>
 
-    <section class="card">
+    <section class="card" id="provocari">
       <h2>Provocări câștigătoare</h2>
       ${S.scheduled.length ? `<ul class="list">${S.scheduled.map((c) => `<li>
         <span class="grow">${esc(c.title)}</span>
-        <input class="field" data-when="${c.id}" value="${esc(c.scheduled_for ?? '')}" placeholder="ex: Diseară, 22:00" aria-label="Când">
-        <button class="btn-ghost" data-act="setWhen" data-id="${c.id}">Salvează</button>
-        <input class="field" data-clip="${c.id}" placeholder="Link clip (opțional)" aria-label="Link clip">
+        <span class="pair"><input class="field" data-when="${c.id}" value="${esc(c.scheduled_for ?? '')}" placeholder="ex: Diseară, 22:00" aria-label="Când">
+        <button class="btn-ghost" data-act="setWhen" data-id="${c.id}">Salvează</button></span>
+        <span class="pair"><input class="field" type="url" data-clip="${c.id}" placeholder="Link clip (opțional)" aria-label="Link clip">
         <button class="btn-primary" data-act="done" data-id="${c.id}">Făcută</button>
-        <button class="btn-ghost" data-act="veto" data-id="${c.id}">Veto</button></li>`).join('')}</ul>`
+        <button class="btn-ghost" data-act="veto" data-id="${c.id}">Veto</button></span></li>`).join('')}</ul>`
         : '<p class="muted" style="margin-top:0">Nimic programat.</p>'}
     </section>
 
-    <section class="card">
+    <section class="card" id="propuneri">
       <h2>Propuneri (${S.suggestions.length})</h2>
-      ${S.suggestions.length ? `<ul class="list">${S.suggestions.map((s) => `<li>
+      ${S.suggestions.length ? `<ul class="list">${S.suggestions.map((s) => `<li class="acts-row">
         <span class="grow">${esc(s.body)}<br><span class="muted">${esc(s.viewers?.display_name ?? s.viewers?.login ?? '')} · ${when(s.created_at)}</span></span>
         <button class="btn-primary" data-act="approve" data-id="${s.id}">Aprobă</button>
         <button class="btn-ghost" data-act="reject" data-id="${s.id}">Respinge</button></li>`).join('')}</ul>`
         : '<p class="muted" style="margin-top:0">Nicio propunere nouă.</p>'}
     </section>
 
-    <section class="card">
+    <section class="card" id="premii">
       <h2>Premii de dat (${S.prizes.length})</h2>
       ${S.prizes.length ? `<ul class="list">${S.prizes.map((p) => `<li>
         <span class="grow"><strong>${esc(p.user_login)}</strong> · ${esc(p.prizes?.win_label ?? '')}<br><span class="muted">${when(p.created_at)}</span></span>
@@ -275,12 +288,14 @@ function render() {
         : '<p class="muted" style="margin-top:0">Toate premiile au fost date.</p>'}
     </section>
 
-    <section class="card">
+    <section class="card" id="moderatori">
       <h2>Moderatori</h2>
       <ul class="list">${S.mods.map((m) => `<li><span class="grow">${esc(m.display_name ?? m.login)}</span>${m.login === S.me!.login ? '<span class="muted">tu</span>' : `<button class="btn-ghost" data-act="unmod" data-login="${esc(m.login)}">Scoate</button>`}</li>`).join('')}</ul>
       <div class="row">
-        <input class="field" id="newMod" placeholder="login Twitch" aria-label="Login Twitch">
-        <button class="btn-primary" data-act="mod">Adaugă moderator</button>
+        <div class="pair">
+          <input class="field" id="newMod" placeholder="login Twitch" aria-label="Login Twitch" autocapitalize="none" autocorrect="off" spellcheck="false">
+          <button class="btn-primary" data-act="mod">Adaugă</button>
+        </div>
       </div>
       <p class="muted">Merge și înainte ca persoana să se fi conectat pe site.</p>
     </section>
@@ -339,7 +354,7 @@ setInterval(() => {
   const t = S.timer;
   if (!el || t?.status !== 'live' || !t.ends_at) return;
   const now = Date.now();
-  el.textContent = left(Date.parse(t.ends_at) - (t.paused_until && Date.parse(t.paused_until) > now ? Date.parse(t.paused_until) : now));
+  el.textContent = dockClock.textContent = left(Date.parse(t.ends_at) - (t.paused_until && Date.parse(t.paused_until) > now ? Date.parse(t.paused_until) : now));
 }, 1000);
 
 let pending: number | undefined;

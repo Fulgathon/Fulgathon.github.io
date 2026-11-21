@@ -46,6 +46,42 @@ const favicon = await getImage({ src: emote, format: 'png', width: 64 });
       select.field { max-width: 100%; }
       .msg { position: fixed; right: 16px; bottom: 16px; z-index: 30; max-width: min(420px, calc(100% - 32px)); padding: 12px 16px; background: #0B1018; border: 2px solid var(--ice); box-shadow: 8px 8px 0 #000; }
       .msg.err { border-color: #D5162B; }
+      /* Sticky bar: the clock stays in view, links jump to each section. */
+      .dock { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 12px; margin: 0 calc(-1 * clamp(16px, 4vw, 40px)); padding: 8px clamp(16px, 4vw, 40px); background: rgba(5,6,8,.94); border-bottom: 1px solid #1A2230; }
+      .dock[hidden] { display: none; }
+      .dock-time { display: flex; align-items: center; gap: 8px; flex: none; }
+      .dock-clock { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 24px; line-height: 1; font-variant-numeric: tabular-nums; }
+      .jump { display: flex; gap: 6px; flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+      .jump::-webkit-scrollbar { display: none; }
+      .jump a { flex: none; min-height: 44px; display: inline-flex; align-items: center; padding: 0 12px; border: 1px solid #2A3445; color: #C9D2DF; text-decoration: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+      .jump a:hover { border-color: var(--ice); color: #F2F5FA; }
+      .grid > .card { scroll-margin-top: 76px; }
+      .pair { display: flex; gap: 8px; align-items: center; }
+      .quick { display: flex; flex-wrap: wrap; gap: 8px; }
+      /* Phones: full-width controls, inputs share a row with their button. */
+      @media (max-width: 640px) {
+        .wrap { padding-top: 16px; }
+        header.top { padding-bottom: 12px; }
+        .card { padding: 16px 14px; }
+        .big { font-size: 34px; }
+        .dock-clock { font-size: 20px; }
+        .row > *, .pair { flex: 1 1 auto; justify-content: center; }
+        .row > .muted { flex-basis: 100%; }
+        .pair { width: 100%; }
+        .pair .field, .row > .field { flex: 1 1 0; min-width: 0; width: auto; }
+        .pair button { flex: none; justify-content: center; }
+        input.field[type="number"] { width: auto; }
+        label.inline { flex: 1 1 140px; }
+        label.inline .field { width: 100%; }
+        select.field { width: 100%; }
+        .quick { display: grid; grid-template-columns: repeat(4, 1fr); width: 100%; }
+        .quick button { justify-content: center; padding: 0 6px; }
+        ul.list li .grow { flex: 1 1 0; }
+        #provocari ul.list li .grow, #propuneri ul.list li .grow { flex-basis: 100%; }
+        ul.list li.acts-row button { flex: 1 1 0; justify-content: center; }
+        #who { width: 100%; }
+        #who .muted { flex: 1 1 auto; }
+      }
     </style>
   </head>
   <body>
@@ -54,6 +90,12 @@ const favicon = await getImage({ src: emote, format: 'png', width: 64 });
         <h1>FULGATHON <span>· Moderatori</span></h1>
         <div class="row" id="who" style="margin: 0"></div>
       </header>
+      <nav class="dock" id="dock" aria-label="Secțiuni" hidden>
+        <div class="dock-time"><span class="pill off" id="dockState"></span><span class="dock-clock" id="dockClock">—</span></div>
+        <div class="jump">
+          <a href="#stare">Stare</a><a href="#cronometru">Cronometru</a><a href="#vot">Vot</a><a href="#provocari">Provocări</a><a href="#propuneri">Propuneri</a><a href="#premii">Premii</a><a href="#moderatori">Moderatori</a>
+        </div>
+      </nav>
       <main id="app" aria-live="polite"><p class="muted" style="margin-top: 20px">Se încarcă…</p></main>
     </div>
     <div class="msg" id="msg" role="status" hidden></div>
