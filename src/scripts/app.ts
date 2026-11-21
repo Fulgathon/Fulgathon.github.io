@@ -11,36 +11,35 @@
 //
 // Two modes:
 //   * normal: live data from Supabase (./live.ts, loaded lazily), real actions.
-//   * ?demo:  the design's sample data, actions stay in the browser, and a
-//             panel switches viewer and stream states.
+//   * ?demo:  the simulated backend (../demo/backend.ts): same rules, kept in
+//             the browser and shared with /mod/?demo and /overlay/?demo; a
+//             panel switches viewer and stream states and fakes Twitch events.
+//             ?demo&embed hides the panel (used inside /prezentare/).
 
-import { emptyData, sampleBingoMarked, sampleData, sampleViewer } from '../data/sample';
+import { emptyData, sampleBingoMarked } from '../data/sample';
 import { site } from '../data/site';
 import type { SiteData } from '../data/types';
 import { derive, initialState, type State } from '../lib/derive';
 import { views, type RegionName } from '../lib/views';
+import type { DemoBackend } from '../demo/backend';
 import type { Live, Me } from './live';
 
 type AnyVals = Record<string, unknown>;
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-const demo = new URLSearchParams(location.search).has('demo');
+const params = new URLSearchParams(location.search);
+const demo = params.has('demo');
+const embed = params.has('embed');
 const BINGO_KEY = 'fulgathon:bingo';
 
 let data: SiteData = emptyData();
-let state: State = { ...initialState(), demo, now: Date.now() };
+// state.demo shows the demo panel (not inside the presentation page).
+let state: State = { ...initialState(), demo: demo && !embed, now: Date.now() };
 let live: Live | null = null;
+let demoApi: DemoBackend | null = null;
 
-if (demo) {
-  data = sampleData(state.now);
-  state = {
-    ...state,
-    viewerName: sampleViewer.name, spins: sampleViewer.spins, flakes: sampleViewer.flakes,
-    minutesToNextFlake: sampleViewer.minutesToNextFlake, marked: sampleBingoMarked.slice(), toast: 'goal',
-  };
-} else {
-  state.marked = loadBingo();
-}
+if (demo) state.marked = sampleBingoMarked.slice();
+else state.marked = loadBingo();
 
 const all = <T extends HTMLElement = HTMLElement>(sel: string) => Array.from(document.querySelectorAll<T>(sel));
 const pairs = (spec: string) => spec.split(';').filter(Boolean).map((p) => p.split(':') as [string, string]);
@@ -176,6 +175,79 @@ async function startLive() {
 }
 if (!demo) startLive().catch(() => { /* backend unreachable: the page stays on "starting soon" */ });
 
+// ---- Demo backend ---------------------------------------------------------
+function demoSync(first = false) {
+  if (!demoApi) return;
+  const before = reachedGoals(data);
+  data = demoApi.toSiteData(Date.now());
+  const me = demoApi.viewerInfo();
+  const patch: Partial<State> = {
+    viewer: me.state, viewerName: me.name, myVote: me.myVote,
+    flakes: me.flakes, minutesToNextFlake: me.minutesToNextFlake,
+    ...(state.spinning ? {} : { spins: me.spins }),
+  };
+  const unlocked = data.status === 'live' && (first ? reachedGoals(data) > 0 : reachedGoals(data) > before);
+  set(unlocked ? { ...patch, toast: 'goal' } : patch);
+}
+async function startDemo() {
+  const { DemoBackend } = await import('../demo/backend');
+  demoApi = new DemoBackend();
+  demoApi.subscribe(() => demoSync());
+  demoSync(true);
+  // Background jobs (close rounds, end at zero) run in the top window only.
+  if (window.top === window) setInterval(() => demoApi?.tick(), 1000);
+  setInterval(() => demoSync(), 30_000);   // "acum 3 min" labels
+}
+if (demo) void startDemo();
+
+/** Demo stand-in for the Twitch login screen. */
+function openLoginModal() {
+  set({ menu: false });
+  const back = document.createElement('div');
+  back.className = 'demo-modal';
+  back.innerHTML = `<div class="demo-modal-card" role="dialog" aria-modal="true" aria-labelledby="dm-title">
+<p class="demo-modal-eyebrow">Twitch · simulare</p>
+<h2 id="dm-title">Conectează-te cu Twitch</h2>
+<p>Pe site-ul real se deschide aici Twitch. Viewerul aprobă o singură dată, apoi site-ul verifică automat dacă e abonat.</p>
+<div class="demo-modal-actions">
+<button type="button" class="btn-twitch" data-login="sub">Continuă ca abonat</button>
+<button type="button" class="btn-ghost" data-login="nonsub">Continuă fără abonament</button>
+<button type="button" class="btn-ghost" data-login="">Anulează</button>
+</div></div>`;
+  const close = (choice?: string) => {
+    back.remove();
+    document.removeEventListener('keydown', onKey);
+    if (choice) demoApi?.setViewer(choice as State['viewer']);
+  };
+  const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
+  back.addEventListener('click', (e) => {
+    const btn = (e.target as Element).closest<HTMLElement>('[data-login]');
+    if (btn) close(btn.dataset.login);
+    else if (e.target === back) close();
+  });
+  document.addEventListener('keydown', onKey);
+  document.body.append(back);
+  back.querySelector<HTMLElement>('button')?.focus();
+}
+
+let autoSim: number | undefined;
+function setAutoSim(on: boolean) {
+  clearInterval(autoSim);
+  autoSim = on ? window.setInterval(() => demoApi?.randomEvent(), 3500) : undefined;
+  document.querySelectorAll<HTMLElement>('[data-action="simAuto"]').forEach((b) => b.setAttribute('aria-pressed', String(on)));
+}
+
+// The presentation page steers the embedded demo site.
+window.addEventListener('message', (e) => {
+  if (!demo || e.origin !== location.origin || e.data?.fulgathon !== 'demo') return;
+  const m = e.data as { scrollTo?: string; closeToast?: boolean };
+  if (m.closeToast) set({ toast: null });
+  if (m.scrollTo) {
+    const el = m.scrollTo === 'top' ? document.body : document.getElementById(m.scrollTo);
+    el?.scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'start' });
+  }
+});
+
 // ---- Actions ------------------------------------------------------------
 let spinTimer: number | undefined;
 let copyTimer: number | undefined;
@@ -196,7 +268,7 @@ function spinTo(idx: number, spinsLeft: number) {
 
 const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
   login: () => {
-    if (demo) { set({ viewer: 'sub', menu: false }); return; }
+    if (demo) { openLoginModal(); return; }
     if (!site.supabase.twitchLogin || !live) {
       info('În curând', 'Conectarea cu Twitch se activează înainte de start.');
       set({ menu: false });
@@ -205,11 +277,11 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
     live.login().catch(fail);
   },
   logout: () => {
-    if (demo) { set({ viewer: 'out', myVote: null, result: null }); return; }
+    if (demo) { demoApi?.setViewer('out'); return; }
     live?.logout().catch(fail);
   },
   becomeSub: () => {
-    if (demo) { set({ viewer: 'sub' }); return; }
+    if (demo) { demoApi?.setViewer('sub'); info('Abonament verificat', 'Ești abonat. Acum poți vota și propune provocări.'); return; }
     live?.checkSub().catch(fail);
   },
 
@@ -220,7 +292,10 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
   voteTab: (id) => set({ voteTab: id as State['voteTab'] }),
   boardTab: (id) => set({ tab: id as State['tab'] }),
   vote: (id) => {
-    if (demo) { set({ myVote: id, toast: 'vote' }); return; }
+    if (demo) {
+      try { demoApi?.castVote(Number(id)); set({ toast: 'vote' }); } catch (err) { fail(err); }
+      return;
+    }
     if (!live || !data.round) return;
     const previous = state.myVote;
     set({ myVote: id, toast: 'vote' });  // optimistic; the tally follows via realtime
@@ -230,7 +305,10 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
   spin: () => {
     if (state.viewer === 'out') { actions.login('', document.body); return; }
     if (state.spinning || state.spins <= 0) return;
-    if (demo) { spinTo(Math.floor(Math.random() * 8), state.spins - 1); return; }
+    if (demo) {
+      try { const r = demoApi!.spin(); spinTo(r.prize, r.spinsLeft); } catch (err) { fail(err); }
+      return;
+    }
     // The server picks the prize; the wheel only animates to it.
     set({ spinning: true, result: null });
     live?.spin()
@@ -248,7 +326,10 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
   sendSuggestion: () => {
     const text = state.suggestion.trim();
     if (!text) { document.getElementById('suggestion')?.focus(); return; }
-    if (demo) { set({ suggestDone: true }); return; }
+    if (demo) {
+      try { demoApi?.suggest(text); set({ suggestDone: true }); } catch (err) { fail(err); }
+      return;
+    }
     live?.suggest(text).then(() => set({ suggestDone: true })).catch(fail);
   },
   newSuggestion: () => {
@@ -270,10 +351,16 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
     window.open(url, 'fulgathon-player', 'popup,width=960,height=540');
   },
 
-  // Demo panel (?demo). Switching the viewer resets the vote, like the design.
-  setViewer: (id) => { if (demo) set({ viewer: id as State['viewer'], myVote: null, result: null, menu: false }); },
-  setStream: (id) => { if (demo) { data = { ...data, status: id as SiteData['status'] }; render(); } },
+  // Demo panel (?demo): viewer and stream state, fake Twitch events.
+  setViewer: (id) => { demoApi?.setViewer(id as State['viewer']); set({ menu: false }); },
+  setStream: (id) => { demoApi?.setStatus(id as SiteData['status']); },
   toggleSnow: () => set({ showSnow: !state.showSnow }),
+  simSub: () => { demoApi?.recordEvent('sub', 'viewer_demo', '1000'); },
+  simGift: () => { demoApi?.recordEvent('gift', 'viewer_demo', '1000', 10); },
+  simBits: () => { demoApi?.recordEvent('bits', 'viewer_demo', null, 500); },
+  simAuto: () => setAutoSim(autoSim === undefined),
+  simHour: () => { demoApi?.watchHour(); },
+  demoReset: () => { if (confirm('Resetezi demo-ul la starea de început?')) { setAutoSim(false); demoApi?.reset(); } },
 };
 
 // ---- Twitch player and chat: loaded when the Live section comes into view. ----
@@ -297,7 +384,8 @@ function loadEmbeds() {
   }
 }
 const liveSection = document.getElementById('live');
-if (liveSection && 'IntersectionObserver' in window) {
+// Not inside the presentation page (?embed): three copies of the Twitch player would be too heavy.
+if (liveSection && !embed && 'IntersectionObserver' in window) {
   const io = new IntersectionObserver((entries) => {
     if (entries.some((e) => e.isIntersecting)) { io.disconnect(); loadEmbeds(); }
   }, { rootMargin: '400px 0px' });

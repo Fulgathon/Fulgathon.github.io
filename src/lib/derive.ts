@@ -79,8 +79,6 @@ const BINGO_LINES: number[][] = (() => {
 export function derive(s: State, d: SiteData) {
   const live = d.status === 'live';
   const upcoming = d.status === 'upcoming';
-  // The demo's "starting soon" view zeroes everything, like the design.
-  const zeroed = s.demo && !live;
 
   // Countdown: to the end while live (frozen during "Îngheți timpul"), to the start while upcoming.
   let r: number | null = null;
@@ -112,7 +110,7 @@ export function derive(s: State, d: SiteData) {
   const isSub = s.viewer === 'sub';
 
   // Goals
-  const subs = zeroed ? 0 : d.subs;
+  const subs = d.subs;
   const marks = d.goals.map((g) => g.threshold);
   let foundCurrent = false;
   let nextIdx = marks.length - 1;
@@ -137,9 +135,8 @@ export function derive(s: State, d: SiteData) {
   const prevMark = nextIdx <= 0 ? 0 : marks[nextIdx - 1];
   const progress = nextMark > prevMark ? Math.max(0, Math.min(100, ((subs - prevMark) / (nextMark - prevMark)) * 100)) : 0;
 
-  // Ticker: real events once there are any (demo: only while "live").
-  const realTicker = s.demo ? live : d.ticker.length > 0;
-  const tick = realTicker ? d.ticker : placeholderTicker(startText);
+  // Ticker: real events once there are any.
+  const tick = d.ticker.length > 0 ? d.ticker : placeholderTicker(startText);
   const tickerTwice = tick.concat(tick, tick, tick);
 
   // Vote
@@ -151,9 +148,8 @@ export function derive(s: State, d: SiteData) {
     : `${pad(Math.floor(rl / 60))}:${pad(rl % 60)}`;
   const roundLabel = !round ? '' : roundOpen ? `Runda ${round.number} se închide în` : `Runda ${round.number} s-a închis`;
   const myVote = isSub ? s.myVote : null;
-  // In the demo the vote only exists in the browser, so add it to the count here;
-  // live tallies already include it.
-  const withMine = d.challenges.map((c) => ({ ...c, votes: c.votes + (s.demo && myVote === c.id ? 1 : 0) }));
+  // Tallies already include the viewer's own vote (live and demo backend alike).
+  const withMine = d.challenges;
   const total = withMine.reduce((a, c) => a + c.votes, 0);
   const maxVotes = Math.max(0, ...withMine.map((c) => c.votes));
   const canVote = isSub && roundOpen;
@@ -210,7 +206,7 @@ export function derive(s: State, d: SiteData) {
   // Leaderboard
   const tab = s.tab;
   const board = d.boards[tab].map((row, i) => ({
-    rank: i + 1, user: row[0], value: zeroed ? '0' : row[1], unit: boardUnits[tab],
+    rank: i + 1, user: row[0], value: row[1], unit: boardUnits[tab],
     rankColor: i === 0 ? '#FFFFFF' : i < 3 ? 'var(--ice)' : '#4A5568',
   }));
   const boardTabs = boardTabDefs.map(([id, label]) => ({
@@ -247,7 +243,7 @@ export function derive(s: State, d: SiteData) {
     subsText: fmtInt(subs),
     nextGoalText: fmtInt(nextMark),
     nextGoalTitle: d.goals[nextIdx]?.title ?? '',
-    raisedText: zeroed ? '0 lei' : d.raised,
+    raisedText: d.raised,
     progressPct: progress.toFixed(1) + '%',
     progressLabel: fmtInt(subs) + ' / ' + fmtInt(nextMark) + ' subs',
     goals, unlockedCount, board, boardTabs, boardLabelledBy: 'tab-board-' + tab,

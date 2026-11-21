@@ -1,0 +1,272 @@
+// Guided presentation: steps on the left, the real site / moderator page /
+// overlay on the right, all running on the shared demo backend. The step
+// buttons and the "Twitch simulat" bar change the demo; every frame updates.
+
+import { DemoBackend } from '../demo/backend';
+import { derive, initialState } from '../lib/derive';
+import { fmtInt } from '../lib/format';
+
+const api = new DemoBackend();
+const HOUR = 3_600_000;
+
+type View = 'site' | 'phone' | 'split' | 'overlay' | 'final';
+interface Action { label: string; primary?: boolean; run: () => void }
+interface Step { title: string; view: View; scroll?: string; body: string; actions?: Action[] }
+
+// ---- Talking to the embedded site ------------------------------------------
+function post(name: string, msg: Record<string, unknown>) {
+  const f = document.querySelector<HTMLIFrameElement>(`.frame[data-name="${name}"] iframe`);
+  f?.contentWindow?.postMessage({ fulgathon: 'demo', ...msg }, location.origin);
+}
+const scrollSite = (id: string) => { post('site', { scrollTo: id }); post('site2', { scrollTo: id }); post('phone', { scrollTo: id }); };
+const currentRoundId = () => api.state.rounds.slice().sort((a, b) => b.number - a.number)[0]?.id;
+const guard = (fn: () => void) => () => { try { fn(); } catch (e) { flash(String((e as Error).message)); } };
+
+const errorText: Record<string, string> = {
+  round_closed: 'Runda e deja închisă. Deschide una nouă din pagina moderatorilor.',
+  timer_not_live: 'Cronometrul nu e pornit.',
+  round_already_open: 'Există deja o rundă deschisă.',
+};
+function flash(code: string) {
+  const key = Object.keys(errorText).find((k) => code.includes(k));
+  const el = document.getElementById('step')!;
+  const p = document.createElement('p');
+  p.style.cssText = 'color:#FF8A95;font-weight:600';
+  p.textContent = key ? errorText[key] : 'Nu a mers: ' + code;
+  el.append(p);
+  setTimeout(() => p.remove(), 4000);
+}
+
+// ---- The steps (Romanian: for Iceman) ---------------------------------------
+const steps: Step[] = [
+  {
+    title: 'Bun venit la FULGATHON', view: 'site', scroll: 'top',
+    body: `<p><strong>FULGATHON</strong> e site-ul subathonului tău de Crăciun. E legat direct de Twitch: fiecare sub, sub cadou sau bit adaugă timp pe cronometru, iar viewerii votează provocări, învârt roata și urmăresc obiectivele, totul live.</p>
+<p>În dreapta e <strong>site-ul adevărat</strong>, care rulează acum pe date de test. Butoanele <strong>Twitch simulat</strong> de sus fac exact ce face Twitch în timpul streamului.</p>
+<p>Pornește simularea automată și lasă-l să meargă în fundal cât vorbim.</p>`,
+    actions: [{ label: 'Pornește simularea automată', primary: true, run: () => setAuto(true) }],
+  },
+  {
+    title: 'Cronometrul', view: 'site', scroll: 'top',
+    body: `<p>Fiecare susținere adaugă timp, instant, la toți viewerii:</p>
+<ul><li>Tier 1 / Prime: <strong>+1 min</strong></li><li>Tier 2: <strong>+2 min</strong> · Tier 3: <strong>+5 min</strong></li><li>Fiecare sub cadou: <strong>+1 min</strong></li><li>400 de biți: <strong>+1 min</strong> · 25 de lei: <strong>+1 min</strong></li></ul>
+<p>Sus rulează banda cu ultimele susțineri, iar peste tabelă urcă etichetele «+timp». Când cronometrul ajunge la zero, subathonul se termină singur.</p>`,
+    actions: [
+      { label: 'Sub Tier 1', run: () => api.recordEvent('sub', 'fulgusor', '1000') },
+      { label: 'Sub Tier 3', run: () => api.recordEvent('sub', 'vifor_vlad', '3000') },
+      { label: '10 subs cadou', run: () => api.recordEvent('gift', 'snowdrift_tv', '1000', 10) },
+      { label: '500 de biți', run: () => api.recordEvent('bits', 'northpole_nik', null, 500) },
+    ],
+  },
+  {
+    title: 'Ora dublă și înghețarea', view: 'site', scroll: 'top',
+    body: `<p><strong>Ora dublă</strong>: moderatorii o pornesc (sau o programează) și tot timpul adăugat valorează dublu. Apare și pe site, sub cronometru.</p>
+<p><strong>Îngheți timpul</strong> e un premiu de pe roată: cronometrul stă pe loc 5 minute.</p>
+<p>Încearcă: pornește Ora dublă, apoi dă un sub Tier 3. Primește +10:00 în loc de +5:00.</p>`,
+    actions: [
+      { label: 'Pornește Ora dublă', primary: true, run: () => api.doubleHour(Date.now(), 60) },
+      { label: 'Sub Tier 3', run: () => api.recordEvent('sub', 'glacier_gabi', '3000') },
+      { label: 'Îngheață 5 minute', run: guard(() => api.freeze(5)) },
+      { label: 'Oprește Ora dublă', run: () => api.doubleHour(Date.now() - 2 * HOUR, 60) },
+    ],
+  },
+  {
+    title: 'Obiectivele de Crăciun', view: 'site', scroll: 'top',
+    body: `<p>12 obiective, deblocate de numărul de subs: pulover urât, baia de gheață, sarmale live… Când se atinge pragul, pe site apare anunțul <strong>«Obiectiv deblocat»</strong>, iar obiectivul se bifează în listă.</p>
+<p>Bara de sub cronometru arată cât mai e până la următorul.</p>`,
+    actions: [
+      { label: 'Dăruiește subs până la obiectivul următor', primary: true, run: () => {
+        const subs = api.state.stats.subs;
+        const next = [100, 250, 500, 750, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 7500].find((t) => t > subs);
+        if (next) api.recordEvent('gift', 'snowdrift_tv', '1000', next - subs);
+        scrollSite('top');
+      } },
+      { label: 'Arată lista obiectivelor', run: () => scrollSite('goals') },
+    ],
+  },
+  {
+    title: 'Votul abonaților', view: 'site', scroll: 'vote',
+    body: `<p>Doar <strong>abonații</strong> votează: un vot pe rundă, pe care îl pot muta până se închide runda. Cine nu e conectat sau nu e abonat vede exact ce are de făcut.</p>
+<p>Rundele le deschid moderatorii, cu 5 provocări din lista de 128. Câștigătoarea apare la «Urmează», iar după ce o faci, la «Făcute», cu link spre clip.</p>
+<p>Încearcă: intră ca abonat și votează direct în site.</p>`,
+    actions: [
+      { label: 'Vezi ca vizitator', run: () => api.setViewer('out') },
+      { label: 'Vezi ca abonat', primary: true, run: () => api.setViewer('sub') },
+      { label: '50 de abonați votează', run: guard(() => api.simulateVotes(50)) },
+      { label: 'Închide runda', run: () => { const id = currentRoundId(); if (id) api.closeRound(id); } },
+    ],
+  },
+  {
+    title: 'Roata lui Lucky', view: 'site', scroll: 'roata',
+    body: `<p>Cine se uită primește <strong>fulgi</strong>: 1 pe oră, 2 pentru abonați (se numără automat, după cine e în chat). <strong>3 fulgi = o rotire.</strong></p>
+<p>Premiul îl alege serverul, roata doar îl arată, deci nu se poate trișa. Premiile câștigate ajung la moderatori, să le dea pe stream.</p>
+<p>Încearcă: intră ca abonat și apasă «Învârte roata» în site.</p>`,
+    actions: [
+      { label: 'Intră ca abonat', primary: true, run: () => api.setViewer('sub') },
+      { label: '+1 oră de privit', run: () => api.watchHour() },
+    ],
+  },
+  {
+    title: 'Bingo și propuneri', view: 'site', scroll: 'joaca',
+    body: `<p><strong>Bingo</strong>: fiecare viewer își bifează cardul cu ce se întâmplă pe stream. La o linie completă scrie !bingo în chat.</p>
+<p><strong>Propune o provocare</strong>: abonații trimit idei, iar moderatorii le aprobă cu un click. Ideea intră direct în lista de vot.</p>`,
+    actions: [{ label: 'Intră ca abonat', primary: true, run: () => api.setViewer('sub') }],
+  },
+  {
+    title: 'Pe telefon', view: 'phone', scroll: 'top',
+    body: `<p>Cei mai mulți viewers intră de pe telefon, din chat sau din descriere. Totul merge și aici: meniul, cronometrul, votul, roata, bingo-ul.</p>`,
+    actions: [
+      { label: 'Sub Tier 1', run: () => api.recordEvent('sub', 'ninsoare_ana', '1000') },
+      { label: 'Mergi la vot', run: () => scrollSite('vote') },
+      { label: 'Mergi la roată', run: () => scrollSite('roata') },
+    ],
+  },
+  {
+    title: 'Pagina moderatorilor', view: 'split',
+    body: `<p>Tu și moderatorii conduceți subathonul de pe <strong>/mod</strong>, cu contul de Twitch:</p>
+<ul><li>pornești cronometrul, adaugi sau scazi timp, îl îngheți</li><li>programezi Ora dublă</li><li>deschizi rundele de vot (pagina îți propune singură 2 ușoare, 2 medii, 1 grea) și le închizi</li><li>aprobi propunerile și bifezi premiile date</li><li>adaugi moderatori după numele de Twitch</li></ul>
+<p>Încearcă: apasă <strong>+10 min</strong> în stânga și uită-te la cronometrul din dreapta.</p>`,
+  },
+  {
+    title: 'Overlay-ul pe stream', view: 'overlay',
+    body: `<p>Pentru OBS: o <strong>bandă discretă în colț</strong>, cu cronometrul, obiectivul următor și fiecare susținere nouă. Fundal transparent, nu acoperă jocul.</p>
+<p>Se poate muta în orice colț, mări sau micșora, sau lăsa doar cronometrul, din linkul din OBS.</p>`,
+    actions: [
+      { label: 'Sub Tier 3', primary: true, run: () => api.recordEvent('sub', 'frostbyte_77', '3000') },
+      { label: '10 subs cadou', run: () => api.recordEvent('gift', 'snowdrift_tv', '1000', 10) },
+      { label: '1.000 de biți', run: () => api.recordEvent('bits', 'auroraaa', null, 1000) },
+    ],
+  },
+  {
+    title: 'Ce urmează', view: 'final',
+    body: `<p>Tot ce ai văzut e construit și testat. Pentru pornire mai e un singur pas: legăm aplicația de contul tău de Twitch, în aproximativ 15 minute.</p>
+<p>În dreapta: ce e gata, ce facem împreună și ce trebuie să hotărăști.</p>`,
+  },
+];
+
+// ---- Frames: create on first view, scale to fit -----------------------------
+const stage = document.getElementById('stage')!;
+const frames = [...document.querySelectorAll<HTMLElement>('.frame')];
+
+function ensureFrame(frame: HTMLElement) {
+  if (frame.dataset.src && !frame.querySelector('iframe')) {
+    const f = document.createElement('iframe');
+    f.src = frame.dataset.src;
+    f.title = frame.dataset.name === 'mod' ? 'Pagina moderatorilor (demo)' : 'Site-ul FULGATHON (demo)';
+    f.style.width = `${frame.dataset.w}px`;
+    f.style.height = `${frame.dataset.h}px`;
+    frame.append(f);
+  }
+  const lazy = frame.querySelector<HTMLIFrameElement>('iframe[data-overlay-src]');
+  if (lazy && !lazy.src) lazy.src = lazy.dataset.overlaySrc!;
+}
+
+function fit(frame: HTMLElement) {
+  const box = frame.parentElement!;
+  const w = Number(frame.dataset.w), h = Number(frame.dataset.h);
+  const pad = frame.classList.contains('phone') ? 20 : 2;
+  const s = Math.min((box.clientWidth - pad) / w, (box.clientHeight - pad) / h);
+  if (!(s > 0)) return;
+  frame.style.width = `${w * s}px`;
+  frame.style.height = `${h * s}px`;
+  frame.style.left = `${(box.clientWidth - w * s - pad) / 2}px`;
+  frame.style.top = `${(box.clientHeight - h * s - pad) / 2}px`;
+  frame.querySelectorAll<HTMLElement>('iframe, .scene').forEach((el) => { el.style.transform = `scale(${s})`; });
+}
+new ResizeObserver(() => frames.forEach(fit)).observe(stage);
+
+// ---- Rendering a step --------------------------------------------------------
+let current = 0;
+const toc = document.getElementById('toc')!;
+const stepEl = document.getElementById('step')!;
+toc.innerHTML = steps.map((s, i) => `<li><button type="button" data-goto="${i}" title="${s.title}">${i + 1}</button></li>`).join('');
+
+function showStep(i: number) {
+  current = Math.max(0, Math.min(steps.length - 1, i));
+  const s = steps[current];
+  toc.querySelectorAll('button').forEach((b, k) => { if (k === current) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current'); });
+  stepEl.innerHTML = `<span class="num">${String(current + 1).padStart(2, '0')} / ${steps.length}</span><h1>${s.title}</h1>${s.body}
+${s.actions?.length ? `<div class="try"><p class="try-label">Încearcă</p><div class="acts">${s.actions.map((a, k) => `<button type="button" class="act${a.primary ? ' primary' : ''}" data-act="${k}">${a.label}</button>`).join('')}</div></div>` : ''}`;
+  document.querySelectorAll<HTMLElement>('.view').forEach((v) => { v.hidden = v.dataset.view !== s.view; });
+  const visible = document.querySelector<HTMLElement>(`.view[data-view="${s.view}"]`)!;
+  visible.querySelectorAll<HTMLElement>('.frame').forEach((f) => { ensureFrame(f); fit(f); });
+  if (s.scroll) setTimeout(() => scrollSite(s.scroll!), 300);
+  (document.getElementById('prev') as HTMLButtonElement).disabled = current === 0;
+  (document.getElementById('next') as HTMLButtonElement).textContent = current === steps.length - 1 ? 'De la început ↺' : 'Mai departe →';
+  history.replaceState(null, '', `#${current + 1}`);
+}
+
+stepEl.addEventListener('click', (e) => {
+  const b = (e.target as Element).closest<HTMLElement>('[data-act]');
+  if (b) steps[current].actions?.[Number(b.dataset.act)]?.run();
+});
+toc.addEventListener('click', (e) => {
+  const b = (e.target as Element).closest<HTMLElement>('[data-goto]');
+  if (b) showStep(Number(b.dataset.goto));
+});
+document.getElementById('prev')!.addEventListener('click', () => showStep(current - 1));
+document.getElementById('next')!.addEventListener('click', () => showStep(current === steps.length - 1 ? 0 : current + 1));
+document.addEventListener('keydown', (e) => {
+  if ((e.target as Element).closest('input, textarea, select')) return;
+  if (e.key === 'ArrowRight' || e.key === 'PageDown') showStep(current + 1);
+  if (e.key === 'ArrowLeft' || e.key === 'PageUp') showStep(current - 1);
+});
+
+// ---- Final step: what's ready, what's next ----------------------------------
+document.getElementById('final')!.innerHTML = `
+<section class="card ice"><h2>Gata și testat</h2><ul>
+<li>Site-ul public, pe calculator și telefon</li><li>Legătura cu Twitch: subs, cadouri, biți, live</li>
+<li>Conectare cu Twitch și verificare abonament</li><li>Vot, roată, fulgi, obiective, bingo, propuneri</li>
+<li>Pagina moderatorilor</li><li>Overlay-ul pentru OBS</li></ul></section>
+<section class="card"><h2>Pornirea, împreună (15 min)</h2><ol>
+<li>Creăm aplicația FULGATHON pe dev.twitch.tv</li><li>Salvăm cheile în panoul de administrare</li>
+<li>Intri pe /mod și apeși «Conectează contul de streamer»</li><li>Stabilim data de start și finalul programat</li>
+<li>Adaugi overlay-ul în OBS</li></ol></section>
+<section class="card"><h2>De hotărât</h2><ul>
+<li>Data de start și finalul programat</li><li>Tarifele de timp (acum: +1 / +2 / +5 min)</li>
+<li>Obiectivele și premiile roții</li><li>Donațiile: StreamElements sau Streamlabs</li>
+<li>Sponsorii: logo-uri, linkuri, codul de reducere</li><li>Linkurile de Discord și rețele</li></ul></section>
+<div class="links">
+<a href="../?demo" target="_blank" rel="noopener">Site-ul (demo) ↗</a>
+<a href="../mod/?demo" target="_blank" rel="noopener">Moderatori (demo) ↗</a>
+<a href="../overlay/?demo" target="_blank" rel="noopener">Overlay (demo) ↗</a>
+</div>`;
+
+// ---- Twitch simulat bar ------------------------------------------------------
+let autoTimer: number | undefined;
+function setAuto(on: boolean) {
+  clearInterval(autoTimer);
+  autoTimer = on ? window.setInterval(() => api.randomEvent(), 3200) : undefined;
+  document.querySelector('[data-sim="auto"]')!.setAttribute('aria-pressed', String(on));
+}
+document.querySelector('.sim')!.addEventListener('click', (e) => {
+  const b = (e.target as Element).closest<HTMLElement>('[data-sim]');
+  if (!b) return;
+  const who = ['fulgusor', 'sanie_sebi', 'colinda_cris', 'renul_radu', 'turtadulce_tea'][Math.floor(Math.random() * 5)];
+  switch (b.dataset.sim) {
+    case 'sub': api.recordEvent('sub', who, '1000'); break;
+    case 'tier3': api.recordEvent('sub', who, '3000'); break;
+    case 'gift': api.recordEvent('gift', who, '1000', 10); break;
+    case 'bits': api.recordEvent('bits', who, null, 500); break;
+    case 'donation': api.recordEvent('donation', who, null, 50, 'RON'); break;
+    case 'auto': setAuto(!autoTimer); break;
+    case 'reset':
+      if (confirm('Resetezi demo-ul la starea de început?')) { setAuto(false); api.reset(); showStep(0); }
+      break;
+  }
+});
+
+// ---- Header readout + background jobs --------------------------------------
+function readout() {
+  const v = derive({ ...initialState(), now: Date.now() }, api.toSiteData());
+  document.getElementById('r-clock')!.textContent = v.navClock;
+  const badge = document.getElementById('r-badge')!;
+  badge.textContent = v.statusText;
+  badge.classList.toggle('live', v.isLive);
+  document.getElementById('r-subs')!.textContent = `${fmtInt(api.state.stats.subs)} subs`;
+}
+api.subscribe(readout);
+setInterval(() => { api.tick(); readout(); }, 1000);
+readout();
+
+showStep(Math.max(0, (Number(location.hash.slice(1)) || 1) - 1));

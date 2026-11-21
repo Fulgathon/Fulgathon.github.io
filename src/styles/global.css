@@ -104,3 +104,12 @@ input, select, textarea { font: inherit; }
 .demo-row button[aria-pressed="true"] { background: var(--ice); border-color: var(--ice); color: #04101A; }
 
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* Demo login stand-in (?demo) */
+.demo-modal { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, .72); }
+.demo-modal-card { width: min(460px, 100%); padding: 24px; background: #0B1018; border: 2px solid #9146FF; box-shadow: 10px 10px 0 #000; color: #F2F5FA; }
+.demo-modal-eyebrow { margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: .1em; text-transform: uppercase; color: #B794FF; }
+.demo-modal-card h2 { margin: 6px 0 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 32px; text-transform: uppercase; line-height: 1; }
+.demo-modal-card p { color: #C9D2DF; font-size: 15px; }
+.demo-modal-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.demo-modal-actions button { min-height: 48px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 18px; text-transform: uppercase; }

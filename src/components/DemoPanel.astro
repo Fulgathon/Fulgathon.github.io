@@ -1,5 +1,7 @@
 ---
-// Preview switcher, shown only with ?demo in the URL. Not part of the design.
+// Demo controls, shown only with ?demo in the URL. Not part of the design.
+// Everything here talks to the simulated backend (src/demo/backend.ts), so
+// /mod/?demo and /overlay/?demo in other tabs update too.
 import { iff } from '../lib/ssr';
 const viewers: [string, string, string][] = [['out', 'Deconectat', 'demoOut'], ['nonsub', 'Neabonat', 'demoNonsub'], ['sub', 'Abonat', 'demoSub']];
 const streams: [string, string, string][] = [['live', 'Live', 'demoLive'], ['upcoming', 'Începe curând', 'demoUpcoming']];
@@ -14,6 +16,18 @@ const streams: [string, string, string][] = [['live', 'Live', 'demoLive'], ['upc
     <div class="demo-row" role="group" aria-label="Stream">
       <span>Stream</span>
       {streams.map(([id, label, key]) => <button type="button" data-action="setStream" data-arg={id} data-attr={`aria-pressed:${key}`} aria-pressed="false">{label}</button>)}
+    </div>
+    <div class="demo-row" role="group" aria-label="Twitch simulat">
+      <span>Twitch</span>
+      <button type="button" data-action="simSub">+ Sub</button>
+      <button type="button" data-action="simGift">+ 10 gift</button>
+      <button type="button" data-action="simBits">+ 500 biți</button>
+      <button type="button" data-action="simAuto" aria-pressed="false">Automat</button>
+    </div>
+    <div class="demo-row">
+      <span>Privit</span>
+      <button type="button" data-action="simHour">+1 oră (fulgi)</button>
+      <button type="button" data-action="demoReset">Resetează</button>
     </div>
     <div class="demo-row">
       <span>Ninsoare</span>

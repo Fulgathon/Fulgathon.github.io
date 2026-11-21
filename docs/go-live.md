@@ -10,6 +10,8 @@ Pages:
 | https://fulgathon.github.io/ | Viewers |
 | https://fulgathon.github.io/?demo | Preview with sample data |
 | https://fulgathon.github.io/mod/ | Moderators (Twitch login, moderator accounts only) |
+| https://fulgathon.github.io/prezentare/ | Guided demo of everything, for presenting (simulated data, never touches the database) |
+| …/?demo · …/mod/?demo · …/overlay/?demo | The same demo per page; all three share one simulated subathon across tabs |
 | https://fulgathon.github.io/overlay/ | OBS Browser Source, 1920×1080: a slim strip top-right. Options: `?pos=tl/tr/bl/br`, `?scale=0.8`, `?show=timer,goal,events`, `?style=box` (large box), `?demo` (sample data for placing it) |
 
 ## 1. Connect Twitch (once)

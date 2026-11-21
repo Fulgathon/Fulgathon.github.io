@@ -1,9 +1,10 @@
 // OBS overlay: same live data and maths as the site (Live + derive).
 // Default is a slim strip in a corner; ?style=box gives the large box.
-// ?demo shows the design's sample data and pops a sample event every 10 s,
-// for placing the overlay in OBS before the subathon.
+// ?demo reads the simulated backend shared with /?demo, /mod/?demo and
+// /prezentare/ (events fired there pop up here), for presentations and for
+// placing the overlay in OBS before the subathon.
 
-import { emptyData, sampleData } from '../data/sample';
+import { emptyData } from '../data/sample';
 import type { SiteData } from '../data/types';
 import { derive, initialState } from '../lib/derive';
 
@@ -55,11 +56,25 @@ function popEvent(time: string, user: string, what: string) {
 }
 
 if (params.has('demo')) {
-  data = sampleData(Date.now());
-  let i = 0;
-  const next = () => { const t = data.ticker[i++ % data.ticker.length]; popEvent(t.time, t.user, t.what); };
-  window.setTimeout(next, 600);
-  window.setInterval(next, 10_000);
+  void import('../demo/backend').then(({ DemoBackend }) => {
+    const api = new DemoBackend();
+    let lastId = api.state.events[0]?.id ?? 0;
+    const sync = () => {
+      data = api.toSiteData();
+      const top = api.state.events[0];
+      if (top && top.id !== lastId) {
+        lastId = top.id;
+        const t = data.ticker[0];
+        if (t && t.time !== '—') popEvent(t.time, t.user, t.what);
+      }
+      draw();
+    };
+    api.subscribe(sync);
+    sync();
+    // Show the chip once on load, so its place on the stream is visible.
+    const first = data.ticker[0];
+    if (first) window.setTimeout(() => popEvent(first.time, first.user, first.what), 600);
+  });
 } else {
   void import('./live').then(({ Live }) => {
     const live = new Live(data, {

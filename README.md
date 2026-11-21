@@ -26,7 +26,12 @@ panel for switching the viewer state (logged out / not subscribed / subscriber),
 the stream state (live / starting soon) and the snowfall.
 
 Other pages: `/mod/` (moderators: run the timer, vote rounds, suggestions,
-prizes) and `/overlay/` (OBS Browser Source). Going live: `docs/go-live.md`.
+prizes), `/overlay/` (OBS Browser Source) and `/prezentare/` (guided demo of
+everything, for presenting). Going live: `docs/go-live.md`.
+
+**Demo mode:** `?demo` on `/`, `/mod/` and `/overlay/` runs on a simulated
+backend (`src/demo/backend.ts`) with the same rules as the real one, stored in
+the browser and shared between tabs. Nothing touches the real database.
 
 ## Deploy (GitHub Pages)
 
@@ -42,7 +47,9 @@ the base then becomes `/` automatically.
 
 | Path | What |
 | --- | --- |
-| `src/data/sample.ts` | The design's sample data, used with `?demo`, and the empty first-paint state. |
+| `src/data/sample.ts` | The empty first-paint state and the demo's pre-ticked bingo squares. |
+| `src/demo/backend.ts` | Simulated backend for `?demo` and `/prezentare/`, seeded with the design's sample subathon. |
+| `src/pages/prezentare.astro`, `src/scripts/prezentare.ts` | Guided presentation page. |
 | `src/data/content.ts` | Fixed content: schedule, bingo squares, partners, default goals and prizes. |
 | `src/scripts/live.ts` | Live data from Supabase, realtime updates, login, votes, spins, suggestions. |
 | `src/data/site.ts` | Links, sponsor, discount code and the open `[PLACEHOLDERS]`. |

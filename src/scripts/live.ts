@@ -5,9 +5,10 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { popSlots, prizeColors } from '../data/content';
 import { site } from '../data/site';
-import type { BoardTab, Completed, Prize, SiteData, TickerItem, UpNext } from '../data/types';
-import type { Database, Tables } from '../lib/database.types';
-import { ago, count, dateRo, fmtInt, plusTime } from '../lib/format';
+import type { BoardTab, Completed, Prize, SiteData, UpNext } from '../data/types';
+import type { Database } from '../lib/database.types';
+import { amount, tickerItem } from '../lib/events';
+import { ago, dateRo, fmtInt } from '../lib/format';
 
 type DB = SupabaseClient<Database>;
 type Patch = Partial<SiteData>;
@@ -28,29 +29,6 @@ export interface LiveHandlers {
 }
 
 const ms = (iso: string | null) => (iso ? Date.parse(iso) : null);
-const amount = (n: number) => (Number.isInteger(n) ? fmtInt(n) : n.toLocaleString('ro-RO', { maximumFractionDigits: 2 }));
-const tierName = (tier: string | null) => (tier === 'prime' ? 'Prime' : `Tier ${{ '2000': 2, '3000': 3 }[tier ?? ''] ?? 1}`);
-
-function describe(e: Tables<'events'>): string {
-  const n = Number(e.quantity);
-  switch (e.kind) {
-    case 'sub': return `sub ${tierName(e.tier)}`;
-    case 'resub': return `resub ${tierName(e.tier)}`;
-    case 'gift': return n === 1 ? 'a dăruit un sub' : `a dăruit ${count(n, 'sub', 'subs')}`;
-    case 'bits': return count(n, 'bit', 'biți');
-    case 'donation': return `donație ${amount(n)} ${!e.currency || e.currency === 'RON' ? 'lei' : e.currency}`;
-    default: return 'timp adăugat';
-  }
-}
-
-function tickerItem(e: Tables<'events'>): TickerItem {
-  return {
-    time: e.seconds_added > 0 ? plusTime(e.seconds_added) : '—',
-    user: e.user_name || e.user_login || 'Anonim',
-    what: describe(e),
-    color: ['sub', 'resub', 'gift'].includes(e.kind) ? 'var(--ice)' : '#FFFFFF',
-  };
-}
 
 export class Live {
   readonly db: DB;

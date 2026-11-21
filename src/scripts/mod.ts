@@ -1,10 +1,16 @@
 // Moderator page logic. Reads with the moderator's own session (row level
 // security lets moderators see suggestions and viewers) and acts through the
 // mod_* database functions, which re-check moderator rights every time.
+// /mod/?demo runs on the simulated backend instead (no login, shared with
+// /?demo, /overlay/?demo and /prezentare/).
 
 import { createClient } from '@supabase/supabase-js';
 import { site } from '../data/site';
+import type { DemoBackend } from '../demo/backend';
 import { esc } from '../lib/views';
+
+const demo = new URLSearchParams(location.search).has('demo');
+let demoApi: DemoBackend | null = null;
 
 const db = createClient(site.supabase.url, site.supabase.publishableKey, {
   auth: { persistSession: true, detectSessionInUrl: true, flowType: 'pkce' },
@@ -29,6 +35,19 @@ function say(text: string, err = false) {
   msgTimer = window.setTimeout(() => { msgBox.hidden = true; }, 4000);
 }
 async function call(fn: string, args: Record<string, unknown> = {}, ok = 'Gata.') {
+  if (demoApi) {
+    try {
+      const data = demoApi.rpc(fn, args);
+      say(ok);
+      void load();
+      return data;
+    } catch (err) {
+      const message = String((err as Error).message);
+      const key = Object.keys(errors).find((k) => message.includes(k));
+      say(key ? errors[key] : `Eroare: ${message}`, true);
+      throw err;
+    }
+  }
   const { data, error } = await db.rpc(fn, args);
   if (error) {
     const key = Object.keys(errors).find((k) => error.message.includes(k));
@@ -81,6 +100,11 @@ function autoDraft() {
 }
 
 async function load() {
+  if (demoApi) {
+    Object.assign(S, demoApi.modState());
+    if (!S.draft.length || S.draft.some((id) => !S.pool.find((p) => p.id === id))) autoDraft();
+    return render();
+  }
   const { data: { session } } = await db.auth.getSession();
   if (!session) { S.me = null; return render(); }
   const { data: me } = await db.from('viewers').select('login, is_moderator').eq('id', session.user.id).maybeSingle();
@@ -124,7 +148,7 @@ function render() {
   const active = document.activeElement;
   if (active && app.contains(active) && /^(INPUT|SELECT|TEXTAREA)$/.test(active.tagName)) { deferred = true; return; }
   who.innerHTML = S.me
-    ? `<span class="muted">Conectat ca <strong style="color:#F2F5FA">${esc(S.me.login)}</strong></span><button class="btn-ghost" data-act="logout">Ieși</button>`
+    ? `${demo ? '<span class="pill ok">Demo</span>' : ''}<span class="muted">Conectat ca <strong style="color:#F2F5FA">${esc(S.me.login)}</strong></span><button class="btn-ghost" data-act="logout">Ieși</button>`
     : '';
 
   if (!S.me) {
@@ -269,7 +293,10 @@ const num = (id: string) => Number(val(id));
 
 const acts: Record<string, (el: HTMLElement) => unknown> = {
   login: () => db.auth.signInWithOAuth({ provider: 'twitch', options: { redirectTo: location.origin + location.pathname } }),
-  logout: async () => { await db.auth.signOut(); void load(); },
+  logout: async () => {
+    if (demoApi) { say('În demo ești conectat ca icemanlucky (moderator).'); return; }
+    await db.auth.signOut(); void load();
+  },
   schedule: () => call('mod_set_schedule', { p_starts_at: fromLocal(val('startAt')), p_scheduled_end: fromLocal(val('endAt')) }, 'Programul a fost salvat.'),
   start: () => confirm(`Pornești cronometrul acum cu ${num('startHours')} ore?`) &&
     call('mod_start_timer', { p_hours: num('startHours'), p_scheduled_end: S.timer?.scheduled_end ?? null }, 'Subathonul a pornit!'),
@@ -316,35 +343,31 @@ setInterval(() => {
 }, 1000);
 
 let pending: number | undefined;
-const preview = import.meta.env.DEV && new URLSearchParams(location.search).has('preview');
-const refresh = () => { if (preview) return; clearTimeout(pending); pending = window.setTimeout(() => void load(), 400); };
-const ch = db.channel('mod');
-for (const table of ['timer', 'stats', 'vote_rounds', 'round_challenges', 'spins']) {
-  ch.on('postgres_changes', { event: '*', schema: 'public', table }, refresh);
-}
-ch.subscribe();
-db.auth.onAuthStateChange(() => refresh());
+const refresh = () => { clearTimeout(pending); pending = window.setTimeout(() => void load(), demoApi ? 50 : 400); };
 
-// Local development only (stripped from the build): /mod/?preview draws the
-// logged-in moderator view with sample data, without touching the database.
-if (preview) {
-  const soon = new Date(Date.now() + 40 * 60_000).toISOString();
-  S = {
-    me: { login: 'icemanlucky', is_moderator: true },
-    status: { broadcaster_login: 'icemanlucky', broadcaster_connected: false, connect_url: '#' },
-    timer: { status: 'live', stream_online: true, ends_at: new Date(Date.now() + 3 * 86400_000).toISOString(), starts_at: new Date().toISOString(), scheduled_end: null },
-    stats: { subs: 1284, bits: 48500, raised: 24600 },
-    round: { id: 1, number: 4, closes_at: soon, winner_id: null, items: [
-      { challenge_id: 1, votes: 412, title: 'O oră de colinde la karaoke' },
-      { challenge_id: 63, votes: 386, title: 'Costum de spiriduș' },
-    ] },
-    pool: [], scheduled: [{ id: 87, title: 'Găleată cu gheață, afară', level: 'mediu', category: 'irl', status: 'scheduled', scheduled_for: 'Diseară, 22:00' }],
-    suggestions: [{ id: 1, body: 'Vorbește doar în rime o oră', created_at: new Date().toISOString(), viewers: { login: 'fan_x', display_name: 'Fan_X' } }],
-    prizes: [{ id: 1, user_login: 'snowdrift_tv', created_at: new Date().toISOString(), prizes: { win_label: 'VIP 24 de ore', is_win: true } }],
-    mods: [{ login: 'icemanlucky', display_name: 'Icemanlucky' }, { login: 'barsmin', display_name: null }],
-    draft: [],
-  };
-  render();
+// Demo: "Conectează contul de streamer" just marks it connected.
+document.addEventListener('click', (e) => {
+  const a = (e.target as Element).closest<HTMLAnchorElement>('a[href="#connect-demo"]');
+  if (!a) return;
+  e.preventDefault();
+  demoApi?.connectStreamer();
+  say('Demo: pe site-ul real, aici Iceman aprobă accesul pe Twitch.');
+});
+
+if (demo) {
+  void import('../demo/backend').then(({ DemoBackend }) => {
+    demoApi = new DemoBackend();
+    demoApi.subscribe(refresh);
+    // Background jobs (close rounds, end at zero) when this page is on its own.
+    if (window.top === window) setInterval(() => demoApi?.tick(), 1000);
+    void load();
+  });
 } else {
+  const ch = db.channel('mod');
+  for (const table of ['timer', 'stats', 'vote_rounds', 'round_challenges', 'spins']) {
+    ch.on('postgres_changes', { event: '*', schema: 'public', table }, refresh);
+  }
+  ch.subscribe();
+  db.auth.onAuthStateChange(() => refresh());
   void load();
 }
