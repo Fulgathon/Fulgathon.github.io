@@ -11,7 +11,12 @@ const HOUR = 3_600_000;
 
 type View = 'site' | 'phone' | 'split' | 'overlay' | 'final';
 interface Action { label: string; primary?: boolean; run: () => void }
-interface Step { title: string; view: View; scroll?: string; body: string; actions?: Action[] }
+interface Step { title: string; view: View; scroll?: string; body: string | (() => string); actions?: Action[] }
+
+// Phones and tablets (matches the CSS): the demo sits above the step, and the
+// live pages render at their real size instead of a scaled-down desktop.
+const compact = matchMedia('(max-width: 1000px)');
+const where = () => (compact.matches && !matchMedia('(orientation: landscape)').matches ? 'Deasupra' : 'În dreapta');
 
 // ---- Talking to the embedded site ------------------------------------------
 function post(name: string, msg: Record<string, unknown>) {
@@ -41,8 +46,8 @@ function flash(code: string) {
 const steps: Step[] = [
   {
     title: 'Bun venit la FULGATHON', view: 'site', scroll: 'top',
-    body: `<p><strong>FULGATHON</strong> e site-ul subathonului tău de Crăciun. E legat direct de Twitch: fiecare sub, sub cadou sau bit adaugă timp pe cronometru, iar viewerii votează provocări, învârt roata și urmăresc obiectivele, totul live.</p>
-<p>În dreapta e <strong>site-ul adevărat</strong>, care rulează acum pe date de test. Butoanele <strong>Twitch simulat</strong> de sus fac exact ce face Twitch în timpul streamului.</p>
+    body: () => `<p><strong>FULGATHON</strong> e site-ul subathonului tău de Crăciun. E legat direct de Twitch: fiecare sub, sub cadou sau bit adaugă timp pe cronometru, iar viewerii votează provocări, învârt roata și urmăresc obiectivele, totul live.</p>
+<p>${where()} e <strong>site-ul adevărat</strong>, care rulează acum pe date de test. Butoanele <strong>Twitch simulat</strong> de sus fac exact ce face Twitch în timpul streamului.</p>
 <p>Pornește simularea automată și lasă-l să meargă în fundal cât vorbim.</p>`,
     actions: [{ label: 'Pornește simularea automată', primary: true, run: () => setAuto(true) }],
   },
@@ -123,9 +128,11 @@ const steps: Step[] = [
   },
   {
     title: 'Pagina moderatorilor', view: 'split',
-    body: `<p>Tu și moderatorii conduceți subathonul de pe <strong>/mod</strong>, cu contul de Twitch:</p>
+    body: () => `<p>Tu și moderatorii conduceți subathonul de pe <strong>/mod</strong>, cu contul de Twitch:</p>
 <ul><li>pornești cronometrul, adaugi sau scazi timp, îl îngheți</li><li>programezi Ora dublă</li><li>deschizi rundele de vot (pagina îți propune singură 2 ușoare, 2 medii, 1 grea) și le închizi</li><li>aprobi propunerile și bifezi premiile date</li><li>adaugi moderatori după numele de Twitch</li></ul>
-<p>Încearcă: apasă <strong>+10 min</strong> în stânga și uită-te la cronometrul din dreapta.</p>`,
+${compact.matches
+  ? '<p>Încearcă: apasă <strong>+10 min</strong> pe pagina moderatorilor, apoi treci la «Ce văd viewerii» și uită-te la cronometru.</p>'
+  : '<p>Încearcă: apasă <strong>+10 min</strong> în stânga și uită-te la cronometrul din dreapta.</p>'}`,
   },
   {
     title: 'Overlay-ul pe stream', view: 'overlay',
@@ -139,8 +146,8 @@ const steps: Step[] = [
   },
   {
     title: 'Ce urmează', view: 'final',
-    body: `<p>Tot ce ai văzut e construit și testat. Pentru pornire mai e un singur pas: legăm aplicația de contul tău de Twitch, în aproximativ 15 minute.</p>
-<p>În dreapta: ce e gata, ce facem împreună și ce trebuie să hotărăști.</p>`,
+    body: () => `<p>Tot ce ai văzut e construit și testat. Pentru pornire mai e un singur pas: legăm aplicația de contul tău de Twitch, în aproximativ 15 minute.</p>
+<p>${where()}: ce e gata, ce facem împreună și ce trebuie să hotărăști.</p>`,
   },
 ];
 
@@ -163,6 +170,15 @@ function ensureFrame(frame: HTMLElement) {
 
 function fit(frame: HTMLElement) {
   const box = frame.parentElement!;
+  const inner = frame.querySelectorAll<HTMLElement>('iframe, .scene');
+  if (compact.matches && frame.dataset.src) {
+    // A live page at its real size: readable, and scrollable by touch.
+    const bw = box.clientWidth, bh = box.clientHeight;
+    if (!bw || !bh) return;
+    Object.assign(frame.style, { width: `${bw}px`, height: `${bh}px`, left: '0', top: '0' });
+    inner.forEach((el) => Object.assign(el.style, { width: `${bw}px`, height: `${bh}px`, transform: 'none' }));
+    return;
+  }
   const w = Number(frame.dataset.w), h = Number(frame.dataset.h);
   const pad = frame.classList.contains('phone') ? 20 : 2;
   const s = Math.min((box.clientWidth - pad) / w, (box.clientHeight - pad) / h);
@@ -171,9 +187,19 @@ function fit(frame: HTMLElement) {
   frame.style.height = `${h * s}px`;
   frame.style.left = `${(box.clientWidth - w * s - pad) / 2}px`;
   frame.style.top = `${(box.clientHeight - h * s - pad) / 2}px`;
-  frame.querySelectorAll<HTMLElement>('iframe, .scene').forEach((el) => { el.style.transform = `scale(${s})`; });
+  inner.forEach((el) => Object.assign(el.style, { width: `${w}px`, height: `${h}px`, transform: `scale(${s})` }));
 }
 new ResizeObserver(() => frames.forEach(fit)).observe(stage);
+
+// Small screens show the moderator page and the site one at a time.
+const split = document.querySelector<HTMLElement>('.view[data-view="split"]')!;
+split.querySelector('.split-tabs')!.addEventListener('click', (e) => {
+  const b = (e.target as Element).closest<HTMLElement>('button[data-show]');
+  if (!b) return;
+  split.dataset.show = b.dataset.show;
+  split.querySelectorAll('.split-tabs button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  split.querySelectorAll<HTMLElement>('.frame').forEach(fit);
+});
 
 // ---- Rendering a step --------------------------------------------------------
 let current = 0;
@@ -185,7 +211,7 @@ function showStep(i: number) {
   current = Math.max(0, Math.min(steps.length - 1, i));
   const s = steps[current];
   toc.querySelectorAll('button').forEach((b, k) => { if (k === current) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current'); });
-  stepEl.innerHTML = `<span class="num">${String(current + 1).padStart(2, '0')} / ${steps.length}</span><h1>${s.title}</h1>${s.body}
+  stepEl.innerHTML = `<span class="num">${String(current + 1).padStart(2, '0')} / ${steps.length}</span><h1>${s.title}</h1>${typeof s.body === 'function' ? s.body() : s.body}
 ${s.actions?.length ? `<div class="try"><p class="try-label">Încearcă</p><div class="acts">${s.actions.map((a, k) => `<button type="button" class="act${a.primary ? ' primary' : ''}" data-act="${k}">${a.label}</button>`).join('')}</div></div>` : ''}`;
   document.querySelectorAll<HTMLElement>('.view').forEach((v) => { v.hidden = v.dataset.view !== s.view; });
   const visible = document.querySelector<HTMLElement>(`.view[data-view="${s.view}"]`)!;
@@ -194,7 +220,12 @@ ${s.actions?.length ? `<div class="try"><p class="try-label">Încearcă</p><div 
   (document.getElementById('prev') as HTMLButtonElement).disabled = current === 0;
   (document.getElementById('next') as HTMLButtonElement).textContent = current === steps.length - 1 ? 'De la început ↺' : 'Mai departe →';
   history.replaceState(null, '', `#${current + 1}`);
+  stepEl.scrollTop = 0;
 }
+// Rotating the phone or resizing across the breakpoint: re-lay out the frames
+// and the step text.
+compact.addEventListener('change', () => showStep(current));
+matchMedia('(orientation: landscape)').addEventListener('change', () => showStep(current));
 
 stepEl.addEventListener('click', (e) => {
   const b = (e.target as Element).closest<HTMLElement>('[data-act]');

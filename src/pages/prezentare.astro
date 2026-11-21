@@ -29,7 +29,8 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
     <style is:global>
       html, body { height: 100%; }
       body { color: #F2F5FA; font-family: Barlow, system-ui, sans-serif; font-size: 16px; line-height: 1.5; overflow: hidden; }
-      .shell { height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+      .shell { height: 100vh; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr); }
+      .bar, .main, .sim { min-width: 0; }
       .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 10px 20px; border-bottom: 1px solid #1A2230; background: #0B1018; }
       .brand { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 28px; line-height: 1; text-transform: uppercase; white-space: nowrap; }
       .brand .fulg { background: linear-gradient(180deg, #FFFFFF 18%, #CDF2FF 58%, var(--ice) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: .04em; }
@@ -82,12 +83,54 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
       .links { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
       .links a { min-height: 44px; display: inline-flex; align-items: center; padding: 0 14px; border: 2px solid #2A3445; color: #F2F5FA; text-decoration: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; text-transform: uppercase; }
       .links a:hover { border-color: var(--ice); }
+      .split-tabs { display: none; }
+      /* Phones and tablets: the live pages render at their real size (the
+         script switches the frames), the demo sits on top, the step below,
+         and the Twitch buttons scroll sideways. */
       @media (max-width: 1000px) {
-        body { overflow: auto; }
-        .shell { height: auto; }
-        .main { grid-template-columns: 1fr; }
-        .stage { height: 70vh; }
-        .steps { border-right: 0; border-bottom: 1px solid #1A2230; }
+        .shell { height: 100vh; height: 100dvh; }
+        .bar { padding: 8px 12px 0; gap: 6px 12px; }
+        .brand { font-size: 22px; }
+        .brand .sub { display: none; }
+        .readout { margin-left: auto; gap: 8px; font-size: 15px; }
+        .readout .clock { font-size: 20px; }
+        .sim { flex: 1 0 100%; margin: 0 -12px; padding: 0 12px 8px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+        .sim::-webkit-scrollbar { display: none; }
+        .sim > span { flex: none; font-size: 12px; }
+        .sim button { flex: none; min-height: 44px; padding: 0 10px; font-size: 14px; }
+        .main { display: flex; flex-direction: column; }
+        .stage { order: -1; flex: 0 0 52%; border-bottom: 1px solid #1A2230; }
+        .steps { flex: 1 1 0; border-right: 0; }
+        .toc { display: none; }
+        .step { padding: 12px 16px 16px; }
+        .step h1 { margin: 8px 0 10px; font-size: 30px; }
+        .step p, .step ul { font-size: 15px; }
+        .act { min-height: 44px; }
+        .nav { padding: 8px 12px; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+        .nav button { min-height: 44px; font-size: 18px; }
+        .view { padding: 0; gap: 0; }
+        .frame { border: 0; box-shadow: none; }
+        .frame.phone { border: 0; border-radius: 0; }
+        .view[data-view="split"] { flex-direction: column; align-items: stretch; }
+        .split-tabs { display: flex; flex: none; width: 100%; }
+        .split-tabs button { flex: 1 1 0; min-height: 44px; background: #0B1018; color: #8C97A8; border: 0; border-bottom: 2px solid #1A2230; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+        .split-tabs button[aria-pressed="true"] { color: #F2F5FA; border-bottom-color: var(--ice); }
+        .view[data-view="split"] .slot-label { display: none; }
+        .view[data-show="mod"] [data-slot="site2"], .view[data-show="site2"] [data-slot="mod"] { display: none; }
+        .view[data-view="overlay"] .slot { padding: 10px; }
+        .slot-label { font-size: 12px; text-align: center; }
+        .final { padding: 12px; gap: 12px; align-content: start; }
+        .card { padding: 16px; }
+      }
+      /* Phone or tablet held sideways: steps left, demo right, one header row. */
+      @media (max-width: 1000px) and (orientation: landscape) {
+        .bar { flex-wrap: nowrap; padding-bottom: 6px; }
+        .readout { margin-left: 0; }
+        .sim { flex: 1 1 0; min-width: 0; margin: 0; padding: 0; }
+        .main { display: grid; grid-template-columns: minmax(260px, 36%) 1fr; }
+        .stage { order: 0; border-bottom: 0; }
+        .steps { border-right: 1px solid #1A2230; }
+        .step h1 { font-size: 26px; }
       }
     </style>
   </head>
@@ -127,9 +170,13 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
           <div class="view" data-view="phone" hidden>
             <div class="slot"><div class="fit"><div class="frame phone" data-w="390" data-h="844" data-src={`${base}?demo&embed`} data-name="phone"></div></div></div>
           </div>
-          <div class="view" data-view="split" hidden>
-            <div class="slot"><p class="slot-label">Moderatori · /mod</p><div class="fit"><div class="frame" data-w="1000" data-h="1100" data-src={`${base}mod/?demo`} data-name="mod"></div></div></div>
-            <div class="slot"><p class="slot-label">Ce văd viewerii</p><div class="fit"><div class="frame" data-w="1100" data-h="1100" data-src={`${base}?demo&embed`} data-name="site2"></div></div></div>
+          <div class="view" data-view="split" data-show="mod" hidden>
+            <div class="split-tabs" role="group" aria-label="Alege pagina">
+              <button type="button" data-show="mod" aria-pressed="true">Moderatori</button>
+              <button type="button" data-show="site2" aria-pressed="false">Ce văd viewerii</button>
+            </div>
+            <div class="slot" data-slot="mod"><p class="slot-label">Moderatori · /mod</p><div class="fit"><div class="frame" data-w="1000" data-h="1100" data-src={`${base}mod/?demo`} data-name="mod"></div></div></div>
+            <div class="slot" data-slot="site2"><p class="slot-label">Ce văd viewerii</p><div class="fit"><div class="frame" data-w="1100" data-h="1100" data-src={`${base}?demo&embed`} data-name="site2"></div></div></div>
           </div>
           <div class="view" data-view="overlay" hidden>
             <div class="slot"><p class="slot-label">Stream-ul tău, cu overlay-ul în OBS (1920×1080)</p><div class="fit">
