@@ -24,7 +24,7 @@ export function describe(e: EventLike): string {
     case 'resub': return `resub ${tierName(e.tier)}`;
     case 'gift': return n === 1 ? 'a dăruit un sub' : `a dăruit ${count(n, 'sub', 'subs')}`;
     case 'bits': return count(n, 'bit', 'biți');
-    case 'donation': return `donație ${amount(n)} ${!e.currency || e.currency === 'RON' ? 'lei' : e.currency}`;
+    case 'donation': return `donație ${amount(n)} ${!e.currency || e.currency === 'EUR' ? '€' : e.currency === 'RON' ? 'lei' : e.currency}`;
     default: return 'timp adăugat';
   }
 }

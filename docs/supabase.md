@@ -99,13 +99,15 @@ All are deployed with `verify_jwt = false` and authenticate themselves.
 | `twitch-auth` | Iceman, via the button on `/mod` | Twitch OAuth for the broadcaster, stores the token in Vault, (re)creates the six EventSub subscriptions |
 | `check-sub` | The site, after login and "M-am abonat, verifică iar" | Checks the viewer's sub with the broadcaster token, updates `viewers.is_subscriber` |
 | `watch-time` | pg_cron every 5 min (`x-cron-secret`) | Chatters list + sub status → `credit_watch_time` (only while live and online) |
+| `tipeee-donations` | pg_cron every 15 s (`x-cron-secret`) | New TipeeeStream donations (euros) → `record_event('donation', …)`, deduped on `tipeee:<id>`; counts only while live; state in `private.tipeee_state` |
 
 Edge Function secrets to set once: `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`.
 Generated in Vault by the migrations: `eventsub_secret`, `cron_secret`; later
 `twitch_broadcaster_token`.
 
 Scheduled jobs (pg_cron): `icemaraton-minute` (closes finished vote rounds,
-ends the timer at zero) and `icemaraton-watch-time` (every 5 minutes).
+ends the timer at zero), `icemaraton-watch-time` (every 5 minutes) and
+`icemaraton-tipeee` (every 15 seconds).
 
 Moderator functions (`mod_*`, used by `/mod`) check `viewers.is_moderator`.
 Logins in `private.settings.moderator_logins` (initially `icemanlucky`) become
@@ -117,6 +119,4 @@ See `docs/go-live.md` for the step-by-step checklist.
 
 ## Still to build
 
-1. **Donations:** once the provider is chosen, an Edge Function that calls
-   `record_event('donation', 'donation', …)`. Until then moderators add the
-   time by hand on `/mod`.
+1. Nothing required. Donations come from TipeeeStream (`tipeee-donations`).

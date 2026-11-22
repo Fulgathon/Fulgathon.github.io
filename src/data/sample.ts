@@ -19,7 +19,7 @@ export function emptyData(): SiteData {
     doubleFrom: null,
     doubleUntil: null,
     subs: 0,
-    raised: '0 lei',
+    raised: '0 €',
     goals: defaultGoals,
     ticker: [],
     pops: [],

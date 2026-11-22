@@ -54,7 +54,7 @@ const steps: Step[] = [
   {
     title: 'Cronometrul', view: 'site', scroll: 'top',
     body: `<p>Fiecare susținere adaugă timp, instant, la toți viewerii:</p>
-<ul><li>Tier 1 / Prime: <strong>+1 min</strong></li><li>Tier 2: <strong>+2 min</strong> · Tier 3: <strong>+5 min</strong></li><li>Fiecare sub cadou: <strong>+1 min</strong></li><li>400 de biți: <strong>+1 min</strong> · 25 de lei: <strong>+1 min</strong></li></ul>
+<ul><li>Tier 1 / Prime: <strong>+1 min</strong></li><li>Tier 2: <strong>+2 min</strong> · Tier 3: <strong>+5 min</strong></li><li>Fiecare sub cadou: <strong>+1 min</strong></li><li>400 de biți: <strong>+1 min</strong> · 5 € (TipeeeStream): <strong>+1 min</strong></li></ul>
 <p>Sus rulează banda cu ultimele susțineri, iar peste tabelă urcă etichetele «+timp». Când cronometrul ajunge la zero, subathonul se termină singur.</p>`,
     actions: [
       { label: 'Sub Tier 1', run: () => api.recordEvent('sub', 'fulgusor', '1000') },
@@ -279,7 +279,7 @@ document.querySelector('.sim')!.addEventListener('click', (e) => {
     case 'tier3': api.recordEvent('sub', who, '3000'); break;
     case 'gift': api.recordEvent('gift', who, '1000', 10); break;
     case 'bits': api.recordEvent('bits', who, null, 500); break;
-    case 'donation': api.recordEvent('donation', who, null, 50, 'RON'); break;
+    case 'donation': api.recordEvent('donation', who, null, 10, 'EUR'); break;
     case 'auto': setAuto(!autoTimer); break;
     case 'reset':
       if (confirm('Resetezi demo-ul la starea de început?')) { setAuto(false); api.reset(); showStep(0); }

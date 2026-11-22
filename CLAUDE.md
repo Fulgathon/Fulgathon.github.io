@@ -77,14 +77,14 @@ Build the static site so it matches the design, with every interaction working o
 
 ## Decided
 
-- **Name:** ICEMARATON (Iceman + maraton), renamed from ICEMARATON on 22 Nov 2026; the design files in `design/` still show the old name. Viewers still collect snowflakes (fulgi) for the wheel. Band line: "Fiecare sub e un fulg. Facem viscol."
+- **Name:** ICEMARATON (Iceman + maraton), renamed from FULGATHON on 22 Nov 2026; the design files in `design/` still show the old name. Viewers still collect snowflakes (fulgi) for the wheel. Band line: "Fiecare sub e un fulg. Facem viscol."
 - **Hosting:** GitHub Pages (static), backend separate in phase 2.
+- **Donations:** TipeeeStream (account icemanlucky), in euros. Twitch never sees them; the `tipeee-donations` Edge Function polls TipeeeStream every 15 seconds.
 
 ## Open (ask, don't guess)
 
 - **Dates:** start date and the scheduled end date (`[DATA FINALĂ]`). The subathon ends on that date if no more time is added.
-- **Time rates:** the design uses Tier 1/Prime +1 min, Tier 2 +2, Tier 3 +5, gift sub +1 each, 25 lei donation +1, 400 bits +1. To be confirmed.
-- **Donation provider** (StreamElements, Streamlabs or other) and currency.
+- **Time rates:** the design uses Tier 1/Prime +1 min, Tier 2 +2, Tier 3 +5, gift sub +1 each, 5 € donation +1, 400 bits +1. To be confirmed.
 - **Prizes:** bingo prize (`[PREMIU]`), wheel prizes, "Ora dublă" schedule.
 - **Sponsors:** the main sponsor in the mockup is **Zona IT** (an example the owner gave; confirm it's signed). "ZONA IT" is plain text standing in for the official logo. Still needed: names, logos (ideally SVG plus all-white versions), links, tiers (main partner / partners / supporters), what each one backs, the discount code (`ICEMAN10` is a placeholder) and the contact email for new sponsors.
 - Discord invite, social links, repo name, custom domain or not.

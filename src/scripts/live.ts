@@ -72,7 +72,7 @@ export class Live {
     },
     stats: async () => {
       const { data: s } = await this.db.from('stats').select('subs, raised').eq('id', 1).maybeSingle();
-      return s ? { subs: s.subs, raised: `${amount(Number(s.raised))} lei` } : {};
+      return s ? { subs: s.subs, raised: `${amount(Number(s.raised))} €` } : {};
     },
     goals: async () => {
       const { data } = await this.db.from('goals').select('title, threshold').order('position');

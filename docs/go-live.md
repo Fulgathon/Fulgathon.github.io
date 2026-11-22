@@ -53,8 +53,8 @@ Dashboard: https://supabase.com/dashboard/project/yvbxtsuddjqqoogdoqrx
   **scheduled end**; add the other **moderators** by Twitch login.
 - **OBS**: add a Browser Source with `https://icemaraton.github.io/o`, 1920×1080.
 - Open with Iceman, then tell Claude: time rates (now Tier 1/Prime +1 min,
-  Tier 2 +2, Tier 3 +5, gift +1 each, 400 bits +1, 25 lei +1), goals, prizes,
-  donation provider, sponsor details, Discord and social links.
+  Tier 2 +2, Tier 3 +5, gift +1 each, 400 bits +1, 5 € +1), goals, prizes,
+  sponsor details, Discord and social links.
 - Optional dry run: start the timer from `/mod`, have someone sub or cheer,
   check the site and overlay, then end it and ask Claude to reset the data.
 
@@ -65,6 +65,7 @@ On `/mod` → **Pornește acum** with the starting hours. From then on:
 | What | How it works |
 | --- | --- |
 | Subs, resubs, gifts, bits | Twitch → `twitch-eventsub` → time added, ticker, goals, leaderboard (instant) |
+| Donations | TipeeeStream (euros), polled every 15 s by `tipeee-donations` → time added (5 € = +1 min), ticker, «Strâns» total. Counted only while the timer is live |
 | Live / offline | Twitch `stream.online/offline` |
 | Watch time & snowflakes | Every 5 min while live and online, everyone in chat gets 5 min; 1 snowflake/hour, 2 for subs |
 | Viewer login & sub check | "Conectează-te cu Twitch"; sub status checked on login and with "M-am abonat, verifică iar" |
@@ -73,8 +74,8 @@ On `/mod` → **Pornește acum** with the starting hours. From then on:
 | Ora dublă, freeze, manual time | Buttons on `/mod` |
 | Suggestions, prizes to give | Lists on `/mod` |
 
-Not automatic yet: **donations** (waiting for the provider choice; moderators
-can add the time by hand meanwhile).
+TipeeeStream API key: Supabase Vault secret `tipeee_api_key` (or the Edge Function
+secret `TIPEEE_API_KEY`). Status: `select * from private.tipeee_state`.
 
 ## If something looks wrong
 

@@ -57,7 +57,7 @@ export interface DemoState {
 }
 
 /** Same as the seeded `rates` table: seconds for every `per` units. */
-const RATES = { tier1: [60, 1], tier2: [120, 1], tier3: [300, 1], gift: [60, 1], bits: [60, 400], donation: [60, 25] } as const;
+const RATES = { tier1: [60, 1], tier2: [120, 1], tier3: [300, 1], gift: [60, 1], bits: [60, 400], donation: [60, 5] } as const;
 const WIN_LABELS = ['+5 minute pe cronometru', 'VIP 24 de ore', 'un shoutout live', 'un sub cadou de la Iceman',
   'alegerea următorului joc', 'o colindă de la Iceman', 'cronometrul înghețat 5 minute', 'nimic de data asta'];
 const LOSE = 7;
@@ -108,11 +108,11 @@ function seed(now: number): DemoState {
       doubleUntil: next21(now) + HOUR,
       streamOnline: true,
     },
-    stats: { subs: 1284, bits: 48_500, raised: 24_600 },
+    stats: { subs: 1284, bits: 48_500, raised: 4_920 },
     events: [
       ev(6, 1, 'gift', 'snowdrift_tv', '1000', 10, 600),
       ev(5, 3, 'sub', 'frostbyte_77', '3000', 1, 300),
-      ev(4, 5, 'donation', 'mistletoe_mike', null, 25, 60, 'RON'),
+      ev(4, 5, 'donation', 'mistletoe_mike', null, 5, 60, 'EUR'),
       ev(3, 8, 'sub', 'polarpixel', '2000', 1, 120),
       ev(2, 11, 'sub', 'kxtrin', 'prime', 1, 60),
       ev(1, 14, 'bits', 'northpole_nik', null, 400, 60),
@@ -236,7 +236,7 @@ export class DemoBackend {
     if (r < 0.70) return this.recordEvent('resub', user, '1000');
     if (r < 0.82) return this.recordEvent('gift', user, '1000', pick([1, 1, 5, 5, 10, 20]));
     if (r < 0.95) return this.recordEvent('bits', Math.random() < 0.2 ? null : user, null, pick([100, 200, 400, 500, 1000, 2500]));
-    return this.recordEvent('donation', user, null, pick([10, 25, 50, 100]), 'RON');
+    return this.recordEvent('donation', user, null, pick([2, 5, 10, 20]), 'EUR');
   }
 
   setStream(online: boolean) { this.mutate((s) => { s.timer.streamOnline = online; }); }
@@ -437,7 +437,7 @@ export class DemoBackend {
       startsAt: s.timer.startsAt, endsAt: s.timer.endsAt, pausedUntil: s.timer.pausedUntil,
       scheduledEnd: s.timer.scheduledEnd, doubleFrom: s.timer.doubleFrom, doubleUntil: s.timer.doubleUntil,
       subs: s.stats.subs,
-      raised: `${amount(s.stats.raised)} lei`,
+      raised: `${amount(s.stats.raised)} €`,
       goals: defaultGoals,
       ticker,
       pops: ticker.filter((t) => t.time !== '—').slice(0, popSlots.length).map((t, k) => ({ ...t, ...popSlots[k] })),
