@@ -9,7 +9,7 @@
 
 import challengesJson from '../../data/challenges.json';
 import { defaultGoals, defaultPrizes, popSlots } from '../data/content';
-import type { BoardTab, SiteData } from '../data/types';
+import type { BoardTab, Goal, SiteData } from '../data/types';
 import { amount, tickerItem } from '../lib/events';
 import { ago, fmtInt } from '../lib/format';
 
@@ -37,13 +37,14 @@ interface DemoSpin { id: number; user: string; prize: number; at: number; fulfil
 interface DemoSuggestion { id: number; body: string; user: string; at: number; status: 'pending' | 'approved' | 'rejected' }
 
 export interface DemoState {
-  v: 1;
+  v: 2;
   seq: number;
   timer: {
     status: Status; startsAt: number | null; endsAt: number | null; pausedUntil: number | null;
     scheduledEnd: number | null; doubleFrom: number | null; doubleUntil: number | null; streamOnline: boolean;
   };
   stats: { subs: number; bits: number; raised: number };
+  goals: Goal[];
   events: DemoEvent[];
   boardBase: Record<BoardTab, Record<string, number>>;
   challenges: DemoChallenge[];
@@ -51,13 +52,16 @@ export interface DemoState {
   myVotes: Record<number, number>;
   spins: DemoSpin[];
   suggestions: DemoSuggestion[];
-  viewer: { state: Viewer; name: string; flakes: number; spinsUsed: number; minutesToFlake: number };
+  /** Daily wheel: minutes watched on `day` (local date), and the day of the last spin. */
+  viewer: { state: Viewer; name: string; day: string; watched: number; spunDay: string | null };
   mods: string[];
   streamerConnected: boolean;
 }
 
 /** Same as the seeded `rates` table: seconds for every `per` units. */
-const RATES = { tier1: [60, 1], tier2: [120, 1], tier3: [300, 1], gift: [60, 1], bits: [60, 400], donation: [60, 5] } as const;
+const RATES = { tier1: [360, 1], tier2: [720, 1], tier3: [1080, 1], gift: [360, 1], bits: [240, 400], donation: [360, 1] } as const;
+const WHEEL_MINUTES = 120;
+const today = () => new Date().toLocaleDateString('sv-SE');
 const WIN_LABELS = ['+5 minute pe cronometru', 'VIP 24 de ore', 'un shoutout live', 'un sub cadou de la Iceman',
   'alegerea următorului joc', 'o colindă de la Iceman', 'cronometrul înghețat 5 minute', 'nimic de data asta'];
 const LOSE = 7;
@@ -96,7 +100,7 @@ function seed(now: number): DemoState {
     ({ id, kind, tier, quantity, currency, seconds_added: seconds, doubled: false, user_login: user, user_name: user, at: now - minsAgo * MIN });
 
   return {
-    v: 1,
+    v: 2,
     seq: 1000,
     timer: {
       status: 'live',
@@ -108,16 +112,18 @@ function seed(now: number): DemoState {
       doubleUntil: next21(now) + HOUR,
       streamOnline: true,
     },
-    stats: { subs: 1284, bits: 48_500, raised: 4_920 },
+    stats: { subs: 1284, bits: 48_500, raised: 1_180 },
+    goals: defaultGoals.map((g) => ({ ...g })),
     events: [
-      ev(6, 1, 'gift', 'snowdrift_tv', '1000', 10, 600),
-      ev(5, 3, 'sub', 'frostbyte_77', '3000', 1, 300),
-      ev(4, 5, 'donation', 'mistletoe_mike', null, 5, 60, 'EUR'),
-      ev(3, 8, 'sub', 'polarpixel', '2000', 1, 120),
-      ev(2, 11, 'sub', 'kxtrin', 'prime', 1, 60),
-      ev(1, 14, 'bits', 'northpole_nik', null, 400, 60),
+      ev(6, 1, 'donation', 'mistletoe_mike', null, 20, 7200, 'EUR'),
+      ev(5, 3, 'sub', 'frostbyte_77', '3000', 1, 1080),
+      ev(4, 5, 'gift', 'snowdrift_tv', '1000', 10, 3600),
+      ev(3, 8, 'donation', 'auroraaa', null, 5, 1800, 'EUR'),
+      ev(2, 11, 'sub', 'kxtrin', 'prime', 1, 360),
+      ev(1, 14, 'bits', 'northpole_nik', null, 400, 240),
     ],
     boardBase: {
+      donations: { mistletoe_mike: 230, auroraaa: 175, polarpixel: 120, yeti_yolo: 75, kxtrin: 50 },
       gifts: { snowdrift_tv: 132, frostbyte_77: 96, mistletoe_mike: 71, polarpixel: 58, kxtrin: 44 },
       bits: { northpole_nik: 48_100, auroraaa: 31_200, frostbyte_77: 22_000, coldbrew_cam: 15_400, yeti_yolo: 9_800 },
       hours: { northpole_nik: 86, auroraaa: 79, kxtrin: 74, polarpixel: 71, frostbyte_77: 66 },
@@ -135,7 +141,7 @@ function seed(now: number): DemoState {
       { id: 2, body: 'Joacă un meci doar cu portarul în atac', user: 'polarpixel', at: now - 9 * MIN, status: 'pending' },
       { id: 1, body: 'Citește comentariile chatului cu voce de Moș Crăciun', user: 'auroraaa', at: now - 32 * MIN, status: 'pending' },
     ],
-    viewer: { state: 'out', name: 'viewer_name', flakes: 8, spinsUsed: 0, minutesToFlake: 38 },
+    viewer: { state: 'out', name: 'viewer_name', day: today(), watched: 95, spunDay: null },
     mods: ['icemanlucky', 'frostbyte_77'],
     streamerConnected: true,
   };
@@ -168,7 +174,7 @@ export class DemoBackend {
     if (raw) {
       try {
         const s = JSON.parse(raw) as DemoState;
-        if (s.v === 1) { this.raw = raw; this.cached = s; return s; }
+        if (s.v === 2) { this.raw = raw; this.cached = s; return s; }
       } catch { /* corrupt: reseed */ }
     }
     // No saved demo (or storage blocked): start from the seed, keep it in memory.
@@ -372,19 +378,35 @@ export class DemoBackend {
     });
   }
 
-  /** One hour watched: 1 snowflake, 2 for subscribers. */
-  watchHour() { this.mutate((s) => { s.viewer.flakes += s.viewer.state === 'sub' ? 2 : 1; s.viewer.minutesToFlake = 60; }); }
+  /** Half an hour watched today (the real site counts chat presence every 5 minutes). */
+  watchHalfHour() {
+    this.mutate((s) => {
+      if (s.viewer.day !== today()) { s.viewer.day = today(); s.viewer.watched = 0; }
+      s.viewer.watched = Math.min(600, s.viewer.watched + 30);
+    });
+  }
 
+  /** Same rules as the database: live, subscriber, 2 hours watched today, once per day. */
   spin(): { prize: number; spinsLeft: number } {
     return this.mutate((s) => {
       if (s.viewer.state === 'out') fail('not_logged_in');
-      const available = Math.floor(s.viewer.flakes / 3) - s.viewer.spinsUsed;
-      if (available <= 0) fail('no_spins');
+      if (s.timer.status !== 'live') fail('wheel_closed');
+      if (s.viewer.state !== 'sub') fail('not_subscriber');
+      if ((s.viewer.day === today() ? s.viewer.watched : 0) < WHEEL_MINUTES) fail('not_enough_watch');
+      if (s.viewer.spunDay === today()) fail('already_spun');
       const prize = Math.floor(Math.random() * 8);
-      s.viewer.spinsUsed += 1;
+      s.viewer.spunDay = today();
       s.spins.push({ id: ++s.seq, user: s.viewer.name, prize, at: Date.now(), fulfilled: false });
-      return { prize, spinsLeft: available - 1 };
+      return { prize, spinsLeft: 0 };
     });
+  }
+
+  /** Milestone Maraton list from the moderator page (title + € amount). */
+  setGoals(list: { title: string; threshold: number | string }[]) {
+    const goals = (Array.isArray(list) ? list : []).map((g) => ({ title: String(g.title ?? '').trim(), threshold: Number(g.threshold) }));
+    if (goals.length > 40 || goals.some((g) => !g.title || g.title.length > 140 || !Number.isInteger(g.threshold) || g.threshold <= 0)) fail('bad_goals');
+    if (new Set(goals.map((g) => g.threshold)).size !== goals.length) fail('duplicate_amount');
+    this.mutate((s) => { s.goals = goals.sort((a, b) => a.threshold - b.threshold); });
   }
 
   viewerInfo() {
@@ -393,9 +415,12 @@ export class DemoBackend {
     return {
       state: s.viewer.state,
       name: s.viewer.name,
-      spins: Math.max(0, Math.floor(s.viewer.flakes / 3) - s.viewer.spinsUsed),
-      flakes: s.viewer.flakes % 3,
-      minutesToNextFlake: s.viewer.minutesToFlake,
+      ...(() => {
+        const watched = s.viewer.day === today() ? s.viewer.watched : 0;
+        const spunToday = s.viewer.spunDay === today();
+        const ok = s.viewer.state === 'sub' && s.timer.status === 'live' && watched >= WHEEL_MINUTES && !spunToday;
+        return { spins: ok ? 1 : 0, watchedToday: watched, spunToday };
+      })(),
       myVote: r && s.myVotes[r.id] !== undefined ? String(s.myVotes[r.id]) : null,
     };
   }
@@ -438,7 +463,8 @@ export class DemoBackend {
       scheduledEnd: s.timer.scheduledEnd, doubleFrom: s.timer.doubleFrom, doubleUntil: s.timer.doubleUntil,
       subs: s.stats.subs,
       raised: `${amount(s.stats.raised)} €`,
-      goals: defaultGoals,
+      raisedNum: s.stats.raised,
+      goals: s.goals,
       ticker,
       pops: ticker.filter((t) => t.time !== '—').slice(0, popSlots.length).map((t, k) => ({ ...t, ...popSlots[k] })),
       round: r ? { id: r.id, number: r.number, closesAt: r.closesAt } : null,
@@ -454,7 +480,7 @@ export class DemoBackend {
       losePrize: LOSE,
       recentWins: [...s.spins].filter((x) => x.prize !== LOSE).sort((a, b) => b.at - a.at).slice(0, 4)
         .map((x) => ({ user: x.user, prize: WIN_LABELS[x.prize], ago: ago(x.at, now) })),
-      boards: { gifts: board('gifts', 'gift'), bits: board('bits', 'bits'), hours: board('hours') },
+      boards: { donations: board('donations', 'donation'), gifts: board('gifts', 'gift'), bits: board('bits', 'bits'), hours: board('hours') },
     };
   }
 
@@ -474,6 +500,7 @@ export class DemoBackend {
         scheduled_end: iso(s.timer.scheduledEnd), double_from: iso(s.timer.doubleFrom), double_until: iso(s.timer.doubleUntil),
       } as Record<string, any>,
       stats: { subs: s.stats.subs, bits: s.stats.bits, raised: s.stats.raised } as Record<string, any>,
+      goals: s.goals.map((g) => ({ title: g.title, threshold: g.threshold, unlocked_at: s.stats.raised >= g.threshold ? 'yes' : null })),
       round: r ? { id: r.id, number: r.number, closes_at: iso(r.closesAt)!, winner_id: r.winnerId, items: r.items.map((x) => ({ challenge_id: x.challengeId, votes: x.votes, title: title(x.challengeId) })) } : null,
       pool: s.challenges.filter((c) => c.status === 'pool' && c.votable).map(toCh),
       scheduled: s.challenges.filter((c) => c.status === 'scheduled').map(toCh),
@@ -499,6 +526,7 @@ export class DemoBackend {
       case 'mod_review_suggestion': return this.reviewSuggestion(Number(a.p_id), !!a.p_approve);
       case 'mod_fulfil_spin': return this.fulfilSpin(Number(a.p_id));
       case 'mod_set_moderator': return this.setModerator(String(a.p_login), !!a.p_on);
+      case 'mod_set_goals': return this.setGoals(a.p_goals);
       default: return fail(`unknown_${fn}`);
     }
   }

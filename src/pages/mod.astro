@@ -78,6 +78,8 @@ const favicon = await getImage({ src: emote, format: 'png', width: 64 });
         .quick button { justify-content: center; padding: 0 6px; }
         ul.list li .grow { flex: 1 1 0; }
         #provocari ul.list li .grow, #propuneri ul.list li .grow { flex-basis: 100%; }
+        #milestones ul.list li .pair { flex: 1 1 100%; }
+        #milestones ul.list li .pair input[data-goal-amt] { flex: 0 0 90px !important; width: 90px !important; }
         ul.list li.acts-row button { flex: 1 1 0; justify-content: center; }
         #who { width: 100%; }
         #who .muted { flex: 1 1 auto; }
@@ -93,7 +95,7 @@ const favicon = await getImage({ src: emote, format: 'png', width: 64 });
       <nav class="dock" id="dock" aria-label="Secțiuni" hidden>
         <div class="dock-time"><span class="pill off" id="dockState"></span><span class="dock-clock" id="dockClock">—</span></div>
         <div class="jump">
-          <a href="#stare">Stare</a><a href="#cronometru">Cronometru</a><a href="#vot">Vot</a><a href="#provocari">Provocări</a><a href="#propuneri">Propuneri</a><a href="#premii">Premii</a><a href="#moderatori">Moderatori</a>
+          <a href="#stare">Stare</a><a href="#cronometru">Cronometru</a><a href="#milestones">Milestones</a><a href="#vot">Vot</a><a href="#provocari">Provocări</a><a href="#propuneri">Propuneri</a><a href="#premii">Premii</a><a href="#moderatori">Moderatori</a>
         </div>
       </nav>
       <main id="app" aria-live="polite"><p class="muted" style="margin-top: 20px">Se încarcă…</p></main>

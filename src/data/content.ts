@@ -2,14 +2,14 @@
 
 import type { BoardTab, Goal, Prize, TickerItem } from './types';
 
-export const boardUnits: Record<BoardTab, string> = { gifts: 'subs', bits: 'biți', hours: 'ore' };
-export const boardTabs: [BoardTab, string][] = [['gifts', 'Subs dăruite'], ['bits', 'Biți'], ['hours', 'Ore văzute']];
+export const boardUnits: Record<BoardTab, string> = { donations: '€', gifts: 'subs', bits: 'biți', hours: 'ore' };
+export const boardTabs: [BoardTab, string][] = [['donations', 'Donatori'], ['gifts', 'Subs dăruite'], ['bits', 'Biți'], ['hours', 'Ore văzute']];
 
 /** Ticker while nothing has happened yet. */
 export function placeholderTicker(startText: string): TickerItem[] {
   return [
     { time: '--:--', user: 'ICEMARATON', what: `începe pe ${startText}`, color: '#7D8899' },
-    { time: '--:--', user: 'Pregătește-te', what: 'primul sub pornește cronometrul', color: '#7D8899' },
+    { time: '--:--', user: 'Pregătește-te', what: 'fiecare donație și fiecare sub adaugă timp', color: '#7D8899' },
     { time: '--:--', user: 'Discord', what: 'anunțurile apar acolo primele', color: '#7D8899' },
   ];
 }
@@ -44,7 +44,7 @@ export const defaultPrizes: Prize[] = [
 ].map(([s, f], i) => [s, f, prizeColors[i]] as Prize);
 
 export const schedule = [
-  { day: '20', title: 'Ziua 1: start', desc: 'Pornește cronometrul, primele obiective și primul vot.', dayColor: 'var(--ice)' },
+  { day: '20', title: 'Ziua 1: start', desc: 'Pornește cronometrul, primele milestone-uri și primul vot.', dayColor: 'var(--ice)' },
   { day: '24', title: 'Ajunul Crăciunului', desc: 'Colinde, jocuri cu comunitatea, atmosferă de sărbătoare.', dayColor: '#F2F5FA' },
   { day: '25', title: 'Crăciunul', desc: 'Deschidem cadourile împreună cu chatul.', dayColor: '#FFFFFF' },
   { day: '??', title: 'Final programat: [DATA FINALĂ]', desc: 'Ultima zi, dacă nu se mai adaugă timp.', dayColor: '#4A5568' },
@@ -59,7 +59,7 @@ export const bingo = [
 
 export const partners = [
   { name: '[Partener 1]', role: 'Premii roată', href: '#' },
-  { name: '[Partener 2]', role: 'Obiective', href: '#' },
+  { name: '[Partener 2]', role: 'Milestones', href: '#' },
   { name: '[Partener 3]', role: 'Ora dublă', href: '#' },
   { name: '[Partener 4]', role: 'Bingo', href: '#' },
 ];

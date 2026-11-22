@@ -483,6 +483,14 @@ export type Database = {
         }
         Relationships: []
       }
+      leaderboard_donations: {
+        Row: {
+          total: number | null
+          user_login: string | null
+          user_name: string | null
+        }
+        Relationships: []
+      }
       leaderboard_gifts: {
         Row: {
           total: number | null
@@ -550,10 +558,11 @@ export type Database = {
       wheel_status: {
         Args: never
         Returns: {
-          flakes: number
-          flakes_toward_spin: number
-          minutes_to_next_flake: number
+          is_subscriber: boolean
+          minutes_needed: number
+          minutes_today: number
           spins_available: number
+          spun_today: boolean
         }[]
       }
     }

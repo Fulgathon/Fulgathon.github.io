@@ -16,9 +16,10 @@ type Patch = Partial<SiteData>;
 export interface Me {
   name: string;
   isSub: boolean;
+  /** Daily wheel: 1 when a spin is available, minutes watched today, already spun today. */
   spins: number;
-  flakes: number;
-  minutesToNextFlake: number;
+  watchedToday: number;
+  spunToday: boolean;
   myVote: string | null;
 }
 
@@ -52,6 +53,8 @@ export class Live {
     this.db.auth.onAuthStateChange(() => { void this.refreshMe(); });
     // Safety net for anything realtime missed (and the "acum 3 min" labels).
     window.setInterval(() => this.queue(...Object.keys(this.loaders)), 60_000);
+    // Watch minutes for the daily wheel are credited every 5 minutes.
+    window.setInterval(() => { void this.refreshMe(); }, 120_000);
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') this.queue(...Object.keys(this.loaders), 'me');
     });
@@ -72,7 +75,7 @@ export class Live {
     },
     stats: async () => {
       const { data: s } = await this.db.from('stats').select('subs, raised').eq('id', 1).maybeSingle();
-      return s ? { subs: s.subs, raised: `${amount(Number(s.raised))} €` } : {};
+      return s ? { subs: s.subs, raised: `${amount(Number(s.raised))} €`, raisedNum: Number(s.raised) } : {};
     },
     goals: async () => {
       const { data } = await this.db.from('goals').select('title, threshold').order('position');
@@ -150,7 +153,7 @@ export class Live {
       };
     },
     boards: async () => {
-      const views = { gifts: 'leaderboard_gifts', bits: 'leaderboard_bits', hours: 'leaderboard_hours' } as const;
+      const views = { donations: 'leaderboard_donations', gifts: 'leaderboard_gifts', bits: 'leaderboard_bits', hours: 'leaderboard_hours' } as const;
       const entries = await Promise.all((Object.keys(views) as BoardTab[]).map(async (tab) => {
         const { data } = await this.db.from(views[tab]).select('user_login, user_name, total').limit(5);
         return [tab, (data ?? []).map((r) => [r.user_name || r.user_login || '', fmtInt(r.total ?? 0)] as [string, string])] as const;
@@ -222,8 +225,8 @@ export class Live {
       name: v?.display_name || v?.login || 'viewer',
       isSub: !!v?.is_subscriber,
       spins: w?.spins_available ?? 0,
-      flakes: w?.flakes_toward_spin ?? 0,
-      minutesToNextFlake: w?.minutes_to_next_flake ?? 60,
+      watchedToday: w?.minutes_today ?? 0,
+      spunToday: !!w?.spun_today,
       myVote,
     });
   }

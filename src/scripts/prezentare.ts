@@ -46,7 +46,7 @@ function flash(code: string) {
 const steps: Step[] = [
   {
     title: 'Bun venit la ICEMARATON', view: 'site', scroll: 'top',
-    body: () => `<p><strong>ICEMARATON</strong> e site-ul subathonului tău de Crăciun. E legat direct de Twitch: fiecare sub, sub cadou sau bit adaugă timp pe cronometru, iar viewerii votează provocări, învârt roata și urmăresc obiectivele, totul live.</p>
+    body: () => `<p><strong>ICEMARATON</strong> e site-ul subathonului tău de Crăciun. E legat direct de Twitch și de TipeeeStream: fiecare donație, sub, sub cadou sau bit adaugă timp pe cronometru, iar viewerii votează provocări, învârt roata și urmăresc milestone-urile, totul live.</p>
 <p>${where()} e <strong>site-ul adevărat</strong>, care rulează acum pe date de test. Butoanele <strong>Twitch simulat</strong> de sus fac exact ce face Twitch în timpul streamului.</p>
 <p>Pornește simularea automată și lasă-l să meargă în fundal cât vorbim.</p>`,
     actions: [{ label: 'Pornește simularea automată', primary: true, run: () => setAuto(true) }],
@@ -54,9 +54,10 @@ const steps: Step[] = [
   {
     title: 'Cronometrul', view: 'site', scroll: 'top',
     body: `<p>Fiecare susținere adaugă timp, instant, la toți viewerii:</p>
-<ul><li>Tier 1 / Prime: <strong>+1 min</strong></li><li>Tier 2: <strong>+2 min</strong> · Tier 3: <strong>+5 min</strong></li><li>Fiecare sub cadou: <strong>+1 min</strong></li><li>400 de biți: <strong>+1 min</strong> · 5 € (TipeeeStream): <strong>+1 min</strong></li></ul>
+<ul><li>Donație (TipeeeStream): <strong>+6 min pentru fiecare 1 €</strong></li><li>Tier 1 / Prime: <strong>+6 min</strong> · Tier 2: <strong>+12 min</strong> · Tier 3: <strong>+18 min</strong></li><li>Fiecare sub cadou: <strong>+6 min</strong> · 400 de biți: <strong>+4 min</strong></li></ul>
 <p>Sus rulează banda cu ultimele susțineri, iar peste tabelă urcă etichetele «+timp». Când cronometrul ajunge la zero, subathonul se termină singur.</p>`,
     actions: [
+      { label: 'Donație 10 €', primary: true, run: () => api.recordEvent('donation', 'ninsoare_ana', null, 10, 'EUR') },
       { label: 'Sub Tier 1', run: () => api.recordEvent('sub', 'fulgusor', '1000') },
       { label: 'Sub Tier 3', run: () => api.recordEvent('sub', 'vifor_vlad', '3000') },
       { label: '10 subs cadou', run: () => api.recordEvent('gift', 'snowdrift_tv', '1000', 10) },
@@ -67,7 +68,7 @@ const steps: Step[] = [
     title: 'Ora dublă și înghețarea', view: 'site', scroll: 'top',
     body: `<p><strong>Ora dublă</strong>: moderatorii o pornesc (sau o programează) și tot timpul adăugat valorează dublu. Apare și pe site, sub cronometru.</p>
 <p><strong>Îngheți timpul</strong> e un premiu de pe roată: cronometrul stă pe loc 5 minute.</p>
-<p>Încearcă: pornește Ora dublă, apoi dă un sub Tier 3. Primește +10:00 în loc de +5:00.</p>`,
+<p>Încearcă: pornește Ora dublă, apoi dă un sub Tier 3. Primește +36:00 în loc de +18:00.</p>`,
     actions: [
       { label: 'Pornește Ora dublă', primary: true, run: () => api.doubleHour(Date.now(), 60) },
       { label: 'Sub Tier 3', run: () => api.recordEvent('sub', 'glacier_gabi', '3000') },
@@ -76,17 +77,17 @@ const steps: Step[] = [
     ],
   },
   {
-    title: 'Obiectivele de Crăciun', view: 'site', scroll: 'top',
-    body: `<p>12 obiective, deblocate de numărul de subs: pulover urât, baia de gheață, sarmale live… Când se atinge pragul, pe site apare anunțul <strong>«Obiectiv deblocat»</strong>, iar obiectivul se bifează în listă.</p>
-<p>Bara de sub cronometru arată cât mai e până la următorul.</p>`,
+    title: 'Milestone Maraton', view: 'site', scroll: 'top',
+    body: `<p>Provocările pe care le alegi tu, deblocate de <strong>suma donațiilor</strong> (în euro). Când totalul atinge suma unui milestone, pe site apare anunțul <strong>«Milestone deblocat»</strong>, iar milestone-ul se bifează în listă.</p>
+<p>Lista o editezi oricând din pagina moderatorilor: textul provocării și suma. Bara de sub cronometru arată cât mai e până la următorul.</p>`,
     actions: [
-      { label: 'Dăruiește subs până la obiectivul următor', primary: true, run: () => {
-        const subs = api.state.stats.subs;
-        const next = [100, 250, 500, 750, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 7500].find((t) => t > subs);
-        if (next) api.recordEvent('gift', 'snowdrift_tv', '1000', next - subs);
+      { label: 'Donează până la milestone-ul următor', primary: true, run: () => {
+        const raised = api.state.stats.raised;
+        const next = api.state.goals.map((g) => g.threshold).find((t) => t > raised);
+        if (next) api.recordEvent('donation', 'mistletoe_mike', null, Math.ceil(next - raised), 'EUR');
         scrollSite('top');
       } },
-      { label: 'Arată lista obiectivelor', run: () => scrollSite('goals') },
+      { label: 'Arată lista', run: () => scrollSite('goals') },
     ],
   },
   {
@@ -103,12 +104,12 @@ const steps: Step[] = [
   },
   {
     title: 'Roata lui Lucky', view: 'site', scroll: 'roata',
-    body: `<p>Cine se uită primește <strong>fulgi</strong>: 1 pe oră, 2 pentru abonați (se numără automat, după cine e în chat). <strong>3 fulgi = o rotire.</strong></p>
+    body: `<p>Roata e pentru <strong>abonați</strong>: cine stă <strong>cel puțin 2 ore</strong> pe stream într-o zi primește <strong>o rotire pe zi</strong>, până la finalul maratonului. Timpul se numără automat, după cine e în chat. Ziua se resetează la 00:00.</p>
 <p>Premiul îl alege serverul, roata doar îl arată, deci nu se poate trișa. Premiile câștigate ajung la moderatori, să le dea pe stream.</p>
 <p>Încearcă: intră ca abonat și apasă «Învârte roata» în site.</p>`,
     actions: [
       { label: 'Intră ca abonat', primary: true, run: () => api.setViewer('sub') },
-      { label: '+1 oră de privit', run: () => api.watchHour() },
+      { label: '+30 min privit', run: () => api.watchHalfHour() },
     ],
   },
   {
@@ -136,7 +137,7 @@ ${compact.matches
   },
   {
     title: 'Overlay-ul pe stream', view: 'overlay',
-    body: `<p>Pentru OBS: o <strong>bandă discretă în colț</strong>, cu cronometrul, obiectivul următor și fiecare susținere nouă. Fundal transparent, nu acoperă jocul.</p>
+    body: `<p>Pentru OBS: o <strong>bandă discretă în colț</strong>, cu cronometrul, milestone-ul următor și fiecare susținere nouă. Fundal transparent, nu acoperă jocul.</p>
 <p>Se poate muta în orice colț, mări sau micșora, sau lăsa doar cronometrul, din linkul din OBS.</p>`,
     actions: [
       { label: 'Sub Tier 3', primary: true, run: () => api.recordEvent('sub', 'frostbyte_77', '3000') },
@@ -246,16 +247,16 @@ document.addEventListener('keydown', (e) => {
 // ---- Final step: what's ready, what's next ----------------------------------
 document.getElementById('final')!.innerHTML = `
 <section class="card ice"><h2>Gata și testat</h2><ul>
-<li>Site-ul public, pe calculator și telefon</li><li>Legătura cu Twitch: subs, cadouri, biți, live</li>
-<li>Conectare cu Twitch și verificare abonament</li><li>Vot, roată, fulgi, obiective, bingo, propuneri</li>
-<li>Pagina moderatorilor</li><li>Overlay-ul pentru OBS</li></ul></section>
-<section class="card"><h2>Pornirea, împreună (15 min)</h2><ol>
-<li>Creăm aplicația ICEMARATON pe dev.twitch.tv</li><li>Salvăm cheile în panoul de administrare</li>
-<li>Intri pe /mod și apeși «Conectează contul de streamer»</li><li>Stabilim data de start și finalul programat</li>
-<li>Adaugi overlay-ul în OBS</li></ol></section>
+<li>Site-ul public, pe calculator și telefon</li><li>Twitch conectat: subs, cadouri, biți, live</li>
+<li>Donațiile din TipeeeStream, în euro</li><li>Conectare cu Twitch și verificare abonament</li>
+<li>Vot, roata zilnică, Milestone Maraton, bingo, propuneri</li><li>Pagina moderatorilor și overlay-ul pentru OBS</li></ul></section>
+<section class="card"><h2>Stabilit</h2><ul>
+<li>Start: 20 decembrie, 12:00 · final programat: 10 ianuarie, 12:00</li>
+<li>1 € = +6 min · Tier 1 +6 · Tier 2 +12 · Tier 3 +18 · cadou +6 · 400 biți +4</li>
+<li>Roata: abonați, 2 ore pe zi, o rotire pe zi</li></ul></section>
 <section class="card"><h2>De hotărât</h2><ul>
-<li>Data de start și finalul programat</li><li>Tarifele de timp (acum: +1 / +2 / +5 min)</li>
-<li>Obiectivele și premiile roții</li><li>Donațiile: StreamElements sau Streamlabs</li>
+<li>Milestone-urile și sumele lor (se editează pe /mod)</li><li>Premiile roții și programul Orei duble</li>
+<li>Premiul de la bingo (un produs de la sponsor) și cartonașul</li>
 <li>Sponsorii: logo-uri, linkuri, codul de reducere</li><li>Linkurile de Discord și rețele</li></ul></section>
 <div class="links">
 <a href="../?demo" target="_blank" rel="noopener">Site-ul (demo) ↗</a>

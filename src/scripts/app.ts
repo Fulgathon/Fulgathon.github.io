@@ -130,7 +130,11 @@ const errors: Record<string, string> = {
   not_subscribed: 'Asta e doar pentru abonați.',
   round_closed: 'Runda de vot s-a închis.',
   not_in_round: 'Provocarea nu mai e în runda asta.',
-  no_spins: 'Nu mai ai rotiri. Mai stai puțin!',
+  no_spins: 'Nu ai rotire acum. Mai stai puțin!',
+  wheel_closed: 'Roata se deschide odată cu maratonul.',
+  not_subscriber: 'Roata e doar pentru abonați.',
+  not_enough_watch: 'Ai nevoie de 2 ore de privit azi pentru rotire.',
+  already_spun: 'Ai învârtit deja azi. Revino mâine!',
   too_many: 'Ai trimis deja 3 propuneri. Mai încearcă peste câteva minute.',
 };
 function info(eyebrow: string, text: string) {
@@ -143,18 +147,18 @@ function fail(err: unknown) {
 }
 
 // ---- Live data ----------------------------------------------------------
-const reachedGoals = (d: SiteData) => d.goals.filter((g) => d.subs >= g.threshold).length;
+const reachedGoals = (d: SiteData) => d.goals.filter((g) => d.raisedNum >= g.threshold).length;
 
 function applyMe(me: Me | null) {
   if (!me) {
-    set({ viewer: 'out', viewerName: '', spins: 0, flakes: 0, myVote: null, result: null, suggestDone: false });
+    set({ viewer: 'out', viewerName: '', spins: 0, watchedToday: 0, spunToday: false, myVote: null, result: null, suggestDone: false });
     return;
   }
   set({
     viewer: me.isSub ? 'sub' : 'nonsub', viewerName: me.name, myVote: me.myVote,
     // Don't let a refresh jump the counter while the wheel is still turning.
-    ...(state.spinning ? {} : { spins: me.spins }),
-    flakes: me.flakes, minutesToNextFlake: me.minutesToNextFlake,
+    ...(state.spinning ? {} : { spins: me.spins, spunToday: me.spunToday }),
+    watchedToday: me.watchedToday,
   });
 }
 
@@ -183,8 +187,8 @@ function demoSync(first = false) {
   const me = demoApi.viewerInfo();
   const patch: Partial<State> = {
     viewer: me.state, viewerName: me.name, myVote: me.myVote,
-    flakes: me.flakes, minutesToNextFlake: me.minutesToNextFlake,
-    ...(state.spinning ? {} : { spins: me.spins }),
+    watchedToday: me.watchedToday,
+    ...(state.spinning ? {} : { spins: me.spins, spunToday: me.spunToday }),
   };
   const unlocked = data.status === 'live' && (first ? reachedGoals(data) > 0 : reachedGoals(data) > before);
   set(unlocked ? { ...patch, toast: 'goal' } : patch);
@@ -258,7 +262,7 @@ function spinTo(idx: number, spinsLeft: number) {
   const cur = state.wheelDeg;
   const target = (((360 - (idx * 45 + 22.5 + jitter)) % 360) + 360) % 360;
   const delta = (((target - (cur % 360)) % 360) + 360) % 360;
-  set({ wheelDeg: cur + 5 * 360 + delta, spinning: true, spins: spinsLeft, result: null });
+  set({ wheelDeg: cur + 5 * 360 + delta, spinning: true, spins: spinsLeft, spunToday: true, result: null });
   clearTimeout(spinTimer);
   spinTimer = window.setTimeout(() => {
     set({ spinning: false, result: idx });
@@ -359,7 +363,7 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
   simGift: () => { demoApi?.recordEvent('gift', 'viewer_demo', '1000', 10); },
   simBits: () => { demoApi?.recordEvent('bits', 'viewer_demo', null, 500); },
   simAuto: () => setAutoSim(autoSim === undefined),
-  simHour: () => { demoApi?.watchHour(); },
+  simHour: () => { demoApi?.watchHalfHour(); },
   demoReset: () => { if (confirm('Resetezi demo-ul la starea de început?')) { setAutoSim(false); demoApi?.reset(); } },
 };
 

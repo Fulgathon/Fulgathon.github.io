@@ -1,5 +1,5 @@
 ---
-// Hero (#timer): beams, grid, sponsor plate, ICEMARATON, logo, CTAs, scoreboard.
+// Hero (#timer): beams, grid, ICEMARATON, logo, CTAs, scoreboard (raised · sponsor · next milestone).
 import { Image } from 'astro:assets';
 import logo from '../../assets/logo-mascot.webp';
 import { v, iff } from '../lib/ssr';
@@ -28,20 +28,14 @@ const corners = ['c-tl', 'c-tr', 'c-bl', 'c-br'];
   </div>
 
   <div style="position: relative; z-index: 1; text-align: center; padding: 0 8px">
-    <a href="#parteneri" aria-label={`Prezentat de ${site.sponsor.name}, partenerul principal`} style="position: relative; margin-top: clamp(16px, 2.4cqi, 32px); display: inline-flex; align-items: center; gap: 16px; padding: 10px 20px; border: 1px solid #1C2230; background: rgba(9,12,17,0.85); text-decoration: none; color: #F2F5FA">
-      {corners.map((c) => <span aria-hidden="true" class={`corner ${c}`} style="width: 12px; height: 12px"></span>)}
-      <span style={`font-family: ${cond}; font-size: 13px; font-weight: 700; letter-spacing: 0.24em; text-transform: uppercase; color: #8C97A8`}>Prezentat de</span>
-      <span aria-hidden="true" style="width: 1px; height: 26px; background: #2A3445"></span>
-      <span style="font-family: Barlow, sans-serif; font-weight: 700; font-size: 22px; letter-spacing: 0.06em; color: #FFFFFF">{site.sponsor.logoText}</span>
-    </a>
-    <p style={`margin: clamp(14px, 2cqi, 24px) 0 clamp(10px, 1.6cqi, 22px); font-family: ${cond}; font-weight: 800; font-style: italic; font-size: clamp(15px, 1.5cqi, 21px); letter-spacing: 0.3em; text-transform: uppercase; color: var(--ice)`}>Subathonul de Crăciun · 2026</p>
+    <p style={`margin: clamp(36px, 5cqi, 64px) 0 clamp(10px, 1.6cqi, 22px); font-family: ${cond}; font-weight: 800; font-style: italic; font-size: clamp(15px, 1.5cqi, 21px); letter-spacing: 0.3em; text-transform: uppercase; color: var(--ice)`}>Subathonul de Crăciun · 2026</p>
     <h1 style={`margin: 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: min(16.5cqi, 252px); line-height: 0.8; letter-spacing: -0.02em; text-transform: uppercase; white-space: nowrap; color: #F2F5FA`}><span class="ice-text">Ice</span><span style="color: transparent; -webkit-text-stroke: max(2px, 0.2cqi) var(--ice)">maraton</span></h1>
   </div>
   <div class="float" style="position: relative; z-index: 2; width: min(72%, 560px); margin: max(-4cqi, -60px) auto 0">
     <Image class="zap" src={logo} alt="Icemanlucky" widths={[400, 560, 720, 960, 1120]} sizes="min(72vw, 560px)" quality={72} loading="eager" fetchpriority="high" style="width: 100%; height: auto; display: block" />
   </div>
   <div style="position: relative; z-index: 3; max-width: 760px; margin: clamp(20px, 3cqi, 40px) auto 0; padding: 0 clamp(20px, 4cqi, 40px); text-align: center">
-    <p style="margin: 0 auto; max-width: 560px; font-size: clamp(16px, 1.4cqi, 19px); color: #C9D2DF">Fiecare sub adaugă timp. Cât timp vin subs, nu ajungem la zero. Altfel, ne oprim pe <strong data-text="endDateText" style="color: #F2F5FA">{v.endDateText}</strong>.</p>
+    <p style="margin: 0 auto; max-width: 560px; font-size: clamp(16px, 1.4cqi, 19px); color: #C9D2DF">Fiecare donație și fiecare sub adaugă timp. Cât timp vin, nu ajungem la zero. Altfel, ne oprim pe <strong data-text="endDateText" style="color: #F2F5FA">{v.endDateText}</strong>.</p>
     <div style="margin-top: 26px; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px">
       <a class="btn-primary" href={site.links.twitch} style={`flex: 0 1 260px; min-height: 58px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 0 24px; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 23px; text-transform: uppercase; text-decoration: none`}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4v16l13-8z"></path></svg>
@@ -80,17 +74,17 @@ const corners = ['c-tl', 'c-tr', 'c-bl', 'c-br'];
         ))}
       </div>
       <div style="margin-top: clamp(20px, 3cqi, 32px); display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 16px 0">
-        <div style="padding: 4px 20px; border-left: 2px solid #2A3445">
-          <p style={statLabel}>Subs</p>
-          <p data-text="subsText" style={statValue}>{v.subsText}</p>
-        </div>
-        <div style="padding: 4px 20px; border-left: 2px solid #2A3445">
-          <p style={statLabel}>Următorul obiectiv</p>
-          <p data-text="nextGoalText" style={`${statValue}; color: var(--ice)`}>{v.nextGoalText}</p>
-        </div>
-        <div style="padding: 4px 20px; border-left: 2px solid #2A3445">
+        <div style="padding: 4px 20px; border-left: 2px solid var(--ice)">
           <p style={statLabel}>Strâns până acum</p>
           <p data-text="raisedText" style={statValue}>{v.raisedText}</p>
+        </div>
+        <a href="#parteneri" aria-label={`Prezentat de ${site.sponsor.name}, partenerul principal`} style="padding: 4px 20px; border-left: 2px solid #2A3445; text-decoration: none; color: #F2F5FA">
+          <p style={statLabel}>Prezentat de</p>
+          <p style="margin: 0; display: flex; align-items: center; min-height: 44px; font-family: Barlow, sans-serif; font-weight: 700; font-size: 28px; letter-spacing: 0.06em; color: #FFFFFF">{site.sponsor.logoText}</p>
+        </a>
+        <div style="padding: 4px 20px; border-left: 2px solid #2A3445">
+          <p style={statLabel}>Următorul milestone</p>
+          <p data-text="nextGoalText" style={`${statValue}; color: var(--ice)`}>{v.nextGoalText}</p>
         </div>
       </div>
       <div style="margin-top: 24px">

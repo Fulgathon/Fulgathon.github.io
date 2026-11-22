@@ -47,10 +47,11 @@ Tables: `timer`, `stats`, `rates`, `events`, `goals`, `viewers`, `watch_time`,
 | `start_timer(seconds, scheduled_end)` | backend | Starts the subathon. |
 | `freeze_timer(seconds)` | backend | "Îngheți timpul": the countdown stands still. |
 | `set_double_hour(from, minutes)` | backend | Schedules "Ora dublă". |
-| `credit_watch_time(viewers jsonb, minutes)` | backend | Chat presence → minutes → snowflakes (1 per hour, 2 for subs). |
+| `credit_watch_time(viewers jsonb, minutes)` | backend | Chat presence → total minutes (`watch_time`) and minutes per Romanian day (`watch_daily`). |
 | `cast_vote(round, challenge)` | subscriber | One vote per round; calling again moves it. |
 | `suggest(body)` | subscriber | Challenge idea (3–140 chars, max 3 per 10 minutes). |
-| `wheel_status()` | logged in | Snowflakes, spins available, time to the next snowflake. |
+| `wheel_status()` | logged in | Subscriber?, minutes watched today, already spun today, spin available (sub + 120 min today + live + not spun). |
+| `mod_set_goals(goals jsonb)` | moderators | Replace the Milestone Maraton list (title + € threshold), sorted by amount. |
 | `spin()` | logged in | The server picks the prize; the browser only animates to it. |
 
 Tested on the live project inside rolled-back transactions: time and doubling

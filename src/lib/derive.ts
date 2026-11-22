@@ -18,10 +18,10 @@ export interface State {
   now: number;
   viewer: Viewer;
   viewerName: string;
-  /** Spins available, snowflakes toward the next spin (0–2), minutes to the next snowflake. */
+  /** Wheel: spins available now (0 or 1), minutes watched today, already spun today. */
   spins: number;
-  flakes: number;
-  minutesToNextFlake: number;
+  watchedToday: number;
+  spunToday: boolean;
   menu: boolean;
   tab: BoardTab;
   voteTab: VoteTab;
@@ -45,10 +45,10 @@ export function initialState(): State {
     viewer: 'out',
     viewerName: '',
     spins: 0,
-    flakes: 0,
-    minutesToNextFlake: 60,
+    watchedToday: 0,
+    spunToday: false,
     menu: false,
-    tab: 'gifts',
+    tab: 'donations',
     voteTab: 'open',
     myVote: null,
     toast: null,
@@ -109,20 +109,21 @@ export function derive(s: State, d: SiteData) {
   const isNonsub = s.viewer === 'nonsub';
   const isSub = s.viewer === 'sub';
 
-  // Goals
+  // Milestone Maraton: unlocked by the donation total (€).
   const subs = d.subs;
+  const raised = d.raisedNum;
   const marks = d.goals.map((g) => g.threshold);
   let foundCurrent = false;
   let nextIdx = marks.length - 1;
   const goals = d.goals.map((g, i) => {
     const t = g.threshold;
-    const done = subs >= t;
+    const done = raised >= t;
     const current = !done && !foundCurrent;
     if (current) { foundCurrent = true; nextIdx = i; }
     const prev = i === 0 ? 0 : marks[i - 1];
-    const pct = Math.max(0, Math.min(100, Math.round(((subs - prev) / (t - prev)) * 100))) + '%';
+    const pct = Math.max(0, Math.min(100, Math.round(((raised - prev) / (t - prev)) * 100))) + '%';
     return {
-      no: pad(i + 1), threshold: fmtInt(t), title: g.title,
+      no: pad(i + 1), threshold: fmtInt(t) + ' €', title: g.title,
       done, current, locked: !done && !current, pct,
       numColor: done ? 'var(--ice)' : current ? '#FFFFFF' : '#2A3445',
       titleColor: done ? '#AEB8C7' : current ? '#F2F5FA' : '#8C97A8',
@@ -133,7 +134,7 @@ export function derive(s: State, d: SiteData) {
   const lastUnlocked = unlockedCount > 0 ? goals[unlockedCount - 1] : null;
   const nextMark = marks[nextIdx] ?? 0;
   const prevMark = nextIdx <= 0 ? 0 : marks[nextIdx - 1];
-  const progress = nextMark > prevMark ? Math.max(0, Math.min(100, ((subs - prevMark) / (nextMark - prevMark)) * 100)) : 0;
+  const progress = nextMark > prevMark ? Math.max(0, Math.min(100, ((raised - prevMark) / (nextMark - prevMark)) * 100)) : 0;
 
   // Ticker: real events once there are any.
   const tick = d.ticker.length > 0 ? d.ticker : placeholderTicker(startText);
@@ -186,15 +187,25 @@ export function derive(s: State, d: SiteData) {
   const res = s.result;
   const hasResult = res !== null && !spinning && !isOut;
   const isLose = res === d.losePrize;
-  const flakes = [0, 1, 2].map((i) => ({ color: i < s.flakes ? 'var(--ice)' : '#2A3445' }));
+  // Daily wheel: subscribers, 2 hours watched today (Romania time), 1 spin per day.
+  const NEED = 120;
+  const watched = Math.min(NEED, Math.max(0, s.watchedToday));
+  const flakes = [0, 1, 2, 3].map((i) => ({ color: watched >= (i + 1) * 30 ? 'var(--ice)' : '#2A3445' }));
   const spins = s.spins;
-  const flakesLabel = s.flakes + ' din 3 fulgi pentru următoarea rotire';
+  const flakesLabel = `${watched} din ${NEED} de minute privite azi`;
+  const wheelLive = live;
+  const flakesNote = !isSub
+    ? 'Roata e doar pentru abonați. După ce te abonezi, apasă «M-am abonat, verifică iar».'
+    : s.spunToday ? 'Ai învârtit azi. Mâine ai o nouă rotire după 2 ore de privit (ziua începe la 00:00).'
+    : !wheelLive ? 'Roata se deschide odată cu maratonul.'
+    : watched >= NEED ? 'Ai stat 2 ore azi: rotirea ta te așteaptă.'
+    : `Mai ai ${count(NEED - watched, 'minut', 'minute')} de privit azi până la rotire.`;
   const prizes = d.prizes.map((p, i) => ({ short: p[0], color: p[2], rot: 'rotate(' + (i * 45 + 22.5 - 90) + 'deg)' }));
 
   // Toast
   let toastOn = false, toastEyebrow = '', toastText = '', toastColor = '#FFFFFF', toastBorder = '#FFFFFF';
   if (s.toast === 'goal' && live && lastUnlocked) {
-    toastOn = true; toastEyebrow = 'Obiectiv deblocat';
+    toastOn = true; toastEyebrow = 'Milestone deblocat';
     toastText = 'Nr. ' + lastUnlocked.no + ' · ' + lastUnlocked.title;
   } else if (s.toast === 'vote' && myVote) {
     toastOn = true; toastEyebrow = 'Vot înregistrat'; toastText = myTitle;
@@ -241,12 +252,12 @@ export function derive(s: State, d: SiteData) {
     endDateText,
     hasDouble: doubleNow || doubleSoon, doubleText,
     subsText: fmtInt(subs),
-    nextGoalText: fmtInt(nextMark),
+    nextGoalText: fmtInt(nextMark) + ' €',
     nextGoalTitle: d.goals[nextIdx]?.title ?? '',
     raisedText: d.raised,
     progressPct: progress.toFixed(1) + '%',
-    progressLabel: fmtInt(subs) + ' / ' + fmtInt(nextMark) + ' subs',
-    goals, unlockedCount, board, boardTabs, boardLabelledBy: 'tab-board-' + tab,
+    progressLabel: fmtInt(Math.floor(raised)) + ' / ' + fmtInt(nextMark) + ' €',
+    goals, unlockedCount, totalGoals: goals.length, board, boardTabs, boardLabelledBy: 'tab-board-' + tab,
     boardEmpty: board.length === 0,
 
     isOut, isNonsub, isSub, isIn: !isOut,
@@ -264,13 +275,14 @@ export function derive(s: State, d: SiteData) {
 
     prizes, wheelTransform: `rotate(${s.wheelDeg}deg)`, spinning, flakes,
     flakesLabel,
-    flakesNote: `${flakesLabel}. Următorul fulg în ${count(s.minutesToNextFlake, 'minut', 'minute')}.`,
-    spinsText: spins === 1 ? 'Ai 1 rotire' : 'Ai ' + spins + ' rotiri',
-    spinLabel: isOut ? 'Conectează-te ca să învârți' : spinning ? 'Se învârte…' : spins > 0 ? 'Învârte roata' : 'Nu mai ai rotiri. Mai stai puțin!',
+    flakesNote,
+    spinsText: !isSub ? 'Doar pentru abonați' : spins > 0 ? 'Ai 1 rotire azi' : s.spunToday ? 'Ai învârtit azi' : `Azi: ${watched} / ${NEED} min`,
+    spinLabel: isOut ? 'Conectează-te ca să învârți' : spinning ? 'Se învârte…' : spins > 0 ? 'Învârte roata'
+      : !isSub ? 'Doar pentru abonați' : s.spunToday ? 'Revino mâine' : 'Mai stai puțin!',
     spinClass: isOut ? 'btn-twitch' : spins > 0 || spinning ? 'btn-red' : 'btn-ghost',
     hasResult,
     resultTitle: hasResult && res !== null ? (isLose ? 'Data viitoare!' : 'Ai câștigat: ' + (d.prizes[res]?.[1] ?? '')) : '',
-    resultNote: isLose ? 'Fulgii tăi se strâng în continuare. Mai încearcă.' : 'Un moderator îți dă premiul pe stream în câteva minute.',
+    resultNote: isLose ? 'Mâine ai o nouă rotire. Mai încearcă!' : 'Un moderator îți dă premiul pe stream în câteva minute.',
     recentWins: d.recentWins,
 
     // The open mobile menu sits under the toast, so the toast waits.

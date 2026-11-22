@@ -67,7 +67,8 @@ On `/mod` → **Pornește acum** with the starting hours. From then on:
 | Subs, resubs, gifts, bits | Twitch → `twitch-eventsub` → time added, ticker, goals, leaderboard (instant) |
 | Donations | TipeeeStream (euros), polled every 15 s by `tipeee-donations` → time added (5 € = +1 min), ticker, «Strâns» total. Counted only while the timer is live |
 | Live / offline | Twitch `stream.online/offline` |
-| Watch time & snowflakes | Every 5 min while live and online, everyone in chat gets 5 min; 1 snowflake/hour, 2 for subs |
+| Watch time & wheel | Every 5 min while live and online, everyone in chat gets 5 min (total and per Romanian day). A subscriber with 2 h watched that day gets 1 spin per day |
+| Milestone Maraton | Unlocked by the donation total (€); edit the list on `/mod` → Milestone Maraton |
 | Viewer login & sub check | "Conectează-te cu Twitch"; sub status checked on login and with "M-am abonat, verifică iar" |
 | Vote rounds | `/mod` opens a round (auto-proposes 2 easy, 2 medium, 1 hard); it closes itself on time and schedules the winner |
 | Timer end | At zero it ends by itself (moderators can add time or end it early) |
@@ -83,3 +84,12 @@ secret `TIPEEE_API_KEY`). Status: `select * from private.tipeee_state`.
 - "Streamer neconectat": Iceman presses the connect button again.
 - Twitch revoked access (password change etc.): same, connect again.
 - Logs: Supabase dashboard → Edge Functions → each function → Logs.
+
+## Multistreaming (not built)
+
+Watch time and the wheel count only Twitch chat. Viewers on YouTube, Kick or
+TikTok have no Twitch account, so the site can't recognise them. Counting them
+would need: their own login on the site (Google/Kick), each platform's chat
+list (YouTube Live Chat API, Kick API; TikTok has no official one), and a way
+for one person to link accounts so their minutes add up. Possible as a phase 3;
+YouTube is the most practical first step.

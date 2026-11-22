@@ -28,6 +28,8 @@ const errors: Record<string, string> = {
   timer_not_live: 'Cronometrul nu e pornit.',
   round_already_open: 'Există deja o rundă deschisă. Închide-o mai întâi.',
   need_two_challenges: 'Alege cel puțin 2 provocări.',
+  bad_goals: 'Fiecare milestone are nevoie de text și de o sumă în euro (număr întreg, peste 0).',
+  duplicate_amount: 'Două milestone-uri au aceeași sumă. Fiecare sumă trebuie să fie diferită.',
 };
 let msgTimer: number | undefined;
 function say(text: string, err = false) {
@@ -86,7 +88,12 @@ let S: {
   prizes: { id: number; user_login: string; created_at: string; prizes: { win_label: string; is_win: boolean } | null }[];
   mods: { login: string; display_name: string | null }[];
   draft: number[];
-} = { me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [] };
+  goals: { title: string; threshold: number; unlocked_at: string | null }[];
+  /** Milestone list being edited (null = showing the saved list). */
+  goalsDraft: { title: string; threshold: string }[] | null;
+} = { me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null };
+const goalRows = () => S.goalsDraft ?? S.goals.map((g) => ({ title: g.title, threshold: String(g.threshold) }));
+const editGoals = () => { if (!S.goalsDraft) S.goalsDraft = goalRows(); return S.goalsDraft; };
 
 // Suggest a round: 2 easy, 2 medium, 1 hard, all from different categories.
 function autoDraft() {
@@ -114,7 +121,7 @@ async function load() {
   S.me = me;
   if (!me?.is_moderator) return render();
 
-  const [status, timer, stats, rounds, pool, scheduled, suggestions, prizes, mods] = await Promise.all([
+  const [status, timer, stats, rounds, pool, scheduled, suggestions, prizes, mods, goals] = await Promise.all([
     db.rpc('mod_status'),
     db.from('timer').select('*').eq('id', 1).maybeSingle(),
     db.from('stats').select('*').eq('id', 1).maybeSingle(),
@@ -124,7 +131,9 @@ async function load() {
     db.from('suggestions').select('id, body, created_at, viewers(login, display_name)').eq('status', 'pending').order('created_at'),
     db.from('spins').select('id, user_login, created_at, prizes(win_label, is_win)').is('fulfilled_at', null).order('created_at'),
     db.from('viewers').select('login, display_name').eq('is_moderator', true).order('login'),
+    db.from('goals').select('title, threshold, unlocked_at').order('position'),
   ]);
+  S.goals = (goals.data ?? []) as typeof S.goals;
   S.status = status.data;
   S.timer = timer.data;
   S.stats = stats.data;
@@ -241,6 +250,23 @@ function render() {
       `}
     </section>
 
+    <section class="card wide" id="milestones">
+      <h2>Milestone Maraton</h2>
+      <p class="muted" style="margin-top:0">Provocările care se deblochează când donațiile ajung la sumă. Strâns acum: <strong style="color:#F2F5FA">${Number(S.stats?.raised ?? 0)} €</strong>. Lista se ordonează singură după sumă.</p>
+      <ul class="list">${goalRows().map((g, i) => {
+        const reached = g.threshold !== '' && Number(S.stats?.raised ?? 0) >= Number(g.threshold);
+        return `<li>
+        <span class="pair grow"><input class="field" type="number" inputmode="numeric" min="1" step="1" data-goal-amt="${i}" value="${esc(g.threshold)}" placeholder="€" aria-label="Suma în euro" style="flex:0 0 110px;width:110px"><input class="field" data-goal-title="${i}" value="${esc(g.title)}" placeholder="Provocarea" aria-label="Provocarea" maxlength="140" style="flex:1 1 auto;min-width:0"></span>
+        ${reached ? '<span class="pill ok">atins</span>' : ''}
+        <button class="btn-ghost" data-act="goalDel" data-i="${i}">Șterge</button></li>`;
+      }).join('')}</ul>
+      <div class="row">
+        <button class="btn-ghost" data-act="goalAdd">Adaugă milestone</button>
+        <button class="btn-primary" data-act="goalSave">Salvează lista</button>
+        ${S.goalsDraft ? '<button class="btn-ghost" data-act="goalCancel">Renunță</button><span class="muted">Modificări nesalvate</span>' : ''}
+      </div>
+    </section>
+
     <section class="card wide" id="vot">
       <h2>Runda de vot</h2>
       ${S.round ? `
@@ -334,6 +360,15 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   approve: (el) => call('mod_review_suggestion', { p_id: Number(el.dataset.id), p_approve: true }, 'Aprobată: e acum în lista de provocări.'),
   reject: (el) => call('mod_review_suggestion', { p_id: Number(el.dataset.id), p_approve: false }, 'Respinsă.'),
   fulfil: (el) => call('mod_fulfil_spin', { p_id: Number(el.dataset.id) }, 'Premiu marcat ca dat.'),
+  goalAdd: () => { editGoals().push({ title: '', threshold: '' }); render(); },
+  goalDel: (el) => { editGoals().splice(Number(el.dataset.i), 1); render(); },
+  goalCancel: () => { S.goalsDraft = null; render(); },
+  goalSave: async () => {
+    const list = goalRows().filter((g) => g.title.trim() || g.threshold !== '')
+      .map((g) => ({ title: g.title.trim(), threshold: Number(g.threshold) }));
+    await call('mod_set_goals', { p_goals: list }, 'Lista de milestone-uri a fost salvată.');
+    S.goalsDraft = null;
+  },
   mod: () => val('newMod').trim() && call('mod_set_moderator', { p_login: val('newMod'), p_on: true }, 'Moderator adăugat.'),
   unmod: (el) => confirm(`Scoți moderatorul ${el.dataset.login}?`) && call('mod_set_moderator', { p_login: el.dataset.login, p_on: false }, 'Moderator scos.'),
 };
@@ -346,6 +381,15 @@ document.addEventListener('click', (e) => {
 document.addEventListener('change', (e) => {
   const sel = (e.target as Element).closest<HTMLSelectElement>('[data-draft]');
   if (sel) S.draft[Number(sel.dataset.draft)] = Number(sel.value);
+});
+// Milestone edits are kept while typing, so a live refresh doesn't wipe them.
+document.addEventListener('input', (e) => {
+  const el = e.target as HTMLInputElement;
+  if (el.dataset.goalAmt !== undefined) editGoals()[Number(el.dataset.goalAmt)].threshold = el.value;
+  else if (el.dataset.goalTitle !== undefined) editGoals()[Number(el.dataset.goalTitle)].title = el.value;
+  else return;
+  const box = app.querySelector('#milestones .row');
+  if (box && !box.querySelector('[data-act="goalCancel"]')) box.insertAdjacentHTML('beforeend', '<button class="btn-ghost" data-act="goalCancel">Renunță</button><span class="muted">Modificări nesalvate</span>');
 });
 
 // Live countdown on the page, plus realtime refresh.

@@ -2,15 +2,16 @@
 // 05 Cum adaugi timp.
 import SectionHead from './SectionHead.astro';
 const cond = "'Barlow Condensed', sans-serif";
+// Same as the rates table in the database (owner's rates, 23 Nov 2026). Donations first.
 const subs: [string, string, boolean][] = [
-  ['Tier 1 / Prime', '+1 min', false],
-  ['Tier 2', '+2 min', false],
-  ['Tier 3', '+5 min', true],
-  ['Sub cadou', '+1 min / sub', false],
+  ['Tier 1 / Prime', '+6 min', false],
+  ['Tier 2', '+12 min', false],
+  ['Tier 3', '+18 min', true],
+  ['Sub cadou', '+6 min / sub', false],
 ];
-const other: [string, string][] = [
-  ['Donație 5 € (TipeeeStream)', '+1 min'],
-  ['400 de biți', '+1 min'],
+const other: [string, string, boolean][] = [
+  ['Donație 1 € (TipeeeStream)', '+6 min', true],
+  ['400 de biți', '+4 min', false],
 ];
 const row = 'display: flex; align-items: baseline; gap: 12px; padding: 12px 0';
 const name = 'font-size: 19px; font-weight: 600';
@@ -20,19 +21,13 @@ const val = `font-family: ${cond}; font-weight: 900; font-style: italic; font-si
 <section id="tarife" aria-labelledby="h-tarife" style="position: relative; z-index: 1; background: #0A0E15; border-top: 1px solid #1A2230; border-bottom: 1px solid #1A2230">
   <div style="max-width: 1280px; margin: 0 auto; padding: clamp(56px, 8cqi, 112px) clamp(20px, 4cqi, 40px)">
     <SectionHead tag="05" bignum="05" title="Cum adaugi timp" id="h-tarife">
-      <p style="margin: 0; max-width: 440px; font-size: 17px; color: #AEB8C7">Subs adaugă timp, contează la obiective și deblochează votul. Donațiile și biții adaugă doar timp.</p>
+      <p style="margin: 0; max-width: 440px; font-size: 17px; color: #AEB8C7">Donațiile deblochează Milestone Maraton: fiecare euro adaugă 6 minute. Subs adaugă timp și deschid votul și roata.</p>
     </SectionHead>
     <div style="margin-top: 32px; display: flex; flex-wrap: wrap; gap: 24px 64px">
       <div style="flex: 1 1 420px; min-width: 0">
-        <h3 style={`margin: 0 0 6px; font-family: ${cond}; font-weight: 800; font-size: 20px; text-transform: uppercase; color: var(--ice)`}>Subs</h3>
-        {subs.map(([n, t, ice]) => (
+        <h3 style={`margin: 0 0 6px; font-family: ${cond}; font-weight: 800; font-size: 20px; text-transform: uppercase; color: var(--ice)`}>Donații și biți</h3>
+        {other.map(([n, t, ice]) => (
           <div style={row}><span style={name}>{n}</span><span aria-hidden="true" style={dots}></span><span style={ice ? `${val}; color: var(--ice)` : val}>{t}</span></div>
-        ))}
-      </div>
-      <div style="flex: 1 1 420px; min-width: 0">
-        <h3 style={`margin: 0 0 6px; font-family: ${cond}; font-weight: 800; font-size: 20px; text-transform: uppercase; color: #FFFFFF`}>Donații și biți</h3>
-        {other.map(([n, t]) => (
-          <div style={row}><span style={name}>{n}</span><span aria-hidden="true" style={dots}></span><span style={val}>{t}</span></div>
         ))}
         <div style="margin-top: 20px; background: #0B1018; border: 1px solid #1A2230">
           <div class="cane" aria-hidden="true" style="height: 6px"></div>
@@ -41,6 +36,12 @@ const val = `font-family: ${cond}; font-weight: 900; font-style: italic; font-si
             <p style="margin: 4px 0 0; font-size: 15px; color: #AEB8C7">O oră pe zi, anunțată pe Discord cu 30 de minute înainte. În ora asta, tot ce adaugi valorează dublu.</p>
           </div>
         </div>
+      </div>
+      <div style="flex: 1 1 420px; min-width: 0">
+        <h3 style={`margin: 0 0 6px; font-family: ${cond}; font-weight: 800; font-size: 20px; text-transform: uppercase; color: #FFFFFF`}>Subs</h3>
+        {subs.map(([n, t, ice]) => (
+          <div style={row}><span style={name}>{n}</span><span aria-hidden="true" style={dots}></span><span style={ice ? `${val}; color: var(--ice)` : val}>{t}</span></div>
+        ))}
       </div>
     </div>
   </div>

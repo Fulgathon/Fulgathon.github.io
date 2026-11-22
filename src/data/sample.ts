@@ -20,6 +20,7 @@ export function emptyData(): SiteData {
     doubleUntil: null,
     subs: 0,
     raised: '0 €',
+    raisedNum: 0,
     goals: defaultGoals,
     ticker: [],
     pops: [],
@@ -30,6 +31,6 @@ export function emptyData(): SiteData {
     prizes: defaultPrizes,
     losePrize: 7,
     recentWins: [],
-    boards: { gifts: [], bits: [], hours: [] },
+    boards: { donations: [], gifts: [], bits: [], hours: [] },
   };
 }

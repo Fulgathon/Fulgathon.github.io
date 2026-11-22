@@ -77,14 +77,18 @@ Build the static site so it matches the design, with every interaction working o
 
 ## Decided
 
-- **Name:** ICEMARATON (Iceman + maraton), renamed from FULGATHON on 22 Nov 2026; the design files in `design/` still show the old name. Viewers still collect snowflakes (fulgi) for the wheel. Band line: "Fiecare sub e un fulg. Facem viscol."
+- **Name:** ICEMARATON (Iceman + maraton), renamed from FULGATHON on 22 Nov 2026; the design files in `design/` still show the old name. Snowflakes remain the visual theme (and mark each 30 minutes watched toward the daily wheel). Band line: "Fiecare sub e un fulg. Facem viscol."
 - **Hosting:** GitHub Pages (static), backend separate in phase 2.
+- **Dates:** 20 Dec 2026 12:00 → scheduled end 10 Jan 2027 12:00 (Romania time), set in the database (moderators can change them on /mod).
+- **Time rates (23 Nov 2026):** 1 € donation +6 min, Tier 1/Prime +6, Tier 2 +12, Tier 3 +18, gift sub +6 each, 400 bits +4. Focus on donations over subs.
+- **Milestone Maraton** (was "Obiectivele de Crăciun"): challenges unlocked by the donation total in euros; Iceman and moderators edit the list on /mod.
+- **Wheel:** subscribers only; 2 hours watched in the same day (chat presence, Romania calendar day) = 1 spin per day, until the end. Server enforced.
+- **Sponsor placement:** main sponsor in the middle of the row under the timer (Strâns · Prezentat de · Următorul milestone).
 - **Donations:** TipeeeStream (account icemanlucky), in euros. Twitch never sees them; the `tipeee-donations` Edge Function polls TipeeeStream every 15 seconds.
 
 ## Open (ask, don't guess)
 
-- **Dates:** start date and the scheduled end date (`[DATA FINALĂ]`). The subathon ends on that date if no more time is added.
-- **Time rates:** the design uses Tier 1/Prime +1 min, Tier 2 +2, Tier 3 +5, gift sub +1 each, 5 € donation +1, 400 bits +1. To be confirmed.
-- **Prizes:** bingo prize (`[PREMIU]`), wheel prizes, "Ora dublă" schedule.
+- **Prizes:** wheel prizes, "Ora dublă" schedule; bingo prize = a product from a sponsor (which one, and the bingo board items, still to discuss).
+- **Multistreaming:** whether watch time from other platforms (YouTube, Kick, TikTok) should count; see the note in `docs/go-live.md`.
 - **Sponsors:** the main sponsor in the mockup is **Zona IT** (an example the owner gave; confirm it's signed). "ZONA IT" is plain text standing in for the official logo. Still needed: names, logos (ideally SVG plus all-white versions), links, tiers (main partner / partners / supporters), what each one backs, the discount code (`ICEMAN10` is a placeholder) and the contact email for new sponsors.
 - Discord invite, social links, repo name, custom domain or not.

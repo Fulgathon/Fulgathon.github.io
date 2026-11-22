@@ -24,7 +24,7 @@ const emoteStyle = 'flex: none; width: 44px; height: 54px; object-fit: contain';
 <section id="roata" aria-labelledby="h-roata" style="position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: clamp(56px, 8cqi, 112px) clamp(20px, 4cqi, 40px)">
   <SectionHead tag="03" bignum="03" title="Roata lui Lucky" id="h-roata">
     <div style="max-width: 420px">
-      <p style="margin: 0; font-size: 17px; color: #AEB8C7">Cine stă, câștigă. Cu cât te uiți mai mult, cu atât învârți mai des.</p>
+      <p style="margin: 0; font-size: 17px; color: #AEB8C7">Abonații care stau, câștigă: 2 ore pe stream într-o zi înseamnă o rotire.</p>
       <p style="margin: 12px 0 0; display: flex; align-items: center; gap: 12px; font-size: 13px; color: #8C97A8">Premii oferite de <span class="logo-slot" style="width: 120px; height: 34px; font-size: 11px">Logo sponsor</span></p>
     </div>
   </SectionHead>
@@ -46,9 +46,9 @@ const emoteStyle = 'flex: none; width: 44px; height: 54px; object-fit: contain';
     <div style="flex: 1 1 420px; min-width: 0">
       <h3 style={`margin: 0; font-family: ${cond}; font-weight: 800; font-size: 24px; text-transform: uppercase`}>Cum primești rotiri</h3>
       <ul style="list-style: none; margin: 12px 0 0; padding: 0">
-        <li style="display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid #1A2230"><span style={ruleNum}>1</span><span>Primești <strong>1 fulg</strong> pentru fiecare oră în care te uiți la stream.</span></li>
-        <li style="display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid #1A2230"><span style={ruleNum}>2</span><span><strong>3 fulgi = o rotire.</strong> Rotirile nu expiră până la finalul subathonului.</span></li>
-        <li style="display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid #1A2230"><span style={ruleNum}>3</span><span>Abonații primesc <strong>fulgi dublu</strong>.</span></li>
+        <li style="display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid #1A2230"><span style={ruleNum}>1</span><span>Trebuie să fii <strong>abonat</strong> pe Twitch.</span></li>
+        <li style="display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid #1A2230"><span style={ruleNum}>2</span><span>Uită-te la stream <strong>cel puțin 2 ore</strong> în aceeași zi. Se numără automat cât stai în chat; fiecare fulg = 30 de minute.</span></li>
+        <li style="display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid #1A2230"><span style={ruleNum}>3</span><span><strong>O rotire pe zi</strong>, până la finalul maratonului. Ziua începe la 00:00.</span></li>
       </ul>
 
       <div style="margin-top: 24px; padding: 20px; background: #0B1018; border: 1px solid #1A2230">
@@ -59,7 +59,7 @@ const emoteStyle = 'flex: none; width: 44px; height: 54px; object-fit: contain';
           </div>
           <p data-text="flakesNote" style="margin: 6px 0 0; font-size: 15px; color: #8C97A8">{v.flakesNote}</p>
         </div>
-        <p {...iff('isOut')} style="margin: 0; font-size: 16px; color: #AEB8C7">Conectează-te cu Twitch ca să-ți vezi fulgii și rotirile.</p>
+        <p {...iff('isOut')} style="margin: 0; font-size: 16px; color: #AEB8C7">Conectează-te cu Twitch ca să vezi cât ai privit azi și dacă ai rotire.</p>
         <button type="button" class={v.spinClass} data-attr="class:spinClass" data-action="spin" data-text="spinLabel" style={`margin-top: 16px; width: 100%; min-height: 58px; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 24px; text-transform: uppercase; letter-spacing: 0.02em`}>{v.spinLabel}</button>
         <div role="status">
           <div {...iff('hasResult')} style="margin-top: 16px; display: flex; align-items: center; gap: 14px; padding: 14px; border: 2px solid var(--ice)">
