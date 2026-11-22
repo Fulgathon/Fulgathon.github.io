@@ -39,7 +39,6 @@ Secrets go only into the dashboards below, never into chat or the repo.
 4. **Supabase → Edge Functions → Secrets**: add `TWITCH_CLIENT_ID` and
    `TWITCH_CLIENT_SECRET` (same values).
 5. **Switch login on**: done (22 Nov 2026, `twitchLogin: true` in `src/data/site.ts`).
-   (or ask Claude to).
 6. **Iceman** opens https://icemaraton.github.io/m, logs in with Twitch
    (he's a moderator automatically), clicks **Conectează contul de streamer**
    and approves. The page should say "Gata!" with six events "activ".
