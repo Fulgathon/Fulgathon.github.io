@@ -26,3 +26,4 @@ Thumbs.db
 
 # local preview config (machine-specific paths)
 .claude/launch.json
+.wrangler/

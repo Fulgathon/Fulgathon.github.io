@@ -8,11 +8,11 @@ after `?`, so `/o?pos=bl` opens `/overlay/?pos=bl`):
 
 | Short | Long | For |
 | --- | --- | --- |
-| — | https://icemaraton.github.io/ | Viewers |
-| https://icemaraton.github.io/m | …/mod/ | Moderators (Twitch login, moderator accounts only) |
-| https://icemaraton.github.io/o | …/overlay/ | OBS Browser Source, 1920×1080: a slim strip top-right. Options: `?pos=tl/tr/bl/br`, `?scale=0.8`, `?show=timer,goal,events`, `?style=box` (large box), `?demo` (sample data for placing it) |
-| https://icemaraton.github.io/d | …/?demo | Preview of the site with sample data |
-| https://icemaraton.github.io/p | …/prezentare/ | Guided demo of everything, for presenting (simulated data, never touches the database) |
+| — | https://icemaraton.icemaraton.workers.dev/ | Viewers |
+| https://icemaraton.icemaraton.workers.dev/m | …/mod/ | Moderators (Twitch login, moderator accounts only) |
+| https://icemaraton.icemaraton.workers.dev/o | …/overlay/ | OBS Browser Source, 1920×1080: a slim strip top-right. Options: `?pos=tl/tr/bl/br`, `?scale=0.8`, `?show=timer,goal,events`, `?style=box` (large box), `?demo` (sample data for placing it) |
+| https://icemaraton.icemaraton.workers.dev/d | …/?demo | Preview of the site with sample data |
+| https://icemaraton.icemaraton.workers.dev/p | …/prezentare/ | Guided demo of everything, for presenting (simulated data, never touches the database) |
 | …/m?demo · …/o?demo | …/mod/?demo · …/overlay/?demo | The demo per page; `/d`, `/m?demo`, `/o?demo` and `/p` share one simulated subathon across tabs |
 
 After launch, delete the demo pages: `src/pages/d.astro`, `src/pages/p.astro`
@@ -34,12 +34,12 @@ Secrets go only into the dashboards below, never into chat or the repo.
 2. **Supabase → Authentication → Sign In / Providers → Twitch**: enable, paste
    Client ID + Client Secret, save.
 3. **Supabase → Authentication → URL Configuration**: Site URL
-   `https://icemaraton.github.io`; Redirect URLs `https://icemaraton.github.io/**`
+   `https://icemaraton.icemaraton.workers.dev`; Redirect URLs `https://icemaraton.icemaraton.workers.dev/**`
    and `http://localhost:4321/**`.
 4. **Supabase → Edge Functions → Secrets**: add `TWITCH_CLIENT_ID` and
    `TWITCH_CLIENT_SECRET` (same values).
 5. **Switch login on**: done (22 Nov 2026, `twitchLogin: true` in `src/data/site.ts`).
-6. **Iceman** opens https://icemaraton.github.io/m, logs in with Twitch
+6. **Iceman** opens https://icemaraton.icemaraton.workers.dev/m, logs in with Twitch
    (he's a moderator automatically), clicks **Conectează contul de streamer**
    and approves. The page should say "Gata!" with six events "activ".
 
@@ -51,7 +51,7 @@ Dashboard: https://supabase.com/dashboard/project/yvbxtsuddjqqoogdoqrx
   activity. Upgrade the IceMaraton organization (Pro) for the event.
 - On `/mod`: set the **start date** (countdown on the site) and the
   **scheduled end**; add the other **moderators** by Twitch login.
-- **OBS**: add a Browser Source with `https://icemaraton.github.io/o`, 1920×1080.
+- **OBS**: add a Browser Source with `https://icemaraton.icemaraton.workers.dev/o`, 1920×1080.
 - Open with Iceman, then tell Claude: time rates (now Tier 1/Prime +1 min,
   Tier 2 +2, Tier 3 +5, gift +1 each, 400 bits +1, 5 € +1), goals, prizes,
   sponsor details, Discord and social links.

@@ -126,7 +126,7 @@ export function page(title: string, text: string, ok: boolean, status = 200) {
 main{max-width:560px;border:2px solid ${color};background:#0B1018;padding:28px}
 h1{margin:0 0 10px;font:italic 900 34px/1 system-ui,sans-serif;text-transform:uppercase;color:${color}}
 p{margin:8px 0;color:#C9D2DF}a{color:#3FD0FF}</style></head>
-<body><main><h1>${title}</h1>${text}<p><a href="https://icemaraton.github.io/mod/">Înapoi la pagina de moderatori</a></p></main></body></html>`,
+<body><main><h1>${title}</h1>${text}<p><a href="https://icemaraton.icemaraton.workers.dev/mod/">Înapoi la pagina de moderatori</a></p></main></body></html>`,
     { status, headers: { 'Content-Type': 'text/html; charset=utf-8' } },
   );
 }

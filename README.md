@@ -1,7 +1,7 @@
 # ICEMARATON: Icemanlucky's Christmas subathon
 
 Website for Icemanlucky's Christmas subathon on Twitch (Romanian audience).
-Static site built with [Astro](https://astro.build), hosted on GitHub Pages.
+Static site built with [Astro](https://astro.build), hosted on Cloudflare Workers (static assets) at https://icemaraton.icemaraton.workers.dev.
 
 - Brief: `CLAUDE.md`. Design: `design/` (source) and `docs/design-spec.md` (summary).
 - Challenges for the subscriber vote: `docs/provocari.md` and `data/challenges.json`.
@@ -38,15 +38,18 @@ after launch.
 backend (`src/demo/backend.ts`) with the same rules as the real one, stored in
 the browser and shared between tabs. Nothing touches the real database.
 
-## Deploy (GitHub Pages)
+## Deploy (Cloudflare)
 
-`.github/workflows/deploy.yml` builds and deploys on every push to `main`.
-One-time setup in the repository: **Settings → Pages → Source: GitHub Actions**.
+```bash
+npm run deploy
+```
 
-The base path comes from `actions/configure-pages`, so the site works at
-`https://<user>.github.io/<repo>/` whatever the repo is called. For a custom
-domain, add `public/CNAME` with the domain and set it in the Pages settings;
-the base then becomes `/` automatically.
+Builds with `SITE_URL=https://icemaraton.icemaraton.workers.dev` and uploads `dist/` with wrangler
+(`wrangler.jsonc`: static assets only, 404 page, no Worker code). The first
+time on a computer, run `npx wrangler login` (opens Cloudflare in the browser).
+GitHub only keeps the code; pushing does not deploy. For a custom domain, add it
+in Cloudflare (Workers → icemaraton → Domains) and change `SITE_URL` in
+`package.json`.
 
 ## Where things live
 
