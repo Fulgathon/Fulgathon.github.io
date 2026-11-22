@@ -8,7 +8,7 @@ export const boardTabs: [BoardTab, string][] = [['gifts', 'Subs dăruite'], ['bi
 /** Ticker while nothing has happened yet. */
 export function placeholderTicker(startText: string): TickerItem[] {
   return [
-    { time: '--:--', user: 'FULGATHON', what: `începe pe ${startText}`, color: '#7D8899' },
+    { time: '--:--', user: 'ICEMARATON', what: `începe pe ${startText}`, color: '#7D8899' },
     { time: '--:--', user: 'Pregătește-te', what: 'primul sub pornește cronometrul', color: '#7D8899' },
     { time: '--:--', user: 'Discord', what: 'anunțurile apar acolo primele', color: '#7D8899' },
   ];

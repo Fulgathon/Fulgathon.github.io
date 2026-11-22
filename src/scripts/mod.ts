@@ -157,7 +157,7 @@ function render() {
   dock.hidden = !S.me?.is_moderator;
   if (!S.me) {
     app.innerHTML = `<div class="card" style="margin-top:20px"><h2>Conectează-te</h2>
-      <p>Pagina e pentru moderatorii FULGATHON. Intră cu contul de Twitch.</p>
+      <p>Pagina e pentru moderatorii ICEMARATON. Intră cu contul de Twitch.</p>
       ${site.supabase.twitchLogin
         ? '<button class="btn-twitch" data-act="login">Conectează-te cu Twitch</button>'
         : '<p class="muted">Conectarea cu Twitch nu e activată încă (twitchLogin în src/data/site.ts).</p>'}</div>`;

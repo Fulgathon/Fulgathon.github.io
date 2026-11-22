@@ -13,8 +13,8 @@ import type { BoardTab, SiteData } from '../data/types';
 import { amount, tickerItem } from '../lib/events';
 import { ago, fmtInt } from '../lib/format';
 
-const KEY = 'fulgathon-demo-v1';
-const CHANNEL = 'fulgathon-demo';
+const KEY = 'icemaraton-demo-v1';
+const CHANNEL = 'icemaraton-demo';
 const MIN = 60_000;
 const HOUR = 60 * MIN;
 const DAY = 24 * HOUR;
@@ -263,7 +263,7 @@ export class DemoBackend {
       if (s.timer.status !== 'live' || s.timer.endsAt === null) fail('timer_not_live');
       const seconds = Math.round(minutes * 60);
       s.timer.endsAt! += seconds * 1000;
-      s.events = [{ id: ++s.seq, kind: 'manual', tier: null, quantity: 1, currency: null, seconds_added: Math.max(0, seconds), doubled: false, user_login: null, user_name: 'FULGATHON', at: Date.now() }, ...s.events].slice(0, 60);
+      s.events = [{ id: ++s.seq, kind: 'manual', tier: null, quantity: 1, currency: null, seconds_added: Math.max(0, seconds), doubled: false, user_login: null, user_name: 'ICEMARATON', at: Date.now() }, ...s.events].slice(0, 60);
     });
   }
   freeze(minutes: number) {

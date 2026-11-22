@@ -1,9 +1,9 @@
 # Supabase backend (phase 2)
 
 The static site stays on GitHub Pages. Everything that needs to remember
-something or talk to Twitch lives in the Supabase project **fulgathon**:
+something or talk to Twitch lives in the Supabase project **icemaraton**:
 
-- Project ref: `yvbxtsuddjqqoogdoqrx` (organization "Fulgathon", region Frankfurt `eu-central-1`, free plan)
+- Project ref: `yvbxtsuddjqqoogdoqrx` (organization "IceMaraton", region Frankfurt `eu-central-1`, free plan)
 - API URL: `https://yvbxtsuddjqqoogdoqrx.supabase.co`
 - Publishable key: in `src/data/site.ts` (safe to publish; row level security decides what it can see)
 - Dashboard: https://supabase.com/dashboard/project/yvbxtsuddjqqoogdoqrx
@@ -68,7 +68,7 @@ select public.record_event('twitch','sub','t1','1','test','test','3000'); -- a T
 select public.record_event('twitch','gift','t2','2','test2','test2','1000', 10);
 ```
 
-Open https://fulgathon.github.io/ and it updates within a second. Reset afterwards:
+Open https://icemaraton.github.io/ and it updates within a second. Reset afterwards:
 delete from `spins`, `vote_rounds`, `events`; zero `stats`; set `timer` back to
 `upcoming` with null times; clear `goals.unlocked_at`.
 
@@ -78,15 +78,15 @@ Secrets go in the dashboards, never in this repo or in chat.
 
 1. **Twitch app.** At https://dev.twitch.tv/console (needs 2FA on the Twitch
    account) → *Register Your Application*:
-   - Name: e.g. `FULGATHON`
+   - Name: e.g. `ICEMARATON`
    - OAuth Redirect URL: `https://yvbxtsuddjqqoogdoqrx.supabase.co/auth/v1/callback`
    - Category: *Website Integration*
    - Then *Manage* → copy the **Client ID**, click *New Secret* → copy the **Client Secret**.
 2. **Supabase → Authentication → Sign In / Providers → Twitch**: turn it on,
    paste the Client ID and Client Secret, save.
 3. **Supabase → Authentication → URL Configuration**:
-   - Site URL: `https://fulgathon.github.io`
-   - Redirect URLs: add `https://fulgathon.github.io/**` and `http://localhost:4321/**`
+   - Site URL: `https://icemaraton.github.io`
+   - Redirect URLs: add `https://icemaraton.github.io/**` and `http://localhost:4321/**`
 
 ## Edge Functions (deployed)
 
@@ -104,8 +104,8 @@ Edge Function secrets to set once: `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`.
 Generated in Vault by the migrations: `eventsub_secret`, `cron_secret`; later
 `twitch_broadcaster_token`.
 
-Scheduled jobs (pg_cron): `fulgathon-minute` (closes finished vote rounds,
-ends the timer at zero) and `fulgathon-watch-time` (every 5 minutes).
+Scheduled jobs (pg_cron): `icemaraton-minute` (closes finished vote rounds,
+ends the timer at zero) and `icemaraton-watch-time` (every 5 minutes).
 
 Moderator functions (`mod_*`, used by `/mod`) check `viewers.is_moderator`.
 Logins in `private.settings.moderator_logins` (initially `icemanlucky`) become

@@ -13,7 +13,7 @@ import { admin, getConfig, hmacHex, safeEqual } from '../_shared/twitch.ts';
 const MAX_AGE_MS = 10 * 60_000;
 
 Deno.serve(async (req) => {
-  if (req.method !== 'POST') return new Response('FULGATHON EventSub endpoint', { status: 200 });
+  if (req.method !== 'POST') return new Response('ICEMARATON EventSub endpoint', { status: 200 });
 
   const body = await req.text();
   const id = req.headers.get('Twitch-Eventsub-Message-Id') ?? '';

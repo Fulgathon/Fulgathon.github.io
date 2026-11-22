@@ -1,6 +1,6 @@
-# FULGATHON: Icemanlucky's Christmas subathon website
+# ICEMARATON: Icemanlucky's Christmas subathon website
 
-A one-page website for **FULGATHON**, Icemanlucky's Christmas subathon on Twitch (twitch.tv/icemanlucky). The audience is Romanian, so **all copy visitors see is in Romanian**, with correct diacritics (ă â î ș ț; comma-below ș/ț, not cedilla).
+A one-page website for **ICEMARATON**, Icemanlucky's Christmas subathon on Twitch (twitch.tv/icemanlucky). The audience is Romanian, so **all copy visitors see is in Romanian**, with correct diacritics (ă â î ș ț; comma-below ș/ț, not cedilla).
 
 The design was made and approved on a Claude design canvas. This folder is the handoff. The job is to turn it into a real website hosted on **GitHub Pages**, then later connect it to Twitch.
 
@@ -70,14 +70,14 @@ Build the static site so it matches the design, with every interaction working o
 - Romanian copy everywhere visitors see it. Code, comments and docs can be English.
 - Owner's choice: the English words **subs** (not "suburi") and **LIVE** (not "În direct") are used on the site.
 - Keep the look: near-black, electric ice blue (`#3FD0FF`), white; Barlow Condensed italic display type; square corners; snowfall. The owner rejected softer, playful versions as "girly", "AI-looking" and "not professional". Don't drift back to rounded cards, pastels, red-and-white candy-cane stripes, Christmas light strings, chrome lettering or gradient-wash backgrounds.
-- The owner explicitly asked for: the snowfall, the white-to-ice gradient on "FULG" (not chrome), the emote in the middle of the spin wheel, and a **navbar that always stays on one row**.
+- The owner explicitly asked for: the snowfall, the white-to-ice gradient on "ICE" (not chrome), the emote in the middle of the spin wheel, and a **navbar that always stays on one row**.
 - Sponsors stay calm and professional: logos on dark panels, no flashing.
 - Every animation needs a `prefers-reduced-motion` fallback.
 - Text contrast at least 4.5:1, touch targets at least 44 px, real `<button>`/`<a>`/`<label>` elements.
 
 ## Decided
 
-- **Name:** FULGATHON (fulg + maraton; ties in with the snowflakes viewers collect for the wheel). Band line: "Fiecare sub e un fulg. Facem viscol."
+- **Name:** ICEMARATON (Iceman + maraton), renamed from ICEMARATON on 22 Nov 2026; the design files in `design/` still show the old name. Viewers still collect snowflakes (fulgi) for the wheel. Band line: "Fiecare sub e un fulg. Facem viscol."
 - **Hosting:** GitHub Pages (static), backend separate in phase 2.
 
 ## Open (ask, don't guess)

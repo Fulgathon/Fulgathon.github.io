@@ -1,4 +1,4 @@
-// Generated from the Supabase project "fulgathon" (supabase gen types).
+// Generated from the Supabase project "icemaraton" (supabase gen types).
 // Regenerate after every migration; don't edit by hand.
 
 export type Json =

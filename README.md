@@ -1,4 +1,4 @@
-# FULGATHON: Icemanlucky's Christmas subathon
+# ICEMARATON: Icemanlucky's Christmas subathon
 
 Website for Icemanlucky's Christmas subathon on Twitch (Romanian audience).
 Static site built with [Astro](https://astro.build), hosted on GitHub Pages.

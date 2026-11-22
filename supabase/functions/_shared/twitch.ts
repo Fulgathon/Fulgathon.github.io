@@ -1,4 +1,4 @@
-// Shared helpers for the FULGATHON Edge Functions: database client, config,
+// Shared helpers for the ICEMARATON Edge Functions: database client, config,
 // Twitch tokens (app + broadcaster, with refresh) and small responses.
 //
 // Needs two Edge Function secrets, set in the Supabase dashboard
@@ -121,12 +121,12 @@ export function page(title: string, text: string, ok: boolean, status = 200) {
   const color = ok ? '#3FD0FF' : '#D5162B';
   return new Response(
     `<!doctype html><html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${title} · FULGATHON</title><meta name="robots" content="noindex">
+<title>${title} · ICEMARATON</title><meta name="robots" content="noindex">
 <style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#050608;color:#F2F5FA;font:17px/1.5 system-ui,sans-serif;padding:20px}
 main{max-width:560px;border:2px solid ${color};background:#0B1018;padding:28px}
 h1{margin:0 0 10px;font:italic 900 34px/1 system-ui,sans-serif;text-transform:uppercase;color:${color}}
 p{margin:8px 0;color:#C9D2DF}a{color:#3FD0FF}</style></head>
-<body><main><h1>${title}</h1>${text}<p><a href="https://fulgathon.github.io/mod/">Înapoi la pagina de moderatori</a></p></main></body></html>`,
+<body><main><h1>${title}</h1>${text}<p><a href="https://icemaraton.github.io/mod/">Înapoi la pagina de moderatori</a></p></main></body></html>`,
     { status, headers: { 'Content-Type': 'text/html; charset=utf-8' } },
   );
 }

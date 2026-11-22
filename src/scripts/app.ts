@@ -30,7 +30,7 @@ const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const params = new URLSearchParams(location.search);
 const demo = params.has('demo');
 const embed = params.has('embed');
-const BINGO_KEY = 'fulgathon:bingo';
+const BINGO_KEY = 'icemaraton:bingo';
 
 let data: SiteData = emptyData();
 // state.demo shows the demo panel (not inside the presentation page).
@@ -239,7 +239,7 @@ function setAutoSim(on: boolean) {
 
 // The presentation page steers the embedded demo site.
 window.addEventListener('message', (e) => {
-  if (!demo || e.origin !== location.origin || e.data?.fulgathon !== 'demo') return;
+  if (!demo || e.origin !== location.origin || e.data?.icemaraton !== 'demo') return;
   const m = e.data as { scrollTo?: string; closeToast?: boolean };
   if (m.closeToast) set({ toast: null });
   if (m.scrollTo) {
@@ -348,7 +348,7 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
 
   popout: () => {
     const url = `https://player.twitch.tv/?channel=${encodeURIComponent(site.channel)}&parent=${encodeURIComponent(location.hostname)}`;
-    window.open(url, 'fulgathon-player', 'popup,width=960,height=540');
+    window.open(url, 'icemaraton-player', 'popup,width=960,height=540');
   },
 
   // Demo panel (?demo): viewer and stream state, fake Twitch events.

@@ -1,5 +1,5 @@
 ---
-// Hero (#timer): beams, grid, sponsor plate, FULGATHON, logo, CTAs, scoreboard.
+// Hero (#timer): beams, grid, sponsor plate, ICEMARATON, logo, CTAs, scoreboard.
 import { Image } from 'astro:assets';
 import logo from '../../assets/logo-mascot.webp';
 import { v, iff } from '../lib/ssr';
@@ -35,7 +35,7 @@ const corners = ['c-tl', 'c-tr', 'c-bl', 'c-br'];
       <span style="font-family: Barlow, sans-serif; font-weight: 700; font-size: 22px; letter-spacing: 0.06em; color: #FFFFFF">{site.sponsor.logoText}</span>
     </a>
     <p style={`margin: clamp(14px, 2cqi, 24px) 0 clamp(10px, 1.6cqi, 22px); font-family: ${cond}; font-weight: 800; font-style: italic; font-size: clamp(15px, 1.5cqi, 21px); letter-spacing: 0.3em; text-transform: uppercase; color: var(--ice)`}>Subathonul de Crăciun · 2026</p>
-    <h1 style={`margin: 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: min(16.5cqi, 252px); line-height: 0.8; letter-spacing: -0.02em; text-transform: uppercase; white-space: nowrap; color: #F2F5FA`}><span class="ice-text">Fulg</span><span style="color: transparent; -webkit-text-stroke: max(2px, 0.2cqi) var(--ice)">athon</span></h1>
+    <h1 style={`margin: 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: min(16.5cqi, 252px); line-height: 0.8; letter-spacing: -0.02em; text-transform: uppercase; white-space: nowrap; color: #F2F5FA`}><span class="ice-text">Ice</span><span style="color: transparent; -webkit-text-stroke: max(2px, 0.2cqi) var(--ice)">maraton</span></h1>
   </div>
   <div class="float" style="position: relative; z-index: 2; width: min(72%, 560px); margin: max(-4cqi, -60px) auto 0">
     <Image class="zap" src={logo} alt="Icemanlucky" widths={[400, 560, 720, 960, 1120]} sizes="min(72vw, 560px)" quality={72} loading="eager" fetchpriority="high" style="width: 100%; height: auto; display: block" />

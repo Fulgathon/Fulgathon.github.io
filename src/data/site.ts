@@ -22,10 +22,10 @@ export const site = {
     code: 'ICEMAN10',
     offerUrl: '#',
     pitch:
-      'Partenerul principal al Fulgathonului. [Oferta Zona IT pentru comunitate, de exemplu 10% reducere la periferice de gaming cu codul de mai jos, pe toată durata subathonului.]',
+      'Partenerul principal al IceMaratonului. [Oferta Zona IT pentru comunitate, de exemplu 10% reducere la periferice de gaming cu codul de mai jos, pe toată durata subathonului.]',
   },
   /**
-   * Phase 2 backend (Supabase project "fulgathon", Frankfurt).
+   * Phase 2 backend (Supabase project "icemaraton", Frankfurt).
    * The publishable key is meant to be public: row level security decides
    * what it can read, and it can't write anything. Never put the secret /
    * service_role key in this repo.

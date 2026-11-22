@@ -45,7 +45,7 @@ Corners are square everywhere (no border-radius), except round elements (wheel, 
    - Faint blue grid behind, masked to an ellipse; two slow sweeping spotlight beams (blue, `mix-blend-mode: screen`).
    - Corner labels "TWITCH · RO" and "EDIȚIA 01".
    - Eyebrow "Subathonul de Crăciun · 2026".
-   - Giant "FULGATHON" (`min(16.5cqi, 252px)`), "FULG" with a white-to-ice gradient fill, "ATHON" as an ice outline.
+   - Giant "ICEMARATON" (`min(16.5cqi, 252px)`), "ICE" with a white-to-ice gradient fill, "MARATON" as an ice outline. (The design files still say ICEMARATON, the project's earlier name.)
    - Logo art below, slightly overlapping the bottom of the word, floating gently with a flickering ice glow.
    - Short paragraph and two buttons: "Urmărește live" (ice) and "Votează provocări" (ghost).
    - **Scoreboard:** HUD corner brackets; label "Timp rămas" and live badge; four ice-block tiles DD : HH : MM : SS (white-to-ice gradient digits, flip-clock split, a light glint sweeping across in turn); "+time" chips floating up out of the top edge; three stats (Suburi, Următorul obiectiv, Strâns până acum); progress bar to the next goal; "ORA DUBLĂ" note and scheduled end date.

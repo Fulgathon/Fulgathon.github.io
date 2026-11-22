@@ -189,7 +189,7 @@ export class Live {
       vote_rounds: ['round', 'upNext', 'completed'],
       round_challenges: ['round'],
     };
-    const ch = this.db.channel('fulgathon');
+    const ch = this.db.channel('icemaraton');
     for (const [table, loaders] of Object.entries(watch)) {
       ch.on('postgres_changes', { event: '*', schema: 'public', table }, () => this.queue(...loaders));
     }

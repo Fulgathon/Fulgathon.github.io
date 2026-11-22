@@ -21,7 +21,7 @@ const where = () => (compact.matches && !matchMedia('(orientation: landscape)').
 // ---- Talking to the embedded site ------------------------------------------
 function post(name: string, msg: Record<string, unknown>) {
   const f = document.querySelector<HTMLIFrameElement>(`.frame[data-name="${name}"] iframe`);
-  f?.contentWindow?.postMessage({ fulgathon: 'demo', ...msg }, location.origin);
+  f?.contentWindow?.postMessage({ icemaraton: 'demo', ...msg }, location.origin);
 }
 const scrollSite = (id: string) => { post('site', { scrollTo: id }); post('site2', { scrollTo: id }); post('phone', { scrollTo: id }); };
 const currentRoundId = () => api.state.rounds.slice().sort((a, b) => b.number - a.number)[0]?.id;
@@ -45,8 +45,8 @@ function flash(code: string) {
 // ---- The steps (Romanian: for Iceman) ---------------------------------------
 const steps: Step[] = [
   {
-    title: 'Bun venit la FULGATHON', view: 'site', scroll: 'top',
-    body: () => `<p><strong>FULGATHON</strong> e site-ul subathonului tău de Crăciun. E legat direct de Twitch: fiecare sub, sub cadou sau bit adaugă timp pe cronometru, iar viewerii votează provocări, învârt roata și urmăresc obiectivele, totul live.</p>
+    title: 'Bun venit la ICEMARATON', view: 'site', scroll: 'top',
+    body: () => `<p><strong>ICEMARATON</strong> e site-ul subathonului tău de Crăciun. E legat direct de Twitch: fiecare sub, sub cadou sau bit adaugă timp pe cronometru, iar viewerii votează provocări, învârt roata și urmăresc obiectivele, totul live.</p>
 <p>${where()} e <strong>site-ul adevărat</strong>, care rulează acum pe date de test. Butoanele <strong>Twitch simulat</strong> de sus fac exact ce face Twitch în timpul streamului.</p>
 <p>Pornește simularea automată și lasă-l să meargă în fundal cât vorbim.</p>`,
     actions: [{ label: 'Pornește simularea automată', primary: true, run: () => setAuto(true) }],
@@ -159,7 +159,7 @@ function ensureFrame(frame: HTMLElement) {
   if (frame.dataset.src && !frame.querySelector('iframe')) {
     const f = document.createElement('iframe');
     f.src = frame.dataset.src;
-    f.title = frame.dataset.name === 'mod' ? 'Pagina moderatorilor (demo)' : 'Site-ul FULGATHON (demo)';
+    f.title = frame.dataset.name === 'mod' ? 'Pagina moderatorilor (demo)' : 'Site-ul ICEMARATON (demo)';
     f.style.width = `${frame.dataset.w}px`;
     f.style.height = `${frame.dataset.h}px`;
     frame.append(f);
@@ -250,7 +250,7 @@ document.getElementById('final')!.innerHTML = `
 <li>Conectare cu Twitch și verificare abonament</li><li>Vot, roată, fulgi, obiective, bingo, propuneri</li>
 <li>Pagina moderatorilor</li><li>Overlay-ul pentru OBS</li></ul></section>
 <section class="card"><h2>Pornirea, împreună (15 min)</h2><ol>
-<li>Creăm aplicația FULGATHON pe dev.twitch.tv</li><li>Salvăm cheile în panoul de administrare</li>
+<li>Creăm aplicația ICEMARATON pe dev.twitch.tv</li><li>Salvăm cheile în panoul de administrare</li>
 <li>Intri pe /mod și apeși «Conectează contul de streamer»</li><li>Stabilim data de start și finalul programat</li>
 <li>Adaugi overlay-ul în OBS</li></ol></section>
 <section class="card"><h2>De hotărât</h2><ul>
