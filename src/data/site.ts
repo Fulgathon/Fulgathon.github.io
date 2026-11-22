@@ -38,7 +38,7 @@ export const site = {
      * Supabase (Authentication → Providers → Twitch). Until then the login
      * buttons say it's coming soon.
      */
-    twitchLogin: false,
+    twitchLogin: true,
   },
   contactEmail: '[EMAIL CONTACT]',
   endDate: '[DATA FINALĂ]',
