@@ -65,11 +65,11 @@ const steps: Step[] = [
 <ul><li>Donație (TipeeeStream): <strong>+6 min pentru fiecare 1 €</strong></li><li>Tier 1 / Prime: <strong>+6 min</strong> · Tier 2: <strong>+12 min</strong> · Tier 3: <strong>+18 min</strong></li><li>Fiecare sub cadou: <strong>+6 min</strong> · 400 de biți: <strong>+4 min</strong></li></ul>
 <p>Sus rulează banda cu ultimele susțineri, iar peste tabelă urcă etichetele «+timp». Când cronometrul ajunge la zero, subathonul se termină singur.</p>`,
     actions: [
-      { label: 'Donație 10 €', primary: true, run: () => api.recordEvent('donation', 'ninsoare_ana', null, 10, 'EUR') },
-      { label: 'Sub Tier 1', run: () => api.recordEvent('sub', 'fulgusor', '1000') },
-      { label: 'Sub Tier 3', run: () => api.recordEvent('sub', 'vifor_vlad', '3000') },
-      { label: '10 subs cadou', run: () => api.recordEvent('gift', 'snowdrift_tv', '1000', 10) },
-      { label: '500 de biți', run: () => api.recordEvent('bits', 'northpole_nik', null, 500) },
+      { label: 'Donație 10 €', primary: true, run: () => api.recordEvent('donation', 'darius_ro', null, 10, 'EUR') },
+      { label: 'Sub Tier 1', run: () => api.recordEvent('sub', 'alexx_ro', '1000') },
+      { label: 'Sub Tier 3', run: () => api.recordEvent('sub', 'vlad_tz', '3000') },
+      { label: '10 subs cadou', run: () => api.recordEvent('gift', 'vladutz97', '1000', 10) },
+      { label: '500 de biți', run: () => api.recordEvent('bits', 'teo_mid', null, 500) },
     ],
   },
   {
@@ -79,7 +79,7 @@ const steps: Step[] = [
 <p>Încearcă: pornește Ora dublă, apoi dă un sub Tier 3. Primește +36:00 în loc de +18:00.</p>`,
     actions: [
       { label: 'Pornește Ora dublă', primary: true, run: () => api.doubleHour(Date.now(), 60) },
-      { label: 'Sub Tier 3', run: () => api.recordEvent('sub', 'glacier_gabi', '3000') },
+      { label: 'Sub Tier 3', run: () => api.recordEvent('sub', 'gabi_supp', '3000') },
       { label: 'Îngheață 5 minute', run: guard(() => api.freeze(5)) },
       { label: 'Oprește Ora dublă', run: () => api.doubleHour(Date.now() - 2 * HOUR, 60) },
     ],
@@ -92,7 +92,7 @@ const steps: Step[] = [
       { label: 'Donează până la milestone-ul următor', primary: true, run: () => {
         const raised = api.state.stats.raised;
         const next = api.state.goals.map((g) => g.threshold).find((t) => t > raised);
-        if (next) api.recordEvent('donation', 'mistletoe_mike', null, Math.ceil(next - raised), 'EUR');
+        if (next) api.recordEvent('donation', 'andreiGG', null, Math.ceil(next - raised), 'EUR');
         scrollSite('top');
       } },
       { label: 'Arată lista', run: () => scrollSite('goals') },
@@ -137,7 +137,7 @@ const steps: Step[] = [
     title: 'Pe telefon', view: 'phone', scroll: 'top',
     body: `<p>Cei mai mulți viewers intră de pe telefon, din chat sau din descriere. Totul merge și aici: meniul, cronometrul, votul, roata, bingo-ul.</p>`,
     actions: [
-      { label: 'Sub Tier 1', run: () => api.recordEvent('sub', 'ninsoare_ana', '1000') },
+      { label: 'Sub Tier 1', run: () => api.recordEvent('sub', 'darius_ro', '1000') },
       { label: 'Mergi la vot', run: () => scrollSite('vote') },
       { label: 'Mergi la roată', run: () => scrollSite('roata') },
     ],
@@ -155,9 +155,9 @@ ${compact.matches
     body: `<p>Pentru OBS: o <strong>bandă discretă în colț</strong>, cu cronometrul, milestone-ul următor și fiecare susținere nouă. Fundal transparent, nu acoperă jocul.</p>
 <p>Se poate muta în orice colț, mări sau micșora, sau lăsa doar cronometrul, din linkul din OBS.</p>`,
     actions: [
-      { label: 'Sub Tier 3', primary: true, run: () => api.recordEvent('sub', 'frostbyte_77', '3000') },
-      { label: '10 subs cadou', run: () => api.recordEvent('gift', 'snowdrift_tv', '1000', 10) },
-      { label: '1.000 de biți', run: () => api.recordEvent('bits', 'auroraaa', null, 1000) },
+      { label: 'Sub Tier 3', primary: true, run: () => api.recordEvent('sub', 'Rares1337', '3000') },
+      { label: '10 subs cadou', run: () => api.recordEvent('gift', 'vladutz97', '1000', 10) },
+      { label: '1.000 de biți', run: () => api.recordEvent('bits', 'dianaplays', null, 1000) },
     ],
   },
   {
@@ -302,7 +302,7 @@ function setAuto(on: boolean) {
 document.querySelector('.sim')!.addEventListener('click', (e) => {
   const b = (e.target as Element).closest<HTMLElement>('[data-sim]');
   if (!b) return;
-  const who = ['fulgusor', 'sanie_sebi', 'colinda_cris', 'renul_radu', 'turtadulce_tea'][Math.floor(Math.random() * 5)];
+  const who = ['alexx_ro', 'sebastian_77', 'crisss', 'radu_nexus', 'teodora_x'][Math.floor(Math.random() * 5)];
   switch (b.dataset.sim) {
     case 'sub': api.recordEvent('sub', who, '1000'); break;
     case 'tier3': api.recordEvent('sub', who, '3000'); break;

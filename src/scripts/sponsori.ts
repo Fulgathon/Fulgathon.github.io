@@ -66,14 +66,14 @@ const steps: Step[] = [
     body: () => `<p><strong>ICEMARATON</strong> e subathonul de Crăciun al lui <strong>Icemanlucky</strong> pe Twitch: un stream care nu se oprește cât timp comunitatea adaugă timp. Fiecare donație și fiecare sub prelungesc cronometrul.</p>
 <ul>${pitch.audience.map((a) => `<li><strong>${esc(a.value)}</strong> ${esc(a.label)}</li>`).join('')}</ul>
 <p>Lângă stream există un site interactiv: vot pe provocări, roata cu premii, bingo, milestone-uri. ${compact.matches ? 'Deasupra' : 'În dreapta'} e chiar site-ul, cu ${b()} ca partener.</p>`,
-    actions: [{ label: 'Vezi-vă brandul pe site', primary: true, run: () => scrollSite('parteneri') }],
+    actions: [{ label: 'Vezi brandul pe site', primary: true, run: () => scrollSite('parteneri') }],
   },
   {
     title: () => `${B()}, în prim-plan`, view: 'site', scroll: 'top',
     body: () => `<p>Partenerul principal stă <strong>sub cronometru</strong>, locul la care se uită toată lumea: «Prezentat de ${esc(B())}».</p>
 <p>Imediat după cronometru vine secțiunea de parteneri: oferta voastră, <strong>codul de reducere</strong> (cu buton de copiere) și linkul. E primul link din meniul site-ului.</p>`,
     actions: [
-      { label: 'Sub cronometru', primary: true, run: () => scrollSite('top') },
+      { label: 'Sub cronometru', primary: true, run: () => scrollSite('prezentat') },
       { label: 'Secțiunea de parteneri', run: () => scrollSite('parteneri') },
     ],
   },
@@ -83,13 +83,13 @@ const steps: Step[] = [
 <p>Ora poartă numele vostru: pe site, pe stream («ORA DUBLĂ ×2 · oferită de ${esc(B())}») și în ce spune Iceman.</p>`,
     actions: [
       { label: 'Pornește Ora dublă', primary: true, run: () => { api.doubleHour(Date.now(), 60, B()); overlay(); say(`ORA DUBLĂ! MERSI, ${B().toUpperCase()}!`); } },
-      { label: 'O donație de 20 €', run: () => { api.recordEvent('donation', 'ninsoare_ana', null, 20, 'EUR'); say('MERSI, NINSOARE_ANA!'); } },
+      { label: 'O donație de 20 €', run: () => { api.recordEvent('donation', 'darius_ro', null, 20, 'EUR'); say('MERSI, DARIUS_RO!'); } },
     ],
     enter: () => { api.codeEnd(); overlay(); },
   },
   {
     title: () => `Câștigătorii, «de la ${B()}»`, view: 'stream', focus: 'wins',
-    body: () => `<p>Premiile de pe roată poartă numele vostru. De fiecare dată când cineva câștigă, pe stream apare: «<em>snowdrift_tv a câștigat căștile de la ${esc(B())}</em>».</p>
+    body: () => `<p>Premiile de pe roată poartă numele vostru. De fiecare dată când cineva câștigă, pe stream apare: «<em>vladutz97 a câștigat căștile de la ${esc(B())}</em>».</p>
 <p>Roata se învârte de zeci de ori pe zi, deci numele vostru apare legat de un moment bun, din nou și din nou.</p>`,
     actions: [{ label: 'Simulează un câștigător', primary: true, run: () => { api.fakeWin(); say('FELICITĂRI!'); } }],
     enter: () => { api.codeEnd(); overlay(); },
@@ -116,7 +116,7 @@ const steps: Step[] = [
   {
     title: 'Discret, dar constant', view: 'stream', focus: 'promo',
     body: () => `<p>La fiecare 10 minute, overlay-ul arată 10 secunde «Partener: ${esc(B())} · codul vostru», doar când nu se întâmplă altceva.</p>
-<p>Fără clipeli și fără să acopere jocul. Restul timpului, numele vostru apare doar la momentele care contează.</p>`,
+<p>Restul timpului, numele vostru apare doar la momentele care contează.</p>`,
     actions: [{ label: 'Arată mențiunea', primary: true, run: () => { overlay(true); say(`MERSI, ${B().toUpperCase()}!`); } }],
     enter: () => { api.codeEnd(); overlay(); },
   },

@@ -48,11 +48,12 @@ import '@fontsource/barlow/600.css';
       .goal-line { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
       .goal-line .bar { flex: 1 1 auto; height: 4px; background: #1A2230; }
       .goal-line span { flex: none; font-size: 13px; font-weight: 600; color: #C9D2DF; white-space: nowrap; }
-      .chip { max-width: 400px; padding: 5px 12px; background: rgba(5, 6, 8, 0.92); border: 2px solid var(--ice); font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 21px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0; transform: translateY(-8px); transition: opacity .35s, transform .35s; }
+      .chip { max-width: 440px; padding: 5px 12px; background: rgba(5, 6, 8, 0.92); border: 2px solid var(--ice); font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 21px; line-height: 1.15; overflow-wrap: anywhere; opacity: 0; transform: translateY(-8px); transition: opacity .35s, transform .35s; }
       .pos-br .chip, .pos-bl .chip { transform: translateY(8px); }
       .chip.show { opacity: 1; transform: none; }
       .chip b { color: var(--ice); }
-      .double-line { margin-top: 6px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 15px; letter-spacing: .04em; color: #FFFFFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .double-line { margin-top: 6px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 15px; letter-spacing: .04em; color: #FFFFFF; overflow-wrap: anywhere; }
+      [data-event] .sub { display: block; margin-top: 2px; color: var(--ice); text-transform: uppercase; letter-spacing: .04em; }
       .double-line b { color: var(--ice); }
       .code-chip { max-width: 460px; padding: 8px 14px; background: rgba(5, 6, 8, 0.95); border: 2px solid #FFFFFF; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 20px; line-height: 1.2; opacity: 0; transform: translateY(-8px); transition: opacity .3s, transform .3s; }
       .code-chip.show { opacity: 1; transform: none; }

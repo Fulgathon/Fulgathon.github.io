@@ -39,7 +39,7 @@ interface DemoSpin { id: number; user: string; prize: number; at: number; fulfil
 interface DemoSuggestion { id: number; body: string; user: string; at: number; status: 'pending' | 'approved' | 'rejected' }
 
 export interface DemoState {
-  v: 5;
+  v: 6;
   seq: number;
   timer: {
     status: Status; startsAt: number | null; endsAt: number | null; pausedUntil: number | null;
@@ -93,9 +93,9 @@ const WIN_LABELS = ['+5 minute pe cronometru', 'VIP 24 de ore', 'un shoutout liv
   'alegerea următorului joc', 'o colindă de la Iceman', 'cronometrul înghețat 5 minute', 'nimic de data asta'];
 const LOSE = 7;
 
-const NAMES = ['snowdrift_tv', 'frostbyte_77', 'mistletoe_mike', 'polarpixel', 'kxtrin', 'northpole_nik', 'auroraaa',
-  'yeti_yolo', 'coldbrew_cam', 'iceberg_ionut', 'fulgusor', 'zapada_rares', 'ninsoare_ana', 'sanie_sebi', 'brad_bogdan',
-  'colinda_cris', 'renul_radu', 'turtadulce_tea', 'glacier_gabi', 'vifor_vlad'];
+const NAMES = ['vladutz97', 'Rares1337', 'andreiGG', 'cristi_lol', 'kxtrin', 'teo_mid', 'dianaplays',
+  'xBogdy', 'mihai_tzr', 'ionutz95', 'alexx_ro', 'sebi_jgl', 'darius_ro', 'sebastian_77', 'bogdan_adc',
+  'crisss', 'radu_nexus', 'teodora_x', 'gabi_supp', 'vlad_tz'];
 const pick = <T>(list: readonly T[]) => list[Math.floor(Math.random() * list.length)];
 
 /** Next 21:00 local time. */
@@ -127,7 +127,7 @@ function seed(now: number): DemoState {
     ({ id, kind, tier, quantity, currency, seconds_added: seconds, doubled: false, user_login: user, user_name: user, at: now - minsAgo * MIN });
 
   return {
-    v: 5,
+    v: 6,
     seq: 1000,
     timer: {
       status: 'live',
@@ -143,37 +143,37 @@ function seed(now: number): DemoState {
     stats: { subs: 1284, bits: 48_500, raised: 1_180 },
     goals: defaultGoals.map((g, i) => ({ ...g, sponsor: i === 5 || i === 8 ? 'Zona IT' : null })),
     events: [
-      ev(6, 1, 'donation', 'mistletoe_mike', null, 20, 7200, 'EUR'),
-      ev(5, 3, 'sub', 'frostbyte_77', '3000', 1, 1080),
-      ev(4, 5, 'gift', 'snowdrift_tv', '1000', 10, 3600),
-      ev(3, 8, 'donation', 'auroraaa', null, 5, 1800, 'EUR'),
+      ev(6, 1, 'donation', 'andreiGG', null, 20, 7200, 'EUR'),
+      ev(5, 3, 'sub', 'Rares1337', '3000', 1, 1080),
+      ev(4, 5, 'gift', 'vladutz97', '1000', 10, 3600),
+      ev(3, 8, 'donation', 'dianaplays', null, 5, 1800, 'EUR'),
       ev(2, 11, 'sub', 'kxtrin', 'prime', 1, 360),
-      ev(1, 14, 'bits', 'northpole_nik', null, 400, 240),
+      ev(1, 14, 'bits', 'teo_mid', null, 400, 240),
     ],
     boardBase: {
-      donations: { mistletoe_mike: 230, auroraaa: 175, polarpixel: 120, yeti_yolo: 75, kxtrin: 50 },
-      gifts: { snowdrift_tv: 132, frostbyte_77: 96, mistletoe_mike: 71, polarpixel: 58, kxtrin: 44 },
-      bits: { northpole_nik: 48_100, auroraaa: 31_200, frostbyte_77: 22_000, coldbrew_cam: 15_400, yeti_yolo: 9_800 },
-      hours: { northpole_nik: 86, auroraaa: 79, kxtrin: 74, polarpixel: 71, frostbyte_77: 66 },
+      donations: { andreiGG: 230, dianaplays: 175, cristi_lol: 120, xBogdy: 75, kxtrin: 50 },
+      gifts: { vladutz97: 132, Rares1337: 96, andreiGG: 71, cristi_lol: 58, kxtrin: 44 },
+      bits: { teo_mid: 48_100, dianaplays: 31_200, Rares1337: 22_000, mihai_tzr: 15_400, xBogdy: 9_800 },
+      hours: { teo_mid: 86, dianaplays: 79, kxtrin: 74, cristi_lol: 71, Rares1337: 66 },
     },
     challenges,
     rounds: [{ id: 4, number: 4, opensAt: now - 20 * MIN, closesAt: now + 40 * MIN, winnerId: null, items: roundItems }],
     myVotes: {},
     spins: [
-      { id: 4, user: 'yeti_yolo', prize: 2, at: now - 40 * MIN, fulfilled: true },
-      { id: 3, user: 'auroraaa', prize: 5, at: now - 26 * MIN, fulfilled: true },
+      { id: 4, user: 'xBogdy', prize: 2, at: now - 40 * MIN, fulfilled: true },
+      { id: 3, user: 'dianaplays', prize: 5, at: now - 26 * MIN, fulfilled: true },
       { id: 2, user: 'kxtrin', prize: 0, at: now - 11 * MIN, fulfilled: true },
-      { id: 1, user: 'snowdrift_tv', prize: 1, at: now - 3 * MIN, fulfilled: false },
+      { id: 1, user: 'vladutz97', prize: 1, at: now - 3 * MIN, fulfilled: false },
     ],
     suggestions: [
-      { id: 2, body: 'Joacă un meci doar cu portarul în atac', user: 'polarpixel', at: now - 9 * MIN, status: 'pending' },
-      { id: 1, body: 'Citește comentariile chatului cu voce de Moș Crăciun', user: 'auroraaa', at: now - 32 * MIN, status: 'pending' },
+      { id: 2, body: 'Joacă un meci doar cu portarul în atac', user: 'cristi_lol', at: now - 9 * MIN, status: 'pending' },
+      { id: 1, body: 'Citește comentariile chatului cu voce de Moș Crăciun', user: 'dianaplays', at: now - 32 * MIN, status: 'pending' },
     ],
     viewer: { state: 'out', name: 'viewer_name', day: today(), watched: 95, spunDay: null, bonus: 0 },
     prizes: defaultPrizes.map((p, i) => ({ short: p[0], full: p[1], win: WIN_LABELS[i], sponsor: i === 1 || i === 3 ? 'Zona IT' : null, isWin: i !== LOSE, weight: 1 })),
     codes: [{ code: 'K7Q-2MV', sponsor: 'Zona IT', shownAt: now - 3 * HOUR, expiresAt: now - 3 * HOUR + 10 * MIN, claims: 212, mine: false }],
     promo: { clicks: 184, copies: 57, doubleHours: 2, donatedInHours: 640 },
-    mods: ['icemanlucky', 'frostbyte_77'],
+    mods: ['icemanlucky', 'Rares1337'],
     streamerConnected: true,
     bingo: {
       closesAt: now + 2 * DAY + 5 * HOUR,
@@ -223,7 +223,7 @@ export class DemoBackend {
     if (raw) {
       try {
         const s = JSON.parse(raw) as DemoState;
-        if (s.v === 5) { this.raw = raw; this.cached = s; return s; }
+        if (s.v === 6) { this.raw = raw; this.cached = s; return s; }
       } catch { /* corrupt: reseed */ }
     }
     // No saved demo (or storage blocked): start from the seed, keep it in memory.

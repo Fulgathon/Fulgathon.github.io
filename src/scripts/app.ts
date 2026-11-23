@@ -270,8 +270,15 @@ window.addEventListener('message', (e) => {
     all('[data-sponsor]').forEach((el) => { const t = texts[el.dataset.sponsor!]; if (t !== undefined && el.textContent !== t) el.textContent = t; });
   }
   if (m.scrollTo) {
-    const el = m.scrollTo === 'top' ? document.body : document.getElementById(m.scrollTo);
-    el?.scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'start' });
+    const behavior = reducedMotion.matches ? 'auto' : 'smooth';
+    const el = m.scrollTo === 'top' ? null : document.getElementById(m.scrollTo);
+    if (!el) window.scrollTo({ top: 0, behavior });
+    else {
+      // A single element (like "Prezentat de") is centred and outlined for a moment; sections start at the top.
+      const small = el.tagName !== 'SECTION';
+      el.scrollIntoView({ behavior, block: small ? 'center' : 'start' });
+      if (small) el.animate([{ outline: '2px solid #3FD0FF', outlineOffset: '6px' }, { outline: '2px solid rgba(63,208,255,0)', outlineOffset: '6px' }], { duration: 2200, delay: 500, easing: 'ease-in' });
+    }
   }
 });
 

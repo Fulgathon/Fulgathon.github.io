@@ -76,7 +76,7 @@ function checkWin(first: boolean) {
   const w = data.recentWins[0];
   const key = w ? `${w.user}|${w.prize}|${data.recentWins.length}|${w.ago}` : '';
   const id = w ? `${w.user}|${w.prize}` : '';
-  if (!first && w && id !== lastWin.split('#')[0] && key) popEvent('PREMIU', w.user, `a câștigat ${w.prize}${w.sponsor ? ` de la ${w.sponsor}` : ''}`);
+  if (!first && w && id !== lastWin.split('#')[0] && key) popEvent('PREMIU', w.user, `a câștigat ${w.prize}`, undefined, w.sponsor ? `de la ${w.sponsor}` : undefined);
   lastWin = id + '#';
 }
 
@@ -89,12 +89,13 @@ if (promoMinutes > 0 && promoName) window.setInterval(promo, promoMinutes * 60_0
 if (params.has('promoNow')) window.setTimeout(promo, 1500);
 
 let hideTimer: number | undefined;
-function popEvent(time: string, user: string, what: string, ms?: number) {
+function popEvent(time: string, user: string, what: string, ms?: number, sub?: string) {
   if (!show.has('events')) return;
   eventEl.innerHTML = '';
   const b = document.createElement('b');
   b.textContent = time;
   eventEl.append(b, ` ${user} · ${what}`);
+  if (sub) { const s = document.createElement('span'); s.className = 'sub'; s.textContent = sub; eventEl.append(s); }
   eventEl.classList.add('show');
   clearTimeout(hideTimer);
   hideTimer = window.setTimeout(() => eventEl.classList.remove('show'), ms ?? (boxStyle ? 8000 : 6000));
