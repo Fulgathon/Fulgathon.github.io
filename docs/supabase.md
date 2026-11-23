@@ -125,7 +125,7 @@ Secrets go in the dashboards, never in this repo or in chat.
 - **Sponsor tracking:** `track_sponsor` counts once per visitor (a salted daily
   hash of the IP), sponsor, kind and day, and only known sponsors
   (`private.known_sponsors` plus any sponsor named in the data).
-- **Health:** `mod_health()` feeds the "Sănătate" card on /mod.
+- **Health:** `mod_health()` feeds the "Conexiuni" card on /mod (renamed from "Sănătate", which reads like "Bless you!").
 
 `events` and `watch_time` are not publicly readable any more (migration
 `20261124150000_lockdown_public_reads`), and the old leaderboard views are gone.

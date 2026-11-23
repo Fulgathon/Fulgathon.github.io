@@ -414,7 +414,7 @@ function render() {
     </section>
 
     <section class="card" id="sanatate">
-      <h2>Sănătate</h2>
+      <h2>Conexiuni</h2>
       ${healthHtml(S.health)}
       <p class="muted">Se actualizează singur la un minut.</p>
     </section>
