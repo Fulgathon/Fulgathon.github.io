@@ -1136,6 +1136,13 @@ function route(scroll: boolean) {
   if (g && g.id !== S.page) { S.page = g.id; deferred = false; if (S.me) render(); }
   else if (S.me?.is_moderator) nav.innerHTML = navHtml();
   if (scroll && id) requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: 'start' }));
+  // Phone: the menu is one scrolling row; slide it so the open group is in view.
+  requestAnimationFrame(() => {
+    const on = nav.querySelector<HTMLElement>('.ng.on');
+    if (!on || nav.scrollWidth <= nav.clientWidth) return;
+    const left = on.offsetLeft - 12;
+    if (left < nav.scrollLeft || on.offsetLeft + on.offsetWidth > nav.scrollLeft + nav.clientWidth) nav.scrollTo({ left, behavior: 'smooth' });
+  });
 }
 window.addEventListener('hashchange', () => route(true));
 // The phone menu sticks right under the status bar, whatever its height.
