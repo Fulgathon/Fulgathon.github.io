@@ -8,6 +8,8 @@ import { createClient } from '@supabase/supabase-js';
 import { site } from '../data/site';
 import type { DemoBackend } from '../demo/backend';
 import { esc } from '../lib/views';
+import { FALLBACK_LINE, lineGroups, MAX_LINE, MIN_LINES } from '../data/content';
+import type { LineGroup } from '../data/types';
 
 const demo = new URLSearchParams(location.search).has('demo');
 let demoApi: DemoBackend | null = null;
@@ -36,6 +38,10 @@ const errors: Record<string, string> = {
   no_bingo_winners: 'Nu e nimeni (nou) pe lista de bingo: încă nu s-au întâmplat toate cele 5 evenimente la cineva.',
   freeze_in_past: 'Alege o dată din viitor (după înghețarea de acum, dacă e una).',
   duplicate_amount: 'Două milestone-uri au aceeași sumă. Fiecare sumă trebuie să fie diferită.',
+  bad_lines: 'Replicile nu au putut fi salvate: cel mult 40 pe grup.',
+  line_too_long: 'O replică are mai mult de 70 de caractere. Scurteaz-o ca să încapă în balon.',
+  bad_threshold: 'Pragul pentru donație mare trebuie să fie un număr între 1 și 10.000 de euro.',
+  mod_set_lines: 'Editorul de replici are nevoie de actualizarea bazei de date (migrarea layout v2).',
 };
 let msgTimer: number | undefined;
 function say(text: string, err = false) {
@@ -123,7 +129,11 @@ let S: {
   /** "Acum pe stream" (Twitch title/game + note) and the community goal list. */
   now: { title: string | null; game: string | null; note: string | null } | null;
   together: { hours: number; goals: { title: string; hours: number }[] } | null;
-} = { health: null, now: null, together: null, names: { filtered: [], rules: [] }, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
+  /** «Replicile lui Iceman»: saved lines per group, the small/large donation threshold, and the text being edited. */
+  lines: Partial<Record<LineGroup, string[]>>;
+  smallDonation: number;
+  linesDraft: Partial<Record<LineGroup, string>> | null;
+} = { lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, together: null, names: { filtered: [], rules: [] }, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
 const bingoRows = () => S.bingoDraft ?? (S.bingo?.items ?? []).map((i) => ({ id: i.id, label: i.label }));
 const editBingo = () => { if (!S.bingoDraft) S.bingoDraft = bingoRows(); return S.bingoDraft; };
 const goalRows = () => S.goalsDraft ?? S.goals.map((g) => ({ title: g.title, threshold: String(g.threshold), sponsor: g.sponsor ?? '' }));
@@ -155,6 +165,7 @@ async function load() {
     S.health = demoHealth();
     const site = demoApi.toSiteData();
     S.now = site.now; S.together = site.together;
+    S.lines = site.lines; S.smallDonation = site.smallDonation;
     if (!S.draft.length || S.draft.some((id) => !S.pool.find((p) => p.id === id))) autoDraft();
     return render();
   }
@@ -184,6 +195,7 @@ async function load() {
   S.health = (await (db as any).rpc('mod_health')).data ?? null;
   const ps = (await (db as any).rpc('public_state', { p_have: {} })).data?.parts ?? {};
   S.now = ps.now ?? null; S.together = ps.together ?? null;
+  S.lines = ps.lines?.groups ?? {}; S.smallDonation = Number(ps.lines?.smallDonation) || 10;
   S.names = names.data ?? { filtered: [], rules: [] };
   S.wheel = (wheel.data ?? []) as typeof S.wheel;
   S.codes = (codes.data ?? []) as typeof S.codes;
@@ -216,6 +228,70 @@ async function load() {
   S.mods = (mods.data ?? []) as any;
   if (!S.draft.length || S.draft.some((id) => !S.pool.find((p) => p.id === id))) autoDraft();
   render();
+}
+
+
+// ---- «Replicile lui Iceman» ----
+/** Sample event per group, for the bubble preview (same shape as on the site). */
+const lineSamples: Record<LineGroup, { nume: string; timp: string; suma: string; subs: string; what: string; time: string }> = {
+  sub: { nume: 'kxtrin', timp: '+6 min', suma: '', subs: '', what: 'sub Prime', time: '+6:00' },
+  sub23: { nume: 'Rares1337', timp: '+18 min', suma: '', subs: '', what: 'sub Tier 3', time: '+18:00' },
+  gift: { nume: 'vladutz97', timp: '+30 min', suma: '', subs: '5', what: 'a dăruit 5 subs', time: '+30:00' },
+  donSmall: { nume: 'dianaplays', timp: '+30 min', suma: '5 €', subs: '', what: 'donație 5 €', time: '+30:00' },
+  donBig: { nume: 'andreiGG', timp: '+2 h', suma: '20 €', subs: '', what: 'donație 20 €', time: '+2:00:00' },
+  bits: { nume: 'teo_mid', timp: '+4 min', suma: '400 de biți', subs: '', what: '400 de biți', time: '+4:00' },
+};
+const lineText = (g: LineGroup) => S.linesDraft?.[g] ?? (S.lines[g] ?? []).join('\n');
+const linesOf = (g: LineGroup) => lineText(g).split('\n').map((l) => l.trim()).filter(Boolean);
+function lineInfo(g: LineGroup) {
+  const list = linesOf(g);
+  const long = list.filter((l) => l.length > MAX_LINE).length;
+  const ok = list.length >= MIN_LINES;
+  const x = lineSamples[g];
+  const fill = (t: string) => t.replace(/\{(nume|timp|suma|subs)\}/g, (_, k: keyof typeof x) => x[k] ?? '');
+  return {
+    list, long, ok,
+    count: long ? `${long} prea ${long === 1 ? 'lungă' : 'lungi'}` : ok ? `${list.length} replici ✓` : `${list.length} din ${MIN_LINES}`,
+    color: long ? '#FF8A95' : ok ? '#3FD0FF' : '#E6C46A',
+    border: long ? '#7A2A33' : ok ? '#1C2230' : '#6B5A2A',
+    who: ok ? `Mersi, ${x.nume}!` : `${x.time} · ${x.what}`,
+    preview: fill(ok ? list[0] : FALLBACK_LINE),
+  };
+}
+function linesHtml(): string {
+  const groups = lineGroups.map((g) => {
+    const L = lineInfo(g.id);
+    return `<div class="line-group" data-lg="${g.id}" style="padding:18px;background:#0B1018;border:1px solid ${L.border}">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+        <label for="lines-${g.id}" style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-style:italic;font-size:24px;line-height:1;text-transform:uppercase">${esc(g.name)}</label>
+        <span data-lg-count style="flex:none;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:15px;color:${L.color}">${esc(L.count)}</span>
+      </div>
+      <p class="muted" style="margin:4px 0 0;font-size:13px">${esc(g.id === 'donSmall' ? `Donație sub ${S.smallDonation} €.` : g.id === 'donBig' ? `Donație de ${S.smallDonation} € sau mai mult.` : g.when)}</p>
+      <textarea class="field" id="lines-${g.id}" data-lines="${g.id}" rows="6" placeholder="O replică pe rând" style="margin-top:10px;width:100%;padding:10px;font:14px/1.6 Barlow,sans-serif;resize:vertical">${esc(lineText(g.id))}</textarea>
+      <p style="margin:10px 0 6px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:12px;letter-spacing:.12em;color:#8C97A8">PREVIZUALIZARE</p>
+      <div aria-live="polite" style="display:inline-block;max-width:100%;padding:8px 12px;background:#F2F5FA;color:#04101A;transform:rotate(-2deg);font-family:'Barlow Condensed',sans-serif;font-weight:900;font-style:italic;font-size:18px;line-height:1.05;text-transform:uppercase;overflow-wrap:anywhere"><span data-lg-who style="display:block;margin-bottom:2px;font-size:11px;font-style:normal;letter-spacing:.1em;color:#245A78">${esc(L.who)}</span><span data-lg-preview>${esc(L.preview)}</span></div>
+    </div>`;
+  }).join('');
+  return `<section class="card wide" id="replici">
+    <h2>Replicile lui Iceman</h2>
+    <p class="muted" style="margin-top:0;max-width:900px">Ce zice Iceman în balonul din hero când intră ceva. Câte o replică pe rând, minim ${MIN_LINES} pe grup. Site-ul alege una la întâmplare și nu o repetă până nu le folosește pe toate. Poți folosi: <code>{nume}</code> <code>{timp}</code> <code>{suma}</code> <code>{subs}</code>. Maxim ${MAX_LINE} de caractere, ca să încapă în balon. Numele trec prin același filtru ca restul site-ului.</p>
+    <div style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:12px">
+      <div style="padding:14px 16px;border:1px solid #23415E">
+        <label style="display:flex;align-items:center;gap:14px;min-height:44px;color:#AEB8C7"><input type="checkbox" disabled aria-describedby="chat-off"><span><strong style="font-family:'Barlow Condensed',sans-serif;font-size:20px;text-transform:uppercase;color:#F2F5FA">Trimite replica și în chatul Twitch</strong><span style="display:block;font-size:14px">Aceeași replică, cu @ la cel care a dat și timpul adăugat. Cel mult un mesaj la 5 secunde; un val de subs cadou primește un singur mesaj.</span></span></label>
+        <p id="chat-off" style="margin:8px 0 0;font-size:14px"><span class="pill off">Oprit</span> <span class="muted">Pornește după ce Iceman alege contul care scrie și ne spune dacă un bot (StreamElements, Nightbot) mulțumește deja în chat.</span></p>
+      </div>
+      <div style="padding:14px 16px;border:1px solid #23415E">
+        <label class="inline">Donație mare de la (€)<input class="field" type="number" inputmode="decimal" min="1" max="10000" id="smallDonation" value="${esc(S.smallDonation)}" style="width:110px"></label>
+        <p class="muted" style="margin:8px 0 0;font-size:14px">Sub prag: replicile «Donație mică». De la prag în sus: «Donație mare».</p>
+      </div>
+    </div>
+    <div style="margin-top:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px">${groups}</div>
+    <div class="row">
+      <button class="btn-primary" data-act="linesSave">Salvează tot</button>
+      ${S.linesDraft ? '<button class="btn-ghost" data-act="linesCancel">Renunță</button><span class="muted">Modificări nesalvate</span>' : ''}
+    </div>
+    <p class="muted">Un grup cu mai puțin de ${MIN_LINES} replici e marcat cu galben și folosește replica de rezervă «${esc(FALLBACK_LINE)}».</p>
+  </section>`;
 }
 
 // ---- Rendering ----
@@ -389,6 +465,8 @@ function render() {
         ${S.goalsDraft ? '<button class="btn-ghost" data-act="goalCancel">Renunță</button><span class="muted">Modificări nesalvate</span>' : ''}
       </div>
     </section>
+
+    ${linesHtml()}
 
     ${S.bingo ? (() => {
       const B = S.bingo!;
@@ -646,6 +724,18 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     await call('mod_set_goals', { p_goals: list }, 'Lista de milestone-uri a fost salvată.');
     S.goalsDraft = null;
   },
+  linesSave: async () => {
+    const out: Partial<Record<LineGroup, string[]>> = {};
+    for (const g of lineGroups) {
+      const list = linesOf(g.id);
+      if (list.some((l) => l.length > MAX_LINE)) { say(errors.line_too_long, true); document.getElementById(`lines-${g.id}`)?.focus(); return; }
+      out[g.id] = list;
+    }
+    const threshold = Number(val('smallDonation'));
+    await call('mod_set_lines', { p_lines: out, p_small_donation: threshold > 0 ? threshold : null }, 'Replicile au fost salvate. Apar pe site în câteva secunde.');
+    S.linesDraft = null;
+  },
+  linesCancel: () => { S.linesDraft = null; render(); },
   noteSet: () => val('nowNote').trim() && call('mod_set_note', { p_note: val('nowNote'), p_minutes: Number(val('nowMin')) || 30 }, 'Nota apare pe site.'),
   noteClear: () => call('mod_set_note', { p_note: '', p_minutes: 1 }, 'Nota a fost scoasă.'),
   togetherSave: () => {
@@ -676,6 +766,22 @@ document.addEventListener('input', (e) => {
   if (el.dataset.wheel !== undefined) {
     const row = editWheel()[Number(el.dataset.i)] as any;
     row[el.dataset.wheel] = el.type === 'checkbox' ? el.checked : el.value;
+    return;
+  }
+  if (el.dataset.lines !== undefined) {
+    const g = el.dataset.lines as LineGroup;
+    S.linesDraft = { ...(S.linesDraft ?? {}), [g]: el.value };
+    const box = app.querySelector<HTMLElement>(`[data-lg="${g}"]`);
+    if (box) {
+      const L = lineInfo(g);
+      box.style.borderColor = L.border;
+      const c = box.querySelector<HTMLElement>('[data-lg-count]');
+      if (c) { c.textContent = L.count; c.style.color = L.color; }
+      box.querySelector('[data-lg-who]')!.textContent = L.who;
+      box.querySelector('[data-lg-preview]')!.textContent = L.preview;
+    }
+    const row = app.querySelector('#replici .row');
+    if (row && !row.querySelector('[data-act="linesCancel"]')) row.insertAdjacentHTML('beforeend', '<button class="btn-ghost" data-act="linesCancel">Renunță</button><span class="muted">Modificări nesalvate</span>');
     return;
   }
   if (el.dataset.goalSponsor !== undefined) { editGoals()[Number(el.dataset.goalSponsor)].sponsor = el.value; return; }
