@@ -6,7 +6,8 @@
 
 import { emptyData } from '../data/sample';
 import { site } from '../data/site';
-import type { SiteData } from '../data/types';
+import type { SiteData, TickerItem } from '../data/types';
+import { tickerItem } from '../lib/events';
 import { derive, initialState } from '../lib/derive';
 
 const params = new URLSearchParams(location.search);
@@ -32,7 +33,8 @@ if (!show.has('timer') && !show.has('goal')) (boxStyle ? root : document.getElem
 
 const all = (sel: string) => root.querySelectorAll<HTMLElement>(sel);
 let data: SiteData = emptyData();
-let lastTop = '';
+/** Newest event id already queued (null until the first load). */
+let lastId: number | null = null;
 
 function draw() {
   const v = derive({ ...initialState(), now: Date.now() }, data);
@@ -84,43 +86,74 @@ function checkWin(first: boolean) {
 // (?demo&brand=… shows another brand, for the sponsor presentation; ?promoNow shows it at once.)
 const promoName = (params.has('demo') && params.get('brand')) || site.sponsor.name;
 const promoCode = params.has('demo') && params.get('brand') ? (promoName.replace(/[^A-Za-z0-9]/g, '').slice(0, 8).toUpperCase() + '10') : site.sponsor.code;
-const promo = () => { if (!eventEl.classList.contains('show')) popEvent('PARTENER', promoName, promoCode ? `cod ${promoCode}` : 'partenerul maratonului', 10_000); };
+const promo = () => { if (!showing && !queue.length) popEvent('PARTENER', promoName, promoCode ? `cod ${promoCode}` : 'partenerul maratonului', 10_000); };
 if (promoMinutes > 0 && promoName) window.setInterval(promo, promoMinutes * 60_000);
 if (params.has('promoNow')) window.setTimeout(promo, 1500);
 
+// Alerts queue up and play one after another, so a burst (five people gifting
+// at once) shows every name. Big moments stay longer; when the queue grows,
+// small ones speed up so the stream never falls minutes behind.
+interface Alert { time: string; user: string; what: string; ms?: number; sub?: string; big?: boolean }
+const queue: Alert[] = [];
+const MAX_QUEUE = 40;
+let showing = false;
 let hideTimer: number | undefined;
-function popEvent(time: string, user: string, what: string, ms?: number, sub?: string) {
+function popEvent(time: string, user: string, what: string, ms?: number, sub?: string, big = false) {
   if (!show.has('events')) return;
+  queue.push({ time, user, what, ms, sub, big });
+  // Never let it grow without end: drop the oldest small alerts first.
+  while (queue.length > MAX_QUEUE) {
+    const i = queue.findIndex((a) => !a.big);
+    queue.splice(i < 0 ? 0 : i, 1);
+  }
+  if (!showing) nextAlert();
+}
+function nextAlert() {
+  const a = queue.shift();
+  if (!a) { showing = false; return; }
+  showing = true;
   eventEl.innerHTML = '';
   const b = document.createElement('b');
-  b.textContent = time;
-  eventEl.append(b, ` ${user} · ${what}`);
-  if (sub) { const s = document.createElement('span'); s.className = 'sub'; s.textContent = sub; eventEl.append(s); }
+  b.textContent = a.time;
+  eventEl.append(b, ` ${a.user} · ${a.what}`);
+  if (a.sub) { const s = document.createElement('span'); s.className = 'sub'; s.textContent = a.sub; eventEl.append(s); }
+  eventEl.classList.toggle('big', !!a.big);
   eventEl.classList.add('show');
+  const base = a.ms ?? (a.big ? 10_000 : boxStyle ? 8000 : 6000);
+  const ms = a.big ? base : queue.length >= 10 ? 2000 : queue.length >= 3 ? 3000 : base;
   clearTimeout(hideTimer);
-  hideTimer = window.setTimeout(() => eventEl.classList.remove('show'), ms ?? (boxStyle ? 8000 : 6000));
+  hideTimer = window.setTimeout(() => {
+    eventEl.classList.remove('show');
+    window.setTimeout(nextAlert, 450); // let the fade-out finish
+  }, ms);
+}
+
+/** Queue new events (oldest first) and move the mark; the first load only sets the mark. */
+function queueEvents(items: TickerItem[], first: boolean) {
+  for (const t of items) {
+    if (t.id === undefined || (lastId !== null && t.id <= lastId)) continue;
+    if (!first && lastId !== null && t.time !== '—') popEvent(t.time, t.user, t.what, undefined, undefined, !!t.big);
+    lastId = Math.max(lastId ?? 0, t.id);
+  }
 }
 
 if (params.has('demo')) {
   void import('../demo/backend').then(({ DemoBackend }) => {
     const api = new DemoBackend();
-    let lastId = api.state.events[0]?.id ?? 0;
     let firstSync = true;
     const sync = () => {
       data = api.toSiteData();
       checkWin(firstSync); firstSync = false;
       const cc = api.currentCode();
       showCode(cc ? { code: cc.code, sponsor: cc.sponsor, expires_at: new Date(cc.expiresAt).toISOString() } : null);
-      const top = api.state.events[0];
-      if (top && top.id !== lastId) {
-        lastId = top.id;
-        const t = data.ticker[0];
-        if (t && t.time !== '—') popEvent(t.time, t.user, t.what);
-      }
+      // Every event newer than the mark, straight from the demo state (not just the 12 in the ticker).
+      queueEvents(api.state.events.filter((e) => lastId === null || e.id > lastId).reverse().map(tickerItem), lastId === null);
       draw();
     };
     api.subscribe(sync);
     sync();
+    // A burst of writes from another tab can coalesce into fewer notifications: catch up anyway.
+    window.setInterval(sync, 2000);
     // Show the chip once on load, so its place on the stream is visible.
     const first = data.ticker[0];
     if (first && !params.has('promoNow')) window.setTimeout(() => popEvent(first.time, first.user, first.what), 600);
@@ -130,11 +163,12 @@ if (params.has('demo')) {
     const live = new Live(data, {
       onData(patch, first) {
         data = { ...data, ...patch };
-        const top = data.ticker[0];
-        const key = top ? `${top.time}|${top.user}|${top.what}` : '';
-        // Pop up only events that arrive while the overlay is open.
-        if (!first && top && key !== lastTop && top.time !== '—') popEvent(top.time, top.user, top.what);
-        lastTop = key;
+        // Pop up only events that arrive while the overlay is open, every one of them.
+        if (patch.ticker) {
+          const newest = [...data.ticker].reverse();
+          if (first || lastId === null) queueEvents(newest, true);
+          else void live.feedSince(lastId).then((items) => queueEvents(items, false));
+        }
         checkWin(first);
         draw();
       },

@@ -5,7 +5,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { popSlots, prizeColors } from '../data/content';
 import { site } from '../data/site';
-import type { Completed, Prize, SiteData, UpNext } from '../data/types';
+import type { Completed, Prize, SiteData, TickerItem, UpNext } from '../data/types';
 import type { Database } from '../lib/database.types';
 import { amount, tickerItem } from '../lib/events';
 import { ago, dateRo, fmtInt } from '../lib/format';
@@ -152,10 +152,8 @@ export class Live {
       patch.goals = P.goals.map((g: Json) => ({ title: g.title, threshold: g.threshold, sponsor: g.sponsor }));
     }
     if (has('feed') && Array.isArray(P.feed)) {
-      const items = P.feed.slice(0, 12).map((e: Json) => ({
-        ...tickerItem({ kind: e.kind, tier: e.tier, quantity: e.quantity, currency: e.currency, seconds_added: e.seconds, user_name: e.name, user_login: null }),
-        id: e.id,
-      }));
+      const items = P.feed.map((e: Json) =>
+        tickerItem({ id: e.id, kind: e.kind, tier: e.tier, quantity: e.quantity, currency: e.currency, seconds_added: e.seconds, user_name: e.name, user_login: null }));
       patch.ticker = items;
       patch.pops = items.filter((i: Json) => i.time !== '—').slice(0, popSlots.length).map((i: Json, k: number) => ({ ...i, ...popSlots[k] }));
     }
@@ -264,6 +262,13 @@ export class Live {
     if (data?.error) throw new Error(data.error);
     await this.refreshMe();
     return data;
+  }
+
+  /** Every event after `after` (oldest first, public names): the overlay queues them all. */
+  async feedSince(after: number): Promise<TickerItem[]> {
+    const { data, error } = await this.raw.rpc('feed_since', { p_after: after, p_limit: 100 });
+    if (error || !Array.isArray(data)) return [];
+    return data.map((e: Json) => tickerItem({ id: e.id, kind: e.kind, tier: e.tier, quantity: e.quantity, currency: e.currency, seconds_added: e.seconds, user_name: e.name, user_login: null }));
   }
 
   /** The OBS overlay's current secret code (private key from /mod). */

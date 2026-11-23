@@ -4,8 +4,8 @@
 export type Status = 'upcoming' | 'live' | 'ended';
 export type BoardTab = 'donations' | 'gifts' | 'bits' | 'hours';
 
-/** id: the event's id (live data), so the overlay can queue every new one. */
-export interface TickerItem { time: string; user: string; what: string; color: string; id?: number }
+/** id: the event's id, so the overlay can queue every new one; big: a 20+ gift, 50 €+ or 5,000+ bits. */
+export interface TickerItem { time: string; user: string; what: string; color: string; id?: number; big?: boolean }
 export interface Pop { time: string; user: string; left: string; delay: string; color: string }
 export interface Challenge { id: string; title: string; desc: string; votes: number }
 export interface UpNext { n: number; title: string; round: number; pct: string; when: string }

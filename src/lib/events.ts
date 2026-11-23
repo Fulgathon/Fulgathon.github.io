@@ -5,6 +5,7 @@ import type { TickerItem } from '../data/types';
 import { count, fmtInt, plusTime } from './format';
 
 export interface EventLike {
+  id?: number;
   kind: string;
   tier: string | null;
   quantity: number | string;
@@ -29,12 +30,20 @@ export function describe(e: EventLike): string {
   }
 }
 
+/** A big moment: 20+ gifted subs, 50 €+ or 5,000+ bits at once. */
+export function isBig(e: Pick<EventLike, 'kind' | 'quantity'>): boolean {
+  const n = Number(e.quantity) || 0;
+  return (e.kind === 'gift' && n >= 20) || (e.kind === 'donation' && n >= 50) || (e.kind === 'bits' && n >= 5000);
+}
+
 export function tickerItem(e: EventLike): TickerItem {
   return {
     time: e.seconds_added > 0 ? plusTime(e.seconds_added) : '—',
     user: e.user_name || e.user_login || 'Anonim',
     what: describe(e),
     color: ['sub', 'resub', 'gift'].includes(e.kind) ? 'var(--ice)' : '#FFFFFF',
+    id: e.id,
+    big: isBig(e),
   };
 }
 
