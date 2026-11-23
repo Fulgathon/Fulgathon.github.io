@@ -119,7 +119,9 @@ let S: {
   bingoDraft: { id?: number; label: string }[] | null;
   /** Public names: names the filter hides, and the rules set (hide / allow / viewer opt-out). */
   names: { filtered: string[]; rules: { name: string; rule: 'hide' | 'allow' | 'opt_out'; at: string }[] };
-} = { names: { filtered: [], rules: [] }, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
+  /** mod_health(): is everything still arriving? */
+  health: any;
+} = { health: null, names: { filtered: [], rules: [] }, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
 const bingoRows = () => S.bingoDraft ?? (S.bingo?.items ?? []).map((i) => ({ id: i.id, label: i.label }));
 const editBingo = () => { if (!S.bingoDraft) S.bingoDraft = bingoRows(); return S.bingoDraft; };
 const goalRows = () => S.goalsDraft ?? S.goals.map((g) => ({ title: g.title, threshold: String(g.threshold), sponsor: g.sponsor ?? '' }));
@@ -148,6 +150,7 @@ async function load() {
   if (demoApi) {
     Object.assign(S, demoApi.modState());
     S.names = demoApi.rpc('mod_names', {}) as typeof S.names;
+    S.health = demoHealth();
     if (!S.draft.length || S.draft.some((id) => !S.pool.find((p) => p.id === id))) autoDraft();
     return render();
   }
@@ -174,6 +177,7 @@ async function load() {
     db.rpc('mod_codes'), db.rpc('mod_overlay_key'), db.rpc('mod_sponsor_report'),
     (db as any).rpc('mod_names'),
   ]);
+  S.health = (await (db as any).rpc('mod_health')).data ?? null;
   S.names = names.data ?? { filtered: [], rules: [] };
   S.wheel = (wheel.data ?? []) as typeof S.wheel;
   S.codes = (codes.data ?? []) as typeof S.codes;
@@ -212,6 +216,48 @@ async function load() {
 // Don't wipe a field the moderator is typing in; re-render when they leave it.
 let deferred = false;
 app.addEventListener('focusout', () => { if (deferred) { deferred = false; setTimeout(render, 0); } });
+// ---- Health: turn mod_health() into green / amber / red lines. ----
+function demoHealth() {
+  const now = new Date().toISOString();
+  return { now, timer: { status: S.timer?.status, online: S.timer?.stream_online }, tipeee: { lastRun: now, lastCount: 0, error: null },
+    watch: { lastRun: now, chatters: 412 }, twitch: { lastEvent: now }, donation: { lastEvent: now },
+    jobs: ['icemaraton-minute', 'icemaraton-state', 'icemaraton-tipeee', 'icemaraton-watch-time'].map((job) => ({ job, status: 'succeeded', at: now, message: '' })),
+    httpErrors: [], httpCalls: 120 };
+}
+function healthHtml(h: any): string {
+  if (!h) return '<p class="muted">Nu pot citi starea acum.</p>';
+  const now = Date.parse(h.now);
+  const age = (iso: string | null) => (iso ? Math.max(0, Math.round((now - Date.parse(iso)) / 1000)) : null);
+  const ago = (s: number | null) => s === null ? 'niciodată' : s < 5 ? 'chiar acum' : s < 90 ? `acum ${s} s` : s < 5400 ? `acum ${Math.round(s / 60)} min` : `acum ${Math.round(s / 3600)} h`;
+  const live = h.timer?.status === 'live', online = !!h.timer?.online;
+  const rows: [string, string, string][] = [];
+  // TipeeeStream donations (every 15 s)
+  const tAge = age(h.tipeee?.lastRun ?? null);
+  rows.push(h.tipeee?.error ? ['bad', 'Donații (TipeeeStream)', `Eroare: ${h.tipeee.error}. Ultima verificare ${ago(tAge)}.`]
+    : tAge === null || tAge > 90 ? ['bad', 'Donații (TipeeeStream)', `Nu a mai verificat ${ago(tAge)} (ar trebui la 15 s).`]
+    : ['ok', 'Donații (TipeeeStream)', `Verificat ${ago(tAge)}. Ultima donație: ${ago(age(h.donation?.lastEvent ?? null))}.`]);
+  // Watch time (every 5 min, only live + online)
+  const wAge = age(h.watch?.lastRun ?? null);
+  rows.push(!live || !online ? ['off', 'Timp privit (chat)', 'Se numără doar cât ești live și pe stream.']
+    : wAge === null || wAge > 720 ? ['bad', 'Timp privit (chat)', `Ultima numărare ${ago(wAge)} (ar trebui la 5 min). Verifică dacă streamerul e conectat.`]
+    : ['ok', 'Timp privit (chat)', `Numărat ${ago(wAge)}: ${h.watch?.chatters ?? 0} în chat.`]);
+  // Twitch EventSub
+  const eAge = age(h.twitch?.lastEvent ?? null);
+  rows.push(live && online && (eAge === null || eAge > 3600) ? ['warn', 'Subs și biți (Twitch)', `Nicio notificare ${ago(eAge)}. Normal dacă nu a venit niciun sub; altfel verifică pe /mod conectarea streamerului.`]
+    : ['ok', 'Subs și biți (Twitch)', `Ultima notificare: ${ago(eAge)}.`]);
+  // Scheduled jobs
+  const failed = (h.jobs ?? []).filter((j: any) => j.status === 'failed');
+  rows.push(failed.length ? ['bad', 'Joburi programate', failed.map((j: any) => `${j.job}: ${j.message || 'eșuat'}`).join(' · ')]
+    : ['ok', 'Joburi programate', `Toate ${(h.jobs ?? []).length} merg.`]);
+  // Calls to the Edge Functions (last 30 min)
+  const errs = (h.httpErrors ?? []).length, calls = h.httpCalls ?? 0;
+  rows.push(!errs ? ['ok', 'Funcții (ultimele 30 min)', `${calls} apeluri, fără erori.`]
+    : errs / Math.max(calls, 1) > 0.2 ? ['bad', 'Funcții (ultimele 30 min)', `${errs} erori din ${calls} apeluri. Ultima: ${h.httpErrors[0].status ?? 'fără răspuns'} ${ago(age(h.httpErrors[0].at))}.`]
+    : ['warn', 'Funcții (ultimele 30 min)', `${errs} erori trecătoare din ${calls} apeluri (se reîncearcă singure).`]);
+  const label: Record<string, string> = { ok: 'OK', warn: 'Atenție', bad: 'Problemă', off: 'Oprit' };
+  return `<ul class="list health">${rows.map(([c, name, text]) => `<li><span class="pill ${c}">${label[c]}</span><span class="grow"><strong style="color:#F2F5FA">${esc(name)}</strong><br><span class="muted">${esc(text)}</span></span></li>`).join('')}</ul>`;
+}
+
 function render() {
   const active = document.activeElement;
   if (active && app.contains(active) && /^(INPUT|SELECT|TEXTAREA)$/.test(active.tagName)) { deferred = true; return; }
@@ -264,6 +310,12 @@ function render() {
         <a class="btn btn-${st?.broadcaster_connected ? 'ghost' : 'twitch'}" href="${esc(st?.connect_url ?? '#')}">${st?.broadcaster_connected ? 'Reconectează contul de streamer' : 'Conectează contul de streamer'}</a>
       </div>
       <p class="muted">Doar ${esc(st?.broadcaster_login ?? 'streamerul')} poate face asta, o singură dată. Așa ajung pe site subs, gift-urile, biții și statusul live.</p>
+    </section>
+
+    <section class="card" id="sanatate">
+      <h2>Sănătate</h2>
+      ${healthHtml(S.health)}
+      <p class="muted">Se actualizează singur la un minut.</p>
     </section>
 
     <section class="card" id="cronometru">
@@ -640,4 +692,11 @@ if (demo) {
   ch.subscribe();
   db.auth.onAuthStateChange(() => refresh());
   void load();
+  // The health card refreshes on its own every minute (only that card: forms being typed stay as they are).
+  setInterval(async () => {
+    if (document.visibilityState !== 'visible' || !S.me?.is_moderator) return;
+    S.health = (await (db as any).rpc('mod_health')).data ?? S.health;
+    const box = app.querySelector('#sanatate .health, #sanatate > p.muted:first-of-type');
+    if (box) box.outerHTML = healthHtml(S.health);
+  }, 60_000);
 }

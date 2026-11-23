@@ -30,7 +30,8 @@ const favicon = await getImage({ src: emote, format: 'png', width: 64 });
       .muted { color: #8C97A8; font-size: 14px; }
       .big { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 40px; line-height: 1; }
       .pill { display: inline-block; padding: 2px 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
-      .ok { background: var(--ice); color: #04101A; } .bad { background: #D5162B; color: #fff; } .off { background: #2A3445; color: #C9D2DF; }
+      .ok { background: var(--ice); color: #04101A; } .bad { background: #D5162B; color: #fff; } .off { background: #2A3445; color: #C9D2DF; } .warn { background: #F2C14E; color: #1A1300; }
+      .health li { align-items: flex-start; } .health .pill { flex: none; min-width: 64px; text-align: center; margin-top: 2px; }
       button, .btn { min-height: 44px; padding: 0 14px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px; text-transform: uppercase; letter-spacing: .03em; text-decoration: none; display: inline-flex; align-items: center; }
       .field { min-height: 44px; padding: 0 10px; }
       input.field[type="number"] { width: 90px; }
@@ -90,7 +91,7 @@ const favicon = await getImage({ src: emote, format: 'png', width: 64 });
       <nav class="dock" id="dock" aria-label="Secțiuni" hidden>
         <div class="dock-time"><span class="pill off" id="dockState"></span><span class="dock-clock" id="dockClock">—</span></div>
         <div class="jump">
-          <a href="#stare">Stare</a><a href="#cronometru">Cronometru</a><a href="#milestones">Milestones</a><a href="#bingo">Bingo</a><a href="#cod">Cod secret</a><a href="#roata-premii">Premii roată</a><a href="#raport">Sponsori</a><a href="#vot">Vot</a><a href="#provocari">Provocări</a><a href="#propuneri">Propuneri</a><a href="#premii">Premii</a><a href="#nume">Nume</a><a href="#moderatori">Moderatori</a>
+          <a href="#stare">Stare</a><a href="#sanatate">Sănătate</a><a href="#cronometru">Cronometru</a><a href="#milestones">Milestones</a><a href="#bingo">Bingo</a><a href="#cod">Cod secret</a><a href="#roata-premii">Premii roată</a><a href="#raport">Sponsori</a><a href="#vot">Vot</a><a href="#provocari">Provocări</a><a href="#propuneri">Propuneri</a><a href="#premii">Premii</a><a href="#nume">Nume</a><a href="#moderatori">Moderatori</a>
         </div>
       </nav>
       <main id="app" aria-live="polite"><p class="muted" style="margin-top: 20px">Se încarcă…</p></main>
