@@ -117,7 +117,9 @@ let S: {
   } | null;
   /** Bingo event list being edited (null = showing the saved list). */
   bingoDraft: { id?: number; label: string }[] | null;
-} = { me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
+  /** Public names: names the filter hides, and the rules set (hide / allow / viewer opt-out). */
+  names: { filtered: string[]; rules: { name: string; rule: 'hide' | 'allow' | 'opt_out'; at: string }[] };
+} = { names: { filtered: [], rules: [] }, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
 const bingoRows = () => S.bingoDraft ?? (S.bingo?.items ?? []).map((i) => ({ id: i.id, label: i.label }));
 const editBingo = () => { if (!S.bingoDraft) S.bingoDraft = bingoRows(); return S.bingoDraft; };
 const goalRows = () => S.goalsDraft ?? S.goals.map((g) => ({ title: g.title, threshold: String(g.threshold), sponsor: g.sponsor ?? '' }));
@@ -145,6 +147,7 @@ function autoDraft() {
 async function load() {
   if (demoApi) {
     Object.assign(S, demoApi.modState());
+    S.names = demoApi.rpc('mod_names', {}) as typeof S.names;
     if (!S.draft.length || S.draft.some((id) => !S.pool.find((p) => p.id === id))) autoDraft();
     return render();
   }
@@ -166,10 +169,12 @@ async function load() {
     db.from('viewers').select('login, display_name').eq('is_moderator', true).order('login'),
     db.from('goals').select('title, threshold, unlocked_at, sponsor').order('position'),
   ]);
-  const [wheel, codes, okey, report] = await Promise.all([
+  const [wheel, codes, okey, report, names] = await Promise.all([
     db.from('prizes').select('short_label, full_label, win_label, sponsor, is_win, weight').order('position'),
     db.rpc('mod_codes'), db.rpc('mod_overlay_key'), db.rpc('mod_sponsor_report'),
+    (db as any).rpc('mod_names'),
   ]);
+  S.names = names.data ?? { filtered: [], rules: [] };
   S.wheel = (wheel.data ?? []) as typeof S.wheel;
   S.codes = (codes.data ?? []) as typeof S.codes;
   S.overlayKey = (okey.data as string | null) ?? null;
@@ -453,6 +458,22 @@ function render() {
         : '<p class="muted" style="margin-top:0">Toate premiile au fost date.</p>'}
     </section>
 
+    <section class="card" id="nume">
+      <h2>Nume afișate public</h2>
+      <p class="muted" style="margin-top:0">Numele cu cuvinte urâte, linkuri, e-mailuri sau numere de telefon apar automat ca «Anonim» pe site și pe stream. Contribuțiile se numără la fel.</p>
+      ${S.names.filtered.length ? `<h3 style="margin:12px 0 6px;font-size:15px">Ascunse automat (${S.names.filtered.length})</h3>
+      <ul class="list">${S.names.filtered.map((n) => `<li><span class="grow">${esc(n)}</span><button class="btn-ghost" data-act="nameAllow" data-name="${esc(n)}">E în regulă, arată-l</button></li>`).join('')}</ul>` : '<p class="muted">Niciun nume ascuns automat.</p>'}
+      ${S.names.rules.length ? `<h3 style="margin:12px 0 6px;font-size:15px">Reguli</h3>
+      <ul class="list">${S.names.rules.map((r) => `<li><span class="grow">${esc(r.name)} <span class="muted">· ${({ hide: 'ascuns de un moderator', allow: 'permis de un moderator', opt_out: 'ascuns la cererea lui' })[r.rule]}</span></span>${r.rule === 'opt_out' ? '' : `<button class="btn-ghost" data-act="nameClear" data-name="${esc(r.name)}">Șterge regula</button>`}</li>`).join('')}</ul>` : ''}
+      <div class="row">
+        <div class="pair">
+          <input class="field" id="hideName" placeholder="nume sau login" aria-label="Numele de ascuns" autocapitalize="none" autocorrect="off" spellcheck="false">
+          <button class="btn-primary" data-act="nameHide">Ascunde</button>
+        </div>
+      </div>
+      <p class="muted">Ascunde un nume nepotrivit care a scăpat filtrului. Cine vrea să nu apară își poate ascunde singur numele pe site, sub clasament.</p>
+    </section>
+
     <section class="card" id="moderatori">
       <h2>Moderatori</h2>
       <ul class="list">${S.mods.map((m) => `<li><span class="grow">${esc(m.display_name ?? m.login)}</span>${m.login === S.me!.login ? '<span class="muted">tu</span>' : `<button class="btn-ghost" data-act="unmod" data-login="${esc(m.login)}">Scoate</button>`}</li>`).join('')}</ul>
@@ -549,6 +570,9 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     await call('mod_set_goals', { p_goals: list }, 'Lista de milestone-uri a fost salvată.');
     S.goalsDraft = null;
   },
+  nameHide: () => val('hideName').trim() && call('mod_name_rule', { p_name: val('hideName'), p_rule: 'hide' }, 'Numele e ascuns peste tot.'),
+  nameAllow: (el) => call('mod_name_rule', { p_name: el.dataset.name, p_rule: 'allow' }, 'Numele apare din nou.'),
+  nameClear: (el) => call('mod_name_rule', { p_name: el.dataset.name, p_rule: null }, 'Regula a fost ștearsă.'),
   mod: () => val('newMod').trim() && call('mod_set_moderator', { p_login: val('newMod'), p_on: true }, 'Moderator adăugat.'),
   unmod: (el) => confirm(`Scoți moderatorul ${el.dataset.login}?`) && call('mod_set_moderator', { p_login: el.dataset.login, p_on: false }, 'Moderator scos.'),
 };

@@ -39,6 +39,8 @@ interface DemoSpin { id: number; user: string; prize: number; at: number; fulfil
 interface DemoSuggestion { id: number; body: string; user: string; at: number; status: 'pending' | 'approved' | 'rejected' }
 
 export interface DemoState {
+  /** Moderator name rules (hide / allow), like private.name_rules. */
+  nameRules?: { name: string; rule: 'hide' | 'allow'; at: number }[];
   v: 6;
   seq: number;
   timer: {
@@ -352,6 +354,14 @@ export class DemoBackend {
       const ids = [...new Set(items.map(Number))].sort((a, b) => a - b);
       if (!bingoLines(s.bingo.items.map((it) => it.id)).some((l) => l.join() === ids.join())) fail('not_a_line');
       s.bingo.pick = ids;
+    });
+  }
+  nameRule(name: string, rule: 'hide' | 'allow' | null) {
+    const k = name.trim().toLowerCase();
+    if (!k) throw new Error('empty_name');
+    this.mutate((s) => {
+      s.nameRules = (s.nameRules ?? []).filter((r) => r.name !== k);
+      if (rule) s.nameRules.unshift({ name: k, rule, at: Date.now() });
     });
   }
   bingoTick(id: number, happened: boolean) { this.mutate((s) => { const it = s.bingo.items.find((x) => x.id === id); if (it) it.happened = happened; }); }
@@ -753,6 +763,8 @@ export class DemoBackend {
       case 'mod_review_suggestion': return this.reviewSuggestion(Number(a.p_id), !!a.p_approve);
       case 'mod_fulfil_spin': return this.fulfilSpin(Number(a.p_id));
       case 'mod_set_moderator': return this.setModerator(String(a.p_login), !!a.p_on);
+      case 'mod_name_rule': return this.nameRule(String(a.p_name ?? ''), a.p_rule ?? null);
+      case 'mod_names': return { filtered: [], rules: (this.load().nameRules ?? []).map((r) => ({ name: r.name, rule: r.rule, at: new Date(r.at).toISOString() })) };
       case 'mod_set_goals': return this.setGoals(a.p_goals);
       case 'mod_freeze_until': return this.freezeUntil(ms(a.p_until) ?? 0);
       case 'mod_unfreeze': return this.unfreeze();

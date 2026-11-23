@@ -164,12 +164,12 @@ const reachedGoals = (d: SiteData) => d.goals.filter((g) => d.raisedNum >= g.thr
 
 function applyMe(me: Me | null) {
   if (!me) {
-    set({ viewer: 'out', viewerName: '', spins: 0, watchedToday: 0, spunToday: false, bonusSpins: 0, myVote: null, result: null, suggestDone: false, bingoSaved: null });
+    set({ viewer: 'out', viewerName: '', isPublic: true, spins: 0, watchedToday: 0, spunToday: false, bonusSpins: 0, myVote: null, result: null, suggestDone: false, bingoSaved: null });
     return;
   }
   set({
     ...withSaved(me.bingoSaved),
-    viewer: me.isSub ? 'sub' : 'nonsub', viewerName: me.name, myVote: me.myVote,
+    viewer: me.isSub ? 'sub' : 'nonsub', viewerName: me.name, myVote: me.myVote, isPublic: me.isPublic,
     // Don't let a refresh jump the counter while the wheel is still turning.
     ...(state.spinning ? {} : { spins: me.spins, spunToday: me.spunToday }),
     watchedToday: me.watchedToday, bonusSpins: me.bonusSpins,
@@ -322,6 +322,13 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
   becomeSub: () => {
     if (demo) { demoApi?.setViewer('sub'); info('Abonament verificat', 'Ești abonat. Acum poți vota și propune provocări.'); return; }
     live?.checkSub().catch(fail);
+  },
+
+  togglePublic: () => {
+    const next = !state.isPublic;
+    set({ isPublic: next });
+    if (demo) return;
+    live?.setPublic(next).catch((err) => { set({ isPublic: !next }); fail(err); });
   },
 
   toggleMenu: () => set({ menu: !state.menu }),

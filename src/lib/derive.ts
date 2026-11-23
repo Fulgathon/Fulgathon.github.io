@@ -40,6 +40,8 @@ export interface State {
   suggestion: string;
   suggestDone: boolean;
   copied: boolean;
+  /** false: the viewer chose to appear as "Anonim" in public. */
+  isPublic: boolean;
 }
 
 export function initialState(): State {
@@ -49,6 +51,7 @@ export function initialState(): State {
     now: 0,
     viewer: 'out',
     viewerName: '',
+    isPublic: true,
     spins: 0,
     watchedToday: 0,
     spunToday: false,
@@ -342,6 +345,13 @@ export function derive(s: State, d: SiteData) {
     suggestLocked: !isSub,
     suggestLockText: isOut ? 'Conectează-te și abonează-te ca să propui provocări' : 'Abonează-te ca să propui provocări',
     suggestLen: sug.length,
+
+    // Privacy under the leaderboard: a viewer can hide their name everywhere in public.
+    privacyText: isOut ? 'Nu vrei să apari cu numele în clasamente și pe stream? Conectează-te cu Twitch și alegi tu.'
+      : s.isPublic ? 'Numele tău apare în clasamente, în lista de timp adăugat și pe stream.'
+      : 'Numele tău e ascuns: în public apari ca «Anonim». Contribuțiile tale se numără la fel.',
+    privacyBtn: s.isPublic ? 'Ascunde-mi numele' : 'Arată-mi numele',
+    privacyPressed: bool(!s.isPublic),
 
     codeLabel: s.copied ? 'Copiat ✓' : 'Copiază',
     codeStatus: s.copied ? 'Codul a fost copiat' : '',
