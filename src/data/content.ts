@@ -43,11 +43,14 @@ export const defaultPrizes: Prize[] = [
   ['Îngheți timpul', 'Îngheți cronometrul 5 minute'], ['Mai încearcă', 'Mai încearcă'],
 ].map(([s, f], i) => [s, f, prizeColors[i]] as Prize);
 
-export const bingo = [
-  'Rage quit', 'Zice „ultimul joc” și mai joacă 3', 'Pică netul sau OBS-ul', 'Cântă fără să-i ceară nimeni',
-  'Raid cu peste 50 de oameni', 'Mănâncă pe stream', 'Adoarme pe cameră', 'Cineva dăruiește 10+ subs',
-  'Moare în primul minut', 'Vorbește cu microfonul pe mute', 'Chatul spamează același emote', 'A treia cafea a zilei',
-  'Un mod dă timeout', 'Râde un minut fără oprire', 'Începe ora dublă', 'Cântă o colindă',
+/** Bingo events (same as the database seed; moderators edit the live list on /mod). */
+export const bingoItems = [
+  'Rage bait', 'Țipă la iKLD', 'Cântă fără să-i ceară nimeni', 'Raid cu peste 50 de oameni',
+  'Cineva dăruiește 10+ subs', 'Cineva donează 100+ €', 'Moare în primul minut', 'Vorbește cu microfonul pe mute',
+  'Un moderator își ia unmod', 'Mai prinde un accident pe live', 'Se ia curentul', 'Face pană la mașină',
+  'Sforăie în somn', 'Rage quit', 'Zice „ultimul joc” și mai joacă 3', 'Pică netul sau OBS-ul',
+  'Mănâncă pe stream', 'Adoarme pe cameră', 'Chatul spamează același emote', 'A treia cafea a zilei',
+  'Râde un minut fără oprire', 'Cântă o colindă', 'Începe Ora dublă', 'Plânge de râs',
 ];
 
 export const partners = [

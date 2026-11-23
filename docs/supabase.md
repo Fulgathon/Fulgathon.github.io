@@ -52,6 +52,10 @@ Tables: `timer`, `stats`, `rates`, `events`, `goals`, `viewers`, `watch_time`,
 | `suggest(body)` | subscriber | Challenge idea (3–140 chars, max 3 per 10 minutes). |
 | `wheel_status()` | logged in | Subscriber?, minutes watched today, already spun today, spin available (sub + 120 min today + live + not spun). |
 | `mod_set_goals(goals jsonb)` | moderators | Replace the Milestone Maraton list (title + € threshold), sorted by amount. |
+| `bingo_save(items int[])` | logged in | Save/replace my 5 bingo events (until `bingo_settings.closes_at`). |
+| `bingo_stats()` | anyone | Number of bingo players. |
+| `mod_bingo_set_items` · `mod_bingo_tick` · `mod_bingo_settings` · `mod_bingo_status` · `mod_bingo_draw` | moderators | Edit events, tick what happened, close date + prize, raffle list, draw a winner (stored in `bingo_draws`). |
+| `mod_freeze_until(until)` · `mod_unfreeze()` | moderators | Freeze the clock until a date / resume now. |
 | `spin()` | logged in | The server picks the prize; the browser only animates to it. |
 
 Tested on the live project inside rolled-back transactions: time and doubling

@@ -21,6 +21,8 @@ export interface Me {
   watchedToday: number;
   spunToday: boolean;
   myVote: string | null;
+  /** This viewer's saved bingo pick (5 event ids), or null. */
+  bingoSaved: number[] | null;
 }
 
 export interface LiveHandlers {
@@ -62,7 +64,24 @@ export class Live {
 
   // ---- Loaders: each returns the part of SiteData it owns. ----------------
 
+  /** Bingo tables aren't in the generated types; this is the same client, untyped. */
+  private get raw() { return this.db as unknown as SupabaseClient; }
+
   private loaders: Record<string, () => Promise<Patch>> = {
+    bingo: async () => {
+      const [{ data: items }, { data: set }, { data: stats }] = await Promise.all([
+        this.raw.from('bingo_items').select('id, label, happened_at').order('position'),
+        this.raw.from('bingo_settings').select('closes_at, prize').eq('id', 1).maybeSingle(),
+        this.raw.rpc('bingo_stats'),
+      ]);
+      if (!items) return {};
+      return {
+        bingo: {
+          closesAt: ms(set?.closes_at ?? null), prize: set?.prize ?? '', players: stats?.[0]?.players ?? 0,
+          items: items.map((i: { id: number; label: string; happened_at: string | null }) => ({ id: i.id, label: i.label, happened: !!i.happened_at })),
+        },
+      };
+    },
     timer: async () => {
       const { data: t } = await this.db.from('timer').select('*').eq('id', 1).maybeSingle();
       if (!t) return {};
@@ -191,6 +210,8 @@ export class Live {
       spins: ['wins', 'me'],
       vote_rounds: ['round', 'upNext', 'completed'],
       round_challenges: ['round'],
+      bingo_items: ['bingo'],
+      bingo_settings: ['bingo'],
     };
     const ch = this.db.channel('icemaraton');
     for (const [table, loaders] of Object.entries(watch)) {
@@ -221,6 +242,7 @@ export class Live {
       myVote = vote ? String(vote.challenge_id) : null;
     }
     const w = ws?.[0];
+    const { data: bp } = await this.raw.from('bingo_picks').select('items').eq('viewer_id', session.user.id).maybeSingle();
     this.handlers.onMe({
       name: v?.display_name || v?.login || 'viewer',
       isSub: !!v?.is_subscriber,
@@ -228,6 +250,7 @@ export class Live {
       watchedToday: w?.minutes_today ?? 0,
       spunToday: !!w?.spun_today,
       myVote,
+      bingoSaved: Array.isArray(bp?.items) ? bp.items.map(Number) : null,
     });
   }
 
@@ -256,6 +279,12 @@ export class Live {
     const { data, error } = await this.db.rpc('spin');
     if (error) throw error;
     return data[0];
+  }
+
+  async saveBingo(items: number[]) {
+    const { error } = await this.raw.rpc('bingo_save', { p_items: items });
+    if (error) throw error;
+    this.queue('bingo');
   }
 
   async suggest(body: string) {

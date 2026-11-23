@@ -134,8 +134,8 @@ function board(v: Vals): string {
 function bingo(v: Vals): string {
   return v.bingo
     .map(
-      (b) => `<button type="button" class="cell" aria-pressed="${b.pressed}" data-action="bingo" data-arg="${b.i}" data-key="bingo-${b.i}" style="position: relative; min-height: 92px; padding: 10px; text-align: left; display: flex; align-items: flex-end; font-size: 14px; font-weight: 600; line-height: 1.25; background: ${b.bg}; color: ${b.color}; border: 2px solid ${b.border}">
-${b.on ? CHECK : ''}
+      (b) => `<button type="button" class="cell" aria-pressed="${b.pressed}"${b.disabled ? ' aria-disabled="true"' : ''} data-action="bingo" data-arg="${b.id}" data-key="bingo-${b.id}" style="position: relative; min-height: 76px; padding: 10px; text-align: left; display: flex; align-items: flex-end; font-size: 14px; font-weight: 600; line-height: 1.25; background: ${b.bg}; color: ${b.color}; border: 2px solid ${b.border}${b.disabled && !b.on ? '; cursor: default' : ''}">
+${b.hit ? CHECK : ''}
 ${esc(b.text)}
 </button>`,
     )

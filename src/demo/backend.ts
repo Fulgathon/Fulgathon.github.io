@@ -8,7 +8,7 @@
 // in separate tabs or side by side. Nothing here touches the real database.
 
 import challengesJson from '../../data/challenges.json';
-import { defaultGoals, defaultPrizes, popSlots } from '../data/content';
+import { bingoItems, defaultGoals, defaultPrizes, popSlots } from '../data/content';
 import type { BoardTab, Goal, SiteData } from '../data/types';
 import { amount, tickerItem } from '../lib/events';
 import { ago, fmtInt } from '../lib/format';
@@ -37,7 +37,7 @@ interface DemoSpin { id: number; user: string; prize: number; at: number; fulfil
 interface DemoSuggestion { id: number; body: string; user: string; at: number; status: 'pending' | 'approved' | 'rejected' }
 
 export interface DemoState {
-  v: 2;
+  v: 3;
   seq: number;
   timer: {
     status: Status; startsAt: number | null; endsAt: number | null; pausedUntil: number | null;
@@ -56,6 +56,14 @@ export interface DemoState {
   viewer: { state: Viewer; name: string; day: string; watched: number; spunDay: string | null };
   mods: string[];
   streamerConnected: boolean;
+  /** Prediction bingo: the viewer's pick plus simulated players' picks. */
+  bingo: {
+    closesAt: number | null; prize: string;
+    items: { id: number; label: string; happened: boolean }[];
+    pick: number[] | null;
+    others: { user: string; items: number[] }[];
+    draws: string[];
+  };
 }
 
 /** Same as the seeded `rates` table: seconds for every `per` units. */
@@ -100,7 +108,7 @@ function seed(now: number): DemoState {
     ({ id, kind, tier, quantity, currency, seconds_added: seconds, doubled: false, user_login: user, user_name: user, at: now - minsAgo * MIN });
 
   return {
-    v: 2,
+    v: 3,
     seq: 1000,
     timer: {
       status: 'live',
@@ -144,6 +152,19 @@ function seed(now: number): DemoState {
     viewer: { state: 'out', name: 'viewer_name', day: today(), watched: 95, spunDay: null },
     mods: ['icemanlucky', 'frostbyte_77'],
     streamerConnected: true,
+    bingo: {
+      closesAt: now + 2 * DAY + 5 * HOUR,
+      prize: '[PREMIU]',
+      items: bingoItems.map((label, i) => ({ id: i + 1, label, happened: false })),
+      pick: null,
+      // 340 simulated players, each with 5 random events.
+      others: Array.from({ length: 340 }, (_, k) => {
+        const ids = new Set<number>();
+        while (ids.size < 5) ids.add(1 + Math.floor(Math.random() * bingoItems.length));
+        return { user: k < NAMES.length ? NAMES[k] : `viewer_${k}`, items: [...ids] };
+      }),
+      draws: [],
+    },
   };
 }
 
@@ -174,7 +195,7 @@ export class DemoBackend {
     if (raw) {
       try {
         const s = JSON.parse(raw) as DemoState;
-        if (s.v === 2) { this.raw = raw; this.cached = s; return s; }
+        if (s.v === 3) { this.raw = raw; this.cached = s; return s; }
       } catch { /* corrupt: reseed */ }
     }
     // No saved demo (or storage blocked): start from the seed, keep it in memory.
@@ -280,6 +301,62 @@ export class DemoBackend {
       s.timer.pausedUntil = Math.max(s.timer.pausedUntil ?? now, now) + minutes * MIN;
     });
   }
+  freezeUntil(until: number) {
+    const now = Date.now();
+    const from = Math.max(this.state.timer.pausedUntil ?? now, now);
+    if (until <= from) fail('freeze_in_past');
+    this.freeze((until - from) / MIN);
+  }
+  unfreeze() {
+    this.mutate((s) => {
+      const now = Date.now();
+      if (!s.timer.pausedUntil || s.timer.pausedUntil <= now) return;
+      if (s.timer.endsAt !== null) s.timer.endsAt -= s.timer.pausedUntil - now;
+      s.timer.pausedUntil = now;
+    });
+  }
+
+  // ---- Bingo (same rules as the database) ------------------------------------
+  saveBingo(items: number[]) {
+    this.mutate((s) => {
+      if (s.viewer.state === 'out') fail('not_logged_in');
+      if (s.bingo.closesAt !== null && Date.now() >= s.bingo.closesAt) fail('bingo_closed');
+      const ids = [...new Set(items.map(Number))];
+      if (ids.length !== 5 || ids.some((id) => !s.bingo.items.some((it) => it.id === id))) fail('bad_pick');
+      s.bingo.pick = ids.sort((a, b) => a - b);
+    });
+  }
+  bingoTick(id: number, happened: boolean) { this.mutate((s) => { const it = s.bingo.items.find((x) => x.id === id); if (it) it.happened = happened; }); }
+  bingoSettings(closesAt: number | null, prize: string) { this.mutate((s) => { s.bingo.closesAt = closesAt; if (prize.trim()) s.bingo.prize = prize.trim(); }); }
+  setBingoItems(list: { id?: number | string; label: string }[]) {
+    this.mutate((s) => {
+      if (!Array.isArray(list) || list.length < 5 || list.length > 60 || list.some((x) => !String(x.label ?? '').trim() || String(x.label).length > 80)) fail('bad_items');
+      const keep = new Set(list.filter((x) => x.id !== undefined && x.id !== '').map((x) => Number(x.id)));
+      const used = [...(s.bingo.pick ?? []), ...s.bingo.others.flatMap((o) => o.items)];
+      if (used.some((id) => !keep.has(id))) fail('item_in_use');
+      let next = Math.max(0, ...s.bingo.items.map((x) => x.id));
+      s.bingo.items = list.map((x) => {
+        const old = s.bingo.items.find((it) => it.id === Number(x.id));
+        return old ? { ...old, label: String(x.label).trim() } : { id: ++next, label: String(x.label).trim(), happened: false };
+      });
+    });
+  }
+  private bingoWinners(s: DemoState) {
+    const done = (ids: number[]) => ids.every((id) => s.bingo.items.find((it) => it.id === id)?.happened);
+    const list = s.bingo.others.filter((o) => done(o.items)).map((o) => o.user);
+    if (s.bingo.pick && done(s.bingo.pick)) list.unshift(s.viewer.name);
+    return list;
+  }
+  bingoDraw(): string {
+    return this.mutate((s) => {
+      const pool = this.bingoWinners(s).filter((u) => !s.bingo.draws.includes(u));
+      if (!pool.length) fail('no_bingo_winners');
+      const won = pick(pool);
+      s.bingo.draws.unshift(won);
+      return won;
+    });
+  }
+
   doubleHour(from: number, minutes: number) { this.mutate((s) => { s.timer.doubleFrom = from; s.timer.doubleUntil = from + minutes * MIN; }); }
   endTimer() { this.mutate((s) => { s.timer.status = 'ended'; }); }
 
@@ -421,6 +498,7 @@ export class DemoBackend {
         const ok = s.viewer.state === 'sub' && s.timer.status === 'live' && watched >= WHEEL_MINUTES && !spunToday;
         return { spins: ok ? 1 : 0, watchedToday: watched, spunToday };
       })(),
+      bingoSaved: s.viewer.state === 'out' ? null : s.bingo.pick,
       myVote: r && s.myVotes[r.id] !== undefined ? String(s.myVotes[r.id]) : null,
     };
   }
@@ -480,6 +558,11 @@ export class DemoBackend {
       losePrize: LOSE,
       recentWins: [...s.spins].filter((x) => x.prize !== LOSE).sort((a, b) => b.at - a.at).slice(0, 4)
         .map((x) => ({ user: x.user, prize: WIN_LABELS[x.prize], ago: ago(x.at, now) })),
+      bingo: {
+        closesAt: s.bingo.closesAt, prize: s.bingo.prize,
+        players: s.bingo.others.length + (s.bingo.pick ? 1 : 0),
+        items: s.bingo.items.map((it) => ({ ...it })),
+      },
       boards: { donations: board('donations', 'donation'), gifts: board('gifts', 'gift'), bits: board('bits', 'bits'), hours: board('hours') },
     };
   }
@@ -507,6 +590,15 @@ export class DemoBackend {
       suggestions: s.suggestions.filter((x) => x.status === 'pending').map((x) => ({ id: x.id, body: x.body, created_at: iso(x.at)!, viewers: { login: x.user, display_name: x.user } })),
       prizes: s.spins.filter((x) => !x.fulfilled && x.prize !== LOSE).map((x) => ({ id: x.id, user_login: x.user, created_at: iso(x.at)!, prizes: { win_label: WIN_LABELS[x.prize], is_win: true } })),
       mods: s.mods.map((login) => ({ login, display_name: login === 'icemanlucky' ? 'Icemanlucky' : null })),
+      bingo: {
+        closes_at: iso(s.bingo.closesAt), prize: s.bingo.prize,
+        items: s.bingo.items.map((it) => ({ id: it.id, label: it.label, happened_at: it.happened ? 'yes' : null })),
+        status: {
+          players: s.bingo.others.length + (s.bingo.pick ? 1 : 0),
+          winners: this.bingoWinners(s).map((login) => ({ login, saved_at: null })),
+          draws: s.bingo.draws.map((login) => ({ login, drawn_at: null })),
+        },
+      },
     };
   }
 
@@ -527,6 +619,12 @@ export class DemoBackend {
       case 'mod_fulfil_spin': return this.fulfilSpin(Number(a.p_id));
       case 'mod_set_moderator': return this.setModerator(String(a.p_login), !!a.p_on);
       case 'mod_set_goals': return this.setGoals(a.p_goals);
+      case 'mod_freeze_until': return this.freezeUntil(ms(a.p_until) ?? 0);
+      case 'mod_unfreeze': return this.unfreeze();
+      case 'mod_bingo_set_items': return this.setBingoItems(a.p_items);
+      case 'mod_bingo_tick': return this.bingoTick(Number(a.p_id), !!a.p_happened);
+      case 'mod_bingo_settings': return this.bingoSettings(ms(a.p_closes_at), String(a.p_prize ?? ''));
+      case 'mod_bingo_draw': return this.bingoDraw();
       default: return fail(`unknown_${fn}`);
     }
   }

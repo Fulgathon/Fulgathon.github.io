@@ -113,3 +113,6 @@ input, select, textarea { font: inherit; }
 .demo-modal-card p { color: #C9D2DF; font-size: 15px; }
 .demo-modal-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
 .demo-modal-actions button { min-height: 48px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 18px; text-transform: uppercase; }
+
+/* Bingo: all 5 predictions happened. */
+.bingo-note.is-bingo { padding: 12px 14px; border: 2px solid var(--ice); background: #0B1018; color: #F2F5FA; font-weight: 700; }

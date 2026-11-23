@@ -16,7 +16,7 @@
 //             panel switches viewer and stream states and fakes Twitch events.
 //             ?demo&embed hides the panel (used inside /prezentare/).
 
-import { emptyData, sampleBingoMarked } from '../data/sample';
+import { emptyData } from '../data/sample';
 import { site } from '../data/site';
 import type { SiteData } from '../data/types';
 import { derive, initialState, type State } from '../lib/derive';
@@ -30,7 +30,7 @@ const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const params = new URLSearchParams(location.search);
 const demo = params.has('demo');
 const embed = params.has('embed');
-const BINGO_KEY = 'icemaraton:bingo';
+const BINGO_KEY = 'icemaraton:bingo-pick';
 
 let data: SiteData = emptyData();
 // state.demo shows the demo panel (not inside the presentation page).
@@ -38,8 +38,7 @@ let state: State = { ...initialState(), demo: demo && !embed, now: Date.now() };
 let live: Live | null = null;
 let demoApi: DemoBackend | null = null;
 
-if (demo) state.marked = sampleBingoMarked.slice();
-else state.marked = loadBingo();
+if (!demo) state.bingoPick = loadPick();
 
 const all = <T extends HTMLElement = HTMLElement>(sel: string) => Array.from(document.querySelectorAll<T>(sel));
 const pairs = (spec: string) => spec.split(';').filter(Boolean).map((p) => p.split(':') as [string, string]);
@@ -111,17 +110,23 @@ setInterval(() => {
   if (Math.floor(now / 1000) !== Math.floor(state.now / 1000)) set({ now });
 }, 250);
 
-// ---- Bingo is personal: kept in this browser only. ---------------------
-function loadBingo(): boolean[] {
+// ---- Bingo: the 5 picks being chosen survive the Twitch login redirect. ----
+function loadPick(): number[] {
   try {
-    const saved = JSON.parse(localStorage.getItem(BINGO_KEY) ?? 'null');
-    if (Array.isArray(saved) && saved.length === 16) return saved.map(Boolean);
+    const p = JSON.parse(localStorage.getItem(BINGO_KEY) ?? 'null');
+    if (Array.isArray(p)) return p.map(Number).filter(Number.isInteger).slice(0, 5);
   } catch { /* storage blocked */ }
-  return Array(16).fill(false);
+  return [];
 }
-function saveBingo(marked: boolean[]) {
+function storePick(pick: number[]) {
   if (demo) return;
-  try { localStorage.setItem(BINGO_KEY, JSON.stringify(marked)); } catch { /* storage blocked */ }
+  try { localStorage.setItem(BINGO_KEY, JSON.stringify(pick)); } catch { /* storage blocked */ }
+}
+/** A fresh saved pick from the server: show it, unless the viewer was mid-choice (e.g. before logging in). */
+function withSaved(saved: number[] | null): Partial<State> {
+  const draft = state.bingoPick;
+  const changedBeforeLogin = state.bingoSaved === null && draft.length > 0 && !demo;
+  return { bingoSaved: saved, ...(changedBeforeLogin || (saved === null && draft.length) ? {} : { bingoPick: saved ?? [] }) };
 }
 
 // ---- Messages for things that didn't work. ------------------------------
@@ -135,6 +140,8 @@ const errors: Record<string, string> = {
   not_subscriber: 'Roata e doar pentru abonați.',
   not_enough_watch: 'Ai nevoie de 2 ore de privit azi pentru rotire.',
   already_spun: 'Ai învârtit deja azi. Revino mâine!',
+  bingo_closed: 'Alegerile pentru bingo s-au închis.',
+  bad_pick: 'Alege exact 5 evenimente diferite.',
   too_many: 'Ai trimis deja 3 propuneri. Mai încearcă peste câteva minute.',
 };
 function info(eyebrow: string, text: string) {
@@ -151,10 +158,11 @@ const reachedGoals = (d: SiteData) => d.goals.filter((g) => d.raisedNum >= g.thr
 
 function applyMe(me: Me | null) {
   if (!me) {
-    set({ viewer: 'out', viewerName: '', spins: 0, watchedToday: 0, spunToday: false, myVote: null, result: null, suggestDone: false });
+    set({ viewer: 'out', viewerName: '', spins: 0, watchedToday: 0, spunToday: false, myVote: null, result: null, suggestDone: false, bingoSaved: null });
     return;
   }
   set({
+    ...withSaved(me.bingoSaved),
     viewer: me.isSub ? 'sub' : 'nonsub', viewerName: me.name, myVote: me.myVote,
     // Don't let a refresh jump the counter while the wheel is still turning.
     ...(state.spinning ? {} : { spins: me.spins, spunToday: me.spunToday }),
@@ -186,6 +194,7 @@ function demoSync(first = false) {
   data = demoApi.toSiteData(Date.now());
   const me = demoApi.viewerInfo();
   const patch: Partial<State> = {
+    ...(state.bingoSaved?.join() === me.bingoSaved?.join() ? {} : withSaved(me.bingoSaved)),
     viewer: me.state, viewerName: me.name, myVote: me.myVote,
     watchedToday: me.watchedToday,
     ...(state.spinning ? {} : { spins: me.spins, spunToday: me.spunToday }),
@@ -321,10 +330,25 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
   },
 
   bingo: (i) => {
-    const marked = state.marked.slice();
-    marked[Number(i)] = !marked[Number(i)];
-    saveBingo(marked);
-    set({ marked });
+    const id = Number(i);
+    if (!(data.bingo.closesAt === null || Date.now() < data.bingo.closesAt)) return;
+    const pick = state.bingoPick.includes(id) ? state.bingoPick.filter((x) => x !== id)
+      : state.bingoPick.length < 5 ? [...state.bingoPick, id] : state.bingoPick;
+    storePick(pick);
+    set({ bingoPick: pick });
+  },
+
+  bingoSave: () => {
+    if (state.viewer === 'out') { actions.login('', document.body); return; }
+    if (state.bingoPick.length !== 5) return;
+    const pick = state.bingoPick.slice();
+    if (demo) {
+      try { demoApi?.saveBingo(pick); info('Bingo', 'Linia ta e salvată.'); } catch (err) { fail(err); }
+      return;
+    }
+    live?.saveBingo(pick)
+      .then(() => { set({ bingoSaved: pick }); info('Bingo', 'Linia ta e salvată. O poți schimba până la închidere.'); })
+      .catch(fail);
   },
 
   sendSuggestion: () => {

@@ -2,7 +2,7 @@
 // values the page shows. Pure, so the build (first paint) and the browser
 // (every update) produce exactly the same output.
 
-import { bingo as bingoText, boardTabs as boardTabDefs, boardUnits, placeholderTicker } from '../data/content';
+import { boardTabs as boardTabDefs, boardUnits, placeholderTicker } from '../data/content';
 import { site } from '../data/site';
 import type { BoardTab, SiteData } from '../data/types';
 import { count, dateRo, dayRo, fmtInt, pad, timeRo } from './format';
@@ -31,7 +31,9 @@ export interface State {
   wheelDeg: number;
   spinning: boolean;
   result: number | null;
-  marked: boolean[];
+  /** Bingo: the 5 events being chosen, and what's saved on the server (null = nothing yet). */
+  bingoPick: number[];
+  bingoSaved: number[] | null;
   suggestion: string;
   suggestDone: boolean;
   copied: boolean;
@@ -56,7 +58,8 @@ export function initialState(): State {
     wheelDeg: 0,
     spinning: false,
     result: null,
-    marked: Array(16).fill(false),
+    bingoPick: [],
+    bingoSaved: null,
     suggestion: '',
     suggestDone: false,
     copied: false,
@@ -65,16 +68,6 @@ export function initialState(): State {
 
 const bool = (b: boolean): 'true' | 'false' => (b ? 'true' : 'false');
 
-/** Bingo lines: 4 rows, 4 columns, 2 diagonals. */
-const BINGO_LINES: number[][] = (() => {
-  const lines: number[][] = [];
-  for (let k = 0; k < 4; k++) {
-    lines.push([0, 1, 2, 3].map((j) => k * 4 + j));
-    lines.push([0, 1, 2, 3].map((j) => j * 4 + k));
-  }
-  lines.push([0, 5, 10, 15], [3, 6, 9, 12]);
-  return lines;
-})();
 
 export function derive(s: State, d: SiteData) {
   const live = d.status === 'live';
@@ -226,19 +219,42 @@ export function derive(s: State, d: SiteData) {
     color: tab === id ? '#F2F5FA' : '#7D8899',
   }));
 
-  // Bingo
-  const marked = s.marked;
-  const bingo = bingoText.map((text, i) => {
-    const on = marked[i];
+  // Bingo: pick 5 events before the close; moderators tick what happens; all 5 → raffle.
+  const B = d.bingo;
+  const bingoOpen = B.closesAt === null || s.now < B.closesAt;
+  const pick = s.bingoPick;
+  const saved = s.bingoSaved;
+  const mine = bingoOpen ? pick : (saved ?? []);
+  const sameAsSaved = saved !== null && saved.length === pick.length && pick.every((id) => saved.includes(id));
+  const bingo = B.items.map((it) => {
+    const on = mine.includes(it.id);
+    const full = bingoOpen && !on && pick.length >= 5;
+    const hit = !bingoOpen && it.happened;
     return {
-      i, text, on, pressed: bool(on),
-      bg: on ? 'var(--ice)' : '#0B1018',
-      color: on ? '#04101A' : '#C9D2DF',
-      border: on ? 'var(--ice)' : '#1A2230',
+      id: it.id, text: it.label, on, hit, pressed: bool(on), disabled: !bingoOpen || full,
+      bg: on ? (bingoOpen || hit ? 'var(--ice)' : 'rgba(63,208,255,0.12)') : '#0B1018',
+      color: on && (bingoOpen || hit) ? '#04101A' : full ? '#5A6577' : '#C9D2DF',
+      border: on ? 'var(--ice)' : hit ? '#4A5568' : '#1A2230',
     };
   });
-  const isBingo = BINGO_LINES.some((l) => l.every((x) => marked[x]));
-  const markedCount = marked.filter(Boolean).length;
+  const hits = !bingoOpen && saved ? saved.filter((id) => B.items.find((it) => it.id === id)?.happened).length : 0;
+  const isBingo = !bingoOpen && saved !== null && hits === 5;
+  const closeText = B.closesAt !== null ? `${dateRo(B.closesAt)}, la ${timeRo(B.closesAt)}` : '';
+  const prize = B.prize && !B.prize.startsWith('[') ? B.prize : 'premiul cel mare';
+  const bingoStatus = bingoOpen
+    ? (closeText ? `Alegerile se închid pe ${closeText}.` : 'Alegerile sunt deschise.')
+    : 'Alegerile s-au închis. Moderatorii bifează pe parcurs ce se întâmplă pe stream.';
+  const bingoNote = bingoOpen
+    ? (isOut ? 'Alege 5 și conectează-te cu Twitch ca să-ți salvezi linia.'
+      : sameAsSaved ? 'Linia ta e salvată. O poți schimba până la închidere.'
+      : saved ? 'Ai schimbat alegerile. Salvează ca să rămână așa.'
+      : 'Alege 5 evenimente și salvează-ți linia.')
+    : isOut ? 'Conectează-te cu Twitch ca să-ți vezi linia.'
+    : !saved ? 'Nu ai ales o linie înainte de închidere. Data viitoare!'
+    : isBingo ? `BINGO! Toate cele 5 s-au întâmplat: ești pe lista de tragere la sorți pentru ${prize}.`
+    : `${hits} din 5 s-au întâmplat până acum.`;
+  const bingoBtn = isOut ? 'Conectează-te ca să salvezi' : pick.length < 5 ? `Mai alege ${5 - pick.length}` : sameAsSaved ? 'Linie salvată ✓' : 'Salvează linia';
+  const bingoBtnClass = isOut ? 'btn-twitch' : pick.length === 5 && !sameAsSaved ? 'btn-primary' : 'btn-ghost';
 
   const sug = s.suggestion;
 
@@ -251,6 +267,9 @@ export function derive(s: State, d: SiteData) {
     timerLabel: live ? 'Timp rămas' : upcoming ? 'Începe în' : 'Subathonul s-a încheiat',
     endDateText,
     hasDouble: doubleNow || doubleSoon, doubleText,
+    isFrozen: live && d.pausedUntil !== null && d.pausedUntil > s.now,
+    frozenText: live && d.pausedUntil !== null && d.pausedUntil > s.now
+      ? `până pe ${dateRo(d.pausedUntil)}, la ${timeRo(d.pausedUntil)}. Subs și donațiile adaugă timp în continuare.` : '',
     subsText: fmtInt(subs),
     nextGoalText: fmtInt(nextMark) + ' €',
     nextGoalTitle: d.goals[nextIdx]?.title ?? '',
@@ -288,7 +307,10 @@ export function derive(s: State, d: SiteData) {
     // The open mobile menu sits under the toast, so the toast waits.
     toastOn: toastOn && !s.menu, toastEyebrow, toastText, toastColor, toastBorder,
 
-    bingo, isBingo, markedCount,
+    bingo, isBingo, bingoOpen, bingoClosed: !bingoOpen, bingoStatus, bingoNote,
+    bingoCount: bingoOpen ? `${pick.length} / 5 alese` : `${hits} / 5 întâmplate`,
+    bingoPlayers: B.players === 1 ? '1 jucător' : `${fmtInt(B.players)} jucători`,
+    bingoBtn, bingoBtnClass, bingoPrize: prize,
 
     suggestForm: isSub && !s.suggestDone,
     suggestSent: isSub && s.suggestDone,

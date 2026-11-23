@@ -1,12 +1,9 @@
-// The empty first-paint state, and the design's pre-ticked bingo squares for
-// ?demo. The design's sample subathon itself now seeds the demo backend
+// The empty first-paint state. The design's sample subathon itself now seeds the demo backend
 // (src/demo/backend.ts); live visitors get Supabase data (src/scripts/live.ts).
 
-import { defaultGoals, defaultPrizes } from './content';
+import { bingoItems, defaultGoals, defaultPrizes } from './content';
 import type { SiteData } from './types';
 
-/** The design's pre-ticked bingo squares (demo only). */
-export const sampleBingoMarked = [true, false, false, false, false, true, false, false, false, false, true, false, false, false, false, false];
 
 /** What the page shows before anything has loaded: upcoming, nothing yet. */
 export function emptyData(): SiteData {
@@ -32,5 +29,6 @@ export function emptyData(): SiteData {
     losePrize: 7,
     recentWins: [],
     boards: { donations: [], gifts: [], bits: [], hours: [] },
+    bingo: { closesAt: null, prize: '', players: 0, items: bingoItems.map((label, i) => ({ id: i + 1, label, happened: false })) },
   };
 }

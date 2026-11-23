@@ -1,5 +1,5 @@
 ---
-// 08 Joacă și tu: bingo + suggestion form.
+// 08 Joacă și tu: prediction bingo (pick 5, saved per viewer) + suggestion form.
 import SectionHead from './SectionHead.astro';
 import Emote from './Emote.astro';
 import { v, iff } from '../lib/ssr';
@@ -11,25 +11,21 @@ const emoteStyle = 'flex: none; width: 44px; height: 54px; object-fit: contain';
 ---
 <section id="joaca" aria-labelledby="h-joaca" style="position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 0 clamp(20px, 4cqi, 40px) clamp(56px, 8cqi, 112px)">
   <SectionHead tag="08" bignum="08" title="Joacă și tu" id="h-joaca">
-    <p style="margin: 0; max-width: 420px; font-size: 17px; color: #AEB8C7">Bingo pe parcursul stream-ului și propuneri pentru următoarele runde de vot.</p>
+    <p style="margin: 0; max-width: 420px; font-size: 17px; color: #AEB8C7">Bingo cu predicții înainte de start și propuneri pentru următoarele runde de vot.</p>
   </SectionHead>
   <div style="margin-top: 32px; display: flex; flex-wrap: wrap; gap: 32px 48px">
 
     <div style="flex: 3 1 520px; min-width: 0">
       <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px">
-        <h3 style={h3}>Bingo de subathon</h3>
-        <span style="font-size: 15px; color: #8C97A8"><strong data-text="markedCount" style="color: #F2F5FA">{v.markedCount}</strong> / 16 bifate</span>
+        <h3 style={h3}>Bingo-ul maratonului</h3>
+        <span style="font-size: 15px; color: #8C97A8"><strong data-text="bingoCount" style="color: #F2F5FA">{v.bingoCount}</strong> · <span data-text="bingoPlayers">{v.bingoPlayers}</span></span>
       </div>
-      <p style="margin: 4px 0 0; font-size: 15px; color: #AEB8C7">Bifează ce se întâmplă pe stream. Faci o linie completă și intri la extragerea pentru {site.bingoPrize}.</p>
-      <div data-region="bingo" style="margin-top: 16px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px" set:html={views.bingo(v)} />
-      <div role="status">
-        <div {...iff('isBingo')} style="margin-top: 12px; display: flex; align-items: center; gap: 14px; padding: 14px; background: #0B1018; border: 2px solid var(--ice)">
-          <Emote style={emoteStyle} />
-          <div>
-            <p style={`margin: 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 28px; line-height: 1; text-transform: uppercase; color: #FFFFFF`}>Bingo!</p>
-            <p style="margin: 2px 0 0; font-size: 15px; color: #AEB8C7">Scrie <strong style="color: #F2F5FA">!bingo</strong> în chat ca să intri la extragere.</p>
-          </div>
-        </div>
+      <p style="margin: 4px 0 0; font-size: 15px; color: #AEB8C7">Ghicește 5 lucruri care se vor întâmpla în maraton. Dacă se întâmplă toate 5, intri la tragerea la sorți pentru <strong data-text="bingoPrize" style="color: #F2F5FA">{v.bingoPrize}</strong>.</p>
+      <p data-text="bingoStatus" style="margin: 6px 0 0; font-size: 14px; font-weight: 600; color: var(--ice)">{v.bingoStatus}</p>
+      <div data-region="bingo" role="group" aria-label="Evenimentele de bingo" style="margin-top: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); gap: 6px" set:html={views.bingo(v)} />
+      <div role="status" style="margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+        <p data-text="bingoNote" data-toggle="is-bingo:isBingo" class="bingo-note" style="margin: 0; flex: 1 1 260px; font-size: 15px; color: #C9D2DF">{v.bingoNote}</p>
+        <button type="button" {...iff('bingoOpen')} class={v.bingoBtnClass} data-attr="class:bingoBtnClass" data-action="bingoSave" data-text="bingoBtn" style={`min-height: 50px; padding: 0 22px; font-family: ${cond}; font-weight: 800; font-size: 19px; text-transform: uppercase`}>{v.bingoBtn}</button>
       </div>
     </div>
 

@@ -97,6 +97,7 @@ const corners = ['c-tl', 'c-tr', 'c-bl', 'c-br'];
         </div>
       </div>
       <div style="margin-top: 22px; padding-top: 18px; border-top: 1px dashed #2A3445; display: flex; flex-wrap: wrap; gap: 10px 32px; font-size: 15px; color: #AEB8C7">
+        <span {...iff('isFrozen')}><strong style={`font-family: ${cond}; font-weight: 800; font-style: italic; font-size: 18px; color: var(--ice); letter-spacing: 0.04em`}>ÎNGHEȚAT</strong> <span data-text="frozenText">{v.frozenText}</span></span>
         <span {...iff('hasDouble')}><strong style={`font-family: ${cond}; font-weight: 800; font-style: italic; font-size: 18px; color: #FFFFFF; letter-spacing: 0.04em`}>ORA DUBLĂ</strong> <span data-text="doubleText">{v.doubleText}</span></span>
         <span>Final programat: <strong data-text="endDateText" style="color: #F2F5FA">{v.endDateText}</strong>, dacă nu se mai adaugă timp.</span>
         <span style="margin-left: auto; display: inline-flex; align-items: center; gap: 10px; color: #8C97A8">Cronometru oferit de <strong style="font-family: Barlow, sans-serif; font-weight: 700; letter-spacing: 0.06em; color: #F2F5FA">{site.sponsor.logoText}</strong></span>

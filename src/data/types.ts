@@ -15,6 +15,9 @@ export interface Win { user: string; prize: string; ago: string }
 /** Milestone Maraton: unlocked when the donation total (€) reaches threshold. */
 export interface Goal { title: string; threshold: number }
 export interface Round { id: number; number: number; closesAt: number }
+export interface BingoItem { id: number; label: string; happened: boolean }
+/** Prediction bingo: pick 5 events before closesAt; all 5 happen → raffle. */
+export interface Bingo { closesAt: number | null; prize: string; players: number; items: BingoItem[] }
 
 export interface SiteData {
   status: Status;
@@ -42,4 +45,5 @@ export interface SiteData {
   losePrize: number;
   recentWins: Win[];
   boards: Record<BoardTab, [user: string, value: string][]>;
+  bingo: Bingo;
 }

@@ -83,12 +83,14 @@ Build the static site so it matches the design, with every interaction working o
 - **Time rates (23 Nov 2026):** 1 € donation +6 min, Tier 1/Prime +6, Tier 2 +12, Tier 3 +18, gift sub +6 each, 400 bits +4. Focus on donations over subs.
 - **Milestone Maraton** (was "Obiectivele de Crăciun"): challenges unlocked by the donation total in euros; Iceman and moderators edit the list on /mod.
 - **Wheel:** subscribers only; 2 hours watched in the same day (chat presence, Romania calendar day) = 1 spin per day, until the end. Server enforced.
+- **Bingo (prediction game):** before the close (25 Dec 2026 12:00, editable on /mod) every viewer logged in with Twitch picks 5 events; picks are saved per viewer and can change until the close. Moderators tick events on /mod; everyone whose 5 all happened goes on the raffle list and a moderator draws the winner on /mod (recorded).
+- **Freeze 20–25 Dec:** the marathon starts 20 Dec, then Iceman freezes it (working week) with "Îngheață până la" on /mod; subs and donations still add time during the freeze.
 - **Sponsor placement:** main sponsor in the middle of the row under the timer (Strâns · Prezentat de · Următorul milestone).
 - **Donations:** TipeeeStream (account icemanlucky), in euros. Twitch never sees them; the `tipeee-donations` Edge Function polls TipeeeStream every 15 seconds.
 
 ## Open (ask, don't guess)
 
-- **Prizes:** wheel prizes, "Ora dublă" schedule; bingo prize = a product from a sponsor (which one, and the bingo board items, still to discuss).
+- **Prizes:** wheel prizes, "Ora dublă" schedule; the bingo prize (a sponsor product; set it on /mod → Bingo).
 - **Multistreaming:** whether watch time from other platforms (YouTube, Kick, TikTok) should count; see the note in `docs/go-live.md`.
 - **Sponsors:** the main sponsor in the mockup is **Zona IT** (an example the owner gave; confirm it's signed). "ZONA IT" is plain text standing in for the official logo. Still needed: names, logos (ideally SVG plus all-white versions), links, tiers (main partner / partners / supporters), what each one backs, the discount code (`ICEMAN10` is a placeholder) and the contact email for new sponsors.
 - Discord invite, social links, repo name, custom domain or not.

@@ -29,6 +29,10 @@ const errors: Record<string, string> = {
   round_already_open: 'Există deja o rundă deschisă. Închide-o mai întâi.',
   need_two_challenges: 'Alege cel puțin 2 provocări.',
   bad_goals: 'Fiecare milestone are nevoie de text și de o sumă în euro (număr întreg, peste 0).',
+  bad_items: 'Bingo: între 5 și 60 de evenimente, fiecare cu un text de cel mult 80 de caractere.',
+  item_in_use: 'Un eveniment ales deja de jucători nu poate fi șters. Îl poți redenumi.',
+  no_bingo_winners: 'Nu e nimeni (nou) pe lista de bingo: încă nu s-au întâmplat toate cele 5 evenimente la cineva.',
+  freeze_in_past: 'Alege o dată din viitor (după înghețarea de acum, dacă e una).',
   duplicate_amount: 'Două milestone-uri au aceeași sumă. Fiecare sumă trebuie să fie diferită.',
 };
 let msgTimer: number | undefined;
@@ -73,6 +77,12 @@ function left(ms: number) {
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString('ro-RO', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Bucharest' }) : '—');
 /** datetime-local value → ISO (the browser's own time zone). */
 const fromLocal = (v: string) => (v ? new Date(v).toISOString() : null);
+/** ISO → datetime-local value (the browser's own time zone). */
+const toLocal = (iso: string | null) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+};
 
 // ---- State ----
 interface Challenge { id: number; title: string; level: string; category: string; status: string; scheduled_for: string | null }
@@ -91,7 +101,16 @@ let S: {
   goals: { title: string; threshold: number; unlocked_at: string | null }[];
   /** Milestone list being edited (null = showing the saved list). */
   goalsDraft: { title: string; threshold: string }[] | null;
-} = { me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null };
+  bingo: {
+    closes_at: string | null; prize: string;
+    items: { id: number; label: string; happened_at: string | null }[];
+    status: { players: number; winners: { login: string }[]; draws: { login: string; drawn_at: string | null }[] };
+  } | null;
+  /** Bingo event list being edited (null = showing the saved list). */
+  bingoDraft: { id?: number; label: string }[] | null;
+} = { me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null };
+const bingoRows = () => S.bingoDraft ?? (S.bingo?.items ?? []).map((i) => ({ id: i.id, label: i.label }));
+const editBingo = () => { if (!S.bingoDraft) S.bingoDraft = bingoRows(); return S.bingoDraft; };
 const goalRows = () => S.goalsDraft ?? S.goals.map((g) => ({ title: g.title, threshold: String(g.threshold) }));
 const editGoals = () => { if (!S.goalsDraft) S.goalsDraft = goalRows(); return S.goalsDraft; };
 
@@ -134,6 +153,16 @@ async function load() {
     db.from('goals').select('title, threshold, unlocked_at').order('position'),
   ]);
   S.goals = (goals.data ?? []) as typeof S.goals;
+  const [bItems, bSet, bStatus] = await Promise.all([
+    db.from('bingo_items').select('id, label, happened_at').order('position'),
+    db.from('bingo_settings').select('closes_at, prize').eq('id', 1).maybeSingle(),
+    db.rpc('mod_bingo_status'),
+  ]);
+  S.bingo = {
+    closes_at: bSet.data?.closes_at ?? null, prize: bSet.data?.prize ?? '',
+    items: (bItems.data ?? []) as any,
+    status: (bStatus.data ?? { players: 0, winners: [], draws: [] }) as any,
+  };
   S.status = status.data;
   S.timer = timer.data;
   S.stats = stats.data;
@@ -201,6 +230,7 @@ function render() {
       </div>
       <p class="big" style="margin:14px 0 4px" data-left>${live ? left(remaining) : '—'}</p>
       <p class="muted" style="margin:0">Subs: <strong style="color:#F2F5FA">${S.stats?.subs ?? 0}</strong> · Biți: ${S.stats?.bits ?? 0} · Strâns: ${S.stats?.raised ?? 0} €</p>
+      ${t.paused_until && Date.parse(t.paused_until) > now ? `<p style="margin:6px 0 0"><span class="pill ok">Înghețat</span> până la ${when(t.paused_until)}. Subs și donațiile adaugă timp în continuare.</p>` : ''}
       <p class="muted" style="margin:4px 0 0">Start: ${when(t.starts_at)} · Final programat: ${when(t.scheduled_end)}${t.double_from ? ` · Ora dublă: ${when(t.double_from)}–${when(t.double_until)}` : ''}</p>
       <div class="row">
         <a class="btn btn-${st?.broadcaster_connected ? 'ghost' : 'twitch'}" href="${esc(st?.connect_url ?? '#')}">${st?.broadcaster_connected ? 'Reconectează contul de streamer' : 'Conectează contul de streamer'}</a>
@@ -226,8 +256,13 @@ function render() {
         <div class="row">
           <div class="pair">
             <input class="field" type="number" inputmode="numeric" id="freezeMin" value="5" aria-label="Minute înghețat">
-            <button class="btn-ghost" data-act="freeze">Îngheață cronometrul</button>
+            <button class="btn-ghost" data-act="freeze">Îngheață (minute)</button>
           </div>
+        </div>
+        <div class="row">
+          <label class="inline">Îngheață până la<input class="field" type="datetime-local" id="freezeUntil"></label>
+          <button class="btn-ghost" data-act="freezeUntil">Îngheață până atunci</button>
+          ${t.paused_until && Date.parse(t.paused_until) > now ? '<button class="btn-ghost" data-act="unfreeze">Dezgheață acum</button>' : ''}
         </div>
         <div class="row">
           <label class="inline">Ora dublă de la<input class="field" type="datetime-local" id="dblFrom"></label>
@@ -266,6 +301,35 @@ function render() {
         ${S.goalsDraft ? '<button class="btn-ghost" data-act="goalCancel">Renunță</button><span class="muted">Modificări nesalvate</span>' : ''}
       </div>
     </section>
+
+    ${S.bingo ? (() => {
+      const B = S.bingo!;
+      const open = !B.closes_at || Date.parse(B.closes_at) > now;
+      const happened = (id?: number) => !!B.items.find((i) => i.id === id)?.happened_at;
+      return `<section class="card wide" id="bingo">
+      <h2>Bingo</h2>
+      <p class="muted" style="margin-top:0">${B.status.players} jucători · ${open ? `alegerile se închid la <strong style="color:#F2F5FA">${when(B.closes_at)}</strong>` : '<strong style="color:#F2F5FA">alegerile s-au închis</strong>'}. Fiecare jucător alege 5 evenimente; cine le are pe toate 5 bifate intră la tragere.</p>
+      <div class="row">
+        <label class="inline">Alegerile se închid la<input class="field" type="datetime-local" id="bingoClose" value="${toLocal(B.closes_at)}"></label>
+        <label class="inline" style="flex:1 1 220px">Premiul<input class="field" id="bingoPrize" value="${esc(B.prize)}" maxlength="120"></label>
+        <button class="btn-ghost" data-act="bingoSettings">Salvează</button>
+      </div>
+      <h3 style="margin:20px 0 0;font-family:'Barlow Condensed',sans-serif;font-size:18px;text-transform:uppercase">Evenimente · bifează când se întâmplă</h3>
+      <ul class="list">${bingoRows().map((r, i) => `<li>
+        ${r.id !== undefined ? `<button class="${happened(r.id) ? 'btn-primary' : 'btn-ghost'}" data-act="bingoTick" data-id="${r.id}" data-on="${happened(r.id) ? '0' : '1'}" aria-pressed="${happened(r.id)}">${happened(r.id) ? '✓ S-a întâmplat' : 'Bifează'}</button>` : '<span class="pill off">nou</span>'}
+        <input class="field grow" data-bingo-label="${i}" value="${esc(r.label)}" maxlength="80" aria-label="Evenimentul ${i + 1}" style="flex:1 1 200px;min-width:0">
+        <button class="btn-ghost" data-act="bingoDel" data-i="${i}">Șterge</button></li>`).join('')}</ul>
+      <div class="row">
+        <button class="btn-ghost" data-act="bingoAdd">Adaugă eveniment</button>
+        <button class="btn-primary" data-act="bingoSaveList">Salvează lista</button>
+        ${S.bingoDraft ? '<button class="btn-ghost" data-act="bingoCancel">Renunță</button><span class="muted">Modificări nesalvate</span>' : ''}
+      </div>
+      <h3 style="margin:24px 0 0;font-family:'Barlow Condensed',sans-serif;font-size:18px;text-transform:uppercase">Tragerea la sorți</h3>
+      <p class="muted" style="margin-top:4px">${B.status.winners.length ? `${B.status.winners.length} cu bingo: ${B.status.winners.map((w) => esc(w.login)).join(', ')}` : 'Nimeni nu are încă toate cele 5 evenimente bifate.'}</p>
+      <div class="row"><button class="btn-primary" data-act="bingoDraw" ${B.status.winners.length ? '' : 'disabled'}>Trage la sorți</button></div>
+      ${B.status.draws.length ? `<p style="margin:10px 0 0">Extrași: ${B.status.draws.map((d) => `<strong>${esc(d.login)}</strong>${d.drawn_at ? ` <span class="muted">(${when(d.drawn_at)})</span>` : ''}`).join(' · ')}</p>` : ''}
+    </section>`;
+    })() : ''}
 
     <section class="card wide" id="vot">
       <h2>Runda de vot</h2>
@@ -344,6 +408,23 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   add: (el) => call('mod_add_time', { p_minutes: Number(el.dataset.min) }, `${el.dataset.min} min adăugate.`),
   addCustom: () => num('addMin') && call('mod_add_time', { p_minutes: num('addMin') }, `${num('addMin')} min adăugate.`),
   freeze: () => call('mod_freeze', { p_minutes: num('freezeMin') }, 'Cronometrul e înghețat.'),
+  freezeUntil: () => val('freezeUntil') && call('mod_freeze_until', { p_until: fromLocal(val('freezeUntil')) }, 'Cronometrul e înghețat până atunci.'),
+  unfreeze: () => confirm('Dezgheți cronometrul acum?') && call('mod_unfreeze', {}, 'Cronometrul merge din nou.'),
+  bingoSettings: () => call('mod_bingo_settings', { p_closes_at: fromLocal(val('bingoClose')), p_prize: val('bingoPrize') }, 'Setările de bingo au fost salvate.'),
+  bingoTick: (el) => call('mod_bingo_tick', { p_id: Number(el.dataset.id), p_happened: el.dataset.on === '1' }, el.dataset.on === '1' ? 'Bifat: s-a întâmplat.' : 'Debifat.'),
+  bingoAdd: () => { editBingo().push({ label: '' }); render(); },
+  bingoDel: (el) => { editBingo().splice(Number(el.dataset.i), 1); render(); },
+  bingoCancel: () => { S.bingoDraft = null; render(); },
+  bingoSaveList: async () => {
+    const list = bingoRows().filter((r) => r.label.trim()).map((r) => (r.id !== undefined ? { id: r.id, label: r.label.trim() } : { label: r.label.trim() }));
+    await call('mod_bingo_set_items', { p_items: list }, 'Lista de bingo a fost salvată.');
+    S.bingoDraft = null;
+  },
+  bingoDraw: async () => {
+    if (!confirm('Tragi la sorți un câștigător dintre cei cu bingo?')) return;
+    const won = await call('mod_bingo_draw', {}, 'Tragere făcută.');
+    if (won) alert(`Câștigătorul: ${won}`);
+  },
   double: () => call('mod_double_hour', { p_from: fromLocal(val('dblFrom')), p_minutes: num('dblMin') }, 'Ora dublă programată.'),
   doubleNow: () => call('mod_double_hour', { p_from: new Date().toISOString(), p_minutes: num('dblMin') || 60 }, 'Ora dublă a început.'),
   end: () => confirm('Sigur închei subathonul? Cronometrul se oprește.') && call('mod_end_timer', {}, 'Subathonul s-a încheiat.'),
@@ -385,6 +466,7 @@ document.addEventListener('change', (e) => {
 // Milestone edits are kept while typing, so a live refresh doesn't wipe them.
 document.addEventListener('input', (e) => {
   const el = e.target as HTMLInputElement;
+  if (el.dataset.bingoLabel !== undefined) { editBingo()[Number(el.dataset.bingoLabel)].label = el.value; return; }
   if (el.dataset.goalAmt !== undefined) editGoals()[Number(el.dataset.goalAmt)].threshold = el.value;
   else if (el.dataset.goalTitle !== undefined) editGoals()[Number(el.dataset.goalTitle)].title = el.value;
   else return;

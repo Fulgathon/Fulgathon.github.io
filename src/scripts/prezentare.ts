@@ -31,6 +31,7 @@ const errorText: Record<string, string> = {
   round_closed: 'Runda e deja închisă. Deschide una nouă din pagina moderatorilor.',
   timer_not_live: 'Cronometrul nu e pornit.',
   round_already_open: 'Există deja o rundă deschisă.',
+  no_bingo_winners: 'Nimeni nu are încă toate cele 5 bifate. Închide alegerile, alege o linie ca viewer și bifeaz-o.',
 };
 function flash(code: string) {
   const key = Object.keys(errorText).find((k) => code.includes(k));
@@ -40,6 +41,13 @@ function flash(code: string) {
   p.textContent = key ? errorText[key] : 'Nu a mers: ' + code;
   el.append(p);
   setTimeout(() => p.remove(), 4000);
+}
+function note(text: string) {
+  const p = document.createElement('p');
+  p.style.cssText = 'color:var(--ice);font-weight:700';
+  p.textContent = text;
+  document.getElementById('step')!.append(p);
+  setTimeout(() => p.remove(), 6000);
 }
 
 // ---- The steps (Romanian: for Iceman) ---------------------------------------
@@ -114,9 +122,16 @@ const steps: Step[] = [
   },
   {
     title: 'Bingo și propuneri', view: 'site', scroll: 'joaca',
-    body: `<p><strong>Bingo</strong>: fiecare viewer își bifează cardul cu ce se întâmplă pe stream. La o linie completă scrie !bingo în chat.</p>
-<p><strong>Propune o provocare</strong>: abonații trimit idei, iar moderatorii le aprobă cu un click. Ideea intră direct în lista de vot.</p>`,
-    actions: [{ label: 'Intră ca abonat', primary: true, run: () => api.setViewer('sub') }],
+    body: `<p><strong>Bingo-ul maratonului</strong> e un joc de predicții: înainte de start (până pe 25 decembrie), fiecare viewer conectat cu Twitch alege <strong>5 lucruri</strong> care crede că se vor întâmpla. Alegerea rămâne salvată pe contul lui.</p>
+<p>În maraton, moderatorii bifează pe /mod ce s-a întâmplat. Cine are toate cele 5 bifate intră pe lista de tragere la sorți pentru premiul cel mare; tragerea se face din pagina moderatorilor.</p>
+<p><strong>Propune o provocare</strong>: abonații trimit idei, iar moderatorii le aprobă cu un click.</p>`,
+    actions: [
+      { label: 'Intră ca viewer', primary: true, run: () => api.setViewer('nonsub') },
+      { label: 'Închide alegerile', run: () => api.bingoSettings(Date.now() - 1000, '') },
+      { label: 'Bifează linia mea', run: () => { (api.state.bingo.pick ?? []).forEach((id) => api.bingoTick(id, true)); scrollSite('joaca'); } },
+      { label: 'Trage la sorți', run: guard(() => note('Câștigătorul tras la sorți: ' + api.bingoDraw())) },
+      { label: 'Redeschide alegerile', run: () => api.bingoSettings(Date.now() + 2 * 24 * HOUR, '') },
+    ],
   },
   {
     title: 'Pe telefon', view: 'phone', scroll: 'top',

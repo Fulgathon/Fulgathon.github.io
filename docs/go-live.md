@@ -69,6 +69,8 @@ On `/mod` → **Pornește acum** with the starting hours. From then on:
 | Live / offline | Twitch `stream.online/offline` |
 | Watch time & wheel | Every 5 min while live and online, everyone in chat gets 5 min (total and per Romanian day). A subscriber with 2 h watched that day gets 1 spin per day |
 | Milestone Maraton | Unlocked by the donation total (€); edit the list on `/mod` → Milestone Maraton |
+| Bingo | Viewers pick 5 events until the close (default 25 Dec 12:00); `/mod` → Bingo: set the close and prize, edit events, tick what happened, draw the winner from everyone with all 5 |
+| Long freeze | `/mod` → Cronometru → «Îngheață până la» a date (e.g. 25 Dec), «Dezgheață acum» to resume early; time still adds up meanwhile |
 | Viewer login & sub check | "Conectează-te cu Twitch"; sub status checked on login and with "M-am abonat, verifică iar" |
 | Vote rounds | `/mod` opens a round (auto-proposes 2 easy, 2 medium, 1 hard); it closes itself on time and schedules the winner |
 | Timer end | At zero it ends by itself (moderators can add time or end it early) |
