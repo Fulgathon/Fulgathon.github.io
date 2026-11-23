@@ -88,7 +88,8 @@ Dashboard: https://supabase.com/dashboard/project/yvbxtsuddjqqoogdoqrx
   activity. Upgrade the IceMaraton organization (Pro) for the event.
 - On `/mod`: set the **start date** (countdown on the site) and the
   **scheduled end**; add the other **moderators** by Twitch login.
-- **OBS**: add a Browser Source, 1920×1080, with the link from `/mod` → Cod secret («Copiază linkul pentru OBS»: the overlay plus the private key, so secret codes show on stream). Keep that link private. Without codes: `https://icemanlucky.ro/o`. A link copied before the domain switch (workers.dev) keeps working; copy it again from /mod on icemanlucky.ro when convenient.
+- **OBS, piece by piece (24 Nov 2026)**: every overlay panel is its own Browser Source (`/overlay/?part=timer|goal|together|bubble|vote|moments|code|promo|snow`), pinned to the source's top-left corner, so Iceman arranges each game's scene himself. Links, sizes and a «De așezat» link (`&demo&frame=1`, outlined with sample data) are on `/mod` → SETĂRI → Overlay OBS. Only the `code` piece carries the private key.
+- **OBS, whole scene**: add a Browser Source, 1920×1080, with the link from `/mod` → Cod secret («Copiază linkul pentru OBS»: the overlay plus the private key, so secret codes show on stream). Keep that link private. Without codes: `https://icemanlucky.ro/o`. A link copied before the domain switch (workers.dev) keeps working; copy it again from /mod on icemanlucky.ro when convenient.
 - Open with Iceman, then tell Claude: time rates (now Tier 1/Prime +1 min,
   Tier 2 +2, Tier 3 +5, gift +1 each, 400 bits +1, 5 € +1), goals, prizes,
   sponsor details, Discord and social links.

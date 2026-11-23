@@ -128,3 +128,17 @@ export const ADVENT_DAYS = 22;
 export const adventDates: Record<string, string> = { '12-24': 'Ajunul', '12-25': 'Crăciun', '12-31': 'Revelion live', '01-01': 'Anul Nou' };
 /** Days drawn with the fir tree (Ajunul, Crăciun). */
 export const adventTree = ['12-24', '12-25'];
+
+/** OBS overlay pieces (?part=…): one Browser Source each, placed per scene by Iceman.
+    w × h = the Browser Source size that fits the piece at ?scale=1 (measured in ?demo). */
+export const overlayPieces: { id: string; label: string; what: string; w: number; h: number; key?: boolean }[] = [
+  { id: 'timer', label: 'Cronometrul', what: 'Timpul rămas, «+timp» la fiecare sub sau donație, înghețat, Ora dublă.', w: 360, h: 180 },
+  { id: 'goal', label: 'Următorul milestone', what: 'Ce urmează și cât mai e până acolo.', w: 430, h: 150 },
+  { id: 'together', label: 'Ore împreună', what: 'Orele privite împreună și timpul adăugat azi.', w: 300, h: 80 },
+  { id: 'bubble', label: 'Balonul lui Iceman', what: 'Iceman și replica lui la fiecare sub, gift, donație sau biți.', w: 350, h: 270 },
+  { id: 'vote', label: 'Votul live', what: 'Apare doar cât e deschisă o rundă de vot.', w: 400, h: 330 },
+  { id: 'moments', label: 'Momentele', what: 'Pe rând: viscol, milestone, legendă nouă, insignă, bingo, câștigătoarea votului, roata, momente mari.', w: 1100, h: 460 },
+  { id: 'code', label: 'Codul secret', what: 'Apare doar când arătați un cod. Linkul are cheia privată.', w: 460, h: 170, key: true },
+  { id: 'promo', label: 'Linia partenerului', what: 'O mențiune discretă a partenerului, la 10 minute.', w: 520, h: 60 },
+  { id: 'snow', label: 'Ninsoarea', what: 'Ninsoarea care urmează valurile de subs cadou. Pe tot ecranul.', w: 1920, h: 1080 },
+];

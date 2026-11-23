@@ -52,6 +52,8 @@ export interface DemoState {
   communityGoals?: { title: string; hours: number }[];
   /** Moderator name rules (hide / allow), like private.name_rules. */
   nameRules?: { name: string; rule: 'hide' | 'allow'; at: number }[];
+  /** The last «Testează» pressed on /mod → Overlay OBS (the overlay plays it once). */
+  overlayTest?: { kind: string; at: number; n: number };
   /** /mod autopilot settings, the plan, Discord alerts and the shared checklist (demo: nothing runs or is sent). */
   autopilot?: {
     autoStart: boolean; startHours: number; voteOn: boolean; voteAt: string; voteMinutes: number; hasWebhook: boolean;
@@ -995,6 +997,10 @@ export class DemoBackend {
       case 'mod_bingo_settings': return this.bingoSettings(ms(a.p_closes_at), String(a.p_prize ?? ''), a.p_prize_sponsor ?? null);
       case 'mod_bingo_draw': return this.bingoDraw();
       case 'mod_autopilot': return this.autopilot();
+      case 'mod_overlay_test': return this.mutate((s) => {
+        if (!['event', 'gift', 'moments', 'code', 'promo'].includes(String(a.p_kind))) fail('bad_test');
+        s.overlayTest = { kind: String(a.p_kind), at: Date.now(), n: (s.overlayTest?.n ?? 0) + 1 };
+      });
       case 'mod_autopilot_set': return this.mutate((s) => {
         const ap = this.autopilotOf(s);
         const p = a.p ?? {};

@@ -46,6 +46,8 @@ export interface LiveHandlers {
   onClock?(offsetMs: number): void;
   /** Consecutive failed polls (0 after a good one). */
   onConn?(failures: number): void;
+  /** A moderator pressed «Testează» on /mod → Overlay OBS (only new ones, not on the first load). */
+  onTest?(test: { kind: string; at: string; by?: string }): void;
 }
 
 export interface LiveOptions {
@@ -270,6 +272,7 @@ export class Live {
     this.data = { ...this.data, ...patch };
     const first = this.first;
     this.first = false;
+    if (has('otest') && !first && P.otest?.kind) this.handlers.onTest?.(P.otest);
     if (first || Object.keys(patch).length) this.handlers.onData(patch, first);
   }
 

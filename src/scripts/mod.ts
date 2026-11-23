@@ -10,7 +10,7 @@ import type { DemoBackend } from '../demo/backend';
 import { esc } from '../lib/views';
 import { FALLBACK_LINE, lineGroups, MAX_LINE, MIN_LINES } from '../data/content';
 import type { AdventDay, LineGroup, TickerItem } from '../data/types';
-import { ADVENT_DAYS, adventDates, badgeDefs, PRISM, rankColors, tierColors } from '../data/content';
+import { ADVENT_DAYS, adventDates, badgeDefs, overlayPieces, PRISM, rankColors, tierColors } from '../data/content';
 import { tickerItem } from '../lib/events';
 import { ago as agoText, count as countRo, fmtInt } from '../lib/format';
 
@@ -63,6 +63,7 @@ const errors: Record<string, string> = {
   bad_until: 'Înghețul trebuie să se termine după ce începe.',
   bad_plan: 'Verifică ce ai completat: minute între 1 și 60 la cod, între 1 și 720 la Ora dublă.',
   bad_rule: 'Regula de bingo are nevoie de un număr mai mare decât 0.',
+  too_fast: 'Așteaptă 3 secunde între două teste.',
   duplicate_amount: 'Două milestone-uri au aceeași sumă. Fiecare sumă trebuie să fie diferită.',
   bad_lines: 'Replicile nu au putut fi salvate: cel mult 40 pe grup.',
   line_too_long: 'O replică are mai mult de 70 de caractere. Scurteaz-o ca să încapă în balon.',
@@ -431,7 +432,7 @@ const CHECK: { key: string; label: string; card?: string; auto?: () => boolean }
   { key: 'mods', label: 'Cei 3 moderatori sunt adăugați (fiecare a intrat o dată cu Twitch)', card: 'moderatori' },
   { key: 'streamer', label: 'Iceman a reconectat contul de streamer și a aprobat tot', card: 'stare', auto: () => !!S.status?.broadcaster_connected && !!S.chat?.canWrite && !!S.health?.resubs?.canRead },
   { key: 'reward', label: 'Recompensa cu puncte de canal «Check-in ICEMARATON» există pe Twitch' },
-  { key: 'obs', label: 'Overlay-ul e în OBS, cu linkul cu cheie', card: 'overlay' },
+  { key: 'obs', label: 'Overlay-ul e în OBS: piesele așezate în scena fiecărui joc (sau scena întreagă)', card: 'overlay-piese' },
   { key: 'schedule', label: 'Startul (20.12, 12:00) și finalul programat sunt corecte', card: 'cronometru' },
   { key: 'start', label: 'Pornirea: automată (PROGRAM → Pilot automat) sau știm cine apasă «Pornește acum»', card: 'pilot', auto: () => !!S.auto?.autoStart },
   { key: 'lines', label: 'Replicile lui Iceman: minim 5 pe fiecare grup, cum vorbește el', card: 'replici', auto: () => lineGroups.every((g) => lineInfo(g.id).ok) },
@@ -495,7 +496,7 @@ const GROUPS: { id: string; name: string; title: string; lead: string; items: [s
   { id: 'pregatire', name: 'PREGĂTIRE', title: 'Pregătire', lead: 'Se face o singură dată, înainte de 20 decembrie. Bifele se văd la toți moderatorii.',
     items: [['checklist', 'Checklist'], ['cronometru', 'Cronometru'], ['stare', 'Contul de streamer'], ['replici', 'Replicile lui Iceman'], ['milestones', 'Milestone Maraton'], ['comunitar', 'Obiectiv comunitar'], ['advent', 'Calendar de Advent'], ['roata-premii', 'Roata'], ['bingo', 'Bingo']] },
   { id: 'setari', name: 'SETĂRI', title: 'Setări și rapoarte', lead: 'Lucruri folosite rar.',
-    items: [['nume', 'Nume afișate'], ['moderatori', 'Moderatori'], ['acum', 'Acum pe stream'], ['inghetare', 'Îngheață manual'], ['ora-dubla', 'Ora dublă manual'], ['cod', 'Cod secret manual'], ['insigne', 'Insigne și Fidelii'], ['legende', 'Legende'], ['parteneri', 'Parteneri'], ['raport', 'Raport pe sponsor'], ['overlay', 'Overlay OBS'], ['zona', 'Zonă periculoasă']] },
+    items: [['nume', 'Nume afișate'], ['moderatori', 'Moderatori'], ['acum', 'Acum pe stream'], ['inghetare', 'Îngheață manual'], ['ora-dubla', 'Ora dublă manual'], ['cod', 'Cod secret manual'], ['insigne', 'Insigne și Fidelii'], ['legende', 'Legende'], ['parteneri', 'Parteneri'], ['raport', 'Raport pe sponsor'], ['overlay-piese', 'Overlay OBS'], ['zona', 'Zonă periculoasă']] },
 ];
 const groupOf = (id: string) => (id === 'todo' || id === 'sanatate' ? GROUPS[0]
   : GROUPS.find((g) => g.id === id || g.items.some(([i]) => i === id || (i === 'vot' && id === 'provocari'))));
@@ -749,9 +750,28 @@ function overlayHtml(): string {
     ['Banda subțire veche, în colțul din dreapta sus', v('style=strip')],
     ['Cutia mare veche', v('style=box')],
   ];
-  return `<section class="card wide" id="overlay">
-    <h2>Overlay OBS</h2>
-    <p class="muted" style="margin-top:0">În OBS: Browser Source, 1920×1080, cu unul din linkurile de mai jos. ${key ? '<strong style="color:#FF8A95">Linkurile au cheia privată: nu le da nimănui.</strong>' : 'Fără cheie, codurile secrete nu apar pe stream.'}</p>
+  const piece = (id: string, withKey: boolean) => base + '?' + [withKey && key ? `key=${key}` : '', `part=${id}`].filter(Boolean).join('&');
+  const pieces = `<section class="card wide" id="overlay-piese">
+    <h2>Piesele overlay-ului, una câte una</h2>
+    <p class="muted" style="margin-top:0">Pentru scene diferite pe fiecare joc: în OBS adaugi fiecare piesă ca Browser Source separat (mărimea de mai jos, fundal transparent), apoi o muți și o scalezi unde vrei în scena jocului. Aceeași piesă se poate folosi în mai multe scene (în OBS: «Add Existing»), deci o setezi o singură dată. Piesa stă lipită de colțul din stânga sus al sursei.</p>
+    <p class="muted">Ca s-o vezi cât o așezi (chiar dacă apare doar la evenimente): linkul «de așezat» o arată conturată, cu date de exemplu. După ce ai așezat-o, pune linkul normal.</p>
+    <ul class="list">${overlayPieces.map((x, i) => `<li style="align-items:flex-start"><span class="grow"><strong>${esc(x.label)}</strong> <span class="pill off">${x.w} × ${x.h}</span>${x.key ? ' <span class="pill warn">cheie privată</span>' : ''}<br><span class="muted">${esc(x.what)}</span>
+      <input class="field" readonly value="${esc(piece(x.id, !!x.key))}" id="ovp${i}" aria-label="Linkul pentru ${esc(x.label)}" style="width:100%;margin-top:6px"></span>
+      <span class="pair" style="flex-direction:column;align-items:stretch"><button class="btn-ghost" data-act="copyOvp" data-i="${i}">Copiază</button><a class="btn btn-ghost" href="${esc(base + '?demo&frame=1&part=' + x.id)}" target="_blank" rel="noopener">De așezat</a></span></li>`).join('')}</ul>
+    <p class="muted">Toate piesele merg și cu <strong>&amp;scale=1.2</strong> (mai mare) sau <strong>&amp;calm=1</strong> (fără mișcare) la finalul linkului.</p>
+    <h3 class="h3s" style="margin-top:18px">Testează pe stream</h3>
+    <p class="muted" style="margin:4px 0 0">După ce le-ai pus în OBS: apasă un test și se vede în overlay în câteva secunde, cu numele «TEST». Nu adaugă timp și nu intră nicăieri (statistici, legende, istoric). Dacă ești live, spune-le că e un test.</p>
+    <div class="row">
+      <button class="btn-ghost" data-act="ovTest" data-kind="event">Sub, biți și donație</button>
+      <button class="btn-ghost" data-act="ovTest" data-kind="gift">Val de subs cadou (viscol)</button>
+      <button class="btn-ghost" data-act="ovTest" data-kind="moments">Momentele</button>
+      <button class="btn-ghost" data-act="ovTest" data-kind="code">Codul secret</button>
+      <button class="btn-ghost" data-act="ovTest" data-kind="promo">Linia partenerului</button>
+    </div>
+  </section>`;
+  return pieces + `<section class="card wide" id="overlay">
+    <h2>Overlay OBS: scena întreagă</h2>
+    <p class="muted" style="margin-top:0">Sau totul dintr-o bucată: în OBS, Browser Source 1920×1080, cu unul din linkurile de mai jos. ${key ? '<strong style="color:#FF8A95">Linkurile au cheia privată: nu le da nimănui.</strong>' : 'Fără cheie, codurile secrete nu apar pe stream.'}</p>
     <ul class="list">${rows.map(([label, url], i) => `<li><span class="grow"><strong>${esc(label)}</strong><br><input class="field" readonly value="${esc(url)}" id="ov${i}" aria-label="${esc(label)}" style="width:100%;margin-top:6px"></span><button class="btn-ghost" data-act="copyOv" data-i="${i}">Copiază</button></li>`).join('')}</ul>
     <p class="muted">Momentele apar pe rând, în mijloc: viscol la valuri de subs cadou, milestone deblocat, legendă nouă, insignă de 50 sau 100 de ore, bingo, câștigătoarea votului, roata când cineva învârte pe site, momente mari (50 €+, 5.000 de biți). Codul secret apare calm, în stânga jos, doar cu linkul cu cheie.</p>
   </section>`;
@@ -1232,7 +1252,7 @@ function render() {
     insigne: insigneHtml,
     legende: legendeHtml,
     parteneri: parteneriHtml,
-    overlay: overlayHtml,
+    'overlay-piese': overlayHtml,
   };
   const page = GROUPS.find((g) => g.id === S.page) ?? GROUPS[0];
   const cards = page.items.flatMap(([id]) => (id === 'vot' ? ['vot', 'provocari'] : [id])).map((id) => sec[id]?.() ?? '').join('\n');
@@ -1362,6 +1382,8 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     await call('mod_set_advent', { p_days: list }, 'Calendarul a fost salvat. Apare pe site în câteva secunde.');
     S.adventDraft = null;
   },
+  ovTest: (el) => call('mod_overlay_test', { p_kind: el.dataset.kind }, 'Test trimis. Apare în overlay în câteva secunde.'),
+  copyOvp: (el) => { const v = val(`ovp${el.dataset.i}`); void navigator.clipboard?.writeText(v).then(() => say('Link copiat. În OBS: Browser Source, cu mărimea scrisă lângă piesă.')); },
   copyOv: (el) => { const v = val(`ov${el.dataset.i}`); void navigator.clipboard?.writeText(v).then(() => say('Link copiat. Pune-l în OBS ca Browser Source, 1920×1080.')); },
   goalDel: (el) => { editGoals().splice(Number(el.dataset.i), 1); render(); },
   goalCancel: () => { S.goalsDraft = null; render(); },

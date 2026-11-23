@@ -5,6 +5,10 @@
 //       timer bottom left, next milestone bottom right, hours together top left,
 //       Iceman's bubble top right, moments in the middle, a quiet partner line
 //   ?show=timer,goal,together,bubble,moments,vote,promo,code   which parts (default: all)
+//   ?part=timer                                   ONE piece per OBS source, at the source's top-left
+//       (timer, goal, together, bubble, vote, moments, code, promo, snow): Iceman composes
+//       each scene himself. Sizes to use are listed on /mod → SETĂRI → Overlay OBS.
+//   ?frame=1                                      outline + always visible, for placing a piece
 //   ?calm=1                                       less motion: no snow, no jumps, moments just appear
 //   ?scene=brb                                    the pause scene (separate OBS scene)
 //   ?style=strip                                  the old slim strip in a corner (?pos, ?show=timer,goal,events)
@@ -201,6 +205,17 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
       .brb-p .mk { margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: .12em; color: #8C97A8; }
       .brb-p.today .mk { color: #8FE4FF; }
       .brb-p p:last-child { margin: 8px 0 0; font-size: 28px; line-height: 1.35; }
+      /* ?part=…: one piece per OBS source, pinned to the source's top-left corner. */
+      body.piece .ov-scene > [data-part]:not(.ov-moment) { left: 8px !important; top: 8px !important; right: auto !important; bottom: auto !important; }
+      body.piece-promo .ov-promo { transform: none; margin: 0; }
+      body.piece-moments .ov-moment { top: 8px; }
+      body.piece-snow .ov-scene { display: none; }
+      /* ?frame=1: see where a piece sits while arranging the scene in OBS. */
+      body.frame .ov-scene > [data-part] { outline: 2px dashed rgba(63, 208, 255, .85); outline-offset: 2px; opacity: 1 !important; }
+      body.frame .ov-scene > [data-part]:empty::before { content: attr(data-part); display: block; padding: 10px 14px; font: 800 18px/1 'Barlow Condensed', sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #8FE4FF; }
+      body.frame .ov-moment:not(.show) { min-height: 360px; }
+      body.frame .ov-code:empty { width: 400px; min-height: 120px; }
+      body.frame.piece-snow #ov-snow { outline: 2px dashed rgba(63, 208, 255, .85); outline-offset: -2px; }
       /* ?calm=1 and reduced motion: values just change, moments simply appear and go. */
       body.calm *, body.calm *::before, body.calm *::after { animation: none !important; transition: none !important; }
       body.calm .t-pop.go { opacity: 1; }
@@ -263,8 +278,8 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
         <div data-vlist></div>
         <p class="v-foot">Votează pe site · doar abonații</p>
       </div>
-      <div class="ov-moment" aria-live="polite"></div>
-      <div class="ov-code" aria-live="polite"></div>
+      <div class="ov-moment" data-part="moments" aria-live="polite"></div>
+      <div class="ov-code" data-part="code" aria-live="polite"></div>
       <div class="ov-timer panel" data-part="timer">
         <div class="t-head"><span class="t-label" data-tlabel>TIMP RĂMAS</span><span class="t-pop" data-pop></span></div>
         <div class="t-digits"><span class="ov-digit" data-u="dd">--</span><span class="ov-digit" data-u="hh">--</span><span class="ov-digit" data-u="mm">--</span><span class="ov-digit" data-u="ss">--</span></div>

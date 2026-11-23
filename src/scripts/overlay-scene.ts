@@ -13,7 +13,7 @@
 import { emptyData } from '../data/sample';
 import { site } from '../data/site';
 import type { SiteData, TickerItem } from '../data/types';
-import { badgeDefs, badgeIcons, PRISM } from '../data/content';
+import { badgeDefs, badgeIcons, overlayPieces, PRISM } from '../data/content';
 import { tickerItem } from '../lib/events';
 import { derive, initialState } from '../lib/derive';
 import { LineBag, fillLine, groupFor, varsFor } from '../lib/lines';
@@ -23,7 +23,14 @@ import { count, fmtInt } from '../lib/format';
 const params = new URLSearchParams(location.search);
 const calm = params.has('calm') || matchMedia('(prefers-reduced-motion: reduce)').matches;
 const brb = params.get('scene') === 'brb';
-const show = new Set((params.get('show') ?? 'timer,goal,together,bubble,moments,vote,promo,code').split(','));
+// ?part=timer: one piece per OBS Browser Source. Only that panel, at the source's top-left
+// corner, so Iceman places and sizes each piece per scene (every game has its own layout).
+// ?frame=1 outlines the piece and keeps it visible, for placing it in OBS.
+const partParam = params.get('part') ?? '';
+const piece = overlayPieces.some((p) => p.id === partParam) ? partParam : null;
+const show = new Set(piece ? [piece] : (params.get('show') ?? 'timer,goal,together,bubble,moments,vote,promo,code').split(','));
+if (piece) document.body.classList.add('piece', `piece-${piece}`);
+if (params.has('frame')) document.body.classList.add('frame');
 const scale = Math.min(2, Math.max(0.5, Number(params.get('scale')) || 1));
 const overlayKey = params.get('key');
 const promoMinutes = params.has('promo') ? Math.max(0, Number(params.get('promo')) || 0) : 10;
@@ -160,7 +167,7 @@ function snowAmount() {
 const canvas = document.getElementById('ov-snow') as HTMLCanvasElement;
 const flakes = Array.from({ length: 260 }, () => ({ x: Math.random(), y: Math.random(), r: 1 + Math.random() * 2.6, v: 0.0008 + Math.random() * 0.0016, d: Math.random() * 2 - 1 }));
 function snow() {
-  if (calm) return;
+  if (calm || (piece && piece !== 'snow')) return;
   const ctx = canvas.getContext('2d')!;
   const w = (canvas.width = innerWidth), h = (canvas.height = innerHeight);
   const frame = () => {
@@ -315,7 +322,7 @@ let codeTimer: number | undefined;
 function showCode(c: { code: string; sponsor: string | null; expires_at: string } | null) {
   const el = $('.ov-code');
   if (!show.has('code')) return;
-  if (!c) { if (shownCode) { el.classList.remove('show'); shownCode = ''; } return; }
+  if (!c) { if (shownCode && !shownCode.startsWith('TEST')) { el.classList.remove('show'); shownCode = ''; } return; }
   if (c.code === shownCode) return;
   shownCode = c.code;
   const end = Date.parse(c.expires_at);
@@ -356,6 +363,34 @@ function drawBrb(v: ReturnType<typeof derive>) {
   if (host.innerHTML !== html) host.innerHTML = html;
 }
 
+// ---- Tests from /mod (Overlay OBS → «Testează») ------------------------------------------
+// Sample events named «TEST», only on this overlay: nothing is recorded anywhere.
+let testSeq = 0;
+const testItem = (kind: 'sub' | 'gift' | 'bits' | 'donation', qty: number, secs: number) =>
+  tickerItem({ id: -(++testSeq), kind, tier: '1000', quantity: qty, currency: 'EUR', seconds_added: secs, user_name: 'TEST', user_login: null });
+function runTest(kind: string) {
+  if (brb) return;
+  if (kind === 'event') {
+    bubbleQ.push(testItem('sub', 1, 360), testItem('bits', 400, 240), testItem('donation', 10, 3600));
+    void bubbleLoop();
+  } else if (kind === 'gift') {
+    const t = testItem('gift', 20, 7200);
+    bubbleQ.push(t);
+    giftWave(t);
+    void bubbleLoop();
+  } else if (kind === 'moments') {
+    const next = data.goals.find((g) => data.raisedNum < g.threshold) ?? data.goals[0];
+    moment({ cls: 'm-mile', ms: 6000, html: `<span class="mk">TEST · MILESTONE DEBLOCAT</span><span class="mt">${esc(next?.title ?? 'Milestone de test')}</span>` });
+    moment({ cls: 'm-big', ms: 6000, html: '<span class="mk">TEST · MOMENT MARE</span><span class="mt"><b>+5:00:00</b> TEST · donație 50 €</span>' });
+    moment({ cls: 'm-vote', ms: 6000, html: '<span class="mk">TEST · VOTUL ABONAȚILOR · CÂȘTIGĂ</span><span class="mt">Provocare de test</span><span class="mn">60% din voturi</span>' });
+    if (data.prizes.length) wheelMoment('TEST', data.prizes[0][0], null);
+  } else if (kind === 'code') {
+    showCode({ code: 'TEST-OK', sponsor: null, expires_at: new Date(Date.now() + 20_000).toISOString() });
+  } else if (kind === 'promo') {
+    promo();
+  }
+}
+
 // ---- Data -------------------------------------------------------------------------------
 function onData(first: boolean) {
   compare(data);
@@ -367,7 +402,10 @@ if (params.has('demo')) {
   void import('../demo/backend').then(({ DemoBackend }) => {
     const api = new DemoBackend();
     let first = true;
+    let lastTest = api.state.overlayTest?.n ?? 0;
     const sync = () => {
+      const t = api.state.overlayTest;
+      if (t && t.n > lastTest) { lastTest = t.n; if (Date.now() - t.at < 60_000) runTest(t.kind); }
       data = api.toSiteData();
       const cc = api.currentCode();
       showCode(cc ? { code: cc.code, sponsor: cc.sponsor, expires_at: new Date(cc.expiresAt).toISOString() } : null);
@@ -395,6 +433,7 @@ if (params.has('demo')) {
         onData(first);
       },
       onMe() {},
+      onTest(t) { if (Date.now() - Date.parse(t.at) < 60_000) runTest(t.kind); },
     }, { intervalMs: 3000, pollHidden: true });
     void live.start();
     if (overlayKey) {
