@@ -142,14 +142,14 @@
 .bdg-label { display: block; margin-top: 4px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; line-height: 1.05; }
 .bdg-note { display: block; margin-top: 2px; font-size: 11px; line-height: 1.2; color: #8C97A8; }
 .hex-prism { filter: drop-shadow(0 0 6px rgba(159, 232, 255, 0.4)) drop-shadow(0 0 12px rgba(226, 182, 255, 0.3)); }
-.tip { position: absolute; z-index: 25; left: 50%; bottom: calc(100% + 12px); transform: translateX(-50%); width: 260px; padding: 12px 14px; background: #0E1622; border: 1px solid; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6); text-align: left; white-space: normal; display: none; pointer-events: none; }
+.tip { position: absolute; z-index: 25; left: 50%; bottom: calc(100% + 12px); transform: translateX(-50%); width: 260px; padding: 12px 14px; background: #0E1622; border: 1px solid; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6); text-align: left; white-space: normal; display: block; visibility: hidden; opacity: 0; pointer-events: none; }
 .tip-name { display: block; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px; letter-spacing: 0.04em; }
 .tip-extra { font-family: Barlow, sans-serif; font-weight: 400; font-size: 13px; letter-spacing: 0; color: #8C97A8; }
 .tip-how { display: block; margin-top: 4px; font-family: Barlow, sans-serif; font-size: 13px; font-weight: 400; letter-spacing: 0; line-height: 1.35; color: #E6EBF1; text-transform: none; }
 .tip-how strong { color: #8C97A8; }
 .tip-who { display: block; margin-top: 6px; font-family: Barlow, sans-serif; font-size: 12px; font-weight: 400; letter-spacing: 0; color: #8C97A8; text-transform: none; }
 .tip-arrow { position: absolute; left: 50%; bottom: -7px; width: 12px; height: 12px; margin-left: -6px; background: #0E1622; border-right: 1px solid; border-bottom: 1px solid; border-top: 0 !important; border-left: 0 !important; transform: rotate(45deg); }
-.bdg:hover .tip, .bdg:focus-visible .tip, .bdg.open .tip, .bdg-tag:hover .tip, .bdg-tag:focus-visible .tip, .bdg-tag:focus .tip { display: block; }
+.bdg:hover .tip, .bdg:focus-visible .tip, .bdg.open .tip, .bdg-tag:hover .tip, .bdg-tag:focus-visible .tip, .bdg-tag:focus .tip { visibility: visible; opacity: 1; }
 .tip-panel { display: none; position: relative; margin-top: 10px; padding: 10px 12px; background: #0E1622; border: 1px solid var(--ice); }
 .bdg-tag { position: relative; display: inline-block; min-height: 30px; padding: 3px 0; background: none; border: 0; color: inherit; cursor: help; vertical-align: middle; }
 .tag { display: inline-flex; align-items: stretch; height: 24px; transform: skewX(-12deg); border: 1px solid; }
@@ -191,8 +191,8 @@
 .ms-mark { width: 46px; height: 46px; display: grid; place-items: center; transform: skewX(-10deg); border: 2px solid; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 20px; }
 .ms-amt { margin-top: 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px; white-space: nowrap; }
 .ms-tag { min-height: 18px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px; letter-spacing: 0.08em; line-height: 1.2; }
-.ms-name { position: absolute; z-index: 5; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); width: max-content; max-width: 200px; padding: 6px 10px; background: #0E1622; border: 1px solid var(--ice); font-size: 13px; font-weight: 600; display: none; pointer-events: none; }
-.ms:hover .ms-name, .ms:focus-visible .ms-name { display: block; }
+.ms-name { position: absolute; z-index: 5; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); width: max-content; max-width: 200px; padding: 6px 10px; background: #0E1622; border: 1px solid var(--ice); font-size: 13px; font-weight: 600; display: block; visibility: hidden; opacity: 0; pointer-events: none; }
+.ms:hover .ms-name, .ms:focus-visible .ms-name { visibility: visible; opacity: 1; }
 .mseg { display: none; margin-top: 14px; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 3px; }
 .mseg-label { display: none; margin: 6px 0 0; justify-content: space-between; font-size: 12px; color: #8C97A8; }
 .mgrid { margin-top: 30px; display: grid; grid-template-columns: 5fr 7fr; gap: 16px; align-items: start; }
@@ -467,6 +467,50 @@ a.ad-past:hover { border-color: var(--ice); }
   .next-card { background: linear-gradient(180deg, rgba(63,208,255,0.10), rgba(63,208,255,0) 80%), rgba(11, 16, 24, 0.5); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
   .timer-card { background-color: rgba(9, 12, 17, 0.55); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
   .calc-card { -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+}
+
+/* ---- Motion for the small things (tokens in global.css) ----
+   Tooltips rise and fade in; state changes (picks, tabs, bars) glide; things that
+   appear (toast, phone menu, «Vezi tot» rows, panels) cut in. Hiding is quicker
+   than showing. Everything here switches off under prefers-reduced-motion. */
+@keyframes cutIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes cutDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+@keyframes toastIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.tip { transform: translate(-50%, 6px); transition: opacity var(--m-fast) var(--m-ease), transform var(--m-fast) var(--m-ease), visibility 0s linear var(--m-fast); }
+.bdg:hover .tip, .bdg:focus-visible .tip, .bdg.open .tip, .bdg-tag:hover .tip, .bdg-tag:focus-visible .tip, .bdg-tag:focus .tip {
+  transform: translate(-50%, 0); transition: opacity var(--m-base) var(--m-ease) 60ms, transform var(--m-base) var(--m-ease) 60ms, visibility 0s; }
+.ms-name { transform: translate(-50%, 4px); transition: opacity var(--m-fast) var(--m-ease), transform var(--m-fast) var(--m-ease), visibility 0s linear var(--m-fast); }
+.ms:hover .ms-name, .ms:focus-visible .ms-name { transform: translate(-50%, 0); transition: opacity var(--m-base) var(--m-ease) 40ms, transform var(--m-base) var(--m-ease) 40ms, visibility 0s; }
+.tip-panel.on, .prize-wrap.on { animation: cutIn var(--m-base) var(--m-ease) both; }
+
+.toast:not([hidden]) { animation: toastIn var(--m-slow) var(--m-ease) both; }
+#mobile-menu:not([hidden]) { animation: cutDown var(--m-base) var(--m-ease) both; }
+#mobile-menu:not([hidden]) > * { animation: cutIn var(--m-slow) var(--m-ease) both; }
+#mobile-menu > :nth-child(2) { animation-delay: 30ms; } #mobile-menu > :nth-child(3) { animation-delay: 60ms; }
+#mobile-menu > :nth-child(4) { animation-delay: 90ms; } #mobile-menu > :nth-child(5) { animation-delay: 120ms; }
+#mobile-menu > :nth-child(6) { animation-delay: 150ms; } #mobile-menu > :nth-child(7) { animation-delay: 180ms; }
+.rows.show-all .more-row, .advent.show-all .ad.far { animation: cutIn var(--m-slow) var(--m-ease) both; }
+
+/* Bars and fills slide to their new value. */
+[data-style^="width:"], .fill, .vo-bar > span { transition: width var(--m-slow) var(--m-ease); }
+/* Picks, tabs and hover states glide between looks. */
+.calc, .vo-btn, .bgrid .bl, .bt2, .btn-more, .clip, a.ad-past, .ms, [role="tab"], .bdg .hex, .rate {
+  transition: background-color var(--m-base) var(--m-ease), border-color var(--m-base) var(--m-ease), color var(--m-base) var(--m-ease), opacity var(--m-base) var(--m-ease), transform var(--m-fast) var(--m-ease); }
+.clip .clip-cta, .ad .ad-flake { transition: color var(--m-base) var(--m-ease), transform var(--m-base) var(--m-ease); }
+.clip:hover .clip-cta { transform: translateX(3px); }
+.bdg:hover .hex, .bdg:focus-visible .hex, .bdg.open .hex { transform: translateY(-2px); }
+/* A pressed button gives a little. */
+.btn-primary, .btn-ghost, .btn-twitch, .btn-red { transition-property: background-color, border-color, color, filter, transform; }
+.btn-primary:active, .btn-ghost:active, .btn-twitch:active, .btn-red:active, .calc:active, .vo-btn:active, .bgrid .bl:active, .btn-more:active { transform: translateY(1px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tip, .ms-name, .bdg:hover .tip, .bdg.open .tip, .ms:hover .ms-name, [data-style^="width:"], .fill, .vo-bar > span,
+  .calc, .vo-btn, .bgrid .bl, .bt2, .btn-more, .clip, a.ad-past, .ms, [role="tab"], .bdg .hex, .clip .clip-cta { transition: none !important; }
+  .tip-panel.on, .prize-wrap.on, .toast:not([hidden]), #mobile-menu:not([hidden]), #mobile-menu:not([hidden]) > *, .rows.show-all .more-row, .advent.show-all .ad.far { animation: none !important; }
+  .clip:hover .clip-cta, .bdg:hover .hex, .bdg.open .hex { transform: none; }
+  .btn-primary:active, .btn-ghost:active, .btn-twitch:active, .btn-red:active, .calc:active, .vo-btn:active, .bgrid .bl:active, .btn-more:active { transform: none; }
 }
 
 /* Big screens at 100% scaling (1440p and 4K monitors): scale the whole page so it keeps

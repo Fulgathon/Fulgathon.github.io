@@ -64,7 +64,7 @@ function challenges(v: Vals): string {
 ${c.leading ? `<span style="padding: 1px 8px; transform: skewX(-12deg); background: var(--ice); color: #04101A; font-family: ${COND}; font-size: 13px; font-weight: 800; letter-spacing: 0.06em">PE PRIMUL LOC</span>` : ''}</p>
 <p style="margin: 2px 0 0; font-size: 15px; color: #8C97A8">${esc(c.desc)}</p>
 <div style="margin-top: 12px; display: flex; align-items: center; gap: 12px">
-<div aria-hidden="true" style="flex: 1 1 auto; height: 8px; background: #1A2230"><div style="width: ${c.pct}; height: 100%; background: ${c.bar}"></div></div>
+<div aria-hidden="true" style="flex: 1 1 auto; height: 8px; background: #1A2230"><div class="fill" style="width: ${c.pct}; height: 100%; background: ${c.bar}"></div></div>
 <span style="flex: none; font-size: 14px; color: #8C97A8">${c.votesText} voturi</span>
 </div>
 </div>
@@ -95,7 +95,7 @@ function goals(v: Vals): string {
 ${
   g.current
     ? `<div style="margin-top: 8px; display: flex; align-items: center; gap: 10px">
-<div aria-hidden="true" style="flex: 1 1 auto; height: 8px; background: #1A2230"><div class="cane" style="width: ${g.pct}; height: 100%"></div></div>
+<div aria-hidden="true" style="flex: 1 1 auto; height: 8px; background: #1A2230"><div class="cane fill" style="width: ${g.pct}; height: 100%"></div></div>
 <span style="flex: none; font-size: 13px; font-weight: 700">${g.pct}</span>
 </div>`
     : ''

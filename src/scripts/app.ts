@@ -17,6 +17,7 @@
 //             ?demo&embed hides the panel (used inside /prezentare/).
 
 import './motion';
+import { morph } from '../lib/morph';
 import { emptyData } from '../data/sample';
 import { site } from '../data/site';
 import type { SiteData } from '../data/types';
@@ -62,6 +63,8 @@ const regions = all('[data-region]').map((el) => ({ el, name: el.dataset.region 
 const builtVals = derive(initialState(), emptyData());
 const lastHtml = new Map(regions.map(({ el, name }) => [el, views[name](builtVals)]));
 
+const REBUILD = new Set<RegionName>(['heroRecent', 'ticker', 'todayFeed']);
+
 function render() {
   const v = derive(state, data);
   const vals = v as unknown as AnyVals;
@@ -87,7 +90,9 @@ function render() {
     // Keep keyboard focus on the same control across the re-render.
     const active = document.activeElement as HTMLElement | null;
     const key = active && el.contains(active) ? active.dataset.key : undefined;
-    el.innerHTML = html;
+    // Live feeds are rebuilt (their newest row animates in); everything else is patched
+    // in place so its transitions run (src/lib/morph.ts).
+    if (REBUILD.has(name)) el.innerHTML = html; else morph(el, html);
     lastHtml.set(el, html);
     if (key) el.querySelector<HTMLElement>(`[data-key="${CSS.escape(key)}"]`)?.focus();
   }
