@@ -49,14 +49,14 @@
       "x": 0,
       "y": 11960,
       "w": 1440,
-      "h": 1180,
+      "h": 1560,
       "title": "/mod nou · Live (propunere)"
     },
     "ModContent.dc.html": {
       "x": 0,
-      "y": 13260,
+      "y": 13640,
       "w": 1440,
-      "h": 1320,
+      "h": 1560,
       "title": "/mod nou · Conținut: milestones și calendar"
     },
     "ModPhone.dc.html": {
@@ -68,7 +68,7 @@
     },
     "Overlay.dc.html": {
       "x": 0,
-      "y": 14700,
+      "y": 15320,
       "w": 1440,
       "h": 3200,
       "title": "Overlay OBS · momente (propunere)"
@@ -158,14 +158,14 @@
     },
     "n9": {
       "x": 1990,
-      "y": 13560,
+      "y": 13640,
       "w": 380,
       "fill": "teal",
       "text": "Conținut: fiecare milestone are acum stare (blocat / deblocat / făcut), «când se face» și linkul clipului, care apare pe site la «Ai ratat? Vezi clipurile». Calendarul de Advent se completează zi cu zi: ce e programat, sponsorul zilei și clipul. Sus se vede și starea «Înghețat până la …». Replicile lui Iceman au planșa lor, mai sus."
     },
     "n10": {
       "x": 1990,
-      "y": 14700,
+      "y": 15320,
       "w": 380,
       "fill": "orange",
       "text": "Overlay-ul: alegeți momentele pe care le vreți (un comentariu pe fiecare: da / nu / altfel). Totul vine din datele pe care site-ul le are deja. Balonul folosește aceleași replici de pe /mod; până le scrieți, apare «Mersi, {nume}!». Sponsorii rămân liniștiți, linkul cu ?key= rămâne privat, ?calm=1 dă mai puțină mișcare."

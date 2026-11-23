@@ -16,7 +16,7 @@ a{color:#3FD0FF}a:hover{color:#FFFFFF}
 button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #3FD0FF;outline-offset:2px}
 </style>
 </helmet>
-<div style="width: 1440px; min-height: 1320px; box-sizing: border-box; background: #050608; color: #F2F5FA; font-family: Barlow, system-ui, sans-serif; font-size: 15px; line-height: 1.45">
+<div style="width: 1440px; min-height: 1560px; box-sizing: border-box; background: #050608; color: #F2F5FA; font-family: Barlow, system-ui, sans-serif; font-size: 15px; line-height: 1.45">
 
   <header style="height: 64px; padding: 0 24px; display: flex; align-items: center; gap: 18px; background: #0B1018; border-bottom: 1px solid #1C2230">
     <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 22px">ICE<span style="color: #3FD0FF">MARATON</span> <span style="font-style: normal; font-weight: 800; font-size: 14px; letter-spacing: 0.1em; color: #8C97A8">/MOD</span></span>
@@ -34,12 +34,16 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #3FD0
   </header>
 
   <div style="display: grid; grid-template-columns: 248px minmax(0, 1fr)">
-    <nav aria-label="Secțiuni" style="min-height: 1256px; padding: 18px 0; background: #080B10; border-right: 1px solid #1C2230">
+    <nav aria-label="Secțiuni" style="min-height: 1496px; padding: 14px 12px; display: flex; flex-direction: column; gap: 10px; background: #050608; border-right: 1px solid #1C2230">
       <sc-for list="{{groups}}" as="g" hint-placeholder-count="6">
-        <p style="margin: 14px 0 4px; padding: 0 20px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 0.14em; color: #8C97A8">{{g.name}}</p>
-        <sc-for list="{{g.items}}" as="i" hint-placeholder-count="4">
-          <a href="#{{i.id}}" style="min-height: 40px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 16px 0 17px; border-left: 3px solid {{i.line}}; background: {{i.bg}}; color: {{i.fg}}; text-decoration: none; font-weight: {{i.w}}">{{i.label}}<sc-if value="{{i.badge}}" hint-placeholder-val="{{false}}"><span style="min-width: 22px; padding: 0 6px; background: {{i.badgeBg}}; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; text-align: center">{{i.badge}}</span></sc-if></a>
-        </sc-for>
+        <div style="background: {{g.bg}}; border: 1px solid {{g.border}}">
+          <p style="margin: 0; min-height: 40px; display: flex; align-items: center; gap: 10px; padding: 0 12px; border-bottom: 1px solid {{g.border}}; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 0.14em; color: {{g.fg}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{g.ic}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{g.d}}"></path></svg>{{g.name}}</p>
+          <div style="padding: 4px 0">
+            <sc-for list="{{g.items}}" as="i" hint-placeholder-count="4">
+              <a href="#{{i.id}}" style="min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 12px 0 35px; border-left: 3px solid {{i.line}}; background: {{i.bg}}; color: {{i.fg}}; text-decoration: none; font-size: 14px; font-weight: {{i.w}}">{{i.label}}<sc-if value="{{i.badge}}" hint-placeholder-val="{{false}}"><span style="min-width: 22px; padding: 0 6px; background: {{i.badgeBg}}; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; text-align: center">{{i.badge}}</span></sc-if></a>
+            </sc-for>
+          </div>
+        </div>
       </sc-for>
     </nav>
 
@@ -105,10 +109,13 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #3FD0
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1320}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1560}}'>
 class Component extends DCLogic {
   renderVals() {
-    const item = (id, label, on, badge, warn) => ({ id, label, line: on ? '#3FD0FF' : 'transparent', bg: on ? 'rgba(63,208,255,0.08)' : 'transparent', fg: on ? '#FFFFFF' : '#C9D2DF', w: on ? 700 : 400, badge: badge || '', badgeBg: warn ? '#F2C14E' : '#3FD0FF' });
+    const item = (id, label, on, badge, warn) => ({ id, label, active: !!on, line: on ? '#3FD0FF' : 'transparent', bg: on ? 'rgba(63,208,255,0.10)' : 'transparent', fg: on ? '#FFFFFF' : '#C9D2DF', w: on ? 700 : 400, badge: badge || '', badgeBg: warn ? '#F2C14E' : '#3FD0FF' });
+    const D = {"LIVE": "M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8", "CONȚINUT": "M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h7", "JOCURI": "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 3v18M3 12h18", "OAMENI": "M9 11a4 4 0 1 0 0-8a4 4 0 1 0 0 8M2 21c0-4 3-6 7-6s7 2 7 6M17 3.5a4 4 0 0 1 0 7M22 21c0-3-1.5-5-4-5.7", "SPONSORI": "M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6-4.5-4.2 6.1-.7z", "OVERLAY": "M3 4h18v13H3zM8 21h8M12 17v4"};
+    // Each group is its own block: icon + name on top, items under it; the open group is lit.
+    const grp = (name, items) => { const on = items.some((i) => i.active); return { name, items, d: D[name], bg: on ? '#0B1018' : '#080B10', border: on ? '#23415E' : '#1C2230', fg: on ? '#F2F5FA' : '#AEB8C7', ic: on ? '#3FD0FF' : '#8C97A8' }; };
     const names = ['Pulover urât de Crăciun tot stream-ul', 'Provocarea cu baia de gheață', 'Seară de jocuri cu viewerii', 'Concurs de turtă dulce', 'Chatul îmi pictează fața', 'Karaoke cu colinde', 'Gătesc sarmale live', 'Stream IRL prin zăpadă', 'Chatul îmi alege culoarea părului', 'Turneu cu comunitatea', 'Baie în lacul înghețat', 'Obiectiv secret'];
     const amts = ['100', '250', '500', '750', '1000', '1500', '2000', '2500', '3000', '4000', '5000', '7500'];
     const goals = names.map((t, i) => {
@@ -130,12 +137,12 @@ class Component extends DCLogic {
     });
     return {
       groups: [
-        { name: 'LIVE', items: [item('cronometru', 'Cronometru'), item('inghetare', 'Îngheață'), item('ora-dubla', 'Ora dublă'), item('acum', 'Acum pe stream'), item('momente', 'Momente pe stream')] },
-        { name: 'CONȚINUT', items: [item('replici', 'Replicile lui Iceman', false, '4', true), item('milestones', 'Milestone Maraton', true, '1'), item('comunitar', 'Obiectiv comunitar'), item('advent', 'Calendar de Advent'), item('vot', 'Vot și provocări'), item('propuneri', 'Propuneri', false, '2')] },
-        { name: 'JOCURI', items: [item('roata', 'Roata și premiile'), item('premii', 'Premii de dat', false, '1'), item('bingo', 'Bingo'), item('coduri', 'Coduri secrete')] },
-        { name: 'OAMENI', items: [item('nume', 'Nume afișate'), item('insigne', 'Insigne și Fidelii'), item('legende', 'Legende'), item('moderatori', 'Moderatori')] },
-        { name: 'SPONSORI', items: [item('parteneri', 'Parteneri și logo-uri'), item('raport', 'Raport pe sponsor')] },
-        { name: 'OVERLAY', items: [item('overlay', 'Overlay OBS'), item('scena', 'Scena de pauză')] },
+        grp('LIVE', [item('cronometru', 'Cronometru'), item('inghetare', 'Îngheață'), item('ora-dubla', 'Ora dublă'), item('acum', 'Acum pe stream'), item('momente', 'Momente pe stream')]),
+        grp('CONȚINUT', [item('replici', 'Replicile lui Iceman', false, '4', true), item('milestones', 'Milestone Maraton', true, '1'), item('comunitar', 'Obiectiv comunitar'), item('advent', 'Calendar de Advent'), item('vot', 'Vot și provocări'), item('propuneri', 'Propuneri', false, '2')]),
+        grp('JOCURI', [item('roata', 'Roata și premiile'), item('premii', 'Premii de dat', false, '1'), item('bingo', 'Bingo'), item('coduri', 'Coduri secrete')]),
+        grp('OAMENI', [item('nume', 'Nume afișate'), item('insigne', 'Insigne și Fidelii'), item('legende', 'Legende'), item('moderatori', 'Moderatori')]),
+        grp('SPONSORI', [item('parteneri', 'Parteneri și logo-uri'), item('raport', 'Raport pe sponsor')]),
+        grp('OVERLAY', [item('overlay', 'Overlay OBS'), item('scena', 'Scena de pauză')]),
       ],
       goals, days,
     };
