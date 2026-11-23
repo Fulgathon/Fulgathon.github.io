@@ -104,9 +104,17 @@
 .blink { animation: blink 1.2s steps(2) infinite; }
 
 /* ---- Section heads ---- */
-.shead { position: relative; padding-bottom: 14px; border-bottom: 2px solid #F2F5FA; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px 32px; flex-wrap: wrap; }
-.shead h2 { margin: 10px 0 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: clamp(38px, 4.5cqi, 64px); line-height: 0.92; text-transform: uppercase; }
-.shead .side { margin: 0; max-width: 380px; color: #AEB8C7; }
+.sec { --sh-n: clamp(150px, 15.3cqi, 220px); --sh-t: clamp(46px, 5.6cqi, 80px); }
+/* Section heading, variant B: the numeral is decoration (aria-hidden); the title sits over its lower half. */
+.shead { position: relative; margin-bottom: calc(var(--sh-n) * 0.1); display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 12px 32px; }
+.sh-main { position: relative; min-width: 0; margin-top: max(0px, calc(var(--sh-n) * 0.9 - var(--sh-t) * 0.88 - 21px)); padding-left: calc(var(--sh-n) * 0.536); }
+.sh-num { position: absolute; left: -0.03em; bottom: -0.1em; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: var(--sh-n); line-height: 1; letter-spacing: -0.02em; color: transparent; -webkit-text-stroke: 2px rgba(63, 208, 255, 0.7); pointer-events: none; user-select: none; }
+.shead h2 { position: relative; margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: var(--sh-t); line-height: 0.88; text-transform: uppercase; }
+.sh-bar { position: relative; display: block; width: clamp(64px, 7.2cqi, 104px); height: clamp(5px, 0.5cqi, 7px); margin-top: 14px; background: var(--ice); transform: skewX(-12deg); }
+.shead + .intro { padding-left: calc(var(--sh-n) * 0.536); }
+.shead .side { margin: 0 0 4px; max-width: 380px; color: #AEB8C7; }
+/* Narrower: the side line (or button) goes under the title, on the title's left edge, like the intro. */
+@container page (max-width: 1100px) { .shead { grid-template-columns: minmax(0, 1fr); } .shead > :not(.sh-main) { justify-self: start; margin-left: calc(var(--sh-n) * 0.536); } .shead > .side { max-width: 560px; } }
 .intro { margin: 14px 0 0; color: #AEB8C7; }
 
 /* ---- Partners ---- */
@@ -422,7 +430,17 @@ a.ad-past:hover { border-color: var(--ice); }
   .nav-word { font-size: 22px; }
 }
 @container page (max-width: 360px) { .nav-word { font-size: 19px; } }
-@container page (max-width: 760px) { .shead .side { display: none; } .shead { padding-bottom: 10px; } }
+@container page (max-width: 760px) {
+  .shead .side { display: none; }
+  /* Phone: the numeral sits above, the title starts at the left edge over its lower part. */
+  .sec { --sh-n: clamp(110px, 34cqi, 140px); --sh-t: clamp(36px, 11.3cqi, 48px); }
+  .shead { margin-bottom: 0; }
+  .sh-main { margin-top: 0; padding-left: 0; padding-top: calc(var(--sh-n) * 0.59); }
+  .sh-num { top: 0; bottom: auto; -webkit-text-stroke-width: 1.5px; }
+  .sh-bar { margin-top: 10px; }
+  .shead + .intro { padding-left: 0; }
+  .shead > :not(.sh-main) { margin-left: 0; }
+}
 /* Tablet: keep the phone-style stage centred instead of stretched. */
 @container page (min-width: 761px) and (max-width: 1000px) { .st-mascot { width: 100%; max-width: 560px; justify-self: center; } }
 @container page (max-width: 1000px) { .prize-groups { grid-template-columns: minmax(0, 1fr); } }

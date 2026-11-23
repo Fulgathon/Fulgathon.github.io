@@ -1,13 +1,15 @@
 ---
-// Section heading (layout v2): skewed ice number tag, big italic title, 2px
-// white rule; an optional line on the right (desktop) or under it (phone).
+// Section heading (layout v2, variant B «Numeral uriaș», owner's pick 23 Nov 2026):
+// a giant ice-outlined section number behind, the white italic title over it,
+// a short ice bar under the title. An optional line on the right (desktop only).
 interface Props { tag: string; title: string; id?: string }
 const { tag, title, id } = Astro.props;
 ---
 <div class="shead">
-  <div>
-    <span class="tag-ice" style="font-size: 15px">{tag}</span>
+  <div class="sh-main">
+    <span class="sh-num" aria-hidden="true">{tag}</span>
     <h2 id={id}>{title}</h2>
+    <span class="sh-bar" aria-hidden="true"></span>
   </div>
   <slot />
 </div>
