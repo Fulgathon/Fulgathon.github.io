@@ -332,13 +332,6 @@ export class Live {
     void this.poll();
   }
 
-  /** Show or hide this viewer's name in public (leaderboards, feed, overlay). */
-  async setPublic(isPublic: boolean) {
-    const { error } = await this.raw.rpc('set_public_name', { p_public: isPublic });
-    if (error) throw error;
-    await this.refreshMe();
-    void this.poll();
-  }
 
   async suggest(body: string) {
     const { error } = await this.db.rpc('suggest', { p_body: body });

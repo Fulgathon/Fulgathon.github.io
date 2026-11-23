@@ -92,7 +92,7 @@ Build the static site so it matches the design, with every interaction working o
 - **Scale:** at the last subathon Iceman had about 46,800 unique viewers and around 500 concurrent on Twitch alone. Multistreaming would make it bigger.
 - **Plans:** Supabase stays on Free for testing. Iceman agreed to **Supabase Pro** for the event, so upgrade before 20 Dec. Cloudflare stays on Free: static assets are free and unlimited.
 - **Legends:** a live top 3–5 per category (donors in €, gifted subs), with cumulative totals. Whoever has given the most so far holds the spot until someone passes them. A viewer who gives €25 today and €50 tomorrow has €75.
-- **Public names:** shown by default (people already show them on Twitch). Viewers can still hide their own name, and moderators can hide one.
+- **Public names:** shown (people already show them on Twitch). The viewer «Ascunde-mi numele» option was removed on 23 Nov 2026 (owner: not needed); moderators can still hide a name on /mod.
 - **Channel points:** Iceman is a Twitch Partner, so channel points and custom rewards are available.
 
 ## Open (ask, don't guess)

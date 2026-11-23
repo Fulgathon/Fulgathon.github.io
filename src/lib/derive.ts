@@ -540,12 +540,6 @@ export function derive(s: State, d: SiteData) {
     suggestLockText: isOut ? 'Conectează-te și abonează-te ca să propui provocări' : 'Abonează-te ca să propui provocări',
     suggestLen: sug.length,
 
-    // Privacy under the leaderboard: a viewer can hide their name everywhere in public.
-    privacyText: isOut ? 'Nu vrei să apari cu numele în clasamente și pe stream? Conectează-te cu Twitch și alegi tu.'
-      : s.isPublic ? 'Numele tău apare în clasamente, în lista de timp adăugat și pe stream.'
-      : 'Numele tău e ascuns: în public apari ca «Anonim». Contribuțiile tale se numără la fel.',
-    privacyBtn: s.isPublic ? 'Ascunde-mi numele' : 'Arată-mi numele',
-    privacyPressed: bool(!s.isPublic),
 
     // Comunitatea
     hasNow: nowText !== '', nowText, nowLabel: d.now?.note ? 'Acum' : 'Acum pe stream',

@@ -117,7 +117,7 @@ Secrets go in the dashboards, never in this repo or in chat.
 - **Leaderboards** come from `private.supporter_totals`, kept by a trigger on
   `events`, not from sums over the whole table.
 - **Names:** everything public goes through `public_name(login, name)`:
-  - viewer opt-out (`set_public_name`, button under the leaderboard);
+  - viewer opt-out (`set_public_name`): the site no longer offers it (owner, 23 Nov 2026); the RPC stays, so names hidden before stay hidden;
   - moderator hide or allow (`mod_name_rule`, /mod → Nume);
   - a word, link and phone filter (`private.blocked_words`, mode `any`, `prefix`
     or `exact`). To add a word:

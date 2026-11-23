@@ -81,11 +81,5 @@ const small = `font-family: ${cond}; font-weight: 800; font-size: 13px; letter-s
         <p style="margin: 12px 0 0; font-size: 13px; color: #AEB8C7"><strong style="color: var(--ice)">Check-in:</strong> pe Twitch, recompensa «Check-in ICEMARATON» cu puncte de canal îți ține seria chiar dacă ai stat mai puțin.</p>
       </div>
     </div>
-
-    <!-- Privacy: hide your name everywhere in public -->
-    <div id="nume" style="margin-top: 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; font-size: 14px; color: #AEB8C7">
-      <p style="margin: 0; flex: 1 1 260px" data-text="privacyText">{v.privacyText}</p>
-      <button type="button" class="btn-ghost" data-action="togglePublic" aria-pressed={v.privacyPressed} data-attr="aria-pressed:privacyPressed" {...iff('isIn')} style={`min-height: 44px; padding: 0 14px; font-family: ${cond}; font-weight: 800; font-size: 15px; text-transform: uppercase; letter-spacing: 0.04em`} data-text="privacyBtn">{v.privacyBtn}</button>
-    </div>
   </div>
 </section>

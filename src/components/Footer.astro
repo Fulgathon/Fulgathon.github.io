@@ -1,5 +1,5 @@
 ---
-// Footer (layout v2): name toggle, socials, partner contact.
+// Footer (layout v2): socials, partner contact.
 import { site } from '../data/site';
 const socials: [string, string][] = [
   ['Twitch', site.links.twitch],
@@ -13,7 +13,6 @@ const socials: [string, string][] = [
   <div class="wrap" style="padding-top: 24px; padding-bottom: 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 32px; font-size: 14px; color: #8C97A8">
     <p style="margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px">
       <strong style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 20px; color: #F2F5FA">ICEMARATON</strong>
-      <a href="#nume" style="min-height: 44px; display: inline-flex; align-items: center; color: #AEB8C7">Ascunde-mi numele</a>
       {socials.map(([label, href]) => <a href={href} style="min-height: 44px; display: inline-flex; align-items: center; color: #AEB8C7">{label}</a>)}
     </p>
     <p style="margin: 0">Vrei să fii partener? <a href={`mailto:${site.contactEmail}`} style="font-weight: 600">Scrie-ne</a></p>

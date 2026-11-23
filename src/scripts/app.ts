@@ -427,13 +427,6 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
     live?.checkSub().catch(fail);
   },
 
-  togglePublic: () => {
-    const next = !state.isPublic;
-    set({ isPublic: next });
-    if (demo) return;
-    live?.setPublic(next).catch((err) => { set({ isPublic: !next }); fail(err); });
-  },
-
   calcPick: (i) => set({ calcPick: Number(i) || 0 }),
   badgeTip: (id) => set({ badgeTip: state.badgeTip === id ? null : id }),
   more: (key) => {
