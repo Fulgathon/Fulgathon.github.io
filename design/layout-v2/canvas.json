@@ -72,6 +72,20 @@
       "w": 1440,
       "h": 3200,
       "title": "Overlay OBS · momente (propunere)"
+    },
+    "SectionHeads.dc.html": {
+      "x": 0,
+      "y": 18940,
+      "w": 1440,
+      "h": 3000,
+      "title": "Titlurile secțiunilor · 3 variante (desktop)"
+    },
+    "SectionHeadsPhone.dc.html": {
+      "x": 1520,
+      "y": 18940,
+      "w": 390,
+      "h": 1200,
+      "title": "Titlurile secțiunilor · telefon"
     }
   },
   "order": [
@@ -83,7 +97,9 @@
     "ModLive.dc.html",
     "ModPhone.dc.html",
     "ModContent.dc.html",
-    "Overlay.dc.html"
+    "Overlay.dc.html",
+    "SectionHeads.dc.html",
+    "SectionHeadsPhone.dc.html"
   ],
   "notes": {
     "row": {
@@ -169,6 +185,20 @@
       "w": 380,
       "fill": "orange",
       "text": "Overlay-ul: alegeți momentele pe care le vreți (un comentariu pe fiecare: da / nu / altfel). Totul vine din datele pe care site-ul le are deja. Balonul folosește aceleași replici de pe /mod; până le scrieți, apare «Mersi, {nume}!». Sponsorii rămân liniștiți, linkul cu ?key= rămâne privat, ?calm=1 dă mai puțină mișcare."
+    },
+    "tHeads": {
+      "x": 0,
+      "y": 18640,
+      "text": "Titlurile secțiunilor (de ales)",
+      "kind": "title1",
+      "maxW": 1910
+    },
+    "n11": {
+      "x": 1990,
+      "y": 18940,
+      "w": 380,
+      "fill": "blue",
+      "text": "Acum, linia albă pe toată lățimea e cel mai vizibil lucru din titlu și nu spune nimic, iar «02» stă mic, separat de titlu. De aici senzația de șablon. Trei direcții, fiecare pe Comunitatea și Milestone Maraton, plus telefonul în dreapta. A · Bandă TV: cel mai puternic semnal la scroll, dar șase blocuri ice mari ar concura cu butoanele (Donează, Conectează-te). B · Numeral uriaș: elegantă și sigură, dar numerele uriașe conturate apar pe multe site-uri de sport. C · Tabela, recomandarea mea: preia plăcuțele cronometrului (cu strălucirea lor), iar cele 6 segmente arată unde ești pe pagină. E singura care e doar a voastră. Scrie A, B sau C (sau ce să combin) într-un comentariu și o pun pe tot site-ul."
     }
   },
   "designSystems": []
