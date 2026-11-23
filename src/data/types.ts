@@ -10,14 +10,14 @@ export interface Challenge { id: string; title: string; desc: string; votes: num
 export interface UpNext { n: number; title: string; round: number; pct: string; when: string }
 export interface Completed { title: string; when: string; clip: string | null }
 /** [short label on the wheel, full prize name, label colour] */
-export type Prize = [short: string, full: string, color: string];
-export interface Win { user: string; prize: string; ago: string }
+export type Prize = [short: string, full: string, color: string, sponsor?: string | null];
+export interface Win { user: string; prize: string; ago: string; sponsor?: string | null }
 /** Milestone Maraton: unlocked when the donation total (€) reaches threshold. */
-export interface Goal { title: string; threshold: number }
+export interface Goal { title: string; threshold: number; sponsor?: string | null }
 export interface Round { id: number; number: number; closesAt: number }
 export interface BingoItem { id: number; label: string; happened: boolean }
 /** Prediction bingo: pick 5 events before closesAt; all 5 happen → raffle. */
-export interface Bingo { closesAt: number | null; prize: string; players: number; items: BingoItem[] }
+export interface Bingo { closesAt: number | null; prize: string; prizeSponsor?: string | null; players: number; items: BingoItem[] }
 
 export interface SiteData {
   status: Status;
@@ -29,6 +29,8 @@ export interface SiteData {
   /** "Ora dublă" window (epoch ms). */
   doubleFrom: number | null;
   doubleUntil: number | null;
+  /** Sponsor presenting the current/next Ora dublă. */
+  doubleSponsor?: string | null;
   subs: number;
   raised: string;
   /** Donation total in euros (milestones). */

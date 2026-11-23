@@ -161,6 +161,19 @@ ${compact.matches
     ],
   },
   {
+    title: 'Partenerii, peste tot', view: 'site', scroll: 'roata',
+    body: `<p>Sponsorii nu sunt doar un logo: apar în momentele care contează.</p>
+<ul><li><strong>Ora dublă oferită de …</strong>: pe site și pe stream, cu numele sponsorului.</li>
+<li><strong>Premii «de la …»</strong>: pe roată, la milestone-uri și la bingo, inclusiv la fiecare câștigător.</li>
+<li><strong>Codul secret</strong>: din /mod arăți un cod pe stream câteva minute; cine îl scrie pe site primește o rotire bonus. Oamenii urmăresc momentul sponsorului pentru că le aduce ceva.</li>
+<li><strong>Raport</strong>: click-uri, coduri copiate, revendicări, donații în orele lor. Îl copiezi din /mod și îl trimiți sponsorului.</li></ul>`,
+    actions: [
+      { label: 'Arată un cod secret', primary: true, run: () => { const c = api.codeShow('Zona IT', 10); note('Pe stream: ' + c.code); } },
+      { label: 'Revendică-l ca viewer', run: guard(() => { api.setViewer('nonsub'); const c = api.currentCode(); if (c) api.claimCode(c.code); scrollSite('roata'); }) },
+      { label: 'Ora dublă oferită de Zona IT', run: () => api.doubleHour(Date.now(), 60, 'Zona IT') },
+    ],
+  },
+  {
     title: 'Ce urmează', view: 'final',
     body: () => `<p>Tot ce ai văzut e construit și testat. Pentru pornire mai e un singur pas: legăm aplicația de contul tău de Twitch, în aproximativ 15 minute.</p>
 <p>${where()}: ce e gata, ce facem împreună și ce trebuie să hotărăști.</p>`,

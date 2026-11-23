@@ -90,7 +90,7 @@ function goals(v: Vals): string {
 <span style="flex: none; width: 46px; font-family: ${COND}; font-weight: 900; font-style: italic; font-size: 34px; line-height: 1; color: ${g.numColor}">${g.no}</span>
 <div style="flex: 1 1 auto; min-width: 0">
 <p style="margin: 0; font-weight: 700; font-size: 17px; color: ${g.titleColor}; text-decoration: ${g.deco}; text-decoration-color: var(--ice); text-decoration-thickness: 2px">${esc(g.title)}</p>
-<p style="margin: 0; font-size: 14px; color: #7D8899">${g.threshold} strânși</p>
+<p style="margin: 0; font-size: 14px; color: #7D8899">${g.threshold} strânși${g.sponsor ? ` · <span style="color: #AEB8C7">prezentat de <strong style="color: #F2F5FA">${esc(g.sponsor)}</strong></span>` : ''}</p>
 ${
   g.current
     ? `<div style="margin-top: 8px; display: flex; align-items: center; gap: 10px">
@@ -194,7 +194,7 @@ function recentWins(v: Vals): string {
   return v.recentWins
     .map(
       (w) => `<li style="display: flex; gap: 12px; padding: 9px 0; border-bottom: 1px solid #1A2230">
-<span style="flex: 1 1 auto; min-width: 0"><strong style="color: #F2F5FA">${esc(w.user)}</strong> <span style="color: #8C97A8">a câștigat</span> ${esc(w.prize)}</span>
+<span style="flex: 1 1 auto; min-width: 0"><strong style="color: #F2F5FA">${esc(w.user)}</strong> <span style="color: #8C97A8">a câștigat</span> ${esc(w.prize)}${w.sponsor ? ` <span style="color: #8C97A8">de la</span> <strong style="color: var(--ice)">${esc(w.sponsor)}</strong>` : ''}</span>
 <span style="flex: none; color: #7D8899">${esc(w.ago)}</span>
 </li>`,
     )

@@ -5,6 +5,7 @@
 // /?demo, /overlay/?demo and /prezentare/).
 
 import { createClient } from '@supabase/supabase-js';
+import { partners } from '../data/content';
 import { site } from '../data/site';
 import type { DemoBackend } from '../demo/backend';
 import { esc } from '../lib/views';
@@ -100,20 +101,31 @@ let S: {
   prizes: { id: number; user_login: string; created_at: string; prizes: { win_label: string; is_win: boolean } | null }[];
   mods: { login: string; display_name: string | null }[];
   draft: number[];
-  goals: { title: string; threshold: number; unlocked_at: string | null }[];
+  goals: { title: string; threshold: number; unlocked_at: string | null; sponsor?: string | null }[];
   /** Milestone list being edited (null = showing the saved list). */
-  goalsDraft: { title: string; threshold: string }[] | null;
+  goalsDraft: { title: string; threshold: string; sponsor: string }[] | null;
+  /** Wheel slices (8) as stored, and the copy being edited. */
+  wheel: { short_label: string; full_label: string; win_label: string | null; sponsor: string | null; is_win: boolean; weight: number }[];
+  wheelDraft: { short_label: string; full_label: string; sponsor: string; is_win: boolean; weight: string }[] | null;
+  codes: { code: string; sponsor: string | null; shown_at: string | null; expires_at: string | null; claims: number }[];
+  overlayKey: string | null;
+  report: any;
   bingo: {
-    closes_at: string | null; prize: string;
+    closes_at: string | null; prize: string; prize_sponsor?: string | null;
     items: { id: number; label: string; happened_at: string | null }[];
     status: { players: number; winners: { login: string }[]; draws: { login: string; drawn_at: string | null }[] };
   } | null;
   /** Bingo event list being edited (null = showing the saved list). */
   bingoDraft: { id?: number; label: string }[] | null;
-} = { me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null };
+} = { me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
 const bingoRows = () => S.bingoDraft ?? (S.bingo?.items ?? []).map((i) => ({ id: i.id, label: i.label }));
 const editBingo = () => { if (!S.bingoDraft) S.bingoDraft = bingoRows(); return S.bingoDraft; };
-const goalRows = () => S.goalsDraft ?? S.goals.map((g) => ({ title: g.title, threshold: String(g.threshold) }));
+const goalRows = () => S.goalsDraft ?? S.goals.map((g) => ({ title: g.title, threshold: String(g.threshold), sponsor: g.sponsor ?? '' }));
+const wheelRows = () => S.wheelDraft ?? S.wheel.map((p) => ({ short_label: p.short_label, full_label: p.full_label, sponsor: p.sponsor ?? '', is_win: p.is_win, weight: String(p.weight) }));
+const editWheel = () => { if (!S.wheelDraft) S.wheelDraft = wheelRows(); return S.wheelDraft; };
+/** Sponsor names for the suggestions list: the site's partners plus any already used. */
+const sponsorNames = () => [...new Set([site.sponsor.name, ...partners.map((p) => p.name), ...((S.report?.sponsors ?? []).map((x: any) => x.sponsor))]
+  .filter((n) => n && !n.startsWith('[')))];
 const editGoals = () => { if (!S.goalsDraft) S.goalsDraft = goalRows(); return S.goalsDraft; };
 
 // Suggest a round: 2 easy, 2 medium, 1 hard, all from different categories.
@@ -152,16 +164,24 @@ async function load() {
     db.from('suggestions').select('id, body, created_at, viewers(login, display_name)').eq('status', 'pending').order('created_at'),
     db.from('spins').select('id, user_login, created_at, prizes(win_label, is_win)').is('fulfilled_at', null).order('created_at'),
     db.from('viewers').select('login, display_name').eq('is_moderator', true).order('login'),
-    db.from('goals').select('title, threshold, unlocked_at').order('position'),
+    db.from('goals').select('title, threshold, unlocked_at, sponsor').order('position'),
   ]);
+  const [wheel, codes, okey, report] = await Promise.all([
+    db.from('prizes').select('short_label, full_label, win_label, sponsor, is_win, weight').order('position'),
+    db.rpc('mod_codes'), db.rpc('mod_overlay_key'), db.rpc('mod_sponsor_report'),
+  ]);
+  S.wheel = (wheel.data ?? []) as typeof S.wheel;
+  S.codes = (codes.data ?? []) as typeof S.codes;
+  S.overlayKey = (okey.data as string | null) ?? null;
+  S.report = report.data ?? null;
   S.goals = (goals.data ?? []) as typeof S.goals;
   const [bItems, bSet, bStatus] = await Promise.all([
     db.from('bingo_items').select('id, label, happened_at').order('position'),
-    db.from('bingo_settings').select('closes_at, prize').eq('id', 1).maybeSingle(),
+    db.from('bingo_settings').select('closes_at, prize, prize_sponsor').eq('id', 1).maybeSingle(),
     db.rpc('mod_bingo_status'),
   ]);
   S.bingo = {
-    closes_at: bSet.data?.closes_at ?? null, prize: bSet.data?.prize ?? '',
+    closes_at: bSet.data?.closes_at ?? null, prize: bSet.data?.prize ?? '', prize_sponsor: bSet.data?.prize_sponsor ?? null,
     items: (bItems.data ?? []) as any,
     status: (bStatus.data ?? { players: 0, winners: [], draws: [] }) as any,
   };
@@ -222,6 +242,7 @@ function render() {
     `<option value="${c.id}" ${c.id === sel ? 'selected' : ''}>${esc(c.level)} · ${esc(c.title)}</option>`).join('');
 
   app.innerHTML = `
+  <datalist id="sponsorNames">${sponsorNames().map((n) => `<option value="${esc(n)}"></option>`).join('')}</datalist>
   <div class="grid">
     <section class="card" id="stare">
       <h2>Stare</h2>
@@ -269,6 +290,7 @@ function render() {
         <div class="row">
           <label class="inline">Ora dublă de la<input class="field" type="datetime-local" id="dblFrom"></label>
           <label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="dblMin" value="60"></label>
+          <label class="inline">Oferită de (sponsor)<input class="field" id="dblSponsor" list="sponsorNames" placeholder="opțional" value="${esc(t.double_sponsor ?? '')}"></label>
           <button class="btn-ghost" data-act="double">Programează</button>
           <button class="btn-ghost" data-act="doubleNow">Ora dublă acum</button>
         </div>
@@ -294,6 +316,7 @@ function render() {
         const reached = g.threshold !== '' && Number(S.stats?.raised ?? 0) >= Number(g.threshold);
         return `<li>
         <span class="pair grow"><input class="field" type="number" inputmode="numeric" min="1" step="1" data-goal-amt="${i}" value="${esc(g.threshold)}" placeholder="€" aria-label="Suma în euro" style="flex:0 0 110px;width:110px"><input class="field" data-goal-title="${i}" value="${esc(g.title)}" placeholder="Provocarea" aria-label="Provocarea" maxlength="140" style="flex:1 1 auto;min-width:0"></span>
+        <input class="field" data-goal-sponsor="${i}" value="${esc(g.sponsor)}" list="sponsorNames" placeholder="Prezentat de (opțional)" aria-label="Sponsorul milestone-ului" maxlength="60" style="flex:0 1 200px;min-width:0">
         ${reached ? '<span class="pill ok">atins</span>' : ''}
         <button class="btn-ghost" data-act="goalDel" data-i="${i}">Șterge</button></li>`;
       }).join('')}</ul>
@@ -314,6 +337,7 @@ function render() {
       <div class="row">
         <label class="inline">Alegerile se închid la<input class="field" type="datetime-local" id="bingoClose" value="${toLocal(B.closes_at)}"></label>
         <label class="inline" style="flex:1 1 220px">Premiul<input class="field" id="bingoPrize" value="${esc(B.prize)}" maxlength="120"></label>
+        <label class="inline" style="flex:1 1 180px">Premiul e de la<input class="field" id="bingoPrizeSponsor" list="sponsorNames" value="${esc(B.prize_sponsor ?? '')}" maxlength="60" placeholder="sponsor (opțional)"></label>
         <button class="btn-ghost" data-act="bingoSettings">Salvează</button>
       </div>
       <h3 style="margin:20px 0 0;font-family:'Barlow Condensed',sans-serif;font-size:18px;text-transform:uppercase">Cartonașul (25 = 5×5, rând cu rând) · bifează când se întâmplă</h3>
@@ -333,6 +357,54 @@ function render() {
       ${B.status.draws.length ? `<p style="margin:10px 0 0">Extrași: ${B.status.draws.map((d) => `<strong>${esc(d.login)}</strong>${d.drawn_at ? ` <span class="muted">(${when(d.drawn_at)})</span>` : ''}`).join(' · ')}</p>` : ''}
     </section>`;
     })() : ''}
+
+    <section class="card wide" id="roata-premii">
+      <h2>Premiile roții</h2>
+      <p class="muted" style="margin-top:0">8 felii, în ordinea de pe roată. «Pe roată» = textul scurt de pe felie (max. 16 caractere). Pune sponsorul la premiile oferite de el: apare pe site și pe stream «de la …». Șansa = cât de des iese felia (0 = niciodată).</p>
+      <ul class="list">${wheelRows().map((p, i) => `<li>
+        <span class="muted" style="flex:0 0 22px">${i + 1}</span>
+        <input class="field" data-wheel="short_label" data-i="${i}" value="${esc(p.short_label)}" maxlength="16" aria-label="Pe roată, felia ${i + 1}" style="flex:0 1 130px;min-width:0">
+        <input class="field" data-wheel="full_label" data-i="${i}" value="${esc(p.full_label)}" maxlength="80" aria-label="Premiul, felia ${i + 1}" style="flex:1 1 200px;min-width:0">
+        <input class="field" data-wheel="sponsor" data-i="${i}" value="${esc(p.sponsor)}" list="sponsorNames" maxlength="60" placeholder="de la (sponsor)" aria-label="Sponsorul, felia ${i + 1}" style="flex:0 1 170px;min-width:0">
+        <label style="display:inline-flex;align-items:center;gap:6px;min-height:44px"><input type="checkbox" data-wheel="is_win" data-i="${i}" ${p.is_win ? 'checked' : ''}> câștig</label>
+        <label style="display:inline-flex;align-items:center;gap:6px">șansa<input class="field" type="number" min="0" max="9999" data-wheel="weight" data-i="${i}" value="${esc(p.weight)}" style="width:80px"></label>
+      </li>`).join('')}</ul>
+      <div class="row"><button class="btn-primary" data-act="wheelSave">Salvează premiile</button>${S.wheelDraft ? '<button class="btn-ghost" data-act="wheelCancel">Renunță</button><span class="muted">Modificări nesalvate</span>' : ''}</div>
+    </section>
+
+    <section class="card wide" id="cod">
+      <h2>Cod secret</h2>
+      ${(() => {
+        const cur = S.codes.find((c) => c.expires_at && Date.parse(c.expires_at) > now);
+        return cur ? `<p style="margin:0"><span class="pill ok">Pe stream acum</span></p>
+          <p class="big" style="margin:10px 0 4px;letter-spacing:.06em">${esc(cur.code)}</p>
+          <p class="muted" style="margin:0">${cur.sponsor ? `oferit de <strong style="color:#F2F5FA">${esc(cur.sponsor)}</strong> · ` : ''}valabil până la ${when(cur.expires_at)} · ${cur.claims} revendicări</p>
+          <div class="row"><button class="btn-ghost" data-act="codeEnd">Oprește codul</button></div>`
+          : '<p class="muted" style="margin-top:0">Niciun cod pe stream acum. Arată unul în timpul unui moment cu sponsorul: cine îl scrie pe site primește o rotire bonus.</p>';
+      })()}
+      <div class="row">
+        <label class="inline" style="flex:1 1 200px">Oferit de<input class="field" id="codeSponsor" list="sponsorNames" value="${esc(site.sponsor.name)}" maxlength="60"></label>
+        <label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="codeMin" value="10" min="1" max="60"></label>
+        <button class="btn-primary" data-act="codeShow">Arată un cod nou pe stream</button>
+      </div>
+      ${S.overlayKey ? `<p class="muted" style="margin:14px 0 0">Ca să apară codul pe stream, overlay-ul din OBS trebuie să aibă cheia: <strong style="color:#FF8A95">nu da linkul ăsta nimănui</strong>.</p>
+        <div class="row"><input class="field" id="overlayLink" readonly value="${esc(location.origin + '/overlay/?key=' + S.overlayKey)}" style="flex:1 1 280px;min-width:0" aria-label="Linkul de overlay cu cheie"><button class="btn-ghost" data-act="copyOverlay">Copiază linkul pentru OBS</button></div>` : ''}
+      ${S.codes.length ? `<ul class="list">${S.codes.slice(0, 8).map((c) => `<li><span class="grow"><strong>${esc(c.code)}</strong>${c.sponsor ? ` · ${esc(c.sponsor)}` : ''}<br><span class="muted">${when(c.shown_at)}</span></span><span>${c.claims} revendicări</span></li>`).join('')}</ul>` : ''}
+    </section>
+
+    <section class="card wide" id="raport">
+      <h2>Raport pentru sponsori</h2>
+      ${(() => {
+        const R = S.report;
+        if (!R) return '<p class="muted">Se încarcă…</p>';
+        const fmt = (n: any) => (n === null || n === undefined ? '—' : Number(n).toLocaleString('ro-RO'));
+        return `<p class="muted" style="margin-top:0">Vârf de viewers în chat: <strong style="color:#F2F5FA">${fmt(R.peak_chatters)}</strong> · ore privite în total: <strong style="color:#F2F5FA">${fmt(R.watch_hours)}</strong> · strâns: <strong style="color:#F2F5FA">${fmt(R.raised)} €</strong>. Click-urile se numără o dată pe vizită, fără date personale.</p>
+        ${(R.sponsors ?? []).length ? `<ul class="list">${R.sponsors.map((x: any, i: number) => `<li style="align-items:flex-start">
+          <span class="grow"><strong style="font-size:18px">${esc(x.sponsor)}</strong><br>
+          <span class="muted">Click-uri pe link: <strong style="color:#F2F5FA">${fmt(x.clicks)}</strong> · cod de reducere copiat: <strong style="color:#F2F5FA">${fmt(x.code_copies)}</strong> · coduri secrete: ${fmt(x.codes_shown)} afișate, <strong style="color:#F2F5FA">${fmt(x.code_claims)}</strong> revendicări · ore duble: ${fmt(x.double_hours)} (donat în ele: <strong style="color:#F2F5FA">${fmt(x.donated_in_hours)} €</strong>, vârf ${fmt(x.peak_in_hours)} viewers) · premii câștigate: ${fmt(x.wins)} · milestones: ${fmt(x.milestones_unlocked)} / ${fmt(x.milestones)}</span></span>
+          <button class="btn-ghost" data-act="copyReport" data-i="${i}">Copiază</button></li>`).join('')}</ul>` : '<p class="muted">Încă nimic de raportat. Apare aici după ce pui sponsori pe premii, ore duble sau coduri.</p>'}`;
+      })()}
+    </section>
 
     <section class="card wide" id="vot">
       <h2>Runda de vot</h2>
@@ -413,7 +485,31 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   freeze: () => call('mod_freeze', { p_minutes: num('freezeMin') }, 'Cronometrul e înghețat.'),
   freezeUntil: () => val('freezeUntil') && call('mod_freeze_until', { p_until: fromLocal(val('freezeUntil')) }, 'Cronometrul e înghețat până atunci.'),
   unfreeze: () => confirm('Dezgheți cronometrul acum?') && call('mod_unfreeze', {}, 'Cronometrul merge din nou.'),
-  bingoSettings: () => call('mod_bingo_settings', { p_closes_at: fromLocal(val('bingoClose')), p_prize: val('bingoPrize') }, 'Setările de bingo au fost salvate.'),
+  bingoSettings: () => call('mod_bingo_settings', { p_closes_at: fromLocal(val('bingoClose')), p_prize: val('bingoPrize'), p_prize_sponsor: val('bingoPrizeSponsor') }, 'Setările de bingo au fost salvate.'),
+  wheelSave: async () => {
+    const list = wheelRows().map((p) => ({ short_label: p.short_label.trim(), full_label: p.full_label.trim(), sponsor: p.sponsor.trim(), is_win: p.is_win, weight: Number(p.weight) || 0 }));
+    await call('mod_set_prizes', { p_prizes: list }, 'Premiile roții au fost salvate.');
+    S.wheelDraft = null;
+  },
+  wheelCancel: () => { S.wheelDraft = null; render(); },
+  codeShow: async () => {
+    const r: any = await call('mod_code_show', { p_sponsor: val('codeSponsor'), p_minutes: num('codeMin') || 10 }, 'Cod nou pe stream.');
+    if (r?.code) say(`Codul pe stream: ${r.code}`);
+  },
+  codeEnd: () => call('mod_code_end', {}, 'Codul a fost oprit.'),
+  copyOverlay: () => { const v = val('overlayLink'); void navigator.clipboard?.writeText(v).then(() => say('Link copiat. Pune-l în OBS ca Browser Source, 1920×1080.')); },
+  copyReport: (el) => {
+    const R = S.report; const x = R?.sponsors?.[Number(el.dataset.i)];
+    if (!x) return;
+    const n = (v: any) => (v === null || v === undefined ? '—' : Number(v).toLocaleString('ro-RO'));
+    const text = [`ICEMARATON · raport pentru ${x.sponsor}`, '',
+      `Click-uri pe linkul vostru: ${n(x.clicks)}`, `Cod de reducere copiat: ${n(x.code_copies)}`,
+      `Coduri secrete afișate pe stream: ${n(x.codes_shown)} · revendicate: ${n(x.code_claims)}`,
+      `Ore duble oferite de voi: ${n(x.double_hours)} · donații în timpul lor: ${n(x.donated_in_hours)} € · vârf: ${n(x.peak_in_hours)} viewers în chat`,
+      `Premii câștigate pe roată de la voi: ${n(x.wins)}`, `Milestones prezentate: ${n(x.milestones_unlocked)} deblocate din ${n(x.milestones)}`,
+      '', `Maratonul în total: vârf ${n(R.peak_chatters)} viewers în chat, ${n(R.watch_hours)} ore privite, ${n(R.raised)} € strânși.`].join('\n');
+    void navigator.clipboard?.writeText(text).then(() => say('Raportul a fost copiat.'));
+  },
   bingoTick: (el) => call('mod_bingo_tick', { p_id: Number(el.dataset.id), p_happened: el.dataset.on === '1' }, el.dataset.on === '1' ? 'Bifat: s-a întâmplat.' : 'Debifat.'),
   bingoAdd: () => { editBingo().push({ label: '' }); render(); },
   bingoDel: (el) => { editBingo().splice(Number(el.dataset.i), 1); render(); },
@@ -428,8 +524,8 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     const won = await call('mod_bingo_draw', {}, 'Tragere făcută.');
     if (won) alert(`Câștigătorul: ${won}`);
   },
-  double: () => call('mod_double_hour', { p_from: fromLocal(val('dblFrom')), p_minutes: num('dblMin') }, 'Ora dublă programată.'),
-  doubleNow: () => call('mod_double_hour', { p_from: new Date().toISOString(), p_minutes: num('dblMin') || 60 }, 'Ora dublă a început.'),
+  double: () => call('mod_double_hour', { p_from: fromLocal(val('dblFrom')), p_minutes: num('dblMin'), p_sponsor: val('dblSponsor') }, 'Ora dublă programată.'),
+  doubleNow: () => call('mod_double_hour', { p_from: new Date().toISOString(), p_minutes: num('dblMin') || 60, p_sponsor: val('dblSponsor') }, 'Ora dublă a început.'),
   end: () => confirm('Sigur închei subathonul? Cronometrul se oprește.') && call('mod_end_timer', {}, 'Subathonul s-a încheiat.'),
   closeRound: (el) => call('mod_close_round', { p_round: Number(el.dataset.id) }, 'Runda s-a închis.'),
   reroll: () => { autoDraft(); render(); },
@@ -444,12 +540,12 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   approve: (el) => call('mod_review_suggestion', { p_id: Number(el.dataset.id), p_approve: true }, 'Aprobată: e acum în lista de provocări.'),
   reject: (el) => call('mod_review_suggestion', { p_id: Number(el.dataset.id), p_approve: false }, 'Respinsă.'),
   fulfil: (el) => call('mod_fulfil_spin', { p_id: Number(el.dataset.id) }, 'Premiu marcat ca dat.'),
-  goalAdd: () => { editGoals().push({ title: '', threshold: '' }); render(); },
+  goalAdd: () => { editGoals().push({ title: '', threshold: '', sponsor: '' }); render(); },
   goalDel: (el) => { editGoals().splice(Number(el.dataset.i), 1); render(); },
   goalCancel: () => { S.goalsDraft = null; render(); },
   goalSave: async () => {
     const list = goalRows().filter((g) => g.title.trim() || g.threshold !== '')
-      .map((g) => ({ title: g.title.trim(), threshold: Number(g.threshold) }));
+      .map((g) => ({ title: g.title.trim(), threshold: Number(g.threshold), sponsor: g.sponsor.trim() }));
     await call('mod_set_goals', { p_goals: list }, 'Lista de milestone-uri a fost salvată.');
     S.goalsDraft = null;
   },
@@ -470,6 +566,12 @@ document.addEventListener('change', (e) => {
 document.addEventListener('input', (e) => {
   const el = e.target as HTMLInputElement;
   if (el.dataset.bingoLabel !== undefined) { editBingo()[Number(el.dataset.bingoLabel)].label = el.value; return; }
+  if (el.dataset.wheel !== undefined) {
+    const row = editWheel()[Number(el.dataset.i)] as any;
+    row[el.dataset.wheel] = el.type === 'checkbox' ? el.checked : el.value;
+    return;
+  }
+  if (el.dataset.goalSponsor !== undefined) { editGoals()[Number(el.dataset.goalSponsor)].sponsor = el.value; return; }
   if (el.dataset.goalAmt !== undefined) editGoals()[Number(el.dataset.goalAmt)].threshold = el.value;
   else if (el.dataset.goalTitle !== undefined) editGoals()[Number(el.dataset.goalTitle)].title = el.value;
   else return;

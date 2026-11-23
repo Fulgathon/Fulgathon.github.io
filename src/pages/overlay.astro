@@ -7,6 +7,9 @@
 //   ?show=timer,goal,events                       which parts (default: all three)
 //   ?style=box                                    the large box instead of the strip
 //   ?demo                                         sample data, for placing it in OBS
+//   ?key=…                                        shows the secret codes (private key; copy the link from /mod → Cod secret)
+//   ?promo=10                                     partner mention every N minutes for 10 s (0 = off)
+//   ?codeSecs=60                                  how long a secret code stays on screen
 //
 // Parameters combine: …/overlay/?pos=tl&scale=0.9&show=timer,events
 import '@fontsource/barlow-condensed/700.css';
@@ -49,6 +52,12 @@ import '@fontsource/barlow/600.css';
       .pos-br .chip, .pos-bl .chip { transform: translateY(8px); }
       .chip.show { opacity: 1; transform: none; }
       .chip b { color: var(--ice); }
+      .double-line { margin-top: 6px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 15px; letter-spacing: .04em; color: #FFFFFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .double-line b { color: var(--ice); }
+      .code-chip { max-width: 460px; padding: 8px 14px; background: rgba(5, 6, 8, 0.95); border: 2px solid #FFFFFF; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 20px; line-height: 1.2; opacity: 0; transform: translateY(-8px); transition: opacity .3s, transform .3s; }
+      .code-chip.show { opacity: 1; transform: none; }
+      .code-chip .code { display: block; font-size: 40px; font-weight: 900; letter-spacing: .08em; color: var(--ice); }
+      .code-chip small { display: block; font-size: 16px; color: #C9D2DF; }
 
       /* ---- Large box (?style=box) ---- */
       .box { position: fixed; left: 40px; bottom: 40px; width: 620px; padding: 18px 20px 20px; background: rgba(5, 6, 8, 0.86); border: 1px solid rgba(160, 225, 255, 0.35); }
@@ -66,7 +75,7 @@ import '@fontsource/barlow/600.css';
       .box-event.show { opacity: 1; transform: none; }
       .box-event b { color: var(--ice); }
 
-      @media (prefers-reduced-motion: reduce) { .fill, .chip, .box-event { transition: none; } }
+      @media (prefers-reduced-motion: reduce) { .fill, .chip, .box-event, .code-chip { transition: none; } }
     </style>
   </head>
   <body class="pos-tr">
@@ -82,8 +91,10 @@ import '@fontsource/barlow/600.css';
           <div class="bar"><div class="fill" data-fill></div></div>
           <span data-progress></span>
         </div>
+        <div class="double-line" data-double hidden></div>
       </div>
       <div class="chip" data-event aria-live="polite"></div>
+      <div class="code-chip" data-code aria-live="polite"></div>
     </div>
 
     <!-- Large box (?style=box) -->

@@ -51,7 +51,7 @@ Dashboard: https://supabase.com/dashboard/project/yvbxtsuddjqqoogdoqrx
   activity. Upgrade the IceMaraton organization (Pro) for the event.
 - On `/mod`: set the **start date** (countdown on the site) and the
   **scheduled end**; add the other **moderators** by Twitch login.
-- **OBS**: add a Browser Source with `https://icemaraton.icemaraton.workers.dev/o`, 1920×1080.
+- **OBS**: add a Browser Source, 1920×1080, with the link from `/mod` → Cod secret («Copiază linkul pentru OBS»: the overlay plus the private key, so secret codes show on stream). Keep that link private. Without codes: `https://icemaraton.icemaraton.workers.dev/o`.
 - Open with Iceman, then tell Claude: time rates (now Tier 1/Prime +1 min,
   Tier 2 +2, Tier 3 +5, gift +1 each, 400 bits +1, 5 € +1), goals, prizes,
   sponsor details, Discord and social links.
@@ -70,6 +70,9 @@ On `/mod` → **Pornește acum** with the starting hours. From then on:
 | Watch time & wheel | Every 5 min while live and online, everyone in chat gets 5 min (total and per Romanian day). A subscriber with 2 h watched that day gets 1 spin per day |
 | Milestone Maraton | Unlocked by the donation total (€); edit the list on `/mod` → Milestone Maraton |
 | Bingo | Viewers pick 5 events until the close (default 25 Dec 12:00); `/mod` → Bingo: set the close and prize, edit events, tick what happened, draw the winner from everyone with all 5 |
+| Sponsors | `/mod`: «Oferită de» on Ora dublă, sponsor per milestone, wheel prizes (Premiile roții), bingo prize sponsor. Shown on site and overlay («de la …») |
+| Cod secret | `/mod` → Cod secret → «Arată un cod nou» during a sponsor moment; the overlay shows it (needs the OBS link with `?key=` from that box); viewers enter it on the site for 1 bonus spin (6 tries/min) |
+| Sponsor report | `/mod` → Raport pentru sponsori: clicks, code copies, code claims, donations and peak viewers in their double hours; «Copiază» gives a text to send |
 | Long freeze | `/mod` → Cronometru → «Îngheață până la» a date (e.g. 25 Dec), «Dezgheață acum» to resume early; time still adds up meanwhile |
 | Viewer login & sub check | "Conectează-te cu Twitch"; sub status checked on login and with "M-am abonat, verifică iar" |
 | Vote rounds | `/mod` opens a round (auto-proposes 2 easy, 2 medium, 1 hard); it closes itself on time and schedules the winner |

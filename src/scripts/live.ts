@@ -23,6 +23,8 @@ export interface Me {
   myVote: string | null;
   /** This viewer's saved bingo pick (5 event ids), or null. */
   bingoSaved: number[] | null;
+  /** Bonus spins from secret codes (included in `spins`). */
+  bonusSpins: number;
 }
 
 export interface LiveHandlers {
@@ -71,13 +73,13 @@ export class Live {
     bingo: async () => {
       const [{ data: items }, { data: set }, { data: stats }] = await Promise.all([
         this.raw.from('bingo_items').select('id, label, happened_at').order('position'),
-        this.raw.from('bingo_settings').select('closes_at, prize').eq('id', 1).maybeSingle(),
+        this.raw.from('bingo_settings').select('closes_at, prize, prize_sponsor').eq('id', 1).maybeSingle(),
         this.raw.rpc('bingo_stats'),
       ]);
       if (!items) return {};
       return {
         bingo: {
-          closesAt: ms(set?.closes_at ?? null), prize: set?.prize ?? '', players: stats?.[0]?.players ?? 0,
+          closesAt: ms(set?.closes_at ?? null), prize: set?.prize ?? '', prizeSponsor: set?.prize_sponsor ?? null, players: stats?.[0]?.players ?? 0,
           items: items.map((i: { id: number; label: string; happened_at: string | null }) => ({ id: i.id, label: i.label, happened: !!i.happened_at })),
         },
       };
@@ -89,6 +91,7 @@ export class Live {
         status: t.status as SiteData['status'],
         startsAt: ms(t.starts_at), endsAt: ms(t.ends_at),
         pausedUntil: ms(t.paused_until), scheduledEnd: ms(t.scheduled_end),
+        doubleSponsor: (t as { double_sponsor?: string | null }).double_sponsor ?? null,
         doubleFrom: ms(t.double_from), doubleUntil: ms(t.double_until),
       };
     },
@@ -97,9 +100,10 @@ export class Live {
       return s ? { subs: s.subs, raised: `${amount(Number(s.raised))} €`, raisedNum: Number(s.raised) } : {};
     },
     goals: async () => {
-      const { data } = await this.db.from('goals').select('title, threshold').order('position');
+      const { data } = await this.raw.from('goals').select('title, threshold, sponsor').order('position');
       return data?.length ? { goals: data } : {};
     },
+
     events: async () => {
       const { data } = await this.db.from('events').select('*').order('id', { ascending: false }).limit(12);
       const items = (data ?? []).map(tickerItem);
@@ -156,19 +160,21 @@ export class Live {
       return { completed };
     },
     prizes: async () => {
-      const { data } = await this.db.from('prizes').select('position, short_label, full_label, is_win').order('position');
+      const { data } = await this.raw.from('prizes').select('position, short_label, full_label, is_win, sponsor').order('position');
       if (!data?.length) return {};
-      const prizes: Prize[] = data.map((p) => [p.short_label, p.full_label, prizeColors[p.position] ?? '#F2F5FA']);
-      const lose = data.find((p) => !p.is_win);
+      const prizes: Prize[] = data.map((p: { position: number; short_label: string; full_label: string; sponsor: string | null }) =>
+        [p.short_label, p.full_label, prizeColors[p.position] ?? '#F2F5FA', p.sponsor]);
+      const lose = data.find((p: { is_win: boolean }) => !p.is_win);
       return { prizes, losePrize: lose ? lose.position : -1 };
     },
     wins: async () => {
-      const { data } = await this.db.from('spins').select('user_login, created_at, prizes(win_label, is_win)')
+      type Row = { user_login: string; created_at: string; prizes: { win_label: string | null; is_win: boolean; sponsor: string | null } | null };
+      const { data } = await this.raw.from('spins').select('user_login, created_at, prizes(win_label, is_win, sponsor)')
         .order('created_at', { ascending: false }).limit(12);
       const now = Date.now();
       return {
-        recentWins: (data ?? []).filter((s) => s.prizes?.is_win).slice(0, 4)
-          .map((s) => ({ user: s.user_login, prize: s.prizes?.win_label ?? '', ago: ago(Date.parse(s.created_at), now) })),
+        recentWins: ((data ?? []) as unknown as Row[]).filter((s) => s.prizes?.is_win).slice(0, 4)
+          .map((s) => ({ user: s.user_login, prize: s.prizes?.win_label ?? '', ago: ago(Date.parse(s.created_at), now), sponsor: s.prizes?.sponsor ?? null })),
       };
     },
     boards: async () => {
@@ -251,6 +257,7 @@ export class Live {
       spunToday: !!w?.spun_today,
       myVote,
       bingoSaved: Array.isArray(bp?.items) ? bp.items.map(Number) : null,
+      bonusSpins: (w as { bonus_spins?: number } | undefined)?.bonus_spins ?? 0,
     });
   }
 
@@ -279,6 +286,25 @@ export class Live {
     const { data, error } = await this.db.rpc('spin');
     if (error) throw error;
     return data[0];
+  }
+
+  /** Secret code from the stream → 1 bonus spin. Throws with the error code. */
+  async claimCode(code: string): Promise<{ sponsor: string | null; bonus_spins: number }> {
+    const { data, error } = await this.raw.rpc('claim_code', { p_code: code });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    await this.refreshMe();
+    return data;
+  }
+
+  /** The OBS overlay's current secret code (private key from /mod). */
+  overlayCode(key: string) {
+    return this.raw.rpc('overlay_code', { p_key: key }) as unknown as Promise<{ data: { code: string; sponsor: string | null; expires_at: string }[] | null }>;
+  }
+
+  /** Count a sponsor click / code copy (no personal data). */
+  track(sponsor: string, kind: 'click' | 'code_copy') {
+    void this.raw.rpc('track_sponsor', { p_sponsor: sponsor, p_kind: kind });
   }
 
   async saveBingo(items: number[]) {

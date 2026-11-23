@@ -141,6 +141,9 @@ const errors: Record<string, string> = {
   not_enough_watch: 'Ai nevoie de 2 ore de privit azi pentru rotire.',
   already_spun: 'Ai învârtit deja azi. Revino mâine!',
   bingo_closed: 'Alegerile pentru bingo s-au închis.',
+  bad_code: 'Codul nu e bun sau a expirat. Verifică literele de pe stream.',
+  already_claimed: 'Ai folosit deja codul ăsta.',
+  too_many_attempts: 'Prea multe încercări. Mai încearcă peste un minut.',
   bad_pick: 'Alege o linie întreagă de pe cartonaș.',
   not_a_line: 'Alege un rând, o coloană sau o diagonală întreagă.',
   too_many: 'Ai trimis deja 3 propuneri. Mai încearcă peste câteva minute.',
@@ -159,7 +162,7 @@ const reachedGoals = (d: SiteData) => d.goals.filter((g) => d.raisedNum >= g.thr
 
 function applyMe(me: Me | null) {
   if (!me) {
-    set({ viewer: 'out', viewerName: '', spins: 0, watchedToday: 0, spunToday: false, myVote: null, result: null, suggestDone: false, bingoSaved: null });
+    set({ viewer: 'out', viewerName: '', spins: 0, watchedToday: 0, spunToday: false, bonusSpins: 0, myVote: null, result: null, suggestDone: false, bingoSaved: null });
     return;
   }
   set({
@@ -167,7 +170,7 @@ function applyMe(me: Me | null) {
     viewer: me.isSub ? 'sub' : 'nonsub', viewerName: me.name, myVote: me.myVote,
     // Don't let a refresh jump the counter while the wheel is still turning.
     ...(state.spinning ? {} : { spins: me.spins, spunToday: me.spunToday }),
-    watchedToday: me.watchedToday,
+    watchedToday: me.watchedToday, bonusSpins: me.bonusSpins,
   });
 }
 
@@ -197,7 +200,7 @@ function demoSync(first = false) {
   const patch: Partial<State> = {
     ...(state.bingoSaved?.join() === me.bingoSaved?.join() ? {} : withSaved(me.bingoSaved)),
     viewer: me.state, viewerName: me.name, myVote: me.myVote,
-    watchedToday: me.watchedToday,
+    watchedToday: me.watchedToday, bonusSpins: me.bonusSpins,
     ...(state.spinning ? {} : { spins: me.spins, spunToday: me.spunToday }),
   };
   const unlocked = data.status === 'live' && (first ? reachedGoals(data) > 0 : reachedGoals(data) > before);
@@ -376,6 +379,23 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
     field?.focus();
   },
 
+  claimCode: () => {
+    if (state.viewer === 'out') { actions.login('', document.body); return; }
+    const code = state.codeInput.trim();
+    if (code.replace(/[^A-Za-z0-9]/g, '').length < 4) { document.getElementById('secret-code')?.focus(); return; }
+    const done = (sponsor: string | null) => {
+      set({ codeInput: '' });
+      const field = document.getElementById('secret-code') as HTMLInputElement | null;
+      if (field) field.value = '';
+      info('Cod secret', `Ai primit o rotire bonus${sponsor ? ` de la ${sponsor}` : ''}! Învârte roata.`);
+    };
+    if (demo) {
+      try { done(demoApi!.claimCode(code)); } catch (err) { fail(err); }
+      return;
+    }
+    live?.claimCode(code).then((r) => done(r.sponsor)).catch(fail);
+  },
+
   copyCode: () => {
     try { navigator.clipboard?.writeText(site.sponsor.code).catch(() => {}); } catch { /* clipboard blocked */ }
     set({ copied: true });
@@ -438,7 +458,21 @@ document.addEventListener('click', (e) => {
 document.addEventListener('input', (e) => {
   const el = e.target as HTMLTextAreaElement;
   if (el.dataset?.input === 'suggestion') set({ suggestion: el.value.slice(0, 140) });
+  if (el.dataset?.input === 'codeInput') set({ codeInput: el.value.slice(0, 16) });
 });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.target as HTMLElement).dataset?.input === 'codeInput') { e.preventDefault(); actions.claimCode('', e.target as HTMLElement); }
+});
+
+// Sponsor report: count clicks on sponsor links and code copies, once per visit each.
+document.addEventListener('click', (e) => {
+  const el = (e.target as Element).closest<HTMLElement>('[data-track]');
+  if (!el || demo || !live) return;
+  const [sponsor, kind] = el.dataset.track!.split('|');
+  const key = `icemaraton:tracked:${sponsor}:${kind}`;
+  try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, '1'); } catch { /* storage blocked: count anyway */ }
+  live.track(sponsor, kind === 'code_copy' ? 'code_copy' : 'click');
+}, true);
 
 document.addEventListener('keydown', (e) => {
   // Arrow keys move between tabs (WAI-ARIA tabs pattern).

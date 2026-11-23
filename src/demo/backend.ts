@@ -8,8 +8,8 @@
 // in separate tabs or side by side. Nothing here touches the real database.
 
 import challengesJson from '../../data/challenges.json';
-import { bingoItems, defaultGoals, defaultPrizes, popSlots } from '../data/content';
-import type { BoardTab, Goal, SiteData } from '../data/types';
+import { bingoItems, defaultGoals, defaultPrizes, popSlots, prizeColors } from '../data/content';
+import type { BoardTab, Goal, Prize, SiteData } from '../data/types';
 import { amount, tickerItem } from '../lib/events';
 import { ago, fmtInt } from '../lib/format';
 
@@ -37,11 +37,12 @@ interface DemoSpin { id: number; user: string; prize: number; at: number; fulfil
 interface DemoSuggestion { id: number; body: string; user: string; at: number; status: 'pending' | 'approved' | 'rejected' }
 
 export interface DemoState {
-  v: 4;
+  v: 5;
   seq: number;
   timer: {
     status: Status; startsAt: number | null; endsAt: number | null; pausedUntil: number | null;
     scheduledEnd: number | null; doubleFrom: number | null; doubleUntil: number | null; streamOnline: boolean;
+    doubleSponsor: string | null;
   };
   stats: { subs: number; bits: number; raised: number };
   goals: Goal[];
@@ -53,12 +54,17 @@ export interface DemoState {
   spins: DemoSpin[];
   suggestions: DemoSuggestion[];
   /** Daily wheel: minutes watched on `day` (local date), and the day of the last spin. */
-  viewer: { state: Viewer; name: string; day: string; watched: number; spunDay: string | null };
+  viewer: { state: Viewer; name: string; day: string; watched: number; spunDay: string | null; bonus: number };
+  /** Wheel slices as moderators set them (labels, sponsor, win or not, weight). */
+  prizes: { short: string; full: string; win: string; sponsor: string | null; isWin: boolean; weight: number }[];
+  /** Secret codes shown on stream (newest first) and the viewer's claims. */
+  codes: { code: string; sponsor: string | null; shownAt: number; expiresAt: number; claims: number; mine: boolean }[];
+  promo: { clicks: number; copies: number; doubleHours: number; donatedInHours: number };
   mods: string[];
   streamerConnected: boolean;
   /** Prediction bingo: the viewer's pick plus simulated players' picks. */
   bingo: {
-    closesAt: number | null; prize: string;
+    closesAt: number | null; prize: string; prizeSponsor?: string | null;
     items: { id: number; label: string; happened: boolean }[];
     pick: number[] | null;
     others: { user: string; items: number[] }[];
@@ -119,7 +125,7 @@ function seed(now: number): DemoState {
     ({ id, kind, tier, quantity, currency, seconds_added: seconds, doubled: false, user_login: user, user_name: user, at: now - minsAgo * MIN });
 
   return {
-    v: 4,
+    v: 5,
     seq: 1000,
     timer: {
       status: 'live',
@@ -130,9 +136,10 @@ function seed(now: number): DemoState {
       doubleFrom: next21(now),
       doubleUntil: next21(now) + HOUR,
       streamOnline: true,
+      doubleSponsor: 'Zona IT',
     },
     stats: { subs: 1284, bits: 48_500, raised: 1_180 },
-    goals: defaultGoals.map((g) => ({ ...g })),
+    goals: defaultGoals.map((g, i) => ({ ...g, sponsor: i === 5 || i === 8 ? 'Zona IT' : null })),
     events: [
       ev(6, 1, 'donation', 'mistletoe_mike', null, 20, 7200, 'EUR'),
       ev(5, 3, 'sub', 'frostbyte_77', '3000', 1, 1080),
@@ -160,7 +167,10 @@ function seed(now: number): DemoState {
       { id: 2, body: 'Joacă un meci doar cu portarul în atac', user: 'polarpixel', at: now - 9 * MIN, status: 'pending' },
       { id: 1, body: 'Citește comentariile chatului cu voce de Moș Crăciun', user: 'auroraaa', at: now - 32 * MIN, status: 'pending' },
     ],
-    viewer: { state: 'out', name: 'viewer_name', day: today(), watched: 95, spunDay: null },
+    viewer: { state: 'out', name: 'viewer_name', day: today(), watched: 95, spunDay: null, bonus: 0 },
+    prizes: defaultPrizes.map((p, i) => ({ short: p[0], full: p[1], win: WIN_LABELS[i], sponsor: i === 1 || i === 3 ? 'Zona IT' : null, isWin: i !== LOSE, weight: 1 })),
+    codes: [{ code: 'K7Q-2MV', sponsor: 'Zona IT', shownAt: now - 3 * HOUR, expiresAt: now - 3 * HOUR + 10 * MIN, claims: 212, mine: false }],
+    promo: { clicks: 184, copies: 57, doubleHours: 2, donatedInHours: 640 },
     mods: ['icemanlucky', 'frostbyte_77'],
     streamerConnected: true,
     bingo: {
@@ -205,7 +215,7 @@ export class DemoBackend {
     if (raw) {
       try {
         const s = JSON.parse(raw) as DemoState;
-        if (s.v === 4) { this.raw = raw; this.cached = s; return s; }
+        if (s.v === 5) { this.raw = raw; this.cached = s; return s; }
       } catch { /* corrupt: reseed */ }
     }
     // No saved demo (or storage blocked): start from the seed, keep it in memory.
@@ -337,7 +347,9 @@ export class DemoBackend {
     });
   }
   bingoTick(id: number, happened: boolean) { this.mutate((s) => { const it = s.bingo.items.find((x) => x.id === id); if (it) it.happened = happened; }); }
-  bingoSettings(closesAt: number | null, prize: string) { this.mutate((s) => { s.bingo.closesAt = closesAt; if (prize.trim()) s.bingo.prize = prize.trim(); }); }
+  bingoSettings(closesAt: number | null, prize: string, prizeSponsor: string | null = null) {
+    this.mutate((s) => { s.bingo.closesAt = closesAt; if (prize.trim()) s.bingo.prize = prize.trim(); s.bingo.prizeSponsor = prizeSponsor?.trim() || null; });
+  }
   setBingoItems(list: { id?: number | string; label: string }[]) {
     this.mutate((s) => {
       if (!Array.isArray(list) || list.length !== 25) fail('need_25');
@@ -367,7 +379,69 @@ export class DemoBackend {
     });
   }
 
-  doubleHour(from: number, minutes: number) { this.mutate((s) => { s.timer.doubleFrom = from; s.timer.doubleUntil = from + minutes * MIN; }); }
+  doubleHour(from: number, minutes: number, sponsor: string | null = null) {
+    this.mutate((s) => { s.timer.doubleFrom = from; s.timer.doubleUntil = from + minutes * MIN; s.timer.doubleSponsor = sponsor?.trim() || null; });
+  }
+
+  // ---- Secret codes (same rules as the database) ------------------------------
+  currentCode() { const now = Date.now(); return this.load().codes.find((c) => c.shownAt <= now && c.expiresAt > now) ?? null; }
+  codeShow(sponsor: string | null, minutes = 10) {
+    return this.mutate((s) => {
+      const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      const r = () => A[Math.floor(Math.random() * A.length)];
+      const now = Date.now();
+      s.codes.forEach((c) => { if (c.expiresAt > now) c.expiresAt = now; });
+      const c = { code: `${r()}${r()}${r()}-${r()}${r()}${r()}`, sponsor: sponsor?.trim() || null, shownAt: now, expiresAt: now + minutes * MIN, claims: 0, mine: false };
+      s.codes.unshift(c);
+      s.codes = s.codes.slice(0, 20);
+      return { code: c.code, sponsor: c.sponsor, expires_at: new Date(c.expiresAt).toISOString() };
+    });
+  }
+  codeEnd() { this.mutate((s) => { const now = Date.now(); s.codes.forEach((c) => { if (c.expiresAt > now) c.expiresAt = now; }); }); }
+  claimCode(code: string): string | null {
+    return this.mutate((s) => {
+      if (s.viewer.state === 'out') fail('not_logged_in');
+      const norm = code.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      const now = Date.now();
+      const c = s.codes.find((x) => x.code.replace('-', '') === norm && x.shownAt <= now && x.expiresAt > now);
+      if (!c) fail('bad_code');
+      if (c!.mine) fail('already_claimed');
+      c!.mine = true; c!.claims += 1; s.viewer.bonus += 1;
+      return c!.sponsor;
+    });
+  }
+  setPrizes(list: { short_label: string; full_label: string; win_label?: string; sponsor?: string; is_win?: boolean; weight?: number | string }[]) {
+    this.mutate((s) => {
+      if (!Array.isArray(list) || list.length !== 8) fail('need_8');
+      if (list.some((p) => !String(p.short_label ?? '').trim() || String(p.short_label).length > 16 || !String(p.full_label ?? '').trim())) fail('bad_prizes');
+      s.prizes = list.map((p) => ({
+        short: String(p.short_label).trim(), full: String(p.full_label).trim(),
+        win: String(p.win_label ?? '').trim() || String(p.full_label).trim(),
+        sponsor: String(p.sponsor ?? '').trim() || null, isWin: p.is_win !== false, weight: Math.max(0, Number(p.weight ?? 1) || 0),
+      }));
+    });
+  }
+  sponsorReport() {
+    const s = this.load();
+    const names = new Set<string>([
+      ...s.prizes.map((p) => p.sponsor), ...s.goals.map((g) => g.sponsor ?? null), s.timer.doubleSponsor, s.bingo.prizeSponsor ?? null, ...s.codes.map((c) => c.sponsor),
+    ].filter((x): x is string => !!x));
+    return {
+      peak_chatters: 4120, watch_hours: 38500, raised: s.stats.raised,
+      sponsors: [...names].sort().map((name) => {
+        const main = name === 'Zona IT';
+        return {
+          sponsor: name, clicks: main ? s.promo.clicks : 23, code_copies: main ? s.promo.copies : 0,
+          codes_shown: s.codes.filter((c) => c.sponsor === name).length,
+          code_claims: s.codes.filter((c) => c.sponsor === name).reduce((a, c) => a + c.claims, 0),
+          double_hours: main ? s.promo.doubleHours : 0, donated_in_hours: main ? s.promo.donatedInHours : 0, peak_in_hours: main ? 3870 : null,
+          wins: s.spins.filter((x) => s.prizes[x.prize]?.sponsor === name && s.prizes[x.prize]?.isWin).length,
+          milestones: s.goals.filter((g) => g.sponsor === name).length,
+          milestones_unlocked: s.goals.filter((g) => g.sponsor === name && s.stats.raised >= g.threshold).length,
+        };
+      }),
+    };
+  }
   endTimer() { this.mutate((s) => { s.timer.status = 'ended'; }); }
 
   openRound(challengeIds: number[], minutes: number) {
@@ -478,19 +552,26 @@ export class DemoBackend {
     return this.mutate((s) => {
       if (s.viewer.state === 'out') fail('not_logged_in');
       if (s.timer.status !== 'live') fail('wheel_closed');
-      if (s.viewer.state !== 'sub') fail('not_subscriber');
-      if ((s.viewer.day === today() ? s.viewer.watched : 0) < WHEEL_MINUTES) fail('not_enough_watch');
-      if (s.viewer.spunDay === today()) fail('already_spun');
-      const prize = Math.floor(Math.random() * 8);
-      s.viewer.spunDay = today();
+      const watched = s.viewer.day === today() ? s.viewer.watched : 0;
+      const dailyOk = s.viewer.state === 'sub' && watched >= WHEEL_MINUTES && s.viewer.spunDay !== today();
+      if (!dailyOk && s.viewer.bonus <= 0) {
+        if (s.viewer.state !== 'sub') fail('not_subscriber');
+        if (watched < WHEEL_MINUTES) fail('not_enough_watch');
+        fail('already_spun');
+      }
+      // Weighted, like the database.
+      const total = s.prizes.reduce((a, p) => a + p.weight, 0) || 1;
+      let pick = Math.random() * total, prize = 0;
+      for (let i = 0; i < s.prizes.length; i++) { if (pick < s.prizes[i].weight) { prize = i; break; } pick -= s.prizes[i].weight; }
+      if (dailyOk) s.viewer.spunDay = today(); else s.viewer.bonus -= 1;
       s.spins.push({ id: ++s.seq, user: s.viewer.name, prize, at: Date.now(), fulfilled: false });
-      return { prize, spinsLeft: 0 };
+      return { prize, spinsLeft: s.viewer.bonus };
     });
   }
 
   /** Milestone Maraton list from the moderator page (title + € amount). */
   setGoals(list: { title: string; threshold: number | string }[]) {
-    const goals = (Array.isArray(list) ? list : []).map((g) => ({ title: String(g.title ?? '').trim(), threshold: Number(g.threshold) }));
+    const goals = (Array.isArray(list) ? list : []).map((g) => ({ title: String(g.title ?? '').trim(), threshold: Number(g.threshold), sponsor: String((g as { sponsor?: string }).sponsor ?? '').trim() || null }));
     if (goals.length > 40 || goals.some((g) => !g.title || g.title.length > 140 || !Number.isInteger(g.threshold) || g.threshold <= 0)) fail('bad_goals');
     if (new Set(goals.map((g) => g.threshold)).size !== goals.length) fail('duplicate_amount');
     this.mutate((s) => { s.goals = goals.sort((a, b) => a.threshold - b.threshold); });
@@ -506,7 +587,8 @@ export class DemoBackend {
         const watched = s.viewer.day === today() ? s.viewer.watched : 0;
         const spunToday = s.viewer.spunDay === today();
         const ok = s.viewer.state === 'sub' && s.timer.status === 'live' && watched >= WHEEL_MINUTES && !spunToday;
-        return { spins: ok ? 1 : 0, watchedToday: watched, spunToday };
+        const bonus = s.viewer.state === 'out' ? 0 : s.viewer.bonus;
+        return { spins: (ok ? 1 : 0) + (s.timer.status === 'live' ? bonus : 0), watchedToday: watched, spunToday, bonusSpins: bonus };
       })(),
       bingoSaved: s.viewer.state === 'out' ? null : s.bingo.pick,
       myVote: r && s.myVotes[r.id] !== undefined ? String(s.myVotes[r.id]) : null,
@@ -564,12 +646,13 @@ export class DemoBackend {
         .map((c, i) => ({ n: i + 1, title: c.title, round: c.wonRound ?? 0, pct: c.wonPct ?? '—', when: c.scheduledFor ?? 'În curând' })),
       completed: s.challenges.filter((c) => c.status === 'done').sort((a, b) => (b.doneAt ?? 0) - (a.doneAt ?? 0)).slice(0, 10)
         .map((c) => ({ title: c.title, when: start && c.doneAt ? `ZIUA ${Math.max(1, Math.floor((c.doneAt - start) / DAY) + 1)}` : '', clip: c.clip })),
-      prizes: defaultPrizes,
-      losePrize: LOSE,
-      recentWins: [...s.spins].filter((x) => x.prize !== LOSE).sort((a, b) => b.at - a.at).slice(0, 4)
-        .map((x) => ({ user: x.user, prize: WIN_LABELS[x.prize], ago: ago(x.at, now) })),
+      prizes: s.prizes.map((p, i) => [p.short, p.full, prizeColors[i] ?? '#F2F5FA', p.sponsor] as Prize),
+      losePrize: s.prizes.findIndex((p) => !p.isWin),
+      recentWins: [...s.spins].filter((x) => s.prizes[x.prize]?.isWin).sort((a, b) => b.at - a.at).slice(0, 4)
+        .map((x) => ({ user: x.user, prize: s.prizes[x.prize]?.win ?? '', ago: ago(x.at, now), sponsor: s.prizes[x.prize]?.sponsor ?? null })),
+      doubleSponsor: s.timer.doubleSponsor,
       bingo: {
-        closesAt: s.bingo.closesAt, prize: s.bingo.prize,
+        closesAt: s.bingo.closesAt, prize: s.bingo.prize, prizeSponsor: s.bingo.prizeSponsor ?? null,
         players: s.bingo.others.length + (s.bingo.pick ? 1 : 0),
         items: s.bingo.items.map((it) => ({ ...it })),
       },
@@ -598,10 +681,14 @@ export class DemoBackend {
       pool: s.challenges.filter((c) => c.status === 'pool' && c.votable).map(toCh),
       scheduled: s.challenges.filter((c) => c.status === 'scheduled').map(toCh),
       suggestions: s.suggestions.filter((x) => x.status === 'pending').map((x) => ({ id: x.id, body: x.body, created_at: iso(x.at)!, viewers: { login: x.user, display_name: x.user } })),
-      prizes: s.spins.filter((x) => !x.fulfilled && x.prize !== LOSE).map((x) => ({ id: x.id, user_login: x.user, created_at: iso(x.at)!, prizes: { win_label: WIN_LABELS[x.prize], is_win: true } })),
+      prizes: s.spins.filter((x) => !x.fulfilled && s.prizes[x.prize]?.isWin).map((x) => ({ id: x.id, user_login: x.user, created_at: iso(x.at)!, prizes: { win_label: s.prizes[x.prize]?.win ?? '', is_win: true } })),
+      wheel: s.prizes.map((p) => ({ short_label: p.short, full_label: p.full, win_label: p.win, sponsor: p.sponsor, is_win: p.isWin, weight: p.weight })),
+      codes: s.codes.map((c) => ({ code: c.code, sponsor: c.sponsor, shown_at: iso(c.shownAt), expires_at: iso(c.expiresAt), claims: c.claims })),
+      overlayKey: 'demo',
+      report: this.sponsorReport(),
       mods: s.mods.map((login) => ({ login, display_name: login === 'icemanlucky' ? 'Icemanlucky' : null })),
       bingo: {
-        closes_at: iso(s.bingo.closesAt), prize: s.bingo.prize,
+        closes_at: iso(s.bingo.closesAt), prize: s.bingo.prize, prize_sponsor: s.bingo.prizeSponsor ?? null,
         items: s.bingo.items.map((it) => ({ id: it.id, label: it.label, happened_at: it.happened ? 'yes' : null })),
         status: {
           players: s.bingo.others.length + (s.bingo.pick ? 1 : 0),
@@ -620,7 +707,10 @@ export class DemoBackend {
       case 'mod_start_timer': return this.startTimer(Number(a.p_hours), ms(a.p_scheduled_end));
       case 'mod_add_time': return this.addTime(Number(a.p_minutes));
       case 'mod_freeze': return this.freeze(Number(a.p_minutes));
-      case 'mod_double_hour': return this.doubleHour(ms(a.p_from) ?? Date.now(), Number(a.p_minutes) || 60);
+      case 'mod_double_hour': return this.doubleHour(ms(a.p_from) ?? Date.now(), Number(a.p_minutes) || 60, a.p_sponsor ?? null);
+      case 'mod_set_prizes': return this.setPrizes(a.p_prizes);
+      case 'mod_code_show': return this.codeShow(a.p_sponsor ?? null, Number(a.p_minutes) || 10);
+      case 'mod_code_end': return this.codeEnd();
       case 'mod_end_timer': return this.endTimer();
       case 'mod_open_round': return this.openRound(a.p_challenges, Number(a.p_minutes) || 60);
       case 'mod_close_round': return this.closeRound(Number(a.p_round));
@@ -633,7 +723,7 @@ export class DemoBackend {
       case 'mod_unfreeze': return this.unfreeze();
       case 'mod_bingo_set_items': return this.setBingoItems(a.p_items);
       case 'mod_bingo_tick': return this.bingoTick(Number(a.p_id), !!a.p_happened);
-      case 'mod_bingo_settings': return this.bingoSettings(ms(a.p_closes_at), String(a.p_prize ?? ''));
+      case 'mod_bingo_settings': return this.bingoSettings(ms(a.p_closes_at), String(a.p_prize ?? ''), a.p_prize_sponsor ?? null);
       case 'mod_bingo_draw': return this.bingoDraw();
       default: return fail(`unknown_${fn}`);
     }

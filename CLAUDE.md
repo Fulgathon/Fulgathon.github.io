@@ -85,6 +85,7 @@ Build the static site so it matches the design, with every interaction working o
 - **Wheel:** subscribers only; 2 hours watched in the same day (chat presence, Romania calendar day) = 1 spin per day, until the end. Server enforced.
 - **Bingo (prediction game):** before the close (25 Dec 2026 12:00, editable on /mod) every viewer logged in with Twitch picks 5 events; picks are saved per viewer and can change until the close. Moderators tick events on /mod; everyone whose 5 all happened goes on the raffle list and a moderator draws the winner on /mod (recorded).
 - **Freeze 20–25 Dec:** the marathon starts 20 Dec, then Iceman freezes it (working week) with "Îngheață până la" on /mod; subs and donations still add time during the freeze.
+- **Sponsor promotion (23 Nov 2026):** sponsored Ora dublă, sponsors on prizes/milestones/bingo («de la …»), secret codes on stream for bonus spins, a quiet partner mention in the overlay every 10 min, and a per-sponsor report on /mod. Later: sponsor matching donations, sponsor segments, community goal with a sponsor prize pool. Never let donations buy raffle chances (gambling rules); keep draws free to enter.
 - **Sponsor placement:** main sponsor in the middle of the row under the timer (Strâns · Prezentat de · Următorul milestone).
 - **Donations:** TipeeeStream (account icemanlucky), in euros. Twitch never sees them; the `tipeee-donations` Edge Function polls TipeeeStream every 15 seconds.
 

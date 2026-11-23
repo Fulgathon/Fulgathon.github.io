@@ -72,6 +72,17 @@ const emoteStyle = 'flex: none; width: 44px; height: 54px; object-fit: contain';
         </div>
       </div>
 
+      <div style="margin-top: 16px; padding: 18px 20px; background: #0B1018; border: 1px dashed var(--ice)">
+        <h3 style={`margin: 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 24px; text-transform: uppercase`}>Ai un cod secret?</h3>
+        <p style="margin: 4px 0 0; font-size: 15px; color: #AEB8C7">Din când în când apare pe stream un cod de la partenerii noștri, câteva minute. Scrie-l aici și primești o <strong style="color: #F2F5FA">rotire bonus</strong>, chiar dacă nu ești abonat.</p>
+        <div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px">
+          <label class="sr-only" for="secret-code">Codul secret de pe stream</label>
+          <input id="secret-code" class="field" data-input="codeInput" maxlength="16" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ex: EBX-3GY" style={`flex: 1 1 160px; min-width: 0; padding: 0 14px; font-family: ${cond}; font-weight: 800; font-size: 22px; letter-spacing: .08em; text-transform: uppercase`} />
+          <button type="button" class="btn-primary" data-action="claimCode" style={`min-height: 50px; padding: 0 20px; font-family: ${cond}; font-weight: 800; font-size: 19px; text-transform: uppercase`}>Revendică</button>
+        </div>
+        <p {...iff('hasBonus')} data-text="bonusText" style="margin: 10px 0 0; font-size: 15px; font-weight: 700; color: var(--ice)">{v.bonusText}</p>
+      </div>
+
       <h3 style={`margin: 28px 0 0; font-family: ${cond}; font-weight: 800; font-size: 20px; text-transform: uppercase; color: #AEB8C7`}>Ultimele premii</h3>
       <ul data-region="recentWins" style="list-style: none; margin: 8px 0 0; padding: 0; font-size: 15px" set:html={views.recentWins(v)} />
     </div>

@@ -56,6 +56,12 @@ Tables: `timer`, `stats`, `rates`, `events`, `goals`, `viewers`, `watch_time`,
 | `bingo_stats()` | anyone | Number of bingo players. |
 | `mod_bingo_set_items` · `mod_bingo_tick` · `mod_bingo_settings` · `mod_bingo_status` · `mod_bingo_draw` | moderators | Edit events, tick what happened, close date + prize, raffle list, draw a winner (stored in `bingo_draws`). |
 | `mod_freeze_until(until)` · `mod_unfreeze()` | moderators | Freeze the clock until a date / resume now. |
+| `mod_set_prizes(prizes jsonb)` | moderators | The 8 wheel slices (labels, sponsor, win, weight). |
+| `mod_code_show(sponsor, minutes)` · `mod_code_end()` · `mod_codes()` · `mod_overlay_key()` | moderators | Secret codes on stream; the overlay key lives in Vault (`overlay_key`). |
+| `overlay_code(key)` | anyone with the key | The code on screen now (OBS overlay). |
+| `claim_code(code)` | logged in | +1 bonus spin; wrong/repeat → `{error}`; 6 tries per minute. |
+| `track_sponsor(sponsor, kind)` | anyone | Counts a sponsor click / code copy per day (no personal data). |
+| `mod_sponsor_report()` | moderators | Per sponsor: clicks, copies, codes, claims, double hours (donations, peak chatters), wins, milestones. |
 | `spin()` | logged in | The server picks the prize; the browser only animates to it. |
 
 Tested on the live project inside rolled-back transactions: time and doubling

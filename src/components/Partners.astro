@@ -24,13 +24,13 @@ const corners = ['c-tl', 'c-tr', 'c-bl', 'c-br'];
       <h3 style={`margin: 16px 0 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: clamp(34px, 4cqi, 52px); line-height: 0.95; text-transform: uppercase`}>{site.sponsor.name}</h3>
       <p style="margin: 12px 0 0; max-width: 520px; font-size: 17px; color: #AEB8C7">{site.sponsor.pitch}</p>
       <div style="margin-top: 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
-        <button type="button" data-action="copyCode" aria-label="Copiază codul de reducere" style="min-height: 52px; display: inline-flex; align-items: center; gap: 14px; padding: 0 16px; background: transparent; border: 2px dashed var(--ice); color: #F2F5FA">
+        <button type="button" data-action="copyCode" data-track={`${site.sponsor.name}|code_copy`} aria-label="Copiază codul de reducere" style="min-height: 52px; display: inline-flex; align-items: center; gap: 14px; padding: 0 16px; background: transparent; border: 2px dashed var(--ice); color: #F2F5FA">
           <span style="font-size: 13px; color: #8C97A8">Cod</span>
           <span style={`font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 24px; letter-spacing: 0.04em`}>{site.sponsor.code}</span>
           <span data-text="codeLabel" style={`font-family: ${cond}; font-weight: 800; font-size: 15px; text-transform: uppercase; color: var(--ice)`}>{v.codeLabel}</span>
         </button>
         <span class="sr-only" role="status" data-text="codeStatus"></span>
-        <a class="btn-primary" href={site.sponsor.offerUrl} style={`min-height: 52px; display: inline-flex; align-items: center; padding: 0 24px; font-family: ${cond}; font-weight: 800; font-size: 20px; text-transform: uppercase; text-decoration: none`}>Vezi oferta →</a>
+        <a class="btn-primary" href={site.sponsor.offerUrl} data-track={`${site.sponsor.name}|click`} style={`min-height: 52px; display: inline-flex; align-items: center; padding: 0 24px; font-family: ${cond}; font-weight: 800; font-size: 20px; text-transform: uppercase; text-decoration: none`}>Vezi oferta →</a>
       </div>
     </div>
   </div>
@@ -39,7 +39,7 @@ const corners = ['c-tl', 'c-tr', 'c-bl', 'c-br'];
   <h3 style={`margin: 48px 0 0; ${h3}`}>Parteneri</h3>
   <div style="margin-top: 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 12px">
     {partners.map((pt) => (
-      <a class="ptile" href={pt.href} style="display: flex; flex-direction: column; gap: 14px; padding: 20px; background: #0B1018; border: 1px solid #1C2230; text-decoration: none; color: #F2F5FA">
+      <a class="ptile" href={pt.href} data-track={`${pt.name}|click`} style="display: flex; flex-direction: column; gap: 14px; padding: 20px; background: #0B1018; border: 1px solid #1C2230; text-decoration: none; color: #F2F5FA">
         <span class="logo-slot" style="width: 100%; height: 96px; font-size: 12px">Logo</span>
         <span style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px">
           <span style="font-weight: 700; font-size: 17px">{pt.name}</span>

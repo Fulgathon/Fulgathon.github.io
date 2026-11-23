@@ -22,6 +22,9 @@ export interface State {
   spins: number;
   watchedToday: number;
   spunToday: boolean;
+  /** Bonus spins from secret codes (already counted in `spins`), and the code being typed. */
+  bonusSpins: number;
+  codeInput: string;
   menu: boolean;
   tab: BoardTab;
   voteTab: VoteTab;
@@ -49,6 +52,8 @@ export function initialState(): State {
     spins: 0,
     watchedToday: 0,
     spunToday: false,
+    bonusSpins: 0,
+    codeInput: '',
     menu: false,
     tab: 'donations',
     voteTab: 'open',
@@ -91,9 +96,10 @@ export function derive(s: State, d: SiteData) {
   // "Ora dublă": running now, or the next scheduled one.
   const doubleNow = d.doubleFrom !== null && d.doubleUntil !== null && s.now >= d.doubleFrom && s.now < d.doubleUntil;
   const doubleSoon = d.doubleFrom !== null && d.doubleFrom > s.now;
+  const doubleBy = d.doubleSponsor ? ` Oferită de ${d.doubleSponsor}.` : '';
   const doubleText = doubleNow
-    ? `acum, până la ${timeRo(d.doubleUntil!)}. Tot timpul adăugat valorează dublu.`
-    : doubleSoon ? `${dayRo(d.doubleFrom!, s.now)} la ${timeRo(d.doubleFrom!)}. Tot timpul adăugat valorează dublu.` : '';
+    ? `acum, până la ${timeRo(d.doubleUntil!)}. Tot timpul adăugat valorează dublu.${doubleBy}`
+    : doubleSoon ? `${dayRo(d.doubleFrom!, s.now)} la ${timeRo(d.doubleFrom!)}. Tot timpul adăugat valorează dublu.${doubleBy}` : '';
 
   const startText = d.startsAt !== null ? dateRo(d.startsAt) : '[DATA DE START]';
   const endDateText = d.scheduledEnd !== null ? dateRo(d.scheduledEnd) : site.endDate;
@@ -116,7 +122,7 @@ export function derive(s: State, d: SiteData) {
     const prev = i === 0 ? 0 : marks[i - 1];
     const pct = Math.max(0, Math.min(100, Math.round(((raised - prev) / (t - prev)) * 100))) + '%';
     return {
-      no: pad(i + 1), threshold: fmtInt(t) + ' €', title: g.title,
+      no: pad(i + 1), threshold: fmtInt(t) + ' €', title: g.title, sponsor: g.sponsor ?? '',
       done, current, locked: !done && !current, pct,
       numColor: done ? 'var(--ice)' : current ? '#FFFFFF' : '#2A3445',
       titleColor: done ? '#AEB8C7' : current ? '#F2F5FA' : '#8C97A8',
@@ -254,7 +260,7 @@ export function derive(s: State, d: SiteData) {
   const hits = !bingoOpen && saved ? saved.filter((id) => B.items.find((it) => it.id === id)?.happened).length : 0;
   const isBingo = !bingoOpen && saved !== null && hits === 5;
   const closeText = B.closesAt !== null ? `${dateRo(B.closesAt)}, la ${timeRo(B.closesAt)}` : '';
-  const prize = B.prize && !B.prize.startsWith('[') ? B.prize : 'premiul cel mare';
+  const prize = (B.prize && !B.prize.startsWith('[') ? B.prize : 'premiul cel mare') + (B.prizeSponsor ? ` de la ${B.prizeSponsor}` : '');
   const bingoStatus = bingoOpen
     ? (closeText ? `Alegerile se închid pe ${closeText}.` : 'Alegerile sunt deschise.')
     : 'Alegerile s-au închis. Moderatorii bifează pe parcurs ce se întâmplă pe stream.';
@@ -280,7 +286,7 @@ export function derive(s: State, d: SiteData) {
     liveBg: live ? '#D5162B' : '#2A3445',
     timerLabel: live ? 'Timp rămas' : upcoming ? 'Începe în' : 'Subathonul s-a încheiat',
     endDateText,
-    hasDouble: doubleNow || doubleSoon, doubleText,
+    hasDouble: doubleNow || doubleSoon, doubleText, doubleNow, doubleSponsor: d.doubleSponsor ?? '',
     isFrozen: live && d.pausedUntil !== null && d.pausedUntil > s.now,
     frozenText: live && d.pausedUntil !== null && d.pausedUntil > s.now
       ? `până pe ${dateRo(d.pausedUntil)}, la ${timeRo(d.pausedUntil)}. Subs și donațiile adaugă timp în continuare.` : '',
@@ -309,9 +315,13 @@ export function derive(s: State, d: SiteData) {
     prizes, wheelTransform: `rotate(${s.wheelDeg}deg)`, spinning, flakes,
     flakesLabel,
     flakesNote,
-    spinsText: !isSub ? 'Doar pentru abonați' : spins > 0 ? 'Ai 1 rotire azi' : s.spunToday ? 'Ai învârtit azi' : `Azi: ${watched} / ${NEED} min`,
+    spinsText: spins > 1 ? `Ai ${spins} rotiri` : spins === 1 ? (s.bonusSpins > 0 ? 'Ai 1 rotire bonus' : 'Ai 1 rotire azi')
+      : !isSub ? 'Doar pentru abonați' : s.spunToday ? 'Ai învârtit azi' : `Azi: ${watched} / ${NEED} min`,
     spinLabel: isOut ? 'Conectează-te ca să învârți' : spinning ? 'Se învârte…' : spins > 0 ? 'Învârte roata'
       : !isSub ? 'Doar pentru abonați' : s.spunToday ? 'Revino mâine' : 'Mai stai puțin!',
+    bonusText: s.bonusSpins > 0 ? `Ai ${s.bonusSpins === 1 ? '1 rotire bonus' : s.bonusSpins + ' rotiri bonus'} din coduri secrete.` : '',
+    hasBonus: s.bonusSpins > 0,
+    codeLen: s.codeInput.replace(/[^A-Za-z0-9]/g, '').length,
     spinClass: isOut ? 'btn-twitch' : spins > 0 || spinning ? 'btn-red' : 'btn-ghost',
     hasResult,
     resultTitle: hasResult && res !== null ? (isLose ? 'Data viitoare!' : 'Ai câștigat: ' + (d.prizes[res]?.[1] ?? '')) : '',
