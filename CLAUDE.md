@@ -88,6 +88,12 @@ Build the static site so it matches the design, with every interaction working o
 - **Sponsor promotion (23 Nov 2026):** sponsored Ora dublă, sponsors on prizes/milestones/bingo («de la …»), secret codes on stream for bonus spins, a quiet partner mention in the overlay every 10 min, and a per-sponsor report on /mod. Later: sponsor matching donations, sponsor segments, community goal with a sponsor prize pool. Never let donations buy raffle chances (gambling rules); keep draws free to enter.
 - **Sponsor placement:** main sponsor in the middle of the row under the timer (Strâns · Prezentat de · Următorul milestone).
 - **Donations:** TipeeeStream (account icemanlucky), in euros. Twitch never sees them; the `tipeee-donations` Edge Function polls TipeeeStream every 15 seconds.
+- **Length (24 Nov 2026):** 22 days planned, 20 Dec 2026 → 10 Jan 2027, but it must stay flexible: the timer decides, and Iceman or the mods freeze it on demand from /mod.
+- **Scale:** at the last subathon Iceman had about 46,800 unique viewers and around 500 concurrent on Twitch alone. Multistreaming would make it bigger.
+- **Plans:** Supabase stays on Free for testing. Iceman agreed to **Supabase Pro** for the event, so upgrade before 20 Dec. Cloudflare stays on Free: static assets are free and unlimited.
+- **Legends:** a live top 3–5 per category (donors in €, gifted subs), with cumulative totals. Whoever has given the most so far holds the spot until someone passes them. A viewer who gives €25 today and €50 tomorrow has €75.
+- **Public names:** shown by default (people already show them on Twitch). Viewers can still hide their own name, and moderators can hide one.
+- **Channel points:** Iceman is a Twitch Partner, so channel points and custom rewards are available.
 
 ## Open (ask, don't guess)
 
