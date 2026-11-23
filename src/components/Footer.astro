@@ -7,7 +7,9 @@ const socials: [string, string][] = [
   ['YouTube', site.links.youtube],
   ['TikTok', site.links.tiktok],
   ['Instagram', site.links.instagram],
-];
+].filter(([, href]) => href && href !== '#') as [string, string][];
+// Until the owner sends a contact email, sponsors are sent to the deck instead of a [placeholder] address.
+const partnerHref = site.contactEmail.startsWith('[') ? '/sponsori/' : `mailto:${site.contactEmail}`;
 ---
 <footer style="position: relative; z-index: 1; border-top: 1px solid #1C2230">
   <div class="wrap" style="padding-top: 24px; padding-bottom: 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 32px; font-size: 14px; color: #8C97A8">
@@ -15,6 +17,6 @@ const socials: [string, string][] = [
       <strong style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 20px; color: #F2F5FA">ICEMARATON</strong>
       {socials.map(([label, href]) => <a href={href} style="min-height: 44px; display: inline-flex; align-items: center; color: #AEB8C7">{label}</a>)}
     </p>
-    <p style="margin: 0">Vrei să fii partener? <a href={`mailto:${site.contactEmail}`} style="font-weight: 600">Scrie-ne</a></p>
+    <p style="margin: 0">Vrei să fii partener? <a href={partnerHref} style="min-height: 44px; display: inline-flex; align-items: center; font-weight: 600">{partnerHref.startsWith('mailto') ? 'Scrie-ne' : 'Vezi oferta pentru parteneri →'}</a></p>
   </div>
 </footer>
