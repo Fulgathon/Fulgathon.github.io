@@ -54,8 +54,8 @@ Severity: **Critical** = money, data loss, auth bypass or the site down for ever
 | B-28 | Low | A 140-character suggestion cut in the middle of an emoji can be refused | Open |
 | B-29 | Low | /mod has no `<h1>` before login | Open |
 | B-30 | Low | Any moderator can remove any other moderator, including Iceman | Owner decision |
-| B-31 | Medium | Before the start, «Cât adaugi tu?» promises «+30 min» but the server adds no time until the timer is live | Owner decision (found in the UX audit) |
-| B-32 | Low | Community-goal hours not yet reached are #4A5568 on #090C11 (2.6:1, below 4.5:1) | Open (found in the UX audit) |
+| B-31 | Medium | Before the start, «Cât adaugi tu?» promises «+30 min» but the server adds no time until the timer is live | Fixed (option a, wording): outside LIVE the calculator says time is added from the start |
+| B-32 | Low | Community-goal hours not yet reached are #4A5568 on #090C11 (2.6:1, below 4.5:1) | Fixed: now #8C97A8 (6.6:1) |
 
 Nothing is pushed or deployed. The site fixes go live with `npm run deploy`; the database fixes need the migration applied.
 

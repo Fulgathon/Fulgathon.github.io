@@ -399,6 +399,11 @@ export function derive(s: State, d: SiteData) {
   const calcSec = calcOptions[calcI].seconds * (doubleNow ? 2 : 1);
   const rClock = (x: number) => `${Math.floor(x / 86400)}z ${pad(Math.floor((x % 86400) / 3600))}:${pad(Math.floor((x % 3600) / 60))}:${pad(x % 60)}`;
   const calcAtOn = live && r !== null;
+  // B-31 / V3 (a): the server adds time only while the timer is live, so outside it the calculator
+  // says so instead of implying the time is added now.
+  const calcNote = loading || live ? ''
+    : upcoming ? `Timpul se adaugă de la start${d.startsAt !== null ? `, pe ${dateRo(d.startsAt)}, la ${timeRo(d.startsAt)}` : ''}. Până atunci, donațiile se adună la Strâns și la milestone-uri.`
+    : 'Subathonul s-a încheiat: nu se mai adaugă timp.';
 
   // ---- Badges (the viewer's six, in order of difficulty) ----
   const held = new Set(s.loyalty?.badges ?? []);
@@ -621,6 +626,8 @@ export function derive(s: State, d: SiteData) {
     calcOpts: calcOptions.map((o, i) => ({ i, label: o.label, on: i === calcI })),
     calcAdd: words(calcSec), calcFun: calcOptions[calcI].fun, calcAt: calcAtOn ? rClock(r! + calcSec) : '', calcAtOn,
     calcDouble: doubleNow,
+    calcNote, hasCalcNote: calcNote !== '',
+    calcSub: live || loading ? 'Alege și vezi unde ajunge timerul.' : upcoming ? 'Alege și vezi cât adaugă după start.' : 'Alege și vezi cât adaugă.',
     myBadges, myBadgesCount: `${myBadges.filter((b) => b.earned).length} din ${myBadges.length}`,
     tipOn: tip !== null, tipLabel: tip ? `${tip.label.toUpperCase()}${tip.earned ? ' · câștigată' : ` · ${tip.note}`}` : '',
     tipHow: tip?.how ?? '', tipWho: tip?.who ?? '',

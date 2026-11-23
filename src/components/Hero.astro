@@ -70,13 +70,14 @@ const FLAKE = 'M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 4l3 2 3-2M9 20l3-2 3 2';
       <div class="st-calc">
         <div class="calc-card">
           <p style={`margin: 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: clamp(24px, 2cqi, 26px); line-height: 1; text-transform: uppercase`} id="calc-title">Cât adaugi tu?</p>
-          <p style="margin: 4px 0 0; font-size: 13px; color: #8C97A8">Alege și vezi unde ajunge timerul.</p>
+          <p data-text="calcSub" style="margin: 4px 0 0; font-size: 13px; color: #8C97A8">{v.calcSub}</p>
           <div class="calc-grid" role="radiogroup" aria-labelledby="calc-title" data-region="calcOpts" set:html={views.calcOpts(v)} />
           <div class="calc-row" aria-live="polite">
             <p class="calc-add" data-text="calcAdd">{v.calcAdd}</p>
             <p {...iff('calcAtOn')} style="margin: 4px 0 0; font-size: 13px; color: #AEB8C7">Timerul ar sări la <strong data-text="calcAt" style={`color: #F2F5FA; font-family: ${cond}; font-size: 16px`}>{v.calcAt}</strong></p>
           </div>
           <p style={`margin: 4px 0 0; font-family: ${cond}; font-weight: 800; font-style: italic; font-size: 18px; color: #F2F5FA`}>≈ <span data-text="calcFun">{v.calcFun}</span></p>
+          <p {...iff('hasCalcNote')} data-text="calcNote" style="margin: 10px 0 0; padding: 8px 10px; border-left: 2px solid var(--ice); background: rgba(63, 208, 255, 0.06); font-size: 13px; line-height: 1.4; color: #C9D2DF">{v.calcNote}</p>
           <p {...iff('calcDouble')} style="margin: 4px 0 0; font-size: 13px; font-weight: 700; color: var(--ice)">Ora dublă: acum valorează ×2.</p>
           {hasDonate && <a class="btn-primary" href={site.links.donate} style={`margin-top: 12px; min-height: 46px; display: flex; align-items: center; justify-content: center; text-decoration: none; font-family: ${cond}; font-weight: 800; font-size: 20px; text-transform: uppercase`}>Donează</a>}
         </div>

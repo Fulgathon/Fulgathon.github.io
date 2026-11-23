@@ -216,7 +216,7 @@ const badge = (label: string) =>
 function together(v: Vals): string {
   return v.togetherGoals
     .map((g) => `<li style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #1A2230">
-<span style="flex: none; width: 64px; font-family: ${COND}; font-weight: 800; font-size: 18px; color: ${g.done ? 'var(--ice)' : g.current ? '#FFFFFF' : '#4A5568'}">${esc(g.hours)}</span>
+<span style="flex: none; width: 64px; font-family: ${COND}; font-weight: 800; font-size: 18px; color: ${g.done ? 'var(--ice)' : g.current ? '#FFFFFF' : '#8C97A8'}">${esc(g.hours)}</span>
 <span style="flex: 1 1 auto; min-width: 0; font-weight: 600; color: ${g.done ? '#8C97A8' : '#F2F5FA'}; text-decoration: ${g.done ? 'line-through' : 'none'}; text-decoration-color: var(--ice)">${esc(g.title)}</span>
 ${g.done ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="flex: none; color: var(--ice)" stroke-width="3" stroke-linecap="square" aria-label="Deblocat" role="img"><path d="M4 12l5 5L20 6"></path></svg>' : g.current ? `<span style="flex: none; padding: 1px 8px; transform: skewX(-12deg); background: var(--ice); color: #04101A; font-family: ${COND}; font-size: 13px; font-weight: 800; letter-spacing: 0.06em">URMEAZĂ</span>` : ''}
 </li>`)
