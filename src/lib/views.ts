@@ -243,6 +243,16 @@ function heroRecent(v: Vals): string {
 <strong>${esc(e.time)}</strong><span><strong>${esc(e.user)}</strong> <span style="color: #AEB8C7">${esc(e.what)}</span></span></div>`).join('');
 }
 
+/** «Ce poți face acum»: one tile per thing the viewer can do now (links to the section, or the login button). */
+function nextRow(v: Vals): string {
+  return v.nextTiles.map((t) => {
+    const inner = `<b>${esc(t.title)}</b><span>${esc(t.text)}</span>`;
+    return t.action
+      ? `<button type="button" class="nr-tile nr-login" data-action="${esc(t.action)}" data-key="nr-${esc(t.key)}">${inner}</button>`
+      : `<a class="nr-tile" href="${esc(t.href)}" data-key="nr-${esc(t.key)}">${inner}</a>`;
+  }).join('');
+}
+
 function calcOpts(v: Vals): string {
   return v.calcOpts.map((o) => `<button type="button" class="calc${o.on ? ' on' : ''}" role="radio" aria-checked="${o.on}" tabindex="${o.on ? 0 : -1}" data-action="calcPick" data-arg="${o.i}" data-key="calc-${o.i}">${esc(o.label)}</button>`).join('');
 }
@@ -456,6 +466,7 @@ export const views = {
   together,
   mine,
   heroRecent,
+  nextRow,
   calcOpts,
   myBadges,
   track,

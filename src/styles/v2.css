@@ -108,6 +108,16 @@
 .cta-row .btn-primary { font-size: 24px; }
 .cta-row .btn-ghost { font-size: 22px; }
 .cta-row a { white-space: nowrap; }
+/* «Ce poți face acum» (V5) */
+.next-row { margin-top: 12px; }
+.nr-t { margin: 0 0 6px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: #8C97A8; }
+.nr-tiles { display: flex; gap: 8px; }
+.nr-tile { flex: 1 1 0; min-width: 0; min-height: 52px; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 1px; padding: 6px 14px; background: #090C11; border: 1px solid #1C2230; border-left: 3px solid var(--ice); color: #F2F5FA; font: inherit; text-align: left; text-decoration: none; cursor: pointer; transition: border-color var(--m-fast) var(--m-ease); }
+.nr-tile:hover, .nr-tile:focus-visible { border-color: var(--ice); }
+.nr-tile.nr-login { border-left-color: #9146FF; }
+.nr-tile.nr-login:hover, .nr-tile.nr-login:focus-visible { border-color: #9146FF; }
+.nr-tile b { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 18px; line-height: 1.1; text-transform: uppercase; letter-spacing: 0.02em; }
+.nr-tile span { font-size: 13px; line-height: 1.3; color: #AEB8C7; }
 
 @keyframes evIn { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: none; } }
 @keyframes popA { 0% { opacity: 0; transform: translateY(18px) scale(.9); } 18% { opacity: 1; transform: none; } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-22px); } }
@@ -388,6 +398,10 @@ a.ad-past:hover { border-color: var(--ice); }
   .rates-hint { display: block; }
   .calc-card { padding: 16px; }
   .cta-row { gap: 8px; }
+  .nr-tiles { gap: 6px; }
+  .nr-tile { padding: 6px 8px; border-left-width: 2px; }
+  .nr-tile b { font-size: 15px; }
+  .nr-tile span { font-size: 12px; }
   .cta-row .btn-primary, .cta-row .btn-ghost { font-size: 20px; padding: 0 8px; }
   .calc-add { font-size: 38px; }
   .band { grid-template-columns: minmax(0, 1fr); }

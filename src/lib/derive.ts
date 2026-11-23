@@ -472,6 +472,42 @@ export function derive(s: State, d: SiteData) {
   });
   const dayFrom = Math.min(Math.max(0, todayN - 4), ADVENT_DAYS - 8);
 
+  // «Ce poți face acum» (DESIGN.md §4, V5): up to three things this viewer can do right now,
+  // built only from what the page already knows. Only while live; nothing invented, no urgency.
+  type NextTile = { key: string; title: string; text: string; href?: string; action?: string };
+  const bingoDate = B.closesAt !== null ? dateRo(B.closesAt) : '';
+  const bingoTile: NextTile = {
+    key: 'bingo', href: '#bingo', title: 'Bingo',
+    text: bingoOpen
+      ? (isSub || isNonsub) && saved !== null
+        ? (bingoDate ? `Linia ta e salvată · o poți schimba până pe ${bingoDate}` : 'Linia ta e salvată')
+        : (bingoDate ? `Alege-ți linia până pe ${bingoDate}` : 'Alege-ți linia')
+      : saved !== null && !isOut ? `${hits} / 5 întâmplate` : 'Alegerile s-au închis',
+  };
+  const voteText = !round ? '' : roundOpen
+    ? (myVote ? `Runda ${round.number} · ai votat · se închide în ${roundLeft}` : `Runda ${round.number} · se închide în ${roundLeft}`)
+    : `Runda ${round.number} s-a închis · urmează una nouă`;
+  const nextTiles: NextTile[] = !live || loading ? [] : isOut
+    ? [
+        { key: 'login', action: 'login', title: 'Conectează-te cu Twitch', text: 'Pentru bingo, vot, roată și contribuția ta' },
+        bingoTile,
+        ...(round ? [{ key: 'vote', href: '#vote', title: 'Votul abonaților', text: voteText }] : []),
+      ]
+    : isNonsub
+    ? [
+        bingoTile,
+        { key: 'code', href: '#secret-code', title: 'Cod secret', text: 'Îți dă o rotire bonus, chiar fără sub' },
+        { key: 'vote', href: '#vote', title: 'Votul abonaților', text: round && roundOpen ? `Cu un sub votezi și tu · runda ${round.number}` : 'Cu un sub votezi și tu' },
+      ]
+    : [
+        { key: 'wheel', href: '#roata', title: 'Roata lui Lucky',
+          text: spins > 1 ? `Ai ${spins} rotiri` : spins === 1 ? 'Ai 1 rotire'
+            : s.spunToday ? 'Ai învârtit azi · revino mâine'
+            : `Mai ai ${count(NEED - watched, 'minut', 'minute')} de privit până la rotire` },
+        ...(round ? [{ key: 'vote', href: '#vote', title: 'Votul abonaților', text: voteText }] : []),
+        bingoTile,
+      ];
+
   const sug = s.suggestion;
 
   return {
@@ -498,6 +534,7 @@ export function derive(s: State, d: SiteData) {
     boardEmpty: board.length === 0,
 
     isOut, isNonsub, isSub, isIn: !isOut,
+    nextOn: nextTiles.length > 0, nextTiles,
     viewerName: s.viewerName,
     viewerInitial: (s.viewerName.charAt(0) || 'V').toUpperCase(),
     chipLabel: `Conectat ca ${s.viewerName}. Deconectează-te`,
