@@ -12,3 +12,7 @@ revoke select on public.spins from anon;
 
 -- 2. Realtime only for what /mod still listens to (the public page polls).
 alter publication supabase_realtime drop table public.events, public.goals, public.bingo_items, public.bingo_settings;
+
+-- 3. The old leaderboard views (owner-rights views, flagged by the Supabase
+--    advisor) are no longer read: the page gets boards from public_state.
+drop view if exists public.leaderboard_donations, public.leaderboard_gifts, public.leaderboard_bits, public.leaderboard_hours;
