@@ -404,7 +404,8 @@ export function derive(s: State, d: SiteData) {
     if (n === undefined) return '';
     return n === 0 ? 'Încă n-o are nimeni din chat' : n === 1 ? 'O are 1 om din chat' : `O au ${count(n, 'om', 'oameni')} din chat`;
   };
-  const tierNames = { bronze: 'bronz · ușor', silver: 'argint · mediu', gold: 'aur · greu', plat: 'platină · foarte greu', prism: 'prismă · legendar' };
+  // Tier only (owner, 23 Nov): gamers read the tier, no «ușor / greu» needed.
+  const tierNames = { bronze: 'bronz', silver: 'argint', gold: 'aur', plat: 'platină', prism: 'legendar' };
   const myBadges = badgeDefs.map((b) => ({ ...b, earned: held.has(b.id),
     note: held.has(b.id) ? 'câștigată' : isOut ? tierNames[b.tier] : progressFor(b.id), who: whoHas(b.id), open: s.badgeTip === b.id }));
   const tip = s.badgeTip ? myBadges.find((b) => b.id === s.badgeTip) ?? null : null;
