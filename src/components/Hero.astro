@@ -33,7 +33,7 @@ const FLAKE = 'M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 4l3 2 3-2M9 20l3-2 3 2';
 
       <!-- Middle: Iceman reacts -->
       <div class="st-mascot">
-        <Image class="mascot fx-hop" data-toggle="fxA:fxA;fxB:fxB" src={logo} alt="Icemanlucky" widths={[300, 420, 520, 780, 1040]} sizes="(max-width: 760px) 74vw, 520px" quality={72} loading="eager" fetchpriority="high" />
+        <Image class="mascot fx-hop" data-toggle="fxA:fxA;fxB:fxB" src={logo} alt="Icemanlucky" widths={[300, 420, 520, 780, 1040, 1200]} sizes="(min-width: 3400px) 1040px, (min-width: 2400px) 694px, (max-width: 760px) 74vw, 520px" quality={72} loading="eager" fetchpriority="high" />
         <div class="bubble fx-bub" role="status" {...iff('bubbleOn')} data-toggle="fxA:fxA;fxB:fxB">
           <span class="bubble-who" data-text="bubbleWho">{v.bubbleWho}</span><span data-text="bubbleText">{v.bubbleText}</span>
           <span class="bubble-tail" aria-hidden="true"></span>

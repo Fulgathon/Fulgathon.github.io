@@ -454,3 +454,9 @@ a.ad-past:hover { border-color: var(--ice); }
   .timer-card { background-color: rgba(9, 12, 17, 0.55); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
   .calc-card { -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
 }
+
+/* Big screens at 100% scaling (1440p and 4K monitors): scale the whole page so it keeps
+   the 1920 px proportions instead of shrinking to a small column in the middle.
+   1920 and below are untouched. This sheet is only on the public page (not /mod or the overlay). */
+@media (min-width: 2400px) { html { zoom: 1.3333; } }
+@media (min-width: 3400px) { html { zoom: 2; } }

@@ -61,7 +61,7 @@ Build the static site so it matches the design, with every interaction working o
 2. Build the page section by section in the order of `docs/design-spec.md`.
 3. Make the interactive parts work client-side: live countdown, mobile menu, viewer-state switch (logged out / not subscribed / subscriber), vote with "move vote", spin wheel, bingo, suggestion form, toasts, leaderboard tabs, copy-code button.
 4. Keep the sample data in one module (for example `src/data/sample.ts`) so phase 2 can swap it for live data.
-5. Before calling it done: check it at 390, 768, 1280 and 1440 px wide; the navbar must stay on one row; check `prefers-reduced-motion`; run a Lighthouse pass for accessibility and performance.
+5. Before calling it done: check it at 390, 768, 1280, 1440, 1920 (full HD), 2560 (2K) and 3840 (4K) px wide (above 2400 px the public page scales itself up with `zoom`, see the end of `src/styles/v2.css`); the navbar must stay on one row; check `prefers-reduced-motion`; run a Lighthouse pass for accessibility and performance.
 
 **Phase 2: Twitch connection.** Real timer, subs, goals, leaderboard, live status, login with Twitch, subscriber-only voting, watch-time spins, sponsors from config. See `docs/twitch-integration.md`.
 
