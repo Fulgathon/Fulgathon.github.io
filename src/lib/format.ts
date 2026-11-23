@@ -62,3 +62,16 @@ export function cleanTitle(t: string | null): string {
   const out = parts[0] ?? '';
   return out.length > 90 ? out.slice(0, 88).trimEnd() + '…' : out;
 }
+
+/**
+ * A link from the database (clip URLs typed on /mod) made safe for href:
+ * only http(s) addresses, same-site paths and "#" pass; anything else
+ * (javascript:, data:, vbscript:, //evil) becomes null, so no link is drawn.
+ */
+export function safeUrl(u: string | null | undefined): string | null {
+  if (!u) return null;
+  const s = String(u).trim();
+  if (s === '#') return s;
+  if (s.startsWith('/') && !s.startsWith('//') && !s.startsWith('/\\')) return s;
+  return /^https?:\/\/[^\s]/i.test(s) && !/[\u0000-\u001f]/.test(s) ? s : null;
+}

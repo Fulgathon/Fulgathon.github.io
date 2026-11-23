@@ -6,6 +6,7 @@
 // come from Twitch and the backend.
 
 import type { Vals } from './derive';
+import { safeUrl } from './format';
 import { badgeDefs, badgeIcons, PRISM, rankColors, tierColors } from '../data/content';
 
 export function esc(v: unknown): string {
@@ -174,7 +175,7 @@ function completed(v: Vals): string {
       (d) => `<li style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 24px; padding: 20px 16px; border-bottom: 1px solid #1A2230">
 <span style="flex: none; padding: 1px 8px; transform: skewX(-12deg); background: #1A2230; color: #AEB8C7; font-family: ${COND}; font-weight: 800; font-size: 14px; letter-spacing: 0.06em">${esc(d.when)}</span>
 <span style="flex: 1 1 240px; min-width: 0; font-weight: 700; font-size: 18px; text-decoration: line-through; text-decoration-color: var(--ice); text-decoration-thickness: 2px">${esc(d.title)}</span>
-${d.clip ? `<a href="${esc(d.clip)}" aria-label="Vezi clipul: ${esc(d.title)}" style="flex: none; min-height: 44px; display: inline-flex; align-items: center; gap: 8px; font-family: ${COND}; font-weight: 800; font-size: 18px; text-transform: uppercase; text-decoration: none">Vezi clipul →</a>` : ''}
+${safeUrl(d.clip) ? `<a href="${esc(safeUrl(d.clip))}" aria-label="Vezi clipul: ${esc(d.title)}" style="flex: none; min-height: 44px; display: inline-flex; align-items: center; gap: 8px; font-family: ${COND}; font-weight: 800; font-size: 18px; text-transform: uppercase; text-decoration: none">Vezi clipul →</a>` : ''}
 </li>`,
     )
     .join('');
@@ -345,7 +346,7 @@ function track(v: Vals): string {
 <span class="ms-amt" style="color: ${amt}">${esc(m.amount)}</span><span class="ms-tag" style="color: ${tagColor}">${tag}</span>
 <span class="ms-name" role="tooltip">${esc(m.title)}</span>`;
     return m.state === 'done' && m.clip
-      ? `<a class="ms" href="${esc(m.clip)}" aria-label="${esc(label)}, vezi clipul">${inner}</a>`
+      ? `<a class="ms" href="${esc(safeUrl(m.clip) ?? '#')}" aria-label="${esc(label)}, vezi clipul">${inner}</a>`
       : `<span class="ms" tabindex="0" aria-label="${esc(label)}">${inner}</span>`;
   }).join('');
 }
@@ -357,7 +358,7 @@ function segs(v: Vals): string {
 const PLAY = '<svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z" fill="#3FD0FF"></path></svg>';
 function clips(v: Vals): string {
   if (!v.hasClips) return `<p class="clip-empty">Când o provocare se face live, clipul ei apare aici.</p>`;
-  return v.clips.map((c) => `<a class="clip" href="${esc(c.clip)}" aria-label="Vezi clipul: ${esc(c.no)} ${esc(c.title)}">
+  return v.clips.map((c) => `<a class="clip" href="${esc(safeUrl(c.clip) ?? '#')}" aria-label="Vezi clipul: ${esc(c.no)} ${esc(c.title)}">
 <span class="thumb"><span class="thumb-no">✓ ${esc(c.no)}</span><span class="play">${PLAY}</span></span>
 <span class="clip-text"><span class="clip-title"><span class="clip-no">${esc(c.no)}</span>${esc(c.title)}</span><span class="clip-when">${esc([c.when, `deblocat la ${c.amount}`].filter(Boolean).join(' · '))}</span></span>
 <span class="clip-cta">Vezi clipul →</span></a>`).join('');
@@ -429,7 +430,7 @@ function advent(v: Vals): string {
     if (d.today) return `<div class="ad ad-today${near}" aria-current="date"><span class="ad-azi">AZI · ${esc(d.date)}</span><span class="ad-n" style="color: #FFFFFF">${d.n}</span><span class="ad-t" style="color: #F2F5FA">${esc(d.note || 'Live azi')}</span></div>`;
     if (d.past) {
       const inner = `<span class="ad-d">${esc(d.date)}</span><span class="ad-n" style="color: var(--ice)">${d.n}</span><span class="ad-t" style="color: #C9D2DF">${d.clip ? `${PLAY}${esc(d.note ? d.note + ' · clip' : 'Clipul zilei')}` : esc(d.note || 'Ziua s-a încheiat')}</span>`;
-      return d.clip ? `<a class="ad ad-past${near}" href="${esc(d.clip)}" aria-label="Ziua ${d.n}, ${esc(d.date)}: vezi clipul">${inner}</a>` : `<div class="ad ad-past${near}">${inner}</div>`;
+      return safeUrl(d.clip) ? `<a class="ad ad-past${near}" href="${esc(safeUrl(d.clip))}" aria-label="Ziua ${d.n}, ${esc(d.date)}: vezi clipul">${inner}</a>` : `<div class="ad ad-past${near}">${inner}</div>`;
     }
     return `<div class="ad ad-future${near}">${d.holiday ? TREE16 : FLAKE16}<span class="ad-d">${esc(d.date)}</span><span class="ad-n" style="color: #6B7689">${d.n}</span><span class="ad-t" style="color: #AEB8C7">${esc(d.note)}</span></div>`;
   }).join('');
