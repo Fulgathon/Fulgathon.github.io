@@ -1,8 +1,11 @@
-// Every 5 minutes (pg_cron → pg_net): credit everyone in chat with 5 minutes
-// of watch time. Subscribers earn double snowflakes, so their sub status is
-// looked up in batches of 100. Does nothing unless the subathon is live and
-// the stream is online. Deployed with verify_jwt = false; the cron call is
-// checked with the x-cron-secret header (secret kept in Vault).
+// Every 5 minutes (pg_cron → pg_net):
+//   1. "Acum pe stream": save the channel's title and game, and the viewer
+//      count when online (always, so the site shows them before the start).
+//   2. Credit everyone in chat with 5 minutes of watch time. Subscribers earn
+//      double snowflakes, so their sub status is looked up in batches of 100.
+//      Only while the subathon is live and the stream is online.
+// Deployed with verify_jwt = false; the cron call is checked with the
+// x-cron-secret header (secret kept in Vault).
 
 import { admin, broadcasterToken, getConfig, helix, json, safeEqual } from '../_shared/twitch.ts';
 
@@ -13,11 +16,25 @@ Deno.serve(async (req) => {
   const cfg = await getConfig(db);
   if (!safeEqual(req.headers.get('x-cron-secret') ?? '', cfg.cron_secret)) return json({ error: 'forbidden' }, 403);
 
+  if (!cfg.token) return json({ skipped: 'broadcaster not connected' });
+  const t = await broadcasterToken(db, cfg);
+
+  // 1. Title, game, viewers (a failure here never blocks the watch time).
+  try {
+    const [ch, st] = await Promise.all([
+      helix(`/channels?broadcaster_id=${t.user_id}`, t.access_token),
+      helix(`/streams?user_id=${t.user_id}`, t.access_token),
+    ]);
+    const c = ch.ok ? (await ch.json()).data?.[0] : null;
+    const s = st.ok ? (await st.json()).data?.[0] : null;
+    if (c) await db.rpc('save_stream_info', { p_title: c.title ?? null, p_game: c.game_name ?? null, p_viewers: s?.viewer_count ?? null, p_started_at: s?.started_at ?? null });
+  } catch (e) {
+    console.error('stream info', e);
+  }
+
+  // 2. Watch time.
   const { data: timer } = await db.from('timer').select('status, stream_online').eq('id', 1).maybeSingle();
   if (timer?.status !== 'live' || !timer.stream_online) return json({ skipped: 'not live' });
-  if (!cfg.token) return json({ skipped: 'broadcaster not connected' });
-
-  const t = await broadcasterToken(db, cfg);
 
   // Everyone connected to chat.
   const chatters: { id: string; login: string; name: string; sub?: boolean }[] = [];
