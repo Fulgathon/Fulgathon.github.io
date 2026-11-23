@@ -54,6 +54,8 @@ Severity: **Critical** = money, data loss, auth bypass or the site down for ever
 | B-28 | Low | A 140-character suggestion cut in the middle of an emoji can be refused | Open |
 | B-29 | Low | /mod has no `<h1>` before login | Open |
 | B-30 | Low | Any moderator can remove any other moderator, including Iceman | Owner decision |
+| B-31 | Medium | Before the start, «Cât adaugi tu?» promises «+30 min» but the server adds no time until the timer is live | Owner decision (found in the UX audit) |
+| B-32 | Low | Community-goal hours not yet reached are #4A5568 on #090C11 (2.6:1, below 4.5:1) | Open (found in the UX audit) |
 
 Nothing is pushed or deployed. The site fixes go live with `npm run deploy`; the database fixes need the migration applied.
 
@@ -127,6 +129,9 @@ Any logged-in viewer can call `check-sub` in a loop; each call is a Helix reques
 ### B-18 · Resubs that aren't shared add no time
 EventSub sends `channel.subscription.message` only when the viewer shares the resub in chat; there is no event for a silent resub. Worth telling viewers on stream («dă share la resub ca să adauge timp»), and putting it in the «Cum adaugi timp» chips.
 
+### B-31 · The calculator promises time before the start
+`record_event` sets the added seconds to 0 unless `timer.status = 'live'`, so a donation before 20 Dec counts toward «Strâns» and milestones but not the clock. The hero calculator still shows «+30 min» (≈ «cam un meci ranked») while the page says «ÎNCEPE CURÂND». Either change the calculator's text before the start, or bank the time into the opening duration (database change). See [UX_AUDIT.md](UX_AUDIT.md) V3.
+
 ## Low
 
 - **B-19** `spins` has a public SELECT policy and `authenticated` can read the table, so the logins of viewers whose names are hidden can be listed. Suggested: drop the policy (the page uses `public_state`).
@@ -141,6 +146,8 @@ EventSub sends `channel.subscription.message` only when the viewer shares the re
 - **B-28** `slice(0, 140)` can cut a surrogate pair; use `Array.from(text).slice(0, 140).join('')`.
 - **B-29** Add an `<h1>` («Moderatori») to the /mod login card.
 - **B-30** `mod_set_moderator` lets any moderator remove anyone; consider protecting the broadcaster login.
+
+- **B-32** `views.ts` `together()`: the hours of goals not yet reached use `#4A5568` (2.6:1) at 18 px. Use `#8C97A8` (6.6:1) or `#7D8899` (5.5:1); see the text tokens in [DESIGN.md](DESIGN.md).
 
 ## Notes, not bugs
 
