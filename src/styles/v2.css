@@ -125,7 +125,9 @@
 /* Section heading, variant B: the numeral is decoration (aria-hidden); the title sits over its lower half. */
 .shead { position: relative; margin-bottom: calc(var(--sh-n) * 0.1); display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 12px 32px; }
 .sh-main { position: relative; min-width: 0; margin-top: max(0px, calc(var(--sh-n) * 0.9 - var(--sh-t) * 0.88 - 21px)); padding-left: calc(var(--sh-n) * 0.536); }
-.sh-num { position: absolute; left: -0.03em; bottom: -0.1em; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: var(--sh-n); line-height: 1; letter-spacing: -0.02em; color: transparent; -webkit-text-stroke: 2px rgba(63, 208, 255, 0.7); pointer-events: none; user-select: none; }
+/* Padding wraps the italic overhang: Safari clips a stroked glyph at its box, so the slanted
+   "1" lost its top right corner on iPhone; the negative margin keeps the numeral where it was. */
+.sh-num { position: absolute; left: -0.03em; bottom: -0.1em; padding: 0 0.16em 0 0.06em; margin-left: -0.06em; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: var(--sh-n); line-height: 1; letter-spacing: -0.02em; color: transparent; -webkit-text-stroke: 2px rgba(63, 208, 255, 0.7); pointer-events: none; user-select: none; }
 .shead h2 { position: relative; margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: var(--sh-t); line-height: 0.88; text-transform: uppercase; }
 .sh-bar { position: relative; display: block; width: clamp(64px, 7.2cqi, 104px); height: clamp(5px, 0.5cqi, 7px); margin-top: 14px; background: var(--ice); transform: skewX(-12deg); }
 .shead + .intro { padding-left: calc(var(--sh-n) * 0.536); }
@@ -303,8 +305,8 @@ a.ad-past:hover { border-color: var(--ice); }
   .st-ev { display: none; }
   .st-calc { margin: 12px auto 0; width: 100%; max-width: 1040px; }
   .chip-ev { display: flex; }
-  .mascot { width: min(74%, 420px); margin: 0 auto 0 0; }
-  .bubble { top: 6%; right: 0; width: 230px; max-width: 46%; }
+  .mascot { width: min(74%, 420px); margin: 0 auto; }
+  .bubble { top: 6%; right: -8px; width: 210px; max-width: 46%; }
   .timer-card { margin-top: 14px; }
   .calc-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
   .calc-row .calc-add { margin-top: 12px; }
@@ -337,7 +339,7 @@ a.ad-past:hover { border-color: var(--ice); }
   .hero h1 { font-size: min(16.4cqi, 72px); }
   .hero-eyebrow { gap: 8px; letter-spacing: 0.2em; }
   .mascot { width: 74%; }
-  .bubble { width: 168px; max-width: 46%; top: 24px; padding: 8px 10px 9px 12px; }
+  .bubble { width: 160px; max-width: 44%; top: 24px; right: -6px; padding: 8px 10px 9px 12px; }
   .bub-head { gap: 6px; }
   .bub-user { font-size: 11px; }
   .bub-what { font-size: 10px; }
