@@ -94,111 +94,159 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
       .card .tag { display: inline-block; padding: 1px 8px; transform: skewX(-12deg); background: var(--ice); color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: .08em; }
       .view[data-view="report"], .view[data-view="packages"] { align-items: flex-start; }
       #report, #packages { align-content: start; }
-      /* Line-art plan of the stream (StreamBlueprint + scripts/blueprint.ts). */
+      /* Line-art plan of the stream (StreamBlueprint + scripts/blueprint.ts). Three line weights: 1.1 / 1.8 / 2.6. */
       .frame iframe[data-overlay-src] { pointer-events: none; }
-      .bp text { font-family: Barlow, sans-serif; font-weight: 600; font-size: 14px; letter-spacing: .14em; fill: #8C97A8; }
+      .bp text { font-family: Barlow, sans-serif; font-weight: 600; font-size: 14px; letter-spacing: .14em; fill: #8C97A8; stroke: none; }
       .bp .lbl.ice { fill: #3FD0FF; fill-opacity: .75; }
-      .bp .game { stroke: #3FD0FF; stroke-width: 2; }
-      .bp .lane { stroke-opacity: .28; stroke-dasharray: 260 16 120 12 40 10; }
-      .bp .river { stroke-opacity: .34; }
-      .bp .ripple { stroke-opacity: .28; stroke-dasharray: 8 7; animation: bp-flow 3s linear infinite; }
-      .bp .brush { stroke-opacity: .3; fill: #3FD0FF; fill-opacity: .03; }
-      .bp .tufts { stroke-opacity: .3; }
-      .bp .tower { stroke: #C9D2DF; stroke-opacity: .55; }
-      .bp .tower .range { stroke-opacity: .16; stroke-dasharray: 6 10; animation: bp-flow 14s linear infinite; }
-      .bp .crystal { animation: bp-bob 2.4s ease-in-out infinite alternate; }
-      .bp .crystal path { fill: #C9D2DF; fill-opacity: .1; }
-      .bp .fill-enemy { fill: #C9D2DF; fill-opacity: .45; stroke: none; }
-      .bp .fill-ice { fill: #3FD0FF; fill-opacity: .7; stroke: none; }
-      .bp .fill-mana { fill: #3FD0FF; fill-opacity: .3; stroke: none; }
-      .bp .wave { animation: bp-march 9s linear infinite; }
-      .bp .wave.enemy { stroke: #C9D2DF; stroke-opacity: .6; animation-delay: -1.5s; }
-      .bp .wave .hp { stroke-width: 3; }
       .bp .solid { fill: #05090F; }
-      .bp .champ { cursor: pointer; }
-      .bp .champ .ring { stroke-opacity: .75; }
-      .bp .champ .ring2 { stroke-opacity: .5; stroke-dasharray: 8 6; animation: bp-flow 4s linear infinite; }
-      .bp .champ .staff { fill: #3FD0FF; fill-opacity: .25; animation: bp-glint 2.2s ease-in-out infinite alternate; }
-      .bp .champ:hover .ring { stroke-opacity: 1; stroke-width: 3; }
-      .bp .tag { font-size: 13px; fill: #C9D2DF; stroke: none; }
-      .bp .lvl { font-size: 12px; letter-spacing: 0; fill: #C9D2DF; stroke: none; }
-      .bp .hud { fill: none; stroke: #3FD0FF; stroke-opacity: .5; stroke-width: 2; }
-      .bp .hud .panel { fill: #070C14; stroke: #C9D2DF; stroke-opacity: .35; }
-      .bp .hud .keys { stroke-opacity: .55; }
-      .bp .hud .glyph { stroke-opacity: .8; stroke-linecap: round; stroke-linejoin: round; }
-      .bp .num { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: .03em; fill: #C9D2DF; stroke: none; font-variant-numeric: tabular-nums; }
+      .bp .fine { stroke-width: 1.1; stroke-opacity: .6; fill: none; }
+      .bp .game { stroke: #3FD0FF; stroke-width: 1.8; }
+      .bp .bank { stroke-opacity: .55; }
+      .bp .rock { stroke-opacity: .4; stroke-width: 1.2; fill: #05090F; }
+      .bp .reed { stroke-opacity: .35; stroke-width: 1.1; }
+      .bp .ripple { stroke-opacity: .3; stroke-width: 1.1; stroke-dasharray: 10 8; animation: bp-flow 4s linear infinite; }
+      .bp .edge { stroke-opacity: .5; }
+      .bp .curb { stroke-opacity: .32; stroke-width: 1.1; fill: #05090F; }
+      .bp .pave { stroke-opacity: .13; stroke-width: 1.1; }
+      .bp .crack { stroke-opacity: .2; stroke-width: 1; }
+      .bp .wall .plateau { fill: #05090F; stroke-opacity: .6; }
+      .bp .wall .cliff-base { stroke-opacity: .35; stroke-width: 1.2; }
+      .bp .wall .hatch { stroke-opacity: .3; stroke-width: 1.1; }
+      .bp .wall .rim { stroke-opacity: .2; stroke-width: 1.1; }
+      .bp .wall .tuft { stroke-opacity: .28; stroke-width: 1.1; }
+      .bp .brush path { stroke-opacity: .45; stroke-width: 1.2; }
+      .bp .brush .brush-ground { stroke-opacity: .25; }
+      .bp .shadow { fill: #3FD0FF; fill-opacity: .06; stroke: none; }
+      .bp .hpf { fill: #05090F; stroke-width: 1.1; }
+      .bp .hpv { fill: #C9D2DF; fill-opacity: .5; stroke: none; }
+      .bp .hpv.ice { fill: #3FD0FF; fill-opacity: .75; }
+      .bp .tick { stroke: #05090F; stroke-opacity: 1; stroke-width: 1.2; }
+      .bp .mana { fill: #3FD0FF; fill-opacity: .32; stroke: none; transition: width .4s ease; }
+      .bp .tower { stroke: #C9D2DF; stroke-opacity: .6; }
+      .bp .tower .range { fill: none; stroke-opacity: .16; stroke-dasharray: 6 10; animation: bp-flow 16s linear infinite; }
+      .bp .tower .shadow { fill: #C9D2DF; fill-opacity: .04; }
+      .bp .tower .halo { fill: none; stroke-opacity: .35; animation: bp-glint 2.4s ease-in-out infinite alternate; }
+      .bp .tower .crystal { animation: bp-bob 2.4s ease-in-out infinite alternate; }
+      .bp .wave .hpv { fill: #3FD0FF; fill-opacity: .6; }
+      .bp .wave.enemy { stroke: #C9D2DF; stroke-opacity: .7; }
+      .bp .wave.enemy .hpv { fill: #C9D2DF; }
+      .bp .wave .orb { fill: #3FD0FF; fill-opacity: .2; }
+      .bp .wave [data-i] { transition: opacity .35s ease; }
+      .bp .wave .killed { opacity: 0; }
+      .bp .champ .ring { stroke-opacity: .85; stroke-width: 2.2; }
+      .bp .champ .ring2 { stroke-opacity: .4; stroke-width: 1.1; stroke-dasharray: 6 5; animation: bp-flow 5s linear infinite; }
+      .bp .champ .specks { stroke-width: 1.1; stroke-opacity: .7; animation: bp-rise 3.2s ease-in-out infinite; }
+      .bp .champ .eye, .bp .eye { fill: #3FD0FF; stroke: none; }
+      .bp .champ .staff { stroke-width: 2.6; }
+      .bp .gem { fill: #3FD0FF; fill-opacity: .22; stroke-width: 1.4; }
+      .bp .champ .orbit { transform-box: fill-box; transform-origin: center; animation: bp-spin 6s linear infinite; }
+      .bp .champ.cast .gem { fill-opacity: .8; }
+      .bp .tag { font-size: 13px; fill: #DDE4EE; }
+      .bp .lvl { font-size: 12px; letter-spacing: 0; fill: #C9D2DF; }
+      .bp .hud { fill: none; stroke: #3FD0FF; stroke-opacity: .55; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+      .bp .hud .panel { fill: #070C14; stroke: #C9D2DF; stroke-opacity: .4; }
+      .bp .hud .inner { fill: none; stroke: #C9D2DF; stroke-opacity: .14; stroke-width: 1.1; }
+      .bp .hud .sep { stroke: #C9D2DF; stroke-opacity: .18; stroke-width: 1.1; }
+      .bp .hud .keys { stroke-opacity: .6; }
+      .bp .hud .glyph { stroke-opacity: .85; stroke-width: 1.6; }
+      .bp .hud .xp { stroke-width: 2.6; stroke-opacity: .7; }
+      .bp .hud .pip { fill: none; stroke-width: 1.1; stroke-opacity: .45; }
+      .bp .hud .pip.on { fill: #3FD0FF; fill-opacity: .8; stroke: none; }
+      .bp .hud .coin { stroke: #C9D2DF; stroke-opacity: .7; }
+      .bp .num { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: .03em; fill: #C9D2DF; font-variant-numeric: tabular-nums; }
       .bp .num.ice { fill: #3FD0FF; }
       .bp .num.sm { font-size: 17px; }
-      .bp .key { font-size: 12px; letter-spacing: 0; fill: #AEB8C7; stroke: none; }
-      .bp .cd { fill: #3FD0FF; fill-opacity: .22; stroke: none; transform-box: fill-box; transform-origin: bottom; transform: scaleY(0); }
+      .bp .key { font-size: 11px; letter-spacing: 0; fill: #AEB8C7; }
+      .bp .bartxt { font-size: 11px; letter-spacing: .06em; fill: #05090F; font-weight: 700; }
+      .bp .cd { fill: #05090F; fill-opacity: .7; stroke: none; transform-box: fill-box; transform-origin: bottom; transform: scaleY(0); }
       .bp .cd.on { transform: scaleY(1); }
-      .bp .cd.run { transition: transform 3s linear; transform: scaleY(0); }
-      .bp .map { cursor: crosshair; }
-      .bp .map .lanes { stroke: #C9D2DF; stroke-opacity: .3; }
-      .bp .map .river-s { stroke-opacity: .35; }
+      .bp .cd.run { transition: transform 3.5s linear; transform: scaleY(0); }
+      .bp .map .mwall { fill: #3FD0FF; fill-opacity: .05; stroke-opacity: .28; stroke-width: 1.1; }
+      .bp .map .lanes { stroke: #C9D2DF; stroke-opacity: .35; stroke-width: 2.6; }
+      .bp .map .river-s { stroke-opacity: .4; stroke-width: 1.1; }
+      .bp .map .pit { stroke-opacity: .35; stroke-width: 1.1; stroke-dasharray: 3 3; }
       .bp .map .base { stroke-opacity: .5; }
-      .bp .map .view { stroke: #F2F5FA; stroke-opacity: .7; stroke-width: 1.5; }
-      .bp .dot { stroke: none; animation: bp-drift 6s ease-in-out infinite alternate; }
-      .bp .dot.a { fill: #3FD0FF; fill-opacity: .8; }
-      .bp .dot.me { fill: #3FD0FF; stroke: #F2F5FA; stroke-width: 2; }
-      .bp .dot.e { fill: #C9D2DF; fill-opacity: .5; }
-      .bp .cam { cursor: pointer; fill: none; stroke: #3FD0FF; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-      .bp .camframe { fill: #070C14; stroke-opacity: .65; }
+      .bp .map .nexus { fill: #3FD0FF; fill-opacity: .25; }
+      .bp .map .nexus.e, .bp .map .tw.e { stroke: #C9D2DF; fill: #C9D2DF; fill-opacity: .2; }
+      .bp .map .tw { fill: #3FD0FF; fill-opacity: .25; stroke-width: 1.1; }
+      .bp .map .view { stroke: #F2F5FA; stroke-opacity: .75; stroke-width: 1.4; }
+      .bp .champ-i { animation: bp-drift 6s ease-in-out infinite alternate; }
+      .bp .champ-i circle { fill: #05090F; stroke-width: 1.8; }
+      .bp .champ-i .core { fill: #3FD0FF; stroke: none; }
+      .bp .champ-i.e circle { stroke: #C9D2DF; stroke-opacity: .7; }
+      .bp .champ-i.e .core { fill: #C9D2DF; }
+      .bp .champ-i.me circle { stroke: #F2F5FA; stroke-opacity: 1; stroke-width: 2.2; }
+      .bp .champ-i.me .core { fill: #F2F5FA; }
+      .bp .cam { fill: none; stroke: #3FD0FF; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+      .bp .camframe { fill: #070C14; stroke-opacity: .7; }
+      .bp .caminner { stroke-opacity: .16; stroke-width: 1.1; }
       .bp .led { stroke-opacity: .45; stroke-width: 3; animation: bp-led 6s ease-in-out infinite alternate; }
-      .bp .poster, .bp .chair { stroke-opacity: .35; stroke-width: 2; }
+      .bp .hex path { stroke-opacity: .22; stroke-width: 1.4; }
+      .bp .hex .glow { stroke-opacity: .6; fill: #3FD0FF; fill-opacity: .05; animation: bp-glint 3.5s ease-in-out infinite alternate; }
+      .bp .chair { stroke-opacity: .3; stroke-width: 1.6; }
       .bp .who { animation: bp-breathe 3.6s ease-in-out infinite alternate; }
+      .bp .head { transform-box: fill-box; transform-origin: 50% 100%; animation: bp-tilt 11s ease-in-out infinite; }
+      .bp .brow { stroke-width: 2; stroke-opacity: .9; }
+      .bp .eyes { transform-box: fill-box; transform-origin: center; animation: bp-blink 5s infinite; }
+      .bp .eyes ellipse { stroke-width: 1.4; fill: #05090F; }
+      .bp .pupil { fill: #3FD0FF; stroke: none; }
       .bp .band { stroke-width: 4; }
       .bp .ledot { fill: #3FD0FF; stroke: none; animation: bp-glint 1.4s ease-in-out infinite alternate; }
-      .bp .eyes { transform-box: fill-box; transform-origin: center; stroke-width: 3.5; animation: bp-blink 5s infinite; }
-      .bp .mouth { stroke-opacity: .6; }
-      .bp .joy, .bp .buzz { display: none; }
+      .bp .aglet { stroke-width: 3.4; }
+      .bp .lbl-cam { font-size: 13px; }
+      .bp .joy, .bp .buzz, .bp .talk { display: none; }
+      .bp .cam.talking .mouth { display: none; }
+      .bp .cam.talking .talk { display: inline; transform-box: fill-box; transform-origin: center; animation: bp-talk .32s ease-in-out infinite alternate; }
       .bp .cam.hype .who { animation: bp-jump .7s ease-out 2; }
-      .bp .cam.hype .eyes, .bp .cam.hype .mouth { display: none; }
+      .bp .cam.hype .eyes, .bp .cam.hype .mouth, .bp .cam.hype .talk { display: none; }
       .bp .cam.hype .joy, .bp .cam.hype .buzz { display: inline; }
-      .bp .cam:hover .camframe { stroke-opacity: 1; }
-      .bp .bubble { opacity: 0; pointer-events: none; }
-      .bp .bubble rect, .bp .bubble path { fill: #05090F; stroke: #3FD0FF; stroke-width: 2.5; }
-      .bp .bubble path { stroke-linejoin: round; }
+      .bp .bubble { opacity: 0; }
+      .bp .bubble rect, .bp .bubble path { fill: #05090F; stroke: #3FD0FF; stroke-width: 2.5; stroke-linejoin: round; }
       .bp .bubble text { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 34px; letter-spacing: .02em; fill: #F2F5FA; }
       .bp .bubble.show { opacity: 1; }
-      .bp .bubble.show > * { transform-box: view-box; animation: bp-pop .28s ease-out; }
+      .bp .bubble.show > * { animation: bp-pop .28s ease-out; }
       .bp .fx { pointer-events: none; }
-      .bp .shot { stroke: #3FD0FF; stroke-width: 5; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: bp-shot .9s ease-out forwards; }
-      .bp .boom { fill: none; stroke: #3FD0FF; stroke-width: 3; transform-box: fill-box; transform-origin: center; animation: bp-boom .7s .25s ease-out both; }
-      .bp .gold { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 30px; fill: #F2F5FA; stroke: none; animation: bp-float 1.2s .3s ease-out both; }
-      .bp .ping { fill: none; stroke: #F2F5FA; stroke-width: 2.5; transform-box: fill-box; transform-origin: center; animation: bp-boom 1s ease-out both; }
-      .bp .ping + .ping { animation-delay: .25s; }
+      .bp .shot { stroke: #3FD0FF; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: bp-shot .55s ease-out forwards; }
+      .bp .shot.trail { stroke-width: 1.2; stroke-opacity: .6; animation-delay: .04s; }
+      .bp .boom { fill: none; stroke: #3FD0FF; stroke-width: 2.2; transform-box: fill-box; transform-origin: center; animation: bp-boom .6s .22s ease-out both; }
+      .bp .shard { stroke: #3FD0FF; stroke-width: 1.4; animation: bp-burst .6s .22s ease-out both; }
+      .bp .gold { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 26px; fill: #F2F5FA; paint-order: stroke; stroke: #05090F; stroke-width: 6px; animation: bp-float 1.3s .25s ease-out both; }
+      .bp .ping { fill: none; stroke: #F2F5FA; stroke-width: 2.2; transform-box: fill-box; transform-origin: center; animation: bp-boom 1.1s ease-out both; }
+      .bp .ping.second { animation-delay: .3s; }
+      .bp .ping-mark { fill: #F2F5FA; stroke: none; animation: bp-fadeout 1.6s ease-in both; }
       /* Callouts */
       .bp .focus { display: none; }
       .scene[data-focus="double"] .focus[data-k="double"], .scene[data-focus="code"] .focus[data-k="code"],
       .scene[data-focus="promo"] .focus[data-k="promo"], .scene[data-focus="wins"] .focus[data-k="wins"] { display: inline; }
       .bp .focus .box { fill: none; stroke: #3FD0FF; stroke-width: 2.5; stroke-dasharray: 1; stroke-dashoffset: 1; animation: bp-draw .9s ease forwards; }
       .bp .focus .lead { fill: none; stroke: #3FD0FF; stroke-width: 2; stroke-dasharray: 1; stroke-dashoffset: 1; animation: bp-draw .5s .7s ease forwards; }
-      .bp .focus text { paint-order: stroke; stroke: #05090F; stroke-width: 8px; stroke-linejoin: round; opacity: 0; animation: bp-fade .4s 1s ease forwards; }
+      .bp .focus text { paint-order: stroke; stroke: #05090F; stroke-width: 10px; stroke-linejoin: round; opacity: 0; animation: bp-fade .4s 1s ease forwards; }
       .bp .focus .cap { fill: #AEB8C7; font-size: 16px; }
       .bp .focus .brand { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 32px; letter-spacing: .06em; fill: #F2F5FA; }
       @keyframes bp-draw { to { stroke-dashoffset: 0; } }
       @keyframes bp-fade { from { opacity: 0; } to { opacity: 1; } }
-      @keyframes bp-flow { to { stroke-dashoffset: -60; } }
+      @keyframes bp-fadeout { 0%, 60% { opacity: 1; } 100% { opacity: 0; } }
+      @keyframes bp-flow { to { stroke-dashoffset: -72; } }
       @keyframes bp-bob { to { transform: translateY(-8px); } }
+      @keyframes bp-spin { to { transform: rotate(360deg); } }
+      @keyframes bp-rise { 0% { transform: translateY(4px); opacity: 0; } 30%, 70% { opacity: .9; } 100% { transform: translateY(-14px); opacity: 0; } }
       @keyframes bp-glint { from { opacity: .45; } to { opacity: 1; } }
       @keyframes bp-led { from { stroke-opacity: .25; } to { stroke-opacity: .6; } }
-      @keyframes bp-march { 0% { transform: translate(0, 0); opacity: 0; } 8%, 82% { opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)); opacity: 0; } }
       @keyframes bp-drift { to { transform: translate(4px, -3px); } }
       @keyframes bp-breathe { to { transform: translateY(-3px); } }
+      @keyframes bp-tilt { 0%, 38%, 56%, 100% { transform: rotate(0); } 44%, 50% { transform: rotate(-2.5deg); } }
       @keyframes bp-blink { 0%, 94%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
+      @keyframes bp-talk { from { transform: scaleY(.35); } to { transform: scaleY(1); } }
       @keyframes bp-jump { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-16px); } }
       @keyframes bp-pop { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
-      @keyframes bp-shot { 0% { stroke-dashoffset: 1; opacity: 1; } 45% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+      @keyframes bp-shot { 0% { stroke-dashoffset: 1; opacity: 1; } 55% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
       @keyframes bp-boom { from { transform: scale(.2); opacity: 1; } to { transform: scale(1.6); opacity: 0; } }
-      @keyframes bp-float { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-50px); opacity: 0; } }
+      @keyframes bp-burst { from { stroke-dashoffset: 0; opacity: 1; } to { opacity: 0; } }
+      @keyframes bp-float { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-46px); opacity: 0; } }
       @media (prefers-reduced-motion: reduce) {
         .bp *, .bp { animation: none !important; transition: none !important; }
-        .bp .wave.ally { transform: translate(183px, -113px); }
-        .bp .wave.enemy { transform: translate(-157px, 97px); }
-        .bp .focus .box, .bp .focus .lead, .bp .shot { stroke-dashoffset: 0; }
+        .bp .focus .box, .bp .focus .lead { stroke-dashoffset: 0; }
         .bp .focus text { opacity: 1; }
-        .bp .shot, .bp .boom, .bp .gold, .bp .ping { opacity: .9; }
       }
       .split-tabs { display: none; }
       /* Phones and tablets: the live pages render at their real size (the
@@ -277,7 +325,7 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
             <div class="slot"><div class="fit"><div class="frame" data-w="1440" data-h="900" data-src={`${base}?demo=pitch&embed`} data-name="site"></div></div></div>
           </div>
           <div class="view" data-view="stream" hidden>
-            <div class="slot"><p class="slot-label">Planul stream-ului · apăsați pe cameră, pe campion sau pe minimap</p><div class="fit">
+            <div class="slot"><p class="slot-label">Planul stream-ului · overlay-ul real rulează deasupra</p><div class="fit">
               <div class="frame" data-w="1920" data-h="1080" data-name="stream">
                 <div class="scene" id="blueprint" data-focus="" style="width:1920px;height:1080px;background:#050A12"><StreamBlueprint /></div>
                 <iframe data-overlay-src={`${base}overlay/?demo=pitch&promo=0&pos=tl`} title="Overlay" style="width:1920px;height:1080px"></iframe>
