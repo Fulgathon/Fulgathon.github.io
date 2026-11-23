@@ -9,6 +9,8 @@ export interface TickerItem {
   time: string; user: string; what: string; color: string; id?: number; big?: boolean; at?: number;
   /** The raw event, for Iceman's bubble (which group of lines) and the overlay. */
   kind?: string; tier?: string | null; qty?: number; seconds?: number;
+  /** The bubble line the server picked for this event (same as in Twitch chat); null = fallback, undefined = pick here. */
+  line?: string | null;
 }
 export interface Pop { time: string; user: string; left: string; delay: string; color: string }
 export interface Challenge { id: string; title: string; desc: string; votes: number }

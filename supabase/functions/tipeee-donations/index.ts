@@ -7,9 +7,10 @@
 //   * Each run looks back two minutes, so a donation listed late isn't missed;
 //     record_event() dedupes on the donation id.
 //   * Donations count only while the subathon is live (and after it started).
+//   * Each new donation may send Iceman's bubble line to Twitch chat (chatLine; /mod switch).
 // Deployed with verify_jwt = false; the cron call is checked with x-cron-secret.
 
-import { admin, json, safeEqual } from '../_shared/twitch.ts';
+import { admin, chatLine, json, safeEqual } from '../_shared/twitch.ts';
 
 const API = 'https://api.tipeeestream.com/v1.0/events.json';
 const LOOKBACK_MS = 2 * 60_000;
@@ -121,7 +122,7 @@ Deno.serve(async (req) => {
     const currency = String(p.currency ?? 'EUR').toUpperCase();
     if (currency !== 'EUR') console.warn('donation not in EUR, counted as EUR', id, amount, currency);
 
-    const { error } = await db.rpc('record_event', {
+    const { data: ev, error } = await db.rpc('record_event', {
       p_source: 'donation',
       p_kind: 'donation',
       p_external_id: `tipeee:${id}`,
@@ -134,6 +135,7 @@ Deno.serve(async (req) => {
       await mark(null, counted, `record_${error.code ?? 'error'}`);
       return json({ error: error.message }, 500);
     }
+    await chatLine(db, (ev as { id?: number } | null)?.id);
     counted++;
   }
 

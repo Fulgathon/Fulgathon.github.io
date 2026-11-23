@@ -23,6 +23,7 @@ import { derive, initialState, type State } from '../lib/derive';
 import { count, duration, fmtInt } from '../lib/format';
 import { views, type RegionName } from '../lib/views';
 import { LineBag, fillLine, groupFor, varsFor } from '../lib/lines';
+import { FALLBACK_LINE } from '../data/content';
 import type { TickerItem } from '../data/types';
 import type { DemoBackend } from '../demo/backend';
 import type { Live, Me } from './live';
@@ -181,7 +182,10 @@ function bubbleFor(t: TickerItem): State['bubble'] {
   const group = groupFor(t, data.smallDonation);
   if (!group) return null;
   const vars = varsFor(t);
-  const { line, fallback } = bag.pick(group, data.lines[group]);
+  // The server picks the line when it records the event (the same one goes to Twitch chat).
+  const { line, fallback } = t.line !== undefined
+    ? (t.line ? { line: t.line, fallback: false } : { line: FALLBACK_LINE, fallback: true })
+    : bag.pick(group, data.lines[group]);
   // Fallback: the event on top, «Mersi, {nume}!» below (no line in Iceman's voice).
   return fallback
     ? { who: `${t.time} · ${t.what}`, text: fillLine(line, vars), time: t.time }

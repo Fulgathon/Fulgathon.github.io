@@ -42,6 +42,8 @@ export interface DemoState {
   /** Iceman's bubble lines per group and the small/large donation threshold (layout v2). */
   lines?: Partial<Record<LineGroup, string[]>>;
   smallDonation?: number;
+  /** Twitch-chat echo switch (demo: nothing is sent). */
+  chatEcho?: boolean;
   /** Advent calendar notes, clips and sponsors set on /mod. */
   advent?: AdventDay[];
   /** Moderator note for "Acum pe stream" and the community goal list (demo only). */
@@ -870,6 +872,8 @@ export class DemoBackend {
       case 'mod_name_rule': return this.nameRule(String(a.p_name ?? ''), a.p_rule ?? null);
       case 'mod_names': return { filtered: [], rules: (this.load().nameRules ?? []).map((r) => ({ name: r.name, rule: r.rule, at: new Date(r.at).toISOString() })) };
       case 'mod_set_goals': return this.setGoals(a.p_goals);
+      case 'mod_set_chat_echo': return this.mutate((s) => { s.chatEcho = !!a.p_on; });
+      case 'mod_chat_status': return { on: !!this.load().chatEcho, canWrite: true, connected: true, lastAt: null };
       case 'mod_set_lines': return this.setLines(a.p_lines, a.p_small_donation ?? null);
       case 'mod_set_advent': return this.setAdvent(a.p_days ?? []);
       case 'mod_freeze_until': return this.freezeUntil(ms(a.p_until) ?? 0);

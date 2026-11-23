@@ -46,6 +46,11 @@ Secrets go only into the dashboards below, never into chat or the repo.
    **He must do this once more after 24 Nov 2026.** The daily check-in needs
    a new permission (channel points), and the title/game updates need two new
    events.
+   **And once more after the layout v2 migration is applied:** «Replicile lui
+   Iceman» can also go to Twitch chat from his own account, which needs the
+   `user:write:chat` permission ("Send chat messages as you"). The connect
+   page now asks for it and refuses the connection without it. Until he
+   reconnects, /mod shows «Lipsește permisiunea» and nothing is sent.
 7. **Daily check-in (channel points):** Twitch dashboard → Viewer Rewards →
    Channel Points → Manage Rewards → Add New Custom Reward:
    - Title: `Check-in ICEMARATON`. Any title containing "check-in" works.
@@ -53,6 +58,17 @@ Secrets go only into the dashboards below, never into chat or the repo.
    - Limit per user per stream: 1 (optional; the site counts one per day anyway).
    - Turn on "Skip Reward Requests Queue" so moderators don't have to approve each one.
    Each redemption counts that day toward the viewer's streak on the site.
+
+8. **Iceman's lines in chat (optional):** /mod → Replicile lui Iceman → «Trimite
+   replica și în chatul Twitch». Off by default. The same line as the bubble on
+   the site goes to chat from Iceman's account, with @name and the time added;
+   at most one message every 5 seconds (extra events in those 5 s get the bubble
+   only), one message per gift wave, none for hidden names, never late (events
+   older than 2 minutes are skipped). **Before switching it on, ask Iceman
+   whether StreamElements, Nightbot or another bot already thanks people in
+   chat**, otherwise people are thanked twice. Sent by the `twitch-eventsub`
+   (subs, gifts, bits) and `tipeee-donations` (donations) Edge Functions:
+   redeploy both after the migration.
 
 Dashboard: https://supabase.com/dashboard/project/yvbxtsuddjqqoogdoqrx
 

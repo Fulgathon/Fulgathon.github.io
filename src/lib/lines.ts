@@ -5,7 +5,7 @@
 import { FALLBACK_LINE, MIN_LINES } from '../data/content';
 import type { LineGroup, TickerItem } from '../data/types';
 import { amount } from './events';
-import { duration } from './format';
+import { count, duration } from './format';
 
 /** The group for one event, or null for events that don't get a line. */
 export function groupFor(t: Pick<TickerItem, 'kind' | 'tier' | 'qty'>, smallDonation: number): LineGroup | null {
@@ -24,7 +24,7 @@ export function varsFor(t: TickerItem): LineVars {
   return {
     nume: t.user,
     timp: t.seconds ? `+${duration(t.seconds)}` : '',
-    suma: t.kind === 'donation' ? `${amount(t.qty ?? 0)} €` : t.kind === 'bits' ? `${amount(t.qty ?? 0)} de biți` : '',
+    suma: t.kind === 'donation' ? `${amount(t.qty ?? 0)} €` : t.kind === 'bits' ? count(t.qty ?? 0, 'bit', 'biți') : '',
     subs: t.kind === 'gift' ? String(t.qty ?? 1) : '',
   };
 }

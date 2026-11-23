@@ -42,6 +42,7 @@ const errors: Record<string, string> = {
   line_too_long: 'O replică are mai mult de 70 de caractere. Scurteaz-o ca să încapă în balon.',
   bad_threshold: 'Pragul pentru donație mare trebuie să fie un număr între 1 și 10.000 de euro.',
   mod_set_lines: 'Editorul de replici are nevoie de actualizarea bazei de date (migrarea layout v2).',
+  mod_set_chat_echo: 'Comutatorul de chat are nevoie de actualizarea bazei de date (migrarea layout v2).',
 };
 let msgTimer: number | undefined;
 function say(text: string, err = false) {
@@ -133,7 +134,9 @@ let S: {
   lines: Partial<Record<LineGroup, string[]>>;
   smallDonation: number;
   linesDraft: Partial<Record<LineGroup, string>> | null;
-} = { lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, together: null, names: { filtered: [], rules: [] }, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
+  /** Twitch-chat echo: the switch, and whether Iceman's token may write in chat (null = not available yet). */
+  chat: { on: boolean; canWrite: boolean; connected: boolean; lastAt: string | null } | null;
+} = { chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, together: null, names: { filtered: [], rules: [] }, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
 const bingoRows = () => S.bingoDraft ?? (S.bingo?.items ?? []).map((i) => ({ id: i.id, label: i.label }));
 const editBingo = () => { if (!S.bingoDraft) S.bingoDraft = bingoRows(); return S.bingoDraft; };
 const goalRows = () => S.goalsDraft ?? S.goals.map((g) => ({ title: g.title, threshold: String(g.threshold), sponsor: g.sponsor ?? '' }));
@@ -166,6 +169,7 @@ async function load() {
     const site = demoApi.toSiteData();
     S.now = site.now; S.together = site.together;
     S.lines = site.lines; S.smallDonation = site.smallDonation;
+    S.chat = demoApi.rpc('mod_chat_status', {}) as typeof S.chat;
     if (!S.draft.length || S.draft.some((id) => !S.pool.find((p) => p.id === id))) autoDraft();
     return render();
   }
@@ -196,6 +200,7 @@ async function load() {
   const ps = (await (db as any).rpc('public_state', { p_have: {} })).data?.parts ?? {};
   S.now = ps.now ?? null; S.together = ps.together ?? null;
   S.lines = ps.lines?.groups ?? {}; S.smallDonation = Number(ps.lines?.smallDonation) || 10;
+  S.chat = ((await (db as any).rpc('mod_chat_status')).data as typeof S.chat) ?? null;
   S.names = names.data ?? { filtered: [], rules: [] };
   S.wheel = (wheel.data ?? []) as typeof S.wheel;
   S.codes = (codes.data ?? []) as typeof S.codes;
@@ -258,6 +263,23 @@ function lineInfo(g: LineGroup) {
     preview: fill(ok ? list[0] : FALLBACK_LINE),
   };
 }
+function chatHtml(): string {
+  const C = S.chat;
+  const sample = lineInfo('donBig');
+  const preview = `${sample.ok ? linesOf('donBig')[0].replace(/\{nume\}/g, '@andreigg').replace(/\{suma\}/g, '20 €').replace(/\{timp\}/g, '+2 h') : 'Mersi, @andreigg!'}${sample.ok && linesOf('donBig')[0].includes('{timp}') ? '' : ' (+2 h pe ceas)'}`;
+  const state = !C ? '<span class="pill off">Indisponibil</span> <span class="muted">Are nevoie de actualizarea bazei de date (migrarea layout v2).</span>'
+    : !C.connected ? '<span class="pill bad">Streamer neconectat</span> <span class="muted">Conectează contul de streamer (la Stare).</span>'
+    : !C.canWrite ? '<span class="pill warn">Lipsește permisiunea</span> <span class="muted">Iceman reconectează o dată contul de streamer (butonul de la Stare) și aprobă «scrie în chat».</span>'
+    : C.on ? `<span class="pill ok">Pornit</span> <span class="muted">Scrie din contul lui Iceman.${C.lastAt ? ` Ultimul mesaj: ${when(C.lastAt)}.` : ''}</span>`
+    : '<span class="pill off">Oprit</span>';
+  return `<div style="padding:14px 16px;border:1px solid #23415E">
+        <label style="display:flex;align-items:center;gap:14px;min-height:44px"><input type="checkbox" data-act="chatToggle" ${C?.on ? 'checked' : ''} ${C && C.canWrite ? '' : 'disabled'} aria-describedby="chat-state chat-warn"><span><strong style="font-family:'Barlow Condensed',sans-serif;font-size:20px;text-transform:uppercase;color:#F2F5FA">Trimite replica și în chatul Twitch</strong><span style="display:block;font-size:14px;color:#AEB8C7">Aceeași replică din balon, din contul lui Iceman, cu @ la cel care a dat și timpul adăugat. Cel mult un mesaj la 5 secunde; un val de subs cadou primește un singur mesaj; numele ascunse nu primesc mesaj.</span></span></label>
+        <p id="chat-state" style="margin:8px 0 0;font-size:14px">${state}</p>
+        <p id="chat-warn" style="margin:6px 0 0;font-size:14px;color:#F2C14E">Înainte să-l pornești: dacă StreamElements sau Nightbot mulțumesc deja în chat, oamenii primesc două mulțumiri.</p>
+        <p style="margin:8px 0 0;font-size:13px;color:#8C97A8">În chat: <span style="color:#EFEFF1"><strong style="color:#9147FF">icemanlucky</strong>: ${esc(preview)}</span></p>
+      </div>`;
+}
+
 function linesHtml(): string {
   const groups = lineGroups.map((g) => {
     const L = lineInfo(g.id);
@@ -276,10 +298,7 @@ function linesHtml(): string {
     <h2>Replicile lui Iceman</h2>
     <p class="muted" style="margin-top:0;max-width:900px">Ce zice Iceman în balonul din hero când intră ceva. Câte o replică pe rând, minim ${MIN_LINES} pe grup. Site-ul alege una la întâmplare și nu o repetă până nu le folosește pe toate. Poți folosi: <code>{nume}</code> <code>{timp}</code> <code>{suma}</code> <code>{subs}</code>. Maxim ${MAX_LINE} de caractere, ca să încapă în balon. Numele trec prin același filtru ca restul site-ului.</p>
     <div style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:12px">
-      <div style="padding:14px 16px;border:1px solid #23415E">
-        <label style="display:flex;align-items:center;gap:14px;min-height:44px;color:#AEB8C7"><input type="checkbox" disabled aria-describedby="chat-off"><span><strong style="font-family:'Barlow Condensed',sans-serif;font-size:20px;text-transform:uppercase;color:#F2F5FA">Trimite replica și în chatul Twitch</strong><span style="display:block;font-size:14px">Aceeași replică, cu @ la cel care a dat și timpul adăugat. Cel mult un mesaj la 5 secunde; un val de subs cadou primește un singur mesaj.</span></span></label>
-        <p id="chat-off" style="margin:8px 0 0;font-size:14px"><span class="pill off">Oprit</span> <span class="muted">Pornește după ce Iceman alege contul care scrie și ne spune dacă un bot (StreamElements, Nightbot) mulțumește deja în chat.</span></p>
-      </div>
+      ${chatHtml()}
       <div style="padding:14px 16px;border:1px solid #23415E">
         <label class="inline">Donație mare de la (€)<input class="field" type="number" inputmode="decimal" min="1" max="10000" id="smallDonation" value="${esc(S.smallDonation)}" style="width:110px"></label>
         <p class="muted" style="margin:8px 0 0;font-size:14px">Sub prag: replicile «Donație mică». De la prag în sus: «Donație mare».</p>
@@ -736,6 +755,11 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     S.linesDraft = null;
   },
   linesCancel: () => { S.linesDraft = null; render(); },
+  chatToggle: (el) => {
+    const on = (el as HTMLInputElement).checked;
+    if (on && !confirm('Pornești replicile în chatul Twitch, din contul lui Iceman? Verifică întâi că niciun bot nu mulțumește deja în chat.')) { (el as HTMLInputElement).checked = false; return; }
+    return call('mod_set_chat_echo', { p_on: on }, on ? 'Replicile apar și în chatul Twitch.' : 'Replicile nu mai apar în chat.');
+  },
   noteSet: () => val('nowNote').trim() && call('mod_set_note', { p_note: val('nowNote'), p_minutes: Number(val('nowMin')) || 30 }, 'Nota apare pe site.'),
   noteClear: () => call('mod_set_note', { p_note: '', p_minutes: 1 }, 'Nota a fost scoasă.'),
   togetherSave: () => {

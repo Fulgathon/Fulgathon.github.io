@@ -6,11 +6,12 @@
 //   stream.online / offline      → timer.stream_online
 //   channel.update               → "Acum pe stream" title + game, at once
 //   channel points redemption of "Check-in ICEMARATON" → the day counts for the viewer's streak
+// Subs, gifts and bits may also send Iceman's bubble line to chat (chatLine; /mod switch).
 // Every request is verified with the EventSub HMAC signature; Twitch retries
 // reuse the message id, which record_event() dedupes.
 // Deployed with verify_jwt = false (Twitch can't send a Supabase JWT).
 
-import { admin, getConfig, hmacHex, safeEqual } from '../_shared/twitch.ts';
+import { admin, chatLine, getConfig, hmacHex, safeEqual } from '../_shared/twitch.ts';
 
 const MAX_AGE_MS = 10 * 60_000;
 
@@ -44,12 +45,14 @@ Deno.serve(async (req) => {
   const user = (anon: boolean) => (anon ? [null, null, 'Anonim'] : [e.user_id ?? null, e.user_login ?? null, e.user_name ?? null]);
   const record = async (kind: string, tier: string | null, quantity: number, anon = false) => {
     const [uid, login, name] = user(anon);
-    const { error } = await db.rpc('record_event', {
+    const { data, error } = await db.rpc('record_event', {
       p_source: 'twitch', p_kind: kind, p_external_id: id,
       p_user_id: uid, p_user_login: login, p_user_name: name,
       p_tier: tier, p_quantity: quantity,
     });
     if (error) throw error;
+    // A gift wave is one gift event (the gifted subs are skipped above), so it gets one message.
+    await chatLine(db, (data as { id?: number } | null)?.id, cfg);
   };
 
   switch (msg.subscription?.type) {

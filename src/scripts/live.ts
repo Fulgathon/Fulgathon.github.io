@@ -159,8 +159,10 @@ export class Live {
       patch.goals = P.goals.map((g: Json) => ({ title: g.title, threshold: g.threshold, sponsor: g.sponsor, doneAt: ms(g.doneAt), clip: g.clip ?? null, when: g.when ?? null }));
     }
     if (has('feed') && Array.isArray(P.feed)) {
-      const items = P.feed.map((e: Json) =>
-        tickerItem({ id: e.id, at: ms(e.at) ?? undefined, kind: e.kind, tier: e.tier, quantity: e.quantity, currency: e.currency, seconds_added: e.seconds, user_name: e.name, user_login: null }));
+      const items = P.feed.map((e: Json) => ({
+        ...tickerItem({ id: e.id, at: ms(e.at) ?? undefined, kind: e.kind, tier: e.tier, quantity: e.quantity, currency: e.currency, seconds_added: e.seconds, user_name: e.name, user_login: null }),
+        ...('line' in e ? { line: e.line ?? null } : {}),
+      }));
       patch.ticker = items;
       patch.pops = items.filter((i: Json) => i.time !== '—').slice(0, popSlots.length).map((i: Json, k: number) => ({ ...i, ...popSlots[k] }));
     }

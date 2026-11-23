@@ -35,7 +35,10 @@ export interface Config {
 }
 
 // channel:read:redemptions: the daily check-in with channel points ("Check-in ICEMARATON").
-export const SCOPES = ['channel:read:subscriptions', 'bits:read', 'moderator:read:chatters', 'channel:read:redemptions'];
+// user:write:chat: Iceman's bubble line also goes to Twitch chat, from his own account
+// (only when the /mod switch is on). Older connections lack it until he reconnects once.
+export const CHAT_SCOPE = 'user:write:chat';
+export const SCOPES = ['channel:read:subscriptions', 'bits:read', 'moderator:read:chatters', 'channel:read:redemptions', CHAT_SCOPE];
 
 export async function getConfig(db: Db): Promise<Config> {
   const { data, error } = await db.rpc('twitch_config');
@@ -145,4 +148,33 @@ export function safeEqual(a: string, b: string): boolean {
   let diff = 0;
   for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return diff === 0;
+}
+
+/**
+ * Iceman's bubble line in Twitch chat, from his own account, for a recorded
+ * event (`record_event` row id). The database decides whether to send
+ * (switch on, at most one message every 5 s, once per event, no hidden
+ * names) and builds the text. Never throws: chat must not hold up the clock.
+ */
+export async function chatLine(db: Db, eventId: number | null | undefined, cfg?: Config): Promise<void> {
+  if (!eventId) return;
+  try {
+    const { data: text, error } = await db.rpc('chat_line_claim', { p_event: eventId });
+    if (error || !text) return;
+    const c = cfg ?? (await getConfig(db));
+    const t = await broadcasterToken(db, c);
+    if (!t.scopes.includes(CHAT_SCOPE)) { console.warn('chat line skipped: Iceman has to reconnect on /mod (user:write:chat)'); return; }
+    const r = await helix('/chat/messages', t.access_token, {
+      method: 'POST',
+      body: JSON.stringify({ broadcaster_id: t.user_id, sender_id: t.user_id, message: String(text) }),
+    });
+    if (!r.ok) console.error('chat line', r.status, (await r.text()).slice(0, 200));
+    else {
+      const j = await r.json().catch(() => null);
+      const sent = j?.data?.[0];
+      if (sent && !sent.is_sent) console.warn('chat line dropped by Twitch', sent.drop_reason?.message ?? '');
+    }
+  } catch (err) {
+    console.error('chat line', err);
+  }
 }
