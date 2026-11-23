@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<title>ICEMARATON telefon</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&amp;family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#050608}
+a{color:#3FD0FF}a:hover{color:#FFFFFF}
+@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.marquee{display:flex;width:max-content;animation:marquee 40s linear infinite}
+@keyframes inA{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+@keyframes inB{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+.inA{animation:inA .5s ease-out}.inB{animation:inB .5s ease-out}
+@keyframes popA{0%{opacity:0;transform:translateY(18px) scale(.9)}18%{opacity:1;transform:none}75%{opacity:1}100%{opacity:0;transform:translateY(-22px)}}
+@keyframes popB{0%{opacity:0;transform:translateY(18px) scale(.9)}18%{opacity:1;transform:none}75%{opacity:1}100%{opacity:0;transform:translateY(-22px)}}
+.popA{animation:popA 2.4s ease-out both}.popB{animation:popB 2.4s ease-out both}
+@keyframes bubA{0%{opacity:0;transform:scale(.6) rotate(-8deg)}60%{opacity:1;transform:scale(1.06) rotate(-3deg)}100%{opacity:1;transform:rotate(-3deg)}}
+@keyframes bubB{0%{opacity:0;transform:scale(.6) rotate(-8deg)}60%{opacity:1;transform:scale(1.06) rotate(-3deg)}100%{opacity:1;transform:rotate(-3deg)}}
+.bubA{animation:bubA .45s ease-out both}.bubB{animation:bubB .45s ease-out both}
+@keyframes hopA{0%,100%{transform:none}35%{transform:translateY(-12px)}}
+@keyframes hopB{0%,100%{transform:none}35%{transform:translateY(-12px)}}
+.hopA{animation:hopA .6s ease-out}.hopB{animation:hopB .6s ease-out}
+@keyframes glowA{0%{box-shadow:0 0 0 rgba(63,208,255,0)}30%{box-shadow:0 0 30px rgba(63,208,255,.6);border-color:#3FD0FF}100%{box-shadow:0 0 0 rgba(63,208,255,0)}}
+@keyframes glowB{0%{box-shadow:0 0 0 rgba(63,208,255,0)}30%{box-shadow:0 0 30px rgba(63,208,255,.6);border-color:#3FD0FF}100%{box-shadow:0 0 0 rgba(63,208,255,0)}}
+.glowA{animation:glowA 1.2s ease-out}.glowB{animation:glowB 1.2s ease-out}
+@keyframes blink{50%{opacity:.25}}.blink{animation:blink 1.2s steps(2) infinite}
+.calc:hover{border-color:#3FD0FF !important}
+@media (prefers-reduced-motion: reduce){.marquee,.inA,.inB,.bubA,.bubB,.hopA,.hopB,.glowA,.glowB,.blink{animation:none}.popA,.popB{animation:none;opacity:1}}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; min-height: 8200px; box-sizing: border-box; background: #050608; color: #F2F5FA; font-family: Barlow, system-ui, sans-serif; font-size: 15px; line-height: 1.5; overflow: hidden">
+
+  <!-- Snow over the whole page -->
+  <div aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 390px; height: 100%; pointer-events: none">
+    <sc-for list="{{flakes}}" as="f" hint-placeholder-count="0">
+      <span style="position: absolute; left: {{f.x}}px; top: {{f.y}}px; width: {{f.size}}px; height: {{f.size}}px; border-radius: 50%; background: #FFFFFF; opacity: {{f.op}}"></span>
+    </sc-for>
+  </div>
+
+  <!-- LIVE STRIP (kept from the current site) -->
+  <div style="position: relative; height: 36px; display: flex; align-items: stretch; background: #0B1018; border-bottom: 1px solid #1A2230; font-size: 13px">
+    <span style="flex: none; display: flex; align-items: center; gap: 6px; padding: 0 10px; background: #D5162B; color: #FFFFFF; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; letter-spacing: 0.08em"><span style="width: 7px; height: 7px; border-radius: 50%; background: #FFFFFF"></span>LIVE</span>
+    <div style="flex: 1 1 auto; min-width: 0; overflow: hidden; display: flex; align-items: center">
+      <div class="marquee">
+        <sc-for list="{{tickerTwice}}" as="t" hint-placeholder-count="12">
+          <span style="display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; white-space: nowrap; color: #AEB8C7"><strong style="font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 800; color: #3FD0FF">{{t.time}}</strong><span style="color: #F2F5FA; font-weight: 600">{{t.user}}</span>{{t.what}}</span>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAV: logo, live clock, menu -->
+  <nav style="height: 60px; padding: 0 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #1C2230">
+    <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 24px">ICE<span style="color: #3FD0FF">MARATON</span></span>
+    <span style="flex: 1 1 auto"></span>
+    <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 19px">03:14:27</span>
+    <button type="button" aria-label="Meniu" style="width: 44px; height: 44px; background: none; border: 2px solid #2A3445; color: #F2F5FA; font-size: 18px">≡</button>
+  </nav>
+
+  <!-- HERO -->
+  <section style="position: relative; overflow: hidden; padding: 22px 16px 0; background: linear-gradient(180deg, #071224 0%, #050608 70%)">
+    <p style="position: relative; margin: 0 0 6px; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 13px; letter-spacing: 0.2em; color: #AEB8C7"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3FD0FF" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 4l3 2 3-2M9 20l3-2 3 2"></path></svg>STREAM MARATON 2026–2027<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3FD0FF" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 4l3 2 3-2M9 20l3-2 3 2"></path></svg></p>
+    <h1 style="position: relative; margin: 0; text-align: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 64px; line-height: 0.85; text-transform: uppercase">ICE<span style="color: #3FD0FF">MARATON</span></h1>
+    <div style="position: relative; margin-top: -14px">
+      <img class="{{hopCls}}" src="/_blob/51e59ce68f7aa662cd8f9d2d578e0105" alt="Icemanlucky" style="position: relative; display: block; width: 290px; height: auto; margin: 0 auto 0 0; filter: drop-shadow(0 12px 36px rgba(63,208,255,0.25))">
+      <div class="{{bubbleCls}}" style="position: absolute; top: 24px; right: 0; width: 150px; padding: 8px 10px; background: #F2F5FA; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 16px; line-height: 1.05; text-transform: uppercase; transform: rotate(-3deg)"><span style="display: block; margin-bottom: 3px; font-size: 10px; font-style: normal; letter-spacing: 0.08em; color: #245A78">{{bubbleWho}}</span>{{bubble}}<span aria-hidden="true" style="position: absolute; left: 14px; bottom: -11px; width: 0; height: 0; border-left: 12px solid #F2F5FA; border-bottom: 11px solid transparent"></span></div>
+      <div class="{{chipCls}}" aria-live="polite" style="position: absolute; left: 0; right: 0; bottom: 6px; display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: rgba(14,26,40,0.95); border: 1px solid #3FD0FF">
+        <span class="blink" style="flex: none; width: 7px; height: 7px; background: #D5162B"></span>
+        <strong style="flex: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 17px; color: #3FD0FF">{{chipT}}</strong>
+        <span style="flex: 1 1 auto; min-width: 0; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis"><strong>{{chipU}}</strong> <span style="color: #AEB8C7">{{chipW}}</span></span>
+      </div>
+    </div>
+    <p style="position: relative; margin: 14px 0 0; text-align: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 30px; line-height: 1; text-transform: uppercase">Voi decideți<br><span style="display: inline-block; padding-right: 0.06em; background: linear-gradient(180deg, #FFFFFF 18%, #CDF2FF 58%, #3FD0FF 100%); -webkit-background-clip: text; background-clip: text; color: transparent">cât durează.</span></p>
+    <p style="position: relative; margin: 8px 0 0; text-align: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 0.22em; text-transform: uppercase; color: #8C97A8">Fiecare sub și donație adaugă timp</p>
+    <div style="position: relative; margin-top: 14px; padding: 16px; background: #090C11; border: 1px solid #1C2230">
+      <div style="display: flex; justify-content: space-between; align-items: center"><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; letter-spacing: 0.1em; color: #AEB8C7">TIMP RĂMAS</span><span style="padding: 2px 10px; transform: skewX(-12deg); background: #D5162B; font-family: 'Barlow Condensed', sans-serif; font-weight: 800">LIVE</span></div>
+      <p style="margin: 6px 0 0; font-size: 13px; color: #C9D2DF"><strong style="font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.08em; color: #3FD0FF; margin-right: 6px">ACUM</strong>Ranked cu chatul · LoL · Ziua 5</p>
+      <div style="position: relative; margin-top: 10px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+        <span class="{{popCls}}" aria-hidden="true" style="position: absolute; z-index: 2; right: 0; top: -26px; padding: 0 8px; background: #3FD0FF; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 22px; opacity: 0">{{popText}}</span>
+        <sc-for list="{{units}}" as="u" hint-placeholder-count="4">
+          <div style="text-align: center"><div class="{{glowCls}}" style="padding: 8px 0 4px; background: linear-gradient(180deg, #16304A, #0B1A2A); border: 1px solid #23415E; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 48px; line-height: 0.9; color: #DFF6FF">{{u.v}}</div><div style="margin-top: 4px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.1em; color: #8C97A8">{{u.l}}</div></div>
+        </sc-for>
+      </div>
+      <div style="margin-top: 14px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+        <div style="padding: 2px 10px; border-left: 2px solid #3FD0FF"><p style="margin: 0; font-size: 12px; color: #8C97A8">Strâns</p><p style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 26px">1.180 €</p></div>
+        <div style="padding: 2px 10px; border-left: 2px solid #2A3445"><p style="margin: 0; font-size: 12px; color: #8C97A8">Următorul</p><p style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 26px; color: #3FD0FF">1.500 €</p></div>
+      </div>
+      <div style="margin: 10px 0 0; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #AEB8C7"><span>Prezentat de</span><span style="flex: none; width: 40px; height: 28px; display: grid; place-items: center; border: 1px dashed #3FD0FF; background: rgba(63,208,255,0.06); font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 9px; letter-spacing: 0.08em; color: #AEB8C7">LOGO</span><strong style="color: #F2F5FA; letter-spacing: 0.06em">ZONA IT</strong></div>
+      <div style="margin-top: 10px; height: 10px; background: #1A2230"><div style="width: 62%; height: 100%; background: linear-gradient(90deg, #1E6BFF, #3FD0FF)"></div></div>
+      <div style="margin-top: 14px; display: flex; gap: 8px; overflow: hidden">
+        <sc-for list="{{rates}}" as="r" hint-placeholder-count="6">
+          <span style="flex: none; padding: 3px 8px; border: 1px solid #2A3445; font-size: 13px; color: #C9D2DF; white-space: nowrap"><strong style="color: #F2F5FA">{{r.a}}</strong> {{r.b}}</span>
+        </sc-for>
+      </div>
+      <p style="margin: 4px 0 0; font-size: 12px; color: #7D8899">Cum adaugi timp: rând care se dă cu degetul →</p>
+    </div>
+    <div style="position: relative; margin-top: 12px; padding: 16px; background: rgba(9,12,17,0.92); border: 1px solid #23415E">
+      <p style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 24px; line-height: 1; text-transform: uppercase">Cât adaugi tu?</p>
+      <div role="radiogroup" aria-label="Ce dai" style="margin-top: 10px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+        <sc-for list="{{calc}}" as="c" hint-placeholder-count="6">
+          <button type="button" role="radio" aria-checked="{{c.on}}" onClick="{{c.pick}}" style="min-height: 44px; padding: 0 4px; background: {{c.bg}}; color: {{c.fg}}; border: 1px solid {{c.border}}; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px">{{c.l}}</button>
+        </sc-for>
+      </div>
+      <div style="margin-top: 12px; display: flex; align-items: baseline; justify-content: space-between; gap: 10px"><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 38px; line-height: 1; color: #3FD0FF">{{calcAdd}}</span><span style="font-size: 12px; color: #AEB8C7; text-align: right">timerul ar sări la<br><strong style="font-family: 'Barlow Condensed', sans-serif; font-size: 15px; color: #F2F5FA">{{calcAt}}</strong></span></div>
+      <p style="margin: 4px 0 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 16px">≈ {{calcFun}}</p>
+      <a href="#d" style="margin-top: 10px; min-height: 48px; display: flex; align-items: center; justify-content: center; background: #3FD0FF; color: #04101A; text-decoration: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px; text-transform: uppercase">Donează</a>
+    </div>
+    <a href="#t" style="margin-top: 14px; min-height: 54px; display: flex; align-items: center; justify-content: center; border: 2px solid #2A3445; color: #F2F5FA; text-decoration: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 22px; text-transform: uppercase">Urmărește live</a>
+    <div style="height: 32px"></div>
+  </section>
+  <div style="height: 24px"></div>
+
+  <!-- 01 PARTENERI -->
+  <section style="padding: 0 16px 36px">
+    <span style="padding: 2px 8px; transform: skewX(-12deg); background: #3FD0FF; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px">01</span>
+    <h2 style="margin: 8px 0 0; padding-bottom: 10px; border-bottom: 2px solid #F2F5FA; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 38px; line-height: 0.92; text-transform: uppercase">Partenerii</h2>
+    <div style="margin-top: 14px; background: #0B1018; border: 1px solid #1C2230"><div style="height: 120px; display: grid; place-items: center; border-bottom: 1px solid #1C2230; font-weight: 700; font-size: 34px; letter-spacing: 0.06em">ZONA IT</div><div style="padding: 16px"><span style="padding: 1px 8px; transform: skewX(-12deg); background: #3FD0FF; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px">PARTENER PRINCIPAL</span><div style="margin-top: 12px; display: flex; gap: 8px"><span style="flex: 1 1 auto; min-height: 46px; display: inline-flex; align-items: center; justify-content: center; border: 2px dashed #3FD0FF; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 20px">ICEMAN10</span><span style="flex: 1 1 auto; min-height: 46px; display: inline-flex; align-items: center; justify-content: center; background: #3FD0FF; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800">VEZI OFERTA</span></div></div></div>
+    <div style="margin-top: 10px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+      <sc-for list="{{partners}}" as="p" hint-placeholder-count="4">
+        <div style="padding: 10px; background: #0B1018; border: 1px solid #1C2230"><div style="height: 44px; display: grid; place-items: center; border: 1px dashed #2A3445; font-size: 11px; color: #7D8899">LOGO</div><p style="margin: 6px 0 0; font-size: 13px"><strong>{{p.n}}</strong></p></div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- 02 COMUNITATEA -->
+  <section style="padding: 0 16px 36px">
+    <span style="padding: 2px 8px; transform: skewX(-12deg); background: #3FD0FF; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px">02</span>
+    <h2 style="margin: 8px 0 0; padding-bottom: 10px; border-bottom: 2px solid #F2F5FA; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 38px; line-height: 0.92; text-transform: uppercase">Comunitatea</h2>
+    <div style="margin-top: 14px; padding: 14px; background: #0B1018; border: 1px solid #1C2230"><p style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 22px; text-transform: uppercase">Contribuția ta</p><p style="margin: 4px 0 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 26px">+1 h 30 min</p><p style="margin: 0; font-size: 13px; color: #8C97A8">6 subs · 20 € · 23 h în chat · 4 zile la rând</p>
+      <p style="margin: 12px 0 6px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #8C97A8">Insignele tale · 2 din 6</p>
+      <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px">
+        <sc-for list="{{myBadges}}" as="e" hint-placeholder-count="6">
+          <div style="text-align: center">
+            <svg width="44" height="44" viewBox="0 0 56 56" aria-hidden="true"><polygon points="28,2 51,15 51,41 28,54 5,41 5,15" fill="{{e.fill}}" stroke="{{e.stroke}}" stroke-width="2"></polygon><polygon points="28,8 46,18.5 46,37.5 28,48 10,37.5 10,18.5" fill="none" stroke="{{e.stroke}}" stroke-opacity="0.4" stroke-width="1"></polygon><g transform="translate(16 16)"><path d="{{e.d}}" fill="none" stroke="{{e.icon}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></g></svg>
+            <p style="margin: 2px 0 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 11px; line-height: 1.05; color: {{e.labelColor}}">{{e.label}}</p>
+          </div>
+        </sc-for>
+      </div>
+      <div style="position: relative; margin-top: 10px; padding: 10px 12px; background: #0E1622; border: 1px solid #3FD0FF"><span style="position: absolute; top: -7px; left: 152px; width: 12px; height: 12px; background: #0E1622; border-left: 1px solid #3FD0FF; border-top: 1px solid #3FD0FF; transform: rotate(45deg)"></span><p style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px; color: #8FE4FF">SERIE DE 7 ZILE · 4 din 7</p><p style="margin: 2px 0 0; font-size: 13px; line-height: 1.35; color: #E6EBF1"><strong style="color: #8C97A8">Cum o obții:</strong> 7 zile la rând cu cel puțin 30 de minute în chat sau un check-in cu puncte de canal.</p><p style="margin: 4px 0 0; font-size: 12px; color: #8C97A8">O au 509 oameni din chat</p></div>
+      <p style="margin: 6px 0 0; font-size: 12px; color: #7D8899">Atinge o insignă ca să vezi cum o obții.</p></div>
+    <p style="margin: 22px 0 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 26px; text-transform: uppercase">Legende</p>
+    <div style="display: flex; gap: 10px; overflow: hidden">
+      <sc-for list="{{legends}}" as="g" hint-placeholder-count="3">
+        <div style="flex: none; width: 300px; padding: 16px; box-sizing: border-box; background: linear-gradient(160deg, rgba(159,232,255,0.13), rgba(226,182,255,0.08) 45%, rgba(200,255,233,0) 80%), #0B1018; border: 1px solid; border-image: linear-gradient(135deg, #9FE8FF 0%, #A9B8FF 30%, #E2B6FF 52%, #FFD6C2 74%, #C8FFE9 100%) 1"><p style="margin: 0; display: flex; align-items: center; gap: 6px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 0.12em; color: #C8C2FF"><sc-if value="{{g.star}}" hint-placeholder-val="{{false}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3FD0FF" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6-4.5-4.2 6.1-.7z"></path></svg></sc-if><sc-if value="{{g.gift}}" hint-placeholder-val="{{false}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3FD0FF" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="9" width="18" height="12"></rect><path d="M3 13h18M12 9v12M12 9c-2-4-6-4-6-1.5S10 9 12 9zM12 9c2-4 6-4 6-1.5S14 9 12 9z"></path></svg></sc-if><sc-if value="{{g.flake}}" hint-placeholder-val="{{false}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3FD0FF" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 4l3 2 3-2M9 20l3-2 3 2"></path></svg></sc-if>{{g.cat}} · PRISMĂ · LOCUL 1</p><p style="margin: 6px 0 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 28px; text-transform: uppercase">{{g.name}}</p><p style="margin: 2px 0 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 32px; background: linear-gradient(135deg, #9FE8FF 0%, #A9B8FF 30%, #E2B6FF 52%, #FFD6C2 74%, #C8FFE9 100%); -webkit-background-clip: text; background-clip: text; color: transparent">{{g.total}}</p><p style="margin: 6px 0 0; font-size: 13px; color: #8C97A8"><strong style="color: #E6C46A">2</strong> dianaplays · <strong style="color: #C9D1DB">3</strong> cristi_lol · <strong style="color: #C98A5B">4</strong> xBogdy · 5 kxtrin</p></div>
+      </sc-for>
+    </div>
+    <p style="margin: 6px 0 0; font-size: 12px; color: #7D8899">● ○ ○ se dă cu degetul: Donatori · Subs dăruite · Biți</p>
+    <p style="margin: 22px 0 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 24px; text-transform: uppercase">Timp adăugat azi</p>
+    <p style="margin: 2px 0 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 40px; line-height: 1; color: #DFF6FF">+8 h 10 min</p>
+    <sc-for list="{{feed}}" as="f" hint-placeholder-count="3">
+      <p style="margin: 0; padding: 9px 0; border-bottom: 1px solid #1A2230; font-size: 14px"><strong style="color: #3FD0FF; margin-right: 8px">{{f.t}}</strong>{{f.w}}</p>
+    </sc-for>
+    <button type="button" style="margin-top: 8px; min-height: 44px; width: 100%; background: none; border: 2px solid #2A3445; color: #F2F5FA; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; text-transform: uppercase">Vezi tot</button>
+    <p style="margin: 22px 0 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 24px; text-transform: uppercase">Fidelii</p>
+    <sc-for list="{{loyal}}" as="l" hint-placeholder-count="3">
+      <p style="margin: 0; padding: 9px 0; border-bottom: 1px solid #1A2230; font-size: 14px; display: flex; justify-content: space-between"><span><strong>{{l.n}}</strong> <span style="color: #3FD0FF">· {{l.s}}</span></span><span>{{l.h}}</span></p>
+    </sc-for>
+    <button type="button" style="margin-top: 8px; min-height: 44px; width: 100%; background: none; border: 2px solid #2A3445; color: #F2F5FA; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; text-transform: uppercase">Vezi tot</button>
+    <div style="margin-top: 22px; padding: 14px; background: #0B1018; border: 1px solid #1C2230"><p style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 22px; text-transform: uppercase">Obiectiv comunitar · 1.840 h</p><div style="margin-top: 8px; height: 10px; background: #1A2230"><div style="width: 30%; height: 100%; background: linear-gradient(90deg, #1E6BFF, #3FD0FF)"></div></div><p style="margin: 6px 0 0; font-size: 13px; color: #C9D2DF">Următorul: Turneu cu comunitatea la 3.000 h</p></div>
+  </section>
+
+  <!-- 03 MILESTONES -->
+  <section style="padding: 0 16px 36px">
+    <span style="padding: 2px 8px; transform: skewX(-12deg); background: #3FD0FF; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px">03</span>
+    <h2 style="margin: 8px 0 0; padding-bottom: 10px; border-bottom: 2px solid #F2F5FA; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 38px; line-height: 0.92; text-transform: uppercase">Milestone Maraton</h2>
+    <div style="margin-top: 14px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 3px"><span style="height: 8px; background: #3FD0FF"></span><span style="height: 8px; background: #3FD0FF"></span><span style="height: 8px; background: #3FD0FF"></span><span style="height: 8px; background: #3FD0FF"></span><span style="height: 8px; background: #F2F5FA"></span><span style="height: 8px; background: linear-gradient(90deg, #3FD0FF 36%, #1A2230 36%)"></span><span style="height: 8px; background: #1A2230"></span><span style="height: 8px; background: #1A2230"></span><span style="height: 8px; background: #1A2230"></span><span style="height: 8px; background: #1A2230"></span><span style="height: 8px; background: #1A2230"></span><span style="height: 8px; background: #1A2230"></span></div>
+    <p style="margin: 6px 0 0; display: flex; justify-content: space-between; font-size: 12px; color: #8C97A8"><span>4 din 12 făcute · 05 urmează live</span><span>7.500 €</span></p>
+    <div style="margin-top: 14px; padding: 14px; background: linear-gradient(180deg, rgba(63,208,255,0.10), rgba(63,208,255,0) 80%), #0B1018; border: 2px solid #3FD0FF">
+      <span style="padding: 1px 7px; transform: skewX(-12deg); background: #3FD0FF; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px">URMĂTORUL</span>
+      <p style="margin: 8px 0 0; display: flex; justify-content: space-between; align-items: baseline"><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 22px; text-transform: uppercase">06 · Karaoke cu colinde</span><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; color: #3FD0FF">1.500 €</span></p>
+      <div style="margin-top: 8px; height: 8px; background: #1A2230"><div style="width: 79%; height: 100%; background: linear-gradient(90deg, #1E6BFF, #3FD0FF)"></div></div>
+      <p style="margin: 6px 0 0; font-size: 13px; color: #AEB8C7">Mai sunt 320 € · 05 e deblocat și urmează live</p>
+    </div>
+    <p style="margin: 14px 0 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 22px; text-transform: uppercase">Ai ratat? Vezi clipurile</p>
+    <div style="display: flex; gap: 10px; overflow: hidden">
+      <sc-for list="{{doneClips}}" as="c" hint-placeholder-count="4">
+        <a href="#clip" style="flex: none; width: 200px; color: #F2F5FA; text-decoration: none; background: #0B1018; border: 1px solid #1C2230">
+          <span style="position: relative; display: block; aspect-ratio: 16 / 9; background: repeating-linear-gradient(135deg, rgba(63,208,255,0.05) 0 2px, transparent 2px 14px), linear-gradient(160deg, #16304A, #080B10 75%)">
+            <span style="position: absolute; top: 6px; left: 6px; padding: 0 6px; transform: skewX(-12deg); background: #3FD0FF; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px">✓ {{c.no}}</span>
+            <span style="position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px 0 0 -20px; display: grid; place-items: center; background: rgba(5,6,8,0.75); border: 2px solid #3FD0FF"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z" fill="#3FD0FF"></path></svg></span>
+            <span style="position: absolute; right: 6px; bottom: 6px; padding: 0 5px; background: rgba(5,6,8,0.85); font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px">{{c.dur}}</span>
+          </span>
+          <span style="display: block; padding: 8px 10px 10px"><span style="display: block; font-size: 13px; font-weight: 700; line-height: 1.3">{{c.t}}</span><span style="display: block; margin-top: 6px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px; text-transform: uppercase; color: #3FD0FF">Vezi clipul →</span></span>
+        </a>
+      </sc-for>
+    </div>
+    <p style="margin: 6px 0 0; font-size: 12px; color: #7D8899">Se dau cu degetul.</p>
+    <button type="button" style="margin-top: 10px; min-height: 44px; width: 100%; background: none; border: 2px solid #2A3445; color: #F2F5FA; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; text-transform: uppercase">Toate cele 12</button>
+  </section>
+
+  <!-- 04 JOACĂ: all four, stacked -->
+  <section style="padding: 0 16px 36px">
+    <span style="padding: 2px 8px; transform: skewX(-12deg); background: #3FD0FF; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px">04</span>
+    <h2 style="margin: 8px 0 0; padding-bottom: 10px; border-bottom: 2px solid #F2F5FA; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 38px; line-height: 0.92; text-transform: uppercase">Joacă</h2>
+    <!-- Vote -->
+    <div style="margin-top: 12px; padding: 16px; background: #0B1018; border: 1px solid #1C2230">
+      <div style="display: flex; justify-content: space-between; align-items: baseline"><p style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 24px; text-transform: uppercase">Votul abonaților</p><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 18px; color: #3FD0FF">39:54</span></div>
+      <sc-for list="{{votes}}" as="o" hint-placeholder-count="3">
+        <div style="margin-top: 10px"><div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 700"><span>{{o.t}}</span><span>{{o.p}}</span></div><div style="margin-top: 4px; height: 5px; background: #1A2230"><div style="height: 100%; width: {{o.p}}; background: #3FD0FF"></div></div></div>
+      </sc-for>
+      <a href="#vot" style="margin-top: 12px; min-height: 44px; display: flex; align-items: center; justify-content: center; background: #9146FF; color: #FFFFFF; text-decoration: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; text-transform: uppercase">Votează</a>
+    </div>
+    <!-- Wheel: big, first look -->
+    <div style="margin-top: 10px; padding: 16px; background: #0B1018; border: 1px solid #1C2230">
+      <p style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 26px; text-transform: uppercase">Roata lui Lucky</p>
+      <div style="position: relative; width: 320px; height: 320px; margin: 10px auto 0">
+        <svg width="320" height="320" viewBox="-10 -10 440 440" role="img" aria-label="Roata lui Lucky, 12 felii"><path d="M210 210 L158.2 16.8 A200 200 0 0 1 261.8 16.8 Z" fill="#16304A" stroke="#23415E" stroke-width="1.5"></path><text transform="translate(210 210) rotate(-90) translate(188 5)" text-anchor="end" fill="#E6C46A" font-family="Barlow Condensed, sans-serif" font-weight="800" font-style="italic" font-size="15">PREMIU PARTENER</text><path d="M210 210 L261.8 16.8 A200 200 0 0 1 351.4 68.6 Z" fill="#0E1A28" stroke="#23415E" stroke-width="1.5"></path><text transform="translate(210 210) rotate(-60) translate(188 5)" text-anchor="end" fill="#F2F5FA" font-family="Barlow Condensed, sans-serif" font-weight="800" font-style="italic" font-size="15">+5 MIN</text><path d="M210 210 L351.4 68.6 A200 200 0 0 1 403.2 158.2 Z" fill="#0B1622" stroke="#23415E" stroke-width="1.5"></path><text transform="translate(210 210) rotate(-30) translate(188 5)" text-anchor="end" fill="#F2F5FA" font-family="Barlow Condensed, sans-serif" font-weight="800" font-style="italic" font-size="15">SHOUTOUT</text><path d="M210 210 L403.2 158.2 A200 200 0 0 1 403.2 261.8 Z" fill="#16304A" stroke="#23415E" stroke-width="1.5"></path><text transform="translate(210 210) rotate(0) translate(188 5)" text-anchor="end" fill="#E6C46A" font-family="Barlow Condensed, sans-serif" font-weight="800" font-style="italic" font-size="15">PREMIU PARTENER</text><path d="M210 210 L403.2 261.8 A200 200 0 0 1 351.4 351.4 Z" fill="#0B1622" stroke="#23415E" stroke-width="1.5"></path><text transform="translate(210 210) rotate(30) translate(188 5)" text-anchor="end" fill="#F2F5FA" font-family="Barlow Condensed, sans-serif" font-weight="800" font-style="italic" font-size="15">+10 MIN</text><path d="M210 210 L351.4 351.4 A200 200 0 0 1 261.8 403.2 Z" fill="#0E1A28" stroke="#23415E" stroke-width="1.5"></path><text transform="translate(210 210) rotate(60) translate(188 5)" text-anchor="end" fill="#F2F5FA" font-family="Barlow Condensed, sans-serif" font-weight="800" font-style="italic" font-size="15">ALEGI JOCUL</text><path d="M210 210 L261.8 403.2 A200 200 0 0 1 158.2 403.2 Z" fill="#16304A" stroke="#23415E" stroke-width="1.5"></path><text transform="translate(210 210) rotate(90) translate(188 5)" text-anchor="end" fill="#E6C46A" font-family="Barlow Condensed, sans-serif" font-weight="800" font-style="italic" font-size="15">PREMIU PARTENER</text><path d="M210 210 L158.2 403.2 A200 200 0 0 1 68.6 351.4 Z" fill="#0E1A28" stroke="#23415E" stroke-width="1.5"></path><text transform="translate(210 210) rotate(120) translate(188 5)" text-anchor="end" fill="#F2F5FA" font-family="Barlow Condensed, sans-serif" font-weight="800" font-style="italic" font-size="15">VIP 24H</text><path d="M210 210 L68.6 351.4 A200 200 0 0 1 16.8 261.8 Z" fill="#0B1622" stroke="#23415E" stroke-width="1.5"></path><text transform="translate(210 210) rotate(150) translate(188 5)" text-anchor="end" fill="#F2F5FA" font-family="Barlow Condensed, sans-serif" font-weight="800" font-style="italic" font-size="15">O COLINDĂ</text><path d="M210 210 L16.8 261.8 A200 200 0 0 1 16.8 158.2 Z" fill="#16304A" stroke="#23415E" stroke-width="1.5"></path><text transform="translate(210 210) rotate(180) translate(188 5)" text-anchor="end" fill="#E6C46A" font-family="Barlow Condensed, sans-serif" font-weight="800" font-style="italic" font-size="15">PREMIU PARTENER</text><path d="M210 210 L16.8 158.2 A200 200 0 0 1 68.6 68.6 Z" fill="#0B1622" stroke="#23415E" stroke-width="1.5"></path><text transform="translate(210 210) rotate(210) translate(188 5)" text-anchor="end" fill="#F2F5FA" font-family="Barlow Condensed, sans-serif" font-weight="800" font-style="italic" font-size="15">+30 MIN</text><path d="M210 210 L68.6 68.6 A200 200 0 0 1 158.2 16.8 Z" fill="#0E1A28" stroke="#23415E" stroke-width="1.5"></path><text transform="translate(210 210) rotate(240) translate(188 5)" text-anchor="end" fill="#F2F5FA" font-family="Barlow Condensed, sans-serif" font-weight="800" font-style="italic" font-size="15">MAI ÎNCEARCĂ</text><circle cx="210" cy="210" r="200" fill="none" stroke="#3FD0FF" stroke-width="3"></circle><circle cx="210" cy="210" r="50" fill="#050608" stroke="#3FD0FF" stroke-width="3"></circle><path d="M196 -8 L224 -8 L210 20 Z" fill="#3FD0FF"></path></svg>
+        <img src="/_blob/713780c343892b89eac96649ced1b2fe" alt="" style="position: absolute; left: 133px; top: 132px; width: 54px; height: auto">
+      </div>
+      <p style="margin: 10px 0 0; font-size: 13px; color: #C9D2DF">2 ore în chat = o rotire pe zi. 25 de premii, pe categorii: dacă iese «Premiu partener», premiul exact apare imediat.</p>
+      <a href="#roata" style="margin-top: 10px; min-height: 48px; display: flex; align-items: center; justify-content: center; background: #D5162B; color: #FFFFFF; text-decoration: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 18px; text-transform: uppercase">Învârte roata</a>
+      <a href="#premii" style="margin-top: 8px; min-height: 44px; display: flex; align-items: center; justify-content: center; border: 2px solid #2A3445; color: #F2F5FA; text-decoration: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; text-transform: uppercase">Vezi toate premiile</a>
+    </div>
+    <!-- Bingo -->
+    <div style="margin-top: 10px; padding: 16px 10px; background: #0B1018; border: 1px solid #1C2230">
+      <div style="padding: 0 6px"><p style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 26px; text-transform: uppercase">Bingo</p><p style="margin: 2px 0 0; font-size: 13px; color: #C9D2DF">Alege o linie cu săgețile. Dacă toate 5 se întâmplă, intri la tragerea la sorți.</p></div>
+      <div style="margin-top: 12px; display: grid; grid-template-columns: 44px repeat(5, minmax(0, 1fr)); gap: 3px">
+        <sc-for list="{{bingoBoard}}" as="c" hint-placeholder-count="37">
+          <sc-if value="{{c.btn}}">
+            <button type="button" aria-label="{{c.aria}}" style="min-height: 44px; padding: 0; background: {{c.bg}}; border: 1px solid {{c.border}}; color: {{c.color}}; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 18px">{{c.arrow}}</button>
+          </sc-if>
+          <sc-if value="{{c.cell}}">
+            <div style="position: relative; min-height: 72px; box-sizing: border-box; padding: 14px 4px 5px; display: flex; align-items: flex-end; background: {{c.bg}}; border: {{c.bw}} solid {{c.border}}; color: {{c.color}}; font-size: 10.5px; font-weight: 600; line-height: 1.2; hyphens: auto; overflow-wrap: anywhere">
+              <sc-if value="{{c.hit}}"><span style="position: absolute; top: 2px; right: 4px; font-size: 11px; font-weight: 800; color: {{c.tagFg}}">✓</span></sc-if>
+              {{c.t}}
+            </div>
+          </sc-if>
+        </sc-for>
+      </div>
+      <div style="margin: 12px 6px 0; padding: 12px; background: rgba(63,208,255,0.08); border-left: 3px solid #3FD0FF">
+        <p style="margin: 0; display: flex; justify-content: space-between; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase"><span style="color: #8FE4FF">Linia ta · rândul 3</span><span>2 din 5</span></p>
+        <sc-for list="{{myLine}}" as="l" hint-placeholder-count="5">
+          <p style="margin: 6px 0 0; display: flex; gap: 8px; font-size: 14px; font-weight: 600"><sc-if value="{{l.hit}}"><span style="flex: none; width: 16px; color: #3FD0FF">✓</span></sc-if><sc-if value="{{l.miss}}"><span style="flex: none; width: 16px; color: #4A5568">·</span></sc-if>{{l.t}}</p>
+        </sc-for>
+      </div>
+      <p style="margin: 10px 6px 0; font-size: 13px; color: #8C97A8">Poți schimba linia până pe 25 dec, 12:00 · 1.240 de jucători · Premiul: căști de gaming <span style="color: #E6C46A">de la Zona IT</span></p>
+      <a href="#bingo" style="margin: 10px 6px 0; min-height: 46px; display: flex; align-items: center; justify-content: center; background: #3FD0FF; color: #04101A; text-decoration: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; text-transform: uppercase">Salvează linia</a>
+    </div>
+    <!-- Suggest -->
+    <div style="margin-top: 10px; padding: 16px; background: #0B1018; border: 1px solid #1C2230">
+      <p style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 24px; text-transform: uppercase">Propune o provocare</p>
+      <label for="sugp" style="display: block; margin-top: 6px; font-size: 13px; color: #8C97A8">Ce să facă Iceman live? (abonații)</label>
+      <textarea id="sugp" rows="2" style="margin-top: 6px; width: 100%; box-sizing: border-box; padding: 8px; background: #050608; border: 1px solid #2A3445; color: #F2F5FA; font: inherit">ex: un meci doar cu suport</textarea>
+      <a href="#propune" style="margin-top: 10px; min-height: 44px; display: flex; align-items: center; justify-content: center; background: #3FD0FF; color: #04101A; text-decoration: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; text-transform: uppercase">Trimite</a>
+    </div>
+  </section>
+
+  <!-- 05 LIVE -->
+  <section style="padding: 0 16px 36px">
+    <span style="padding: 2px 8px; transform: skewX(-12deg); background: #3FD0FF; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px">05</span>
+    <h2 style="margin: 8px 0 0; padding-bottom: 10px; border-bottom: 2px solid #F2F5FA; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 38px; line-height: 0.92; text-transform: uppercase">Live</h2>
+    <div style="margin-top: 12px; height: 200px; display: grid; place-items: center; background: #0B1018; border: 1px solid #1C2230; color: #8C97A8">Player (la apăsare)</div>
+  </section>
+
+  <!-- 06 PROGRAM -->
+  <section style="padding: 0 16px 36px">
+    <span style="padding: 2px 8px; transform: skewX(-12deg); background: #3FD0FF; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px">06</span>
+    <h2 style="margin: 8px 0 0; padding-bottom: 10px; border-bottom: 2px solid #F2F5FA; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 38px; line-height: 0.92; text-transform: uppercase">Program și cronologie</h2>
+    <p style="margin: 10px 0 0; font-size: 14px; color: #AEB8C7">Calendar de Advent: câte o fereastră pe zi, cu clipul zilei.</p>
+    <div style="margin-top: 10px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+      <sc-for list="{{advent}}" as="d" hint-placeholder-count="8">
+        <sc-if value="{{d.past}}" hint-placeholder-val="{{false}}">
+          <div style="min-height: 84px; padding: 7px; box-sizing: border-box; background: #0B1018; border: 1px solid #23415E; display: flex; flex-direction: column"><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 11px; color: #8C97A8">{{d.date}}</span><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 24px; line-height: 1; color: #3FD0FF">{{d.n}}</span><span style="margin-top: auto; font-size: 11px; color: #C9D2DF">▶ clip</span></div>
+        </sc-if>
+        <sc-if value="{{d.today}}" hint-placeholder-val="{{false}}">
+          <div style="min-height: 84px; padding: 7px; box-sizing: border-box; background: linear-gradient(180deg, rgba(63,208,255,0.18), rgba(63,208,255,0.04)), #0B1018; border: 2px solid #3FD0FF; display: flex; flex-direction: column"><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 11px; color: #3FD0FF">AZI</span><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 24px; line-height: 1">{{d.n}}</span><span style="margin-top: auto; font-size: 11px; line-height: 1.2">{{d.t}}</span></div>
+        </sc-if>
+        <sc-if value="{{d.future}}" hint-placeholder-val="{{true}}">
+          <div style="min-height: 84px; padding: 7px; box-sizing: border-box; background: #080B10; border: 1px solid #1C2230; display: flex; flex-direction: column"><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 11px; color: #7D8899">{{d.date}}</span><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 24px; line-height: 1; color: #4A5568">{{d.n}}</span><span style="margin-top: auto; font-size: 11px; line-height: 1.2; color: #AEB8C7">{{d.t}}</span></div>
+        </sc-if>
+      </sc-for>
+    </div>
+    <button type="button" style="margin-top: 8px; min-height: 44px; width: 100%; background: none; border: 2px solid #2A3445; color: #F2F5FA; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; text-transform: uppercase">Toate cele 22 de zile</button>
+  </section>
+
+  <footer style="padding: 20px 16px; border-top: 1px solid #1C2230; font-size: 13px; color: #8C97A8">Reguli · Confidențialitate · Ascunde-mi numele · Devino partener</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":7000}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.pool = [
+      { u: 'Rares1337', w: 'sub Tier 3', s: 1080, say: '18 minute. Destul cât să mai pierd un meci.' },
+      { u: 'dianaplays', w: 'donație 5 €', s: 1800, say: 'Jumătate de oră în plus. Patul mai poate aștepta.' },
+      { u: 'kxtrin', w: 'sub Prime', s: 360, say: '6 minute: două morți și un flash ratat.' },
+      { u: 'vladutz97', w: 'a dăruit 5 subs', s: 1800, say: '5 subs cadou. Moșul s-a mutat pe Twitch.' },
+      { u: 'teo_mid', w: '400 de biți', s: 240, say: '4 minute. Exact cât durează o colindă.' },
+      { u: 'xBogdy', w: 'donație 10 €', s: 3600, say: 'O oră în plus. Cafeaua numărul patru, vino.' },
+      { u: 'mihai_tzr', w: 'sub Tier 1', s: 360, say: 'Încă 6 minute cu voi. Nu mă plâng.' },
+      { u: 'andreiGG', w: 'donație 20 €', s: 7200, say: 'Două ore?! Andrei, nu mă mai lași să dorm.' },
+    ];
+    this.state = { remaining: 3 * 86400 + 14 * 3600 + 27 * 60 + 40, n: 0, recent: [this.pool[7], this.pool[4], this.pool[2], this.pool[5]], pick: 0 };
+  }
+  componentDidMount() {
+    this.t1 = setInterval(() => this.setState({ remaining: Math.max(0, this.state.remaining - 1) }), 1000);
+    this.t2 = setInterval(() => {
+      const e = this.pool[this.state.n % this.pool.length];
+      this.setState({ n: this.state.n + 1, remaining: this.state.remaining + e.s, recent: [e, ...this.state.recent].slice(0, 4) });
+    }, 4200);
+  }
+  componentWillUnmount() { clearInterval(this.t1); clearInterval(this.t2); }
+  board() {
+    const items = ['Rage bait', 'Țipă la iKLD', 'Cântă fără să-i ceară nimeni', 'Raid cu peste 50 de oameni', 'Cineva dăruiește 10+ subs', 'Cineva donează 100+ €', 'Moare în primul minut', 'Vorbește cu microfonul pe mute', 'Un moderator își ia unmod', 'Mai prinde un accident pe live', 'Se ia curentul', 'Face pană la mașină', 'Sforăie în somn', 'Rage quit', 'Zice „ultimul joc” și mai joacă 3', 'Pică netul sau OBS-ul', 'Mănâncă pe stream', 'Adoarme pe cameră', 'Chatul spamează același emote', 'A treia cafea a zilei', 'Râde un minut fără oprire', 'Cântă o colindă', 'Începe Ora dublă', 'Plânge de râs', 'Apare cineva neanunțat pe cameră'];
+    const chosenRow = 2, hits = [0, 13, 14, 18, 19];
+    const btn = (n, arrow, aria) => { const on = n === chosenRow; return { btn: true, arrow, aria, bg: on ? '#3FD0FF' : 'transparent', color: on ? '#04101A' : '#8FE4FF', border: on ? '#3FD0FF' : '#23415E' }; };
+    const cell = (i) => {
+      const mine = Math.floor(i / 5) === chosenRow, hit = hits.includes(i);
+      if (mine && hit) return { cell: true, t: items[i], hit, bg: '#3FD0FF', color: '#04101A', border: '#3FD0FF', bw: '2px', tagBg: '#04101A', tagFg: '#3FD0FF' };
+      if (mine) return { cell: true, t: items[i], hit, bg: 'rgba(63,208,255,0.14)', color: '#F2F5FA', border: '#3FD0FF', bw: '2px' };
+      if (hit) return { cell: true, t: items[i], hit, bg: '#0E1A28', color: '#F2F5FA', border: '#2E5A80', bw: '1px', tagBg: '#1A2E44', tagFg: '#8FE4FF' };
+      return { cell: true, t: items[i], hit, bg: '#080B10', color: '#C9D2DF', border: '#1C2230', bw: '1px' };
+    };
+    const out = [btn(10, '↘', 'Diagonala de sus'), ...[0, 1, 2, 3, 4].map((c) => btn(5 + c, '↓', `Coloana ${c + 1}`))];
+    for (let r = 0; r < 5; r++) out.push(btn(r, '→', `Rândul ${r + 1}`), ...[0, 1, 2, 3, 4].map((c) => cell(r * 5 + c)));
+    out.push(btn(11, '↗', 'Diagonala de jos'));
+    return out;
+  }
+  myLine() {
+    return this.board().filter((c) => c.cell && c.bw === '2px').map((c) => ({ t: c.t, hit: c.hit, miss: !c.hit }));
+  }
+  badge(key, extra) {
+    const D = { star: 'M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6-4.5-4.2 6.1-.7z', moon: 'M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z', clock: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 7v5l3 2', bolt: 'M13 2L4 14h7l-1 8 9-12h-7z' };
+    const A = { gold: ['#E6C46A', 'rgba(230,196,106,0.12)', '#F2D98E'], ice: ['#3FD0FF', 'rgba(63,208,255,0.12)', '#8FE4FF'], bronze: ['#C98A5B', 'rgba(201,138,91,0.14)', '#E3B08A'], silver: ['#C9D1DB', 'rgba(201,209,219,0.10)', '#E6EBF1'], prism: ['#C3B8FF', 'rgba(169,184,255,0.10)', '#E2DAFF'], plat: ['#5FDDBF', 'rgba(95,221,191,0.12)', '#A6F0DD'] };
+    const C = { og: ['ZIUA 1 OG', 'bronze', 'star'], h10: ['10 ORE', 'bronze', 'clock'], night: ['TURA DE NOAPTE', 'silver', 'moon'], streak7: ['SERIE DE 7 ZILE', 'gold', 'bolt'], h50: ['50 DE ORE', 'plat', 'clock'], h100: ['100 DE ORE', 'prism', 'clock'] };
+    const H = { og: ['Fii în chat în prima zi a maratonului, 20 decembrie.', '1.240'], night: ['Stai în total o oră în chat între 00:00 și 06:00.', '386'], h10: ['Strânge 10 ore în chat, adunate pe tot maratonul.', '2.150'], h50: ['Strânge 50 de ore în chat, adunate pe tot maratonul.', '214'], h100: ['Strânge 100 de ore în chat, adunate pe tot maratonul.', '37'], streak7: ['7 zile la rând cu cel puțin 30 de minute în chat sau un check-in cu puncte de canal.', '509'] };
+    const [label, tone, icon] = C[key], [accent, tint, fg] = A[tone];
+    const locked = !!(extra && extra.locked);
+    return { label, d: D[icon], accent, tint, fg, locked, how: H[key][0], who: `O au ${H[key][1]} oameni din chat`, tip: !!(extra && extra.tip), title: `${label}: ${H[key][0]}`, earned: !locked, note: (extra && extra.note) || 'câștigată',
+      fill: locked ? '#0B1018' : tint, stroke: locked ? '#2A3445' : accent, icon: locked ? '#4A5568' : accent, labelColor: locked ? '#7D8899' : fg };
+  }
+  flakes(w, h, n) {
+    let s = 11;
+    const r = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+    const out = [];
+    for (let i = 0; i < n; i++) out.push({ x: Math.round(r() * w), y: Math.round(r() * h), size: 1 + Math.round(r() * 2), op: (0.12 + r() * 0.5).toFixed(2) });
+    return out;
+  }
+  advent() {
+    const dates = ['20 DEC', '21 DEC', '22 DEC', '23 DEC', '24 DEC', '25 DEC', '26 DEC', '27 DEC'];
+    const notes = { 4: 'Ajunul · colinde', 5: 'Crăciun' };
+    const today = 4;
+    return dates.map((date, i) => ({ date, n: String(i + 1).padStart(2, '0'), t: notes[i] || '', past: i < today, today: i === today, future: i > today }));
+  }
+  renderVals() {
+    const pad = (x) => String(x).padStart(2, '0');
+    const add = (x) => x >= 3600 ? `+${Math.floor(x / 3600)}:${pad(Math.floor((x % 3600) / 60))}:${pad(x % 60)}` : `+${pad(Math.floor(x / 60))}:${pad(x % 60)}`;
+    const words = (x) => x >= 3600 ? `+${Math.floor(x / 3600)} h${x % 3600 ? ' ' + Math.floor((x % 3600) / 60) + ' min' : ''}` : `+${Math.floor(x / 60)} min`;
+    const clock = (r) => `${Math.floor(r / 86400)}z ${pad(Math.floor((r % 86400) / 3600))}:${pad(Math.floor((r % 3600) / 60))}:${pad(r % 60)}`;
+    const r = this.state.remaining, n = this.state.n, ab = n % 2 ? 'A' : 'B', fresh = n > 0;
+    const last = this.state.recent[0];
+    const opts = [{ l: '5 €', s: 1800, fun: 'cam un meci ranked' }, { l: '10 €', s: 3600, fun: 'două meciuri și o cafea' }, { l: '25 €', s: 9000, fun: 'un film de Crăciun, cu tot cu reclame' }, { l: 'Sub T1', s: 360, fun: 'două colinde, cântate prost' }, { l: 'Sub T3', s: 1080, fun: 'o pauză de masă cu sarmale' }, { l: '5 gift', s: 1800, fun: 'cam un meci ranked' }];
+    const o = opts[this.state.pick];
+    return {
+      units: [{ v: pad(Math.floor(r / 86400)), l: 'ZILE' }, { v: pad(Math.floor((r % 86400) / 3600)), l: 'ORE' }, { v: pad(Math.floor((r % 3600) / 60)), l: 'MIN' }, { v: pad(r % 60), l: 'SEC' }],
+      chipT: add(last.s), chipU: last.u, chipW: last.w, chipCls: fresh ? 'in' + ab : '',
+      bubble: fresh ? last.say : 'Ziua 5. Somnul e doar un zvon.',
+      bubbleWho: fresh ? `MERSI, ${last.u.toUpperCase()}!` : 'ICEMAN, LIVE',
+      bubbleCls: fresh ? 'bub' + ab : '', hopCls: fresh ? 'hop' + ab : '', glowCls: fresh ? 'glow' + ab : '', popCls: fresh ? 'pop' + ab : '',
+      popText: add(last.s),
+      calc: opts.map((x, i) => ({ l: x.l, on: String(i === this.state.pick), bg: i === this.state.pick ? '#3FD0FF' : 'transparent', fg: i === this.state.pick ? '#04101A' : '#F2F5FA', border: i === this.state.pick ? '#3FD0FF' : '#2A3445', pick: () => this.setState({ pick: i }) })),
+      calcAdd: words(o.s), calcAt: clock(r + o.s), calcFun: o.fun,
+      rates: [{ a: '1 €', b: '+6 min' }, { a: 'T1/Prime', b: '+6' }, { a: 'T2', b: '+12' }, { a: 'T3', b: '+18' }, { a: 'Gift', b: '+6' }, { a: '400 biți', b: '+4' }],
+      partners: [{ n: '[Partener 1]' }, { n: '[Partener 2]' }, { n: '[Partener 3]' }, { n: '[Partener 4]' }],
+      legends: [{ cat: 'DONATORI', name: 'andreiGG', total: '250 €', star: true }, { cat: 'SUBS DĂRUITE', name: 'vladutz97', total: '142 subs', gift: true }, { cat: 'BIȚI', name: 'teo_mid', total: '48.500', flake: true }],
+      flakes: this.flakes(390, 8180, 225),
+      myBadges: [this.badge('og'), this.badge('h10'), this.badge('night', { locked: true }), this.badge('streak7', { locked: true }), this.badge('h50', { locked: true }), this.badge('h100', { locked: true })],
+      votes: [{ t: 'Colinde la karaoke', p: '30%' }, { t: 'Costum de spiriduș', p: '28%' }, { t: 'Joc legat la ochi', p: '18%' }],
+      bingoBoard: this.board(),
+      myLine: this.myLine(),
+      tickerTwice: [0, 1].flatMap(() => [
+        { time: '+2:00:00', user: 'andreiGG', what: 'donație 20 €' }, { time: '+18:00', user: 'Rares1337', what: 'sub Tier 3' },
+        { time: '+1:00:00', user: 'vladutz97', what: 'a dăruit 10 subs' }, { time: '+30:00', user: 'dianaplays', what: 'donație 5 €' },
+        { time: '+6:00', user: 'kxtrin', what: 'sub Prime' }, { time: '+4:00', user: 'teo_mid', what: '400 de biți' },
+      ]),
+      advent: this.advent(),
+      feed: [{ t: '+2:00:00', w: 'andreiGG · donație 20 €' }, { t: '+18:00', w: 'Rares1337 · sub Tier 3' }, { t: '+1:00:00', w: 'vladutz97 · 10 subs dăruite' }],
+      loyal: [{ n: 'teo_mid', s: '9 zile', h: '86 h' }, { n: 'dianaplays', s: '9 zile', h: '79 h' }, { n: 'kxtrin', s: '6 zile', h: '74 h' }],
+      doneClips: [{ no: '01', t: 'Pulover urât de Crăciun tot stream-ul', dur: '1:12' }, { no: '02', t: 'Provocarea cu baia de gheață', dur: '0:58' }, { no: '03', t: 'Seară de jocuri cu viewerii', dur: '2:40' }, { no: '04', t: 'Concurs de turtă dulce', dur: '1:35' }],
+      days: [{ day: 'ZIUA 1', t: 'Startul · clipul zilei' }, { day: 'ZIUA 2', t: 'Ora dublă oferită de Zona IT' }, { day: 'ZIUA 3', t: 'Provocarea votată · clip' }, { day: 'AZI', t: 'Ranked cu chatul' }],
+    };
+  }
+}
+</script>
+</body>
+</html>

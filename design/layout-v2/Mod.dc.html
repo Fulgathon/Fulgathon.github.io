@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<title>/mod · Replici Iceman</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&amp;family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#050608}
+textarea:focus,button:focus-visible{outline:2px solid #3FD0FF;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1440px; min-height: 1000px; box-sizing: border-box; padding: 56px 120px; background: #050608; color: #F2F5FA; font-family: Barlow, system-ui, sans-serif; font-size: 16px; line-height: 1.5">
+  <span style="padding: 2px 10px; transform: skewX(-12deg); background: #3FD0FF; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800">/MOD</span>
+  <div style="margin-top: 10px; padding-bottom: 14px; border-bottom: 2px solid #F2F5FA; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px">
+    <h2 style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 64px; line-height: 0.92; text-transform: uppercase">Replicile lui Iceman</h2>
+    <button type="button" style="min-height: 50px; padding: 0 24px; background: #3FD0FF; color: #04101A; border: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px; text-transform: uppercase">Salvează tot</button>
+  </div>
+  <p style="margin: 14px 0 0; max-width: 900px; color: #AEB8C7">Ce zice Iceman în balonul din hero când intră ceva. Câte o replică pe rând, minim 5 pe grup. Site-ul alege una la întâmplare și nu o repetă până nu le folosește pe toate. Poți folosi: <code style="padding: 0 6px; background: #0E1622; border: 1px solid #23415E; color: #8FE4FF">{nume}</code> <code style="padding: 0 6px; background: #0E1622; border: 1px solid #23415E; color: #8FE4FF">{timp}</code> <code style="padding: 0 6px; background: #0E1622; border: 1px solid #23415E; color: #8FE4FF">{suma}</code> <code style="padding: 0 6px; background: #0E1622; border: 1px solid #23415E; color: #8FE4FF">{subs}</code>. Maxim 70 de caractere, ca să încapă în balon. Numele trec prin același filtru ca restul site-ului.</p>
+
+  <div style="margin-top: 22px; display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 16px">
+    <div style="padding: 18px 20px; background: #0B1018; border: 1px solid #23415E">
+      <label style="display: flex; align-items: center; gap: 14px; min-height: 44px; cursor: pointer"><span aria-hidden="true" style="flex: none; position: relative; width: 52px; height: 28px; background: #3FD0FF"><span style="position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; background: #04101A"></span></span><input type="checkbox" checked style="position: absolute; opacity: 0"><span><strong style="font-family: 'Barlow Condensed', sans-serif; font-size: 22px; text-transform: uppercase">Trimite replica și în chatul Twitch</strong><span style="display: block; font-size: 14px; color: #AEB8C7">Aceeași replică din balon apare în chat, cu @ la cel care a dat. Cel mult un mesaj la 5 secunde; un val de subs cadou primește un singur mesaj.</span></span></label>
+      <p style="margin: 10px 0 0; font-size: 14px; color: #8C97A8">Scrie ca: <strong style="color: #F2F5FA">[contul de bot ales]</strong> · se poate opri oricând de aici.</p>
+    </div>
+    <div style="padding: 14px 16px; background: #18181B; border: 1px solid #2A2A2E; font: 13px/1.6 Inter, Barlow, sans-serif">
+      <p style="margin: 0 0 6px; font-size: 11px; letter-spacing: 0.12em; color: #ADADB8">PREVIZUALIZARE CHAT TWITCH</p>
+      <p style="margin: 0; color: #EFEFF1"><strong style="color: #9147FF">vladutz97</strong>: hai că mai stăm</p>
+      <p style="margin: 0; color: #EFEFF1"><strong style="color: #3FD0FF">[bot]</strong>: 20 € de la @andreiGG?! (+2:00:00 pe ceas)</p>
+      <p style="margin: 0; color: #EFEFF1"><strong style="color: #E6C46A">dianaplays</strong>: GG andrei</p>
+    </div>
+  </div>
+
+  <div style="margin-top: 28px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+    <sc-for list="{{groups}}" as="g" hint-placeholder-count="6">
+      <div style="padding: 20px; background: #0B1018; border: 1px solid {{g.border}}">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px">
+          <label for="{{g.id}}" style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 26px; line-height: 1; text-transform: uppercase">{{g.name}}</label>
+          <span style="flex: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px; color: {{g.countColor}}">{{g.count}}</span>
+        </div>
+        <p style="margin: 4px 0 0; font-size: 13px; color: #8C97A8">{{g.when}}</p>
+        <textarea id="{{g.id}}" rows="6" placeholder="O replică pe rând" style="margin-top: 10px; width: 100%; box-sizing: border-box; padding: 10px; background: #050608; border: 1px solid #2A3445; color: #F2F5FA; font: 14px/1.6 Barlow, sans-serif; resize: vertical">{{g.text}}</textarea>
+        <p style="margin: 12px 0 6px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px; letter-spacing: 0.12em; color: #8C97A8">PREVIZUALIZARE</p>
+        <div style="display: inline-block; max-width: 100%; box-sizing: border-box; padding: 8px 12px; background: #F2F5FA; color: #04101A; transform: rotate(-2deg); font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 18px; line-height: 1.05; text-transform: uppercase"><span style="display: block; margin-bottom: 2px; font-size: 11px; font-style: normal; letter-spacing: 0.1em; color: #245A78">{{g.who}}</span>{{g.preview}}</div>
+      </div>
+    </sc-for>
+  </div>
+  <p style="margin: 18px 0 0; font-size: 14px; color: #8C97A8">Replicile din casete sunt doar exemple de formă: le înlocuiți voi cu ce zice Iceman de obicei. Un grup cu mai puțin de 5 replici e marcat cu galben și folosește replica de rezervă «Mersi, {nume}!».</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const G = [
+      { id: 'r-sub', name: 'Sub (Tier 1 / Prime)', when: 'Un sub nou sau reînnoit, Tier 1 sau Prime.', lines: ['Mersi, {nume}!', '{nume}, bine ai venit!', '[replica 3]', '[replica 4]', '[replica 5]'], who: 'MERSI, KXTRIN!', sample: { nume: 'kxtrin', timp: '+6:00' } },
+      { id: 'r-sub2', name: 'Sub Tier 2 / 3', when: 'Sub Tier 2 sau Tier 3.', lines: ['{nume}, Tier 3?!', '[replica 2]', '[replica 3]', '[replica 4]', '[replica 5]'], who: 'MERSI, RARES1337!', sample: { nume: 'Rares1337', timp: '+18:00' } },
+      { id: 'r-gift', name: 'Subs cadou', when: 'Cineva dăruiește unul sau mai multe subs.', lines: ['{nume} a dăruit {subs} subs!', '[replica 2]', '[replica 3]'], who: 'MERSI, VLADUTZ97!', sample: { nume: 'vladutz97', subs: '5', timp: '+30:00' } },
+      { id: 'r-don', name: 'Donație mică', when: 'Donație sub 10 €.', lines: ['Mersi, {nume}! {timp} pe ceas.', '[replica 2]', '[replica 3]', '[replica 4]', '[replica 5]'], who: 'MERSI, DIANAPLAYS!', sample: { nume: 'dianaplays', suma: '5 €', timp: '+30:00' } },
+      { id: 'r-donbig', name: 'Donație mare', when: 'Donație de 10 € sau mai mult.', lines: ['{suma} de la {nume}?!', '[replica 2]', '[replica 3]', '[replica 4]', '[replica 5]', '[replica 6]'], who: 'MERSI, ANDREIGG!', sample: { nume: 'andreiGG', suma: '20 €', timp: '+2:00:00' } },
+      { id: 'r-bits', name: 'Biți', when: 'Orice cheer cu biți.', lines: ['Mersi pentru biți, {nume}!', '[replica 2]', '[replica 3]', '[replica 4]', '[replica 5]'], who: 'MERSI, TEO_MID!', sample: { nume: 'teo_mid', timp: '+4:00' } },
+    ];
+    const fill = (t, v) => t.replace(/\{(nume|timp|suma|subs)\}/g, (_, k) => v[k] || '');
+    return { groups: G.map((g) => {
+      const ok = g.lines.length >= 5;
+      return { id: g.id, name: g.name, when: g.when, text: g.lines.join('\n'), who: g.who, preview: fill(g.lines[0], g.sample),
+        count: ok ? `${g.lines.length} replici ✓` : `${g.lines.length} din 5`, countColor: ok ? '#3FD0FF' : '#E6C46A', border: ok ? '#1C2230' : '#6B5A2A' };
+    }) };
+  }
+}
+</script>
+</body>
+</html>

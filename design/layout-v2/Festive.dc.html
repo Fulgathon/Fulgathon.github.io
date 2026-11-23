@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<title>Festiv, cu măsură</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&amp;family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#050608}
+a{color:#3FD0FF}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1000px; box-sizing: border-box; padding: 56px 120px; background: #050608; color: #F2F5FA; font-family: Barlow, system-ui, sans-serif; font-size: 16px; line-height: 1.5; overflow: hidden">
+  <span style="padding: 2px 10px; transform: skewX(-12deg); background: #3FD0FF; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800">REGULI</span>
+  <h2 style="margin: 10px 0 0; padding-bottom: 14px; border-bottom: 2px solid #F2F5FA; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 64px; line-height: 0.92; text-transform: uppercase">Festiv, cu măsură</h2>
+  <p style="margin: 14px 0 0; max-width: 760px; color: #AEB8C7">Crăciunul se simte din câteva detalii repetate peste tot, nu din decor. Restul rămâne curat: negru, albastru de gheață, alb, colțuri drepte.</p>
+
+  <div style="margin-top: 36px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px">
+    <!-- Icons -->
+    <div>
+      <h3 style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 28px; text-transform: uppercase">1. Patru semne, linie subțire</h3>
+      <div style="margin-top: 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+        <div style="padding: 16px; background: #0B1018; border: 1px solid #1C2230"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3FD0FF" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 4l3 2 3-2M9 20l3-2 3 2"></path></svg><p style="margin: 8px 0 0; font-weight: 700">Fulg</p><p style="margin: 0; font-size: 14px; color: #8C97A8">ore în chat, biți, zile viitoare</p></div>
+        <div style="padding: 16px; background: #0B1018; border: 1px solid #1C2230"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3FD0FF" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="9" width="18" height="12"></rect><path d="M3 13h18M12 9v12M12 9c-2-4-6-4-6-1.5S10 9 12 9zM12 9c2-4 6-4 6-1.5S14 9 12 9z"></path></svg><p style="margin: 8px 0 0; font-weight: 700">Cadou</p><p style="margin: 0; font-size: 14px; color: #8C97A8">subs dăruite, premii</p></div>
+        <div style="padding: 16px; background: #0B1018; border: 1px solid #1C2230"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3FD0FF" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6-4.5-4.2 6.1-.7z"></path></svg><p style="margin: 8px 0 0; font-weight: 700">Stea</p><p style="margin: 0; font-size: 14px; color: #8C97A8">donatori, legende</p></div>
+        <div style="padding: 16px; background: #0B1018; border: 1px solid #1C2230"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3FD0FF" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l5 7h-3l4 6h-4l3 5H7l3-5H6l4-6H7z"></path><path d="M12 20v2"></path></svg><p style="margin: 8px 0 0; font-weight: 700">Brad</p><p style="margin: 0; font-size: 14px; color: #8C97A8">Ajunul și Crăciunul în calendar</p></div>
+      </div>
+    </div>
+
+    <!-- Snow -->
+    <div>
+      <h3 style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 28px; text-transform: uppercase">2. Zăpadă liniștită</h3>
+      <div style="position: relative; margin-top: 16px; height: 232px; overflow: hidden; background: linear-gradient(180deg, #071224 0%, #050608 80%); border: 1px solid #1C2230">
+        <sc-for list="{{flakes}}" as="f" hint-placeholder-count="0">
+          <span aria-hidden="true" style="position: absolute; left: {{f.x}}px; top: {{f.y}}px; width: {{f.size}}px; height: {{f.size}}px; border-radius: 50%; background: #FFFFFF; opacity: {{f.op}}"></span>
+        </sc-for>
+      </div>
+      <p style="margin: 10px 0 0; font-size: 14px; color: #AEB8C7">Ninsoare rară pe tot site-ul, ca acum (se oprește pentru cine a cerut mai puțină mișcare), cer de noapte foarte închis în hero. Fără nămeți desenați și fără sclipici.</p>
+    </div>
+
+    <!-- Advent -->
+    <div>
+      <h3 style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 28px; text-transform: uppercase">3. Calendarul de Advent</h3>
+      <div style="margin-top: 16px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+        <div style="min-height: 118px; padding: 10px; background: #0B1018; border: 1px solid #23415E; display: flex; flex-direction: column"><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px; color: #8C97A8">23 DEC</span><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 30px; line-height: 1; color: #3FD0FF">04</span><span style="margin-top: auto; font-size: 12px; color: #C9D2DF">▶ Clipul zilei</span></div>
+        <div style="min-height: 118px; padding: 10px; background: linear-gradient(180deg, rgba(63,208,255,0.18), rgba(63,208,255,0.04)), #0B1018; border: 2px solid #3FD0FF; display: flex; flex-direction: column"><span style="align-self: flex-start; padding: 0 6px; transform: skewX(-12deg); background: #3FD0FF; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px">AZI · 24 DEC</span><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 30px; line-height: 1">05</span><span style="margin-top: auto; font-size: 12px">Ajunul · colinde live</span></div>
+        <div style="position: relative; min-height: 118px; padding: 10px; background: #080B10; border: 1px solid #1C2230; display: flex; flex-direction: column"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A5568" stroke-width="2" stroke-linejoin="round" aria-hidden="true" style="position: absolute; top: 10px; right: 10px"><path d="M12 2l5 7h-3l4 6h-4l3 5H7l3-5H6l4-6H7z"></path></svg><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px; color: #7D8899">31 DEC</span><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 30px; line-height: 1; color: #4A5568">12</span><span style="margin-top: auto; font-size: 12px; color: #AEB8C7">Revelion live</span></div>
+      </div>
+      <p style="margin: 10px 0 0; font-size: 14px; color: #AEB8C7">Trecut: deschis, cu clipul. Azi: luminat. Viitor: închis, cu ce e programat. Sponsorii pot apărea pe zilele lor («Ora dublă · Zona IT»).</p>
+    </div>
+  </div>
+
+  <div style="margin-top: 40px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px">
+    <div>
+      <h3 style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 28px; text-transform: uppercase">4. Cuvinte de sezon</h3>
+      <p style="margin: 10px 0 0; color: #C9D2DF">«Ajunul», «Crăciun live», «Revelion live», «La mulți ani!» la miezul nopții de Anul Nou. Mesaje calde și scurte, fără ton de reclamă.</p>
+    </div>
+    <div>
+      <h3 style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 28px; text-transform: uppercase">Ce evităm</h3>
+      <p style="margin: 10px 0 0; color: #C9D2DF">Dungi de acadea, ghirlande de luminițe, roșu cu verde, litere cromate, carduri rotunjite, pasteluri, emoji, fundaluri în degradeuri colorate, animații care clipesc.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    let s = 3;
+    const r = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+    const flakes = [];
+    for (let i = 0; i < 46; i++) flakes.push({ x: Math.round(r() * 380), y: Math.round(r() * 200), size: 1 + Math.round(r() * 3), op: (0.15 + r() * 0.55).toFixed(2) });
+    return { flakes };
+  }
+}
+</script>
+</body>
+</html>
