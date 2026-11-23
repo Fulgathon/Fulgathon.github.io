@@ -49,6 +49,8 @@ export interface Together { hours: number; goals: { title: string; hours: number
 export interface NowInfo { title: string | null; game: string | null; viewers: number | null; note: string | null }
 
 export interface SiteData {
+  /** false until the first answer from the backend (the page then says it's loading, not «starts soon»). */
+  loaded?: boolean;
   status: Status;
   /** Epoch ms. */
   startsAt: number | null;

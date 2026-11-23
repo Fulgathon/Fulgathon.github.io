@@ -10,7 +10,7 @@ import { site } from '../data/site';
 import type { Completed, Loyalty, Mine, Prize, SiteData, TickerItem, UpNext } from '../data/types';
 import type { Database } from '../lib/database.types';
 import { amount, tickerItem } from '../lib/events';
-import { ago, dateRo, fmtInt } from '../lib/format';
+import { ago, dateRo, fmtInt, safeUrl } from '../lib/format';
 
 type DB = SupabaseClient<Database>;
 type Patch = Partial<SiteData>;
@@ -44,6 +44,8 @@ export interface LiveHandlers {
   onMe(me: Me | null): void;
   /** Server time minus this device's time (ms), so countdowns don't trust a wrong clock. */
   onClock?(offsetMs: number): void;
+  /** Consecutive failed polls (0 after a good one). */
+  onConn?(failures: number): void;
 }
 
 export interface LiveOptions {
@@ -157,9 +159,11 @@ export class Live {
       const got = Date.now();
       this.handlers.onClock?.(Date.parse(data.now) - (sent + got) / 2);
       this.failures = 0;
+      this.handlers.onConn?.(0);
       this.apply(data.v ?? {}, data.parts ?? {});
     } catch {
       this.failures = Math.min(this.failures + 1, 6);
+      this.handlers.onConn?.(this.failures);
     } finally {
       this.polling = false;
       this.schedule();
@@ -173,6 +177,7 @@ export class Live {
     const P = this.parts;
     const patch: Patch = {};
     const has = (k: string) => k in changed;
+    if (this.first) patch.loaded = true;
 
     if (has('timer') && P.timer) {
       const t = P.timer;
@@ -188,7 +193,7 @@ export class Live {
       patch.raised = `${amount(Number(P.stats.raised))} €`;
     }
     if (has('goals') && Array.isArray(P.goals) && P.goals.length) {
-      patch.goals = P.goals.map((g: Json) => ({ title: g.title, threshold: g.threshold, sponsor: g.sponsor, doneAt: ms(g.doneAt), clip: g.clip ?? null, when: g.when ?? null }));
+      patch.goals = P.goals.map((g: Json) => ({ title: g.title, threshold: g.threshold, sponsor: g.sponsor, doneAt: ms(g.doneAt), clip: safeUrl(g.clip), when: g.when ?? null }));
     }
     if (has('feed') && Array.isArray(P.feed)) {
       const items = P.feed.map((e: Json) => ({
@@ -210,7 +215,7 @@ export class Live {
       patch.completed = (vt.completed ?? []).map((c: Json): Completed => {
         const done = ms(c.doneAt);
         const when = done && start ? `ZIUA ${Math.floor((done - start) / 86_400_000) + 1}` : done ? dateRo(done).toUpperCase() : '';
-        return { title: c.title, when, clip: c.clip };
+        return { title: c.title, when, clip: safeUrl(c.clip) };
       });
     }
     if (has('prizes') && Array.isArray(P.prizes) && P.prizes.length) {
@@ -256,7 +261,7 @@ export class Live {
       patch.smallDonation = Number(P.lines.smallDonation) || 10;
     }
     if (has('advent') && Array.isArray(P.advent)) {
-      patch.advent = P.advent.map((a: Json) => ({ day: Number(a.day), note: a.note ?? '', clip: a.clip ?? null, sponsor: a.sponsor ?? null }));
+      patch.advent = P.advent.map((a: Json) => ({ day: Number(a.day), note: a.note ?? '', clip: safeUrl(a.clip), sponsor: a.sponsor ?? null }));
     }
     if (has('badges') && P.badges) {
       patch.badgeCounts = Object.fromEntries(Object.entries(P.badges).map(([k, n]) => [k, Number(n) || 0]));

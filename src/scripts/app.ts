@@ -367,6 +367,7 @@ async function startLive() {
     onMe: applyMe,
     // Only trust a clear difference: small ones are network noise.
     onClock(offset) { clockOffset = Math.abs(offset) > 2000 ? offset : 0; },
+    onConn(failures) { if (failures !== state.connFailures) set({ connFailures: failures }); },
   });
   await live.start();
 }
@@ -482,6 +483,17 @@ window.addEventListener('message', (e) => {
 });
 
 // ---- Actions ------------------------------------------------------------
+/** One request at a time per action: a double click sends one suggestion, one code, one save. */
+const inflight = new Set<string>();
+function once<T>(key: string, run: () => Promise<T>): Promise<T> | undefined {
+  if (inflight.has(key)) return undefined;
+  inflight.add(key);
+  const p = run();
+  // Keep the action busy for at least 700 ms, so the second click of a double click is ignored.
+  void Promise.allSettled([p, new Promise((r) => setTimeout(r, 700))]).then(() => inflight.delete(key));
+  return p;
+}
+
 let spinTimer: number | undefined;
 let copyTimer: number | undefined;
 
@@ -585,8 +597,9 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
       try { demoApi?.saveBingo(pick); info('Bingo', 'Linia ta e salvată.'); } catch (err) { fail(err); }
       return;
     }
-    live?.saveBingo(pick)
-      .then(() => { set({ bingoSaved: pick }); info('Bingo', 'Linia ta e salvată. O poți schimba până la închidere.'); })
+    if (!live) return;
+    once('bingo', () => live!.saveBingo(pick))
+      ?.then(() => { set({ bingoSaved: pick }); info('Bingo', 'Linia ta e salvată. O poți schimba până la închidere.'); })
       .catch(fail);
   },
 
@@ -597,7 +610,8 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
       try { demoApi?.suggest(text); set({ suggestDone: true }); } catch (err) { fail(err); }
       return;
     }
-    live?.suggest(text).then(() => set({ suggestDone: true })).catch(fail);
+    if (!live) return;
+    once('suggest', () => live!.suggest(text))?.then(() => set({ suggestDone: true })).catch(fail);
   },
   newSuggestion: () => {
     const field = document.getElementById('suggestion') as HTMLTextAreaElement | null;
@@ -620,7 +634,8 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
       try { done(demoApi!.claimCode(code)); } catch (err) { fail(err); }
       return;
     }
-    live?.claimCode(code).then((r) => done(r.sponsor)).catch(fail);
+    if (!live) return;
+    once('code', () => live!.claimCode(code))?.then((r) => done(r.sponsor)).catch(fail);
   },
 
   copyCode: () => {

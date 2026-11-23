@@ -64,6 +64,8 @@ export interface State {
   more: { feed: boolean; loyal: boolean; goals: boolean; days: boolean; prizes: boolean };
   /** The Twitch player loads only on request. */
   playerOn: boolean;
+  /** Failed polls in a row (live data); 2+ before the first answer shows «Reîncercăm». */
+  connFailures: number;
 }
 
 export function initialState(): State {
@@ -102,6 +104,7 @@ export function initialState(): State {
     badgeTip: null,
     more: { feed: false, loyal: false, goals: false, days: false, prizes: false },
     playerOn: false,
+    connFailures: 0,
   };
 }
 
@@ -125,6 +128,10 @@ const bool = (b: boolean): 'true' | 'false' => (b ? 'true' : 'false');
 
 
 export function derive(s: State, d: SiteData) {
+  // Before the first answer from the backend nothing is known yet: never claim «starts soon»
+  // to someone who refreshes in the middle of the marathon.
+  const loading = d.loaded === false;
+  const retrying = loading && s.connFailures >= 2;
   const live = d.status === 'live';
   const upcoming = d.status === 'upcoming';
 
@@ -471,10 +478,10 @@ export function derive(s: State, d: SiteData) {
     showSnow: s.showSnow,
     dd, hh, mm, ss, navClock: `${dd}:${hh}:${mm}:${ss}`, tickerTwice,
     isLive: live, pops: live ? d.pops : [],
-    statusText: live ? 'LIVE' : upcoming ? 'ÎNCEPE CURÂND' : 'ÎNCHEIAT',
+    statusText: loading ? (retrying ? 'REÎNCERCĂM' : 'SE ÎNCARCĂ') : live ? 'LIVE' : upcoming ? 'ÎNCEPE CURÂND' : 'ÎNCHEIAT',
     liveBg: live ? '#D5162B' : '#2A3445',
-    timerLabel: live ? 'Timp rămas' : upcoming ? 'Începe în' : 'Subathonul s-a încheiat',
-    timerLabelUp: live ? 'TIMP RĂMAS' : upcoming ? 'ÎNCEPE ÎN' : 'ÎNCHEIAT',
+    timerLabel: loading ? (retrying ? 'Fără conexiune' : 'Se încarcă…') : live ? 'Timp rămas' : upcoming ? 'Începe în' : 'Subathonul s-a încheiat',
+    timerLabelUp: loading ? (retrying ? 'REÎNCERCĂM' : 'SE ÎNCARCĂ') : live ? 'TIMP RĂMAS' : upcoming ? 'ÎNCEPE ÎN' : 'ÎNCHEIAT',
     endDateText,
     hasDouble: doubleNow || doubleSoon, doubleText, doubleNow, doubleSponsor: d.doubleSponsor ?? '',
     isFrozen: live && d.pausedUntil !== null && d.pausedUntil > s.now,

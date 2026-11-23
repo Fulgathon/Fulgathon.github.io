@@ -8,6 +8,7 @@ import type { SiteData } from './types';
 /** What the page shows before anything has loaded: upcoming, nothing yet. */
 export function emptyData(): SiteData {
   return {
+    loaded: false,
     status: 'upcoming',
     startsAt: null,
     endsAt: null,
