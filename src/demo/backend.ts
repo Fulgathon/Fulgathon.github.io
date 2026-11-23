@@ -12,6 +12,7 @@ import { bingoItems, defaultGoals, defaultPrizes, popSlots, prizeColors } from '
 import type { AdventDay, LineGroup, BoardTab, Goal, Prize, SiteData } from '../data/types';
 import { amount, tickerItem } from '../lib/events';
 import { ago, fmtInt } from '../lib/format';
+import { site } from '../data/site';
 
 // ?demo=pitch (the sponsor presentation) keeps its own copy, apart from ?demo.
 const VARIANT = typeof location !== 'undefined' ? (new URLSearchParams(location.search).get('demo') ?? '').replace(/[^a-z0-9-]/gi, '') : '';
@@ -119,6 +120,9 @@ function next21(now: number) {
 }
 
 /** The design's sample subathon, mid-way through, as a starting point. `rich`: the sponsor showcase (/demo). */
+/** The clock reached zero and isn't frozen (B-08). */
+const atZero = (s: DemoState) => s.timer.endsAt !== null && s.timer.endsAt <= Date.now() && !(s.timer.pausedUntil && s.timer.pausedUntil > Date.now());
+
 function seed(now: number, rich = false): DemoState {
   const base = seedBase(now);
   return rich ? enrich(base, now) : base;
@@ -360,7 +364,11 @@ export class DemoBackend {
       const t = s.timer;
       const now = Date.now();
       let doubled = false;
+      // Euros only (B-09): a donation in another currency never reaches the clock or Strâns.
+      if (kind === 'donation' && (currency ?? 'EUR').toUpperCase() !== 'EUR') fail('not_eur');
       if (t.status !== 'live' || t.endsAt === null) seconds = 0;
+      // Zero is final (B-08): nothing more is added, and the marathon ends now.
+      else if (t.endsAt <= now && !(t.pausedUntil && t.pausedUntil > now)) { seconds = 0; t.status = 'ended'; }
       else if (seconds > 0 && t.doubleFrom !== null && t.doubleUntil !== null && now >= t.doubleFrom && now < t.doubleUntil) { seconds *= 2; doubled = true; }
       if (seconds) t.endsAt = (t.endsAt ?? now) + seconds * 1000;
       s.stats.subs += kind === 'sub' || kind === 'resub' ? 1 : kind === 'gift' ? quantity : 0;
@@ -407,6 +415,7 @@ export class DemoBackend {
   addTime(minutes: number) {
     this.mutate((s) => {
       if (s.timer.status !== 'live' || s.timer.endsAt === null) fail('timer_not_live');
+      if (atZero(s)) fail('timer_ended');
       const seconds = Math.round(minutes * 60);
       s.timer.endsAt! += seconds * 1000;
       s.events = [{ id: ++s.seq, kind: 'manual', tier: null, quantity: 1, currency: null, seconds_added: Math.max(0, seconds), doubled: false, user_login: null, user_name: 'ICEMARATON', at: Date.now() }, ...s.events].slice(0, 60);
@@ -415,6 +424,7 @@ export class DemoBackend {
   freeze(minutes: number) {
     this.mutate((s) => {
       if (s.timer.status !== 'live' || s.timer.endsAt === null) fail('timer_not_live');
+      if (atZero(s)) fail('timer_ended');
       const now = Date.now();
       s.timer.endsAt! += minutes * MIN;
       s.timer.pausedUntil = Math.max(s.timer.pausedUntil ?? now, now) + minutes * MIN;
@@ -605,6 +615,8 @@ export class DemoBackend {
   setModerator(login: string, on: boolean) {
     this.mutate((s) => {
       const l = login.trim().toLowerCase();
+      // Iceman's own account always stays a moderator (B-30).
+      if (!on && l === site.channel.toLowerCase()) fail('protected_broadcaster');
       s.mods = on ? [...new Set([...s.mods, l])] : s.mods.filter((m) => m !== l);
     });
   }
@@ -939,6 +951,7 @@ export class DemoBackend {
       case 'mod_review_suggestion': return this.reviewSuggestion(Number(a.p_id), !!a.p_approve);
       case 'mod_fulfil_spin': return this.fulfilSpin(Number(a.p_id));
       case 'mod_set_moderator': return this.setModerator(String(a.p_login), !!a.p_on);
+      case 'mod_skipped_done': return null;
       case 'mod_set_note': return this.setNote(String(a.p_note ?? ''), Number(a.p_minutes) || 60);
       case 'mod_set_community_goals': return this.setCommunityGoals(a.p_goals ?? []);
       case 'mod_name_rule': return this.nameRule(String(a.p_name ?? ''), a.p_rule ?? null);

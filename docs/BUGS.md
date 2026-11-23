@@ -31,8 +31,8 @@ Severity: **Critical** = money, data loss, auth bypass or the site down for ever
 | B-05 | High | Page says «ÎNCEPE CURÂND» to anyone who loads it while the backend is slow or down, mid-marathon | **Fixed** `ff51962` |
 | B-06 | Medium | Viewer double submits: a triple click sends 3 suggestions, 3 code claims, 3 bingo saves | **Fixed** `ff51962` |
 | B-07 | Medium | During Ora dublă a moderator's «+10 min» adds 20 | **Fixed**: migration `20261126100000` (applied 23 Nov) |
-| B-08 | Medium | At zero the clock shows LIVE 00:00:00 for up to a minute, and an event in that gap revives it | Owner decision |
-| B-09 | Medium | A TipeeeStream donation in another currency is counted as euros | Open |
+| B-08 | Medium | At zero the clock shows LIVE 00:00:00 for up to a minute, and an event in that gap revives it | **Decided: zero is final.** Site fixed; DB in migration `20261127100000` (not applied) |
+| B-09 | Medium | A TipeeeStream donation in another currency is counted as euros | **Decided: euros only.** Function + migration `20261127100000` (not applied/deployed) |
 | B-10 | Medium | No security headers (CSP, frame-ancestors, nosniff, referrer policy) | Open |
 | B-11 | Medium | After data has loaded, a lost connection isn't shown; the clock may be minutes behind reality | Open |
 | B-12 | Medium | Parallel requests get past the «3 suggestions per 10 minutes» limit | **Fixed**: migration `20261126100000` (applied 23 Nov) |
@@ -53,7 +53,7 @@ Severity: **Critical** = money, data loss, auth bypass or the site down for ever
 | B-27 | Low | Edge Functions can refresh the Twitch token at the same moment | Open |
 | B-28 | Low | A 140-character suggestion cut in the middle of an emoji can be refused | Open |
 | B-29 | Low | /mod has no `<h1>` before login | Open |
-| B-30 | Low | Any moderator can remove any other moderator, including Iceman | Owner decision |
+| B-30 | Low | Any moderator can remove any other moderator, including Iceman | **Decided: protect Iceman.** /mod fixed; DB in migration `20261127100000` (not applied) |
 | B-31 | Medium | Before the start, «Cât adaugi tu?» promises «+30 min» but the server adds no time until the timer is live | Fixed (option a, wording): outside LIVE the calculator says time is added from the start |
 | B-32 | Low | Community-goal hours not yet reached are #4A5568 on #090C11 (2.6:1, below 4.5:1) | Fixed: now #8C97A8 (6.6:1) |
 
@@ -99,8 +99,21 @@ Triple click measured with a mocked subscriber: `suggest` ×3, `claim_code` ×3,
 ### B-08 · The gap at zero
 `minute_tick` ends the marathon once a minute, and the site polls every 8 s, so after `00:00:00:00` the page can show LIVE for up to ~70 s. An event in that gap is added to an end time already in the past, so the clock can come back with less than was added (6 min − 30 s), and TipeeeStream donations arrive up to 15 s late. **Owner decision:** either "zero is final" (`record_event` adds nothing once `ends_at` has passed, and ends the timer at once), or "a last-second donation saves it" (count from now, not from the old end). The page can then say «Timpul a expirat» at zero instead of LIVE.
 
+**Decided 23 Nov 2026 (owner): zero is final.** Once `ends_at` has passed (and the clock isn't frozen):
+- `record_event` adds nothing and ends the timer at once, without waiting for `minute_tick`;
+- `mod_add_time` and `mod_freeze`/`mod_freeze_until` refuse with `timer_ended`;
+- the site shows the ended state at 00:00:00:00 («Timpul a expirat», «ÎNCHEIAT» and a thank-you line), and /mod's bar shows «ÎNCHEIAT».
+
+Donations that arrive late still count toward Strâns (the money was given), but add no time.
+
 ### B-09 · Donations in other currencies counted as euros
 `tipeee-donations` logs a warning and counts `amount` as € whatever `currency` says: 50 RON (≈ 10 €) would add 300 min instead of ~60. **Fix options:** confirm the TipeeeStream page only accepts EUR, or convert with a fixed table and keep the original in `events.currency`.
+
+**Decided 23 Nov 2026 (owner): euros only, no conversion table.** A non-EUR donation adds no time and isn't added to Strâns.
+- **Choice: shown on /mod for a manual decision**, not skipped silently, because it's real money for Iceman.
+- `tipeee-donations` logs a warning and stores it in `private.skipped_donations` (`tipeee_skip`).
+- /mod lists it under «De făcut acum» (name, amount, currency), and the «Donații» status turns amber. A moderator adds minutes by hand if they want it to count, then presses «Am rezolvat» (`mod_skipped_done`).
+- `record_event` also refuses non-EUR donations (`not_eur`) as a second safeguard.
 
 ### B-10 · No security headers
 `public/_headers` sets only font caching. Missing: `Content-Security-Policy` (scripts from self, connect to the Supabase project, frames from Twitch), `frame-ancestors 'self'` / `X-Frame-Options: SAMEORIGIN` (the vote and spin buttons can be framed by another site), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`. Needs a careful test with the Twitch embeds and `/prezentare` before deploy.
@@ -145,7 +158,7 @@ EventSub sends `channel.subscription.message` only when the viewer shares the re
 - **B-27** `broadcasterToken()` refreshes in whichever function sees it first; two at once both refresh. It has worked so far; a lock in the database would make it certain.
 - **B-28** `slice(0, 140)` can cut a surrogate pair; use `Array.from(text).slice(0, 140).join('')`.
 - **B-29** Add an `<h1>` («Moderatori») to the /mod login card.
-- **B-30** `mod_set_moderator` lets any moderator remove anyone; consider protecting the broadcaster login.
+- **B-30** `mod_set_moderator` lets any moderator remove anyone; consider protecting the broadcaster login. **Decided 23 Nov 2026 (owner): protect Iceman.** `mod_set_moderator` refuses to remove `private.settings.broadcaster_login` (any spelling) with `protected_broadcaster`; /mod shows «streamer» instead of «Scoate» on his row.
 
 - **B-32** `views.ts` `together()`: the hours of goals not yet reached use `#4A5568` (2.6:1) at 18 px. Use `#8C97A8` (6.6:1) or `#7D8899` (5.5:1); see the text tokens in [DESIGN.md](DESIGN.md).
 

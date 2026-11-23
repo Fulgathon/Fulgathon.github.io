@@ -53,6 +53,9 @@ const errors: Record<string, string> = {
   freeze_in_past: 'Alege o dată din viitor (după înghețarea de acum, dacă e una).',
   bad_minutes: 'Scrie un număr de minute mai mare decât 0.',
   bad_clip: 'Linkul clipului trebuie să înceapă cu https://',
+  timer_ended: 'Cronometrul a ajuns la zero: maratonul s-a încheiat și nu se mai poate adăuga sau îngheța timp.',
+  protected_broadcaster: 'Contul lui Iceman nu poate fi scos dintre moderatori.',
+  not_eur: 'Se adună doar donațiile în euro.',
   duplicate_amount: 'Două milestone-uri au aceeași sumă. Fiecare sumă trebuie să fie diferită.',
   bad_lines: 'Replicile nu au putut fi salvate: cel mult 40 pe grup.',
   line_too_long: 'O replică are mai mult de 70 de caractere. Scurteaz-o ca să încapă în balon.',
@@ -364,7 +367,7 @@ function demoHealth() {
   return { now, timer: { status: S.timer?.status, online: S.timer?.stream_online }, tipeee: { lastRun: now, lastCount: 0, error: null },
     watch: { lastRun: now, chatters: 412 }, twitch: { lastEvent: now }, donation: { lastEvent: now },
     jobs: ['icemaraton-minute', 'icemaraton-state', 'icemaraton-tipeee', 'icemaraton-watch-time'].map((job) => ({ job, status: 'succeeded', at: now, message: '' })),
-    httpErrors: [], httpCalls: 120 };
+    skipped: [], httpErrors: [], httpCalls: 120 };
 }
 function healthHtml(h: any): string {
   if (!h) return '<p class="muted">Nu pot citi starea acum.</p>';
@@ -490,7 +493,7 @@ function healthDots(): string {
   const dots: [string, string, string][] = [
     [live && online && (eA === null || eA > 3600) ? 'warn' : 'ok', 'Subs și biți', short(eA)],
     [!live || !online ? 'off' : wA === null || wA > 720 ? 'bad' : 'ok', 'Timp privit', live && online ? short(wA) : 'oprit'],
-    [h.tipeee?.error || tA === null || tA > 90 ? 'bad' : 'ok', 'Donații', short(tA)],
+    [h.tipeee?.error || tA === null || tA > 90 ? 'bad' : (h.skipped ?? []).length ? 'warn' : 'ok', 'Donații', (h.skipped ?? []).length ? `${(h.skipped ?? []).length} în altă monedă` : short(tA)],
     [failed ? 'bad' : 'ok', 'Joburi', failed ? 'eroare' : 'OK'],
   ];
   // Phones show one labelled chip instead of the dots (M4).
@@ -511,13 +514,14 @@ function barHtml(): string {
   if (!S.me.is_moderator) return brand + '<span class="grow"></span>' + who;
   const t = S.timer ?? {};
   const now = Date.now();
-  const live = t.status === 'live';
   const frozen = t.paused_until && Date.parse(t.paused_until) > now;
+  // B-08: at zero the marathon is over, even before the server's minute tick marks it.
+  const live = t.status === 'live' && !(t.ends_at && Date.parse(t.ends_at) <= now && !frozen);
   const dbl = t.double_from && t.double_until && Date.parse(t.double_until) > now;
   const dblNow = dbl && Date.parse(t.double_from) <= now;
   const hm = (iso: string) => new Date(iso).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Bucharest' });
   return `${brand}<span class="sep"></span>
-    <span class="pill ${live ? 'bad' : 'off'} skew">${live ? 'LIVE' : t.status === 'ended' ? 'ÎNCHEIAT' : 'CURÂND'}</span>
+    <span class="pill ${live ? 'bad' : 'off'} skew">${live ? 'LIVE' : t.status === 'ended' || t.status === 'live' ? 'ÎNCHEIAT' : 'CURÂND'}</span>
     <span class="bar-clock" data-left>${live ? left(Date.parse(t.ends_at) - (frozen ? Date.parse(t.paused_until) : now)) : '—'}</span>
     ${live ? (frozen ? `<span class="chip frost">ÎNGHEȚAT PÂNĂ LA ${esc(when(t.paused_until))}</span>` : '<span class="chip run">MERGE</span>') : ''}
     ${dbl ? `<span class="chip dbl">ORA DUBLĂ ${dblNow ? `×2 PÂNĂ LA ${hm(t.double_until)}` : esc(when(t.double_from))}${t.double_sponsor ? ` · ${esc(String(t.double_sponsor).toUpperCase())}` : ''}</span>` : ''}
@@ -535,6 +539,10 @@ function todoHtml(): string {
   const raised = Number(S.stats?.raised ?? 0);
   const items: { tag: string; cls: string; t: string; d: string; btn: string }[] = [];
   if (S.status && !S.status.broadcaster_connected) items.push({ tag: 'STREAMER', cls: 'bad', t: 'Contul de streamer nu e conectat', d: 'Fără el nu ajung subs, biții și statusul live.', btn: `<a class="btn btn-twitch" href="${esc(S.status.connect_url ?? '#')}">Conectează</a>` });
+  // Euros only (B-09): a donation in another currency added nothing; a moderator decides.
+  for (const d of (S.health?.skipped ?? []) as { id: string; user: string; amount: number; currency: string; at: string }[]) {
+    items.push({ tag: 'DONAȚIE', cls: 'warn', t: `${d.user} · ${d.amount} ${d.currency}`, d: `Nu e în euro, așa că nu a adăugat timp și nu intră la Strâns (${when(d.at)}). Dacă vreți să conteze, adăugați minutele din Cronometru.`, btn: `<button class="btn-ghost" data-act="skipDone" data-id="${esc(d.id)}">Am rezolvat</button>` });
+  }
   for (const p of S.prizes.slice(0, 3)) items.push({ tag: 'PREMIU', cls: 'ok', t: `${p.user_login} · ${p.prizes?.win_label ?? ''}`, d: `Câștigat pe roată ${when(p.created_at)}`, btn: `<button class="btn-primary" data-act="fulfil" data-id="${p.id}">Am dat premiul</button>` });
   if (S.prizes.length > 3) items.push({ tag: 'PREMII', cls: 'ok', t: `Încă ${S.prizes.length - 3} premii de dat`, d: '', btn: '<a class="btn btn-ghost" href="#premii">Vezi toate</a>' });
   S.goals.forEach((g, i) => { if (raised >= g.threshold && !g.done_at) items.push({ tag: 'MILESTONE', cls: 'white', t: `${pad(i + 1)} · ${g.title}`, d: 'Deblocat. Când s-a făcut live, pune linkul clipului.', btn: '<a class="btn btn-ghost" href="#milestones">Marchează făcut</a>' }); });
@@ -1007,7 +1015,7 @@ function render() {
     'moderatori': () => `
     <section class="card" id="moderatori">
       <h2>Moderatori</h2>
-      <ul class="list">${S.mods.map((m) => `<li><span class="grow">${esc(m.display_name ?? m.login)}</span>${m.login === S.me!.login ? '<span class="muted">tu</span>' : `<button class="btn-ghost" data-act="unmod" data-login="${esc(m.login)}">Scoate</button>`}</li>`).join('')}</ul>
+      <ul class="list">${S.mods.map((m) => `<li><span class="grow">${esc(m.display_name ?? m.login)}</span>${m.login === S.me!.login ? '<span class="muted">tu</span>' : m.login === site.channel ? '<span class="muted">streamer</span>' : `<button class="btn-ghost" data-act="unmod" data-login="${esc(m.login)}">Scoate</button>`}</li>`).join('')}</ul>
       <div class="row">
         <div class="pair">
           <input class="field" id="newMod" placeholder="login Twitch" aria-label="Login Twitch" autocapitalize="none" autocorrect="off" spellcheck="false">
@@ -1177,6 +1185,7 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   nameAllow: (el) => call('mod_name_rule', { p_name: el.dataset.name, p_rule: 'allow' }, 'Numele apare din nou.'),
   nameClear: (el) => call('mod_name_rule', { p_name: el.dataset.name, p_rule: null }, 'Regula a fost ștearsă.'),
   mod: () => val('newMod').trim() && call('mod_set_moderator', { p_login: val('newMod'), p_on: true }, 'Moderator adăugat.'),
+  skipDone: (el) => call('mod_skipped_done', { p_id: el.dataset.id }, 'Gata.'),
   unmod: (el) => confirm(`Scoți moderatorul ${el.dataset.login}?`) && call('mod_set_moderator', { p_login: el.dataset.login, p_on: false }, 'Moderator scos.'),
 };
 

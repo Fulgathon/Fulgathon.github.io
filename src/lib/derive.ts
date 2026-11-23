@@ -132,12 +132,12 @@ export function derive(s: State, d: SiteData) {
   // to someone who refreshes in the middle of the marathon.
   const loading = d.loaded === false;
   const retrying = loading && s.connFailures >= 2;
-  const live = d.status === 'live';
+  const statusLive = d.status === 'live';
   const upcoming = d.status === 'upcoming';
 
   // Countdown: to the end while live (frozen during "Îngheți timpul"), to the start while upcoming.
   let r: number | null = null;
-  if (live && d.endsAt !== null) {
+  if (statusLive && d.endsAt !== null) {
     const ref = d.pausedUntil !== null && d.pausedUntil > s.now ? d.pausedUntil : s.now;
     r = Math.max(0, Math.floor((d.endsAt - ref) / 1000));
   } else if (upcoming && d.startsAt !== null) {
@@ -145,6 +145,11 @@ export function derive(s: State, d: SiteData) {
   } else if (d.status === 'ended') {
     r = 0;
   }
+  // B-08 «zero is final» (owner, 23 Nov 2026): at 00:00:00:00 the marathon is over, even in the
+  // seconds before the server's own tick marks it ended; nothing reads LIVE any more.
+  const zeroed = statusLive && r === 0;
+  const live = statusLive && !zeroed;
+  const ended = d.status === 'ended' || zeroed;
   const dd = r === null ? '--' : pad(Math.floor(r / 86400));
   const hh = r === null ? '--' : pad(Math.floor((r % 86400) / 3600));
   const mm = r === null ? '--' : pad(Math.floor((r % 3600) / 60));
@@ -521,10 +526,12 @@ export function derive(s: State, d: SiteData) {
     isLive: live, pops: live ? d.pops : [],
     statusText: loading ? (retrying ? 'REÎNCERCĂM' : 'SE ÎNCARCĂ') : live ? 'LIVE' : upcoming ? 'ÎNCEPE CURÂND' : 'ÎNCHEIAT',
     liveBg: live ? '#D5162B' : '#2A3445',
-    timerLabel: loading ? (retrying ? 'Fără conexiune' : 'Se încarcă…') : live ? 'Timp rămas' : upcoming ? 'Începe în' : 'Subathonul s-a încheiat',
+    timerLabel: loading ? (retrying ? 'Fără conexiune' : 'Se încarcă…') : live ? 'Timp rămas' : upcoming ? 'Începe în' : 'Timpul a expirat',
+    isEnded: !loading && ended,
+    endedText: 'Maratonul s-a încheiat. Mulțumim tuturor celor care l-au ținut în viață!',
     timerLabelUp: loading ? (retrying ? 'REÎNCERCĂM' : 'SE ÎNCARCĂ') : live ? 'TIMP RĂMAS' : upcoming ? 'ÎNCEPE ÎN' : 'ÎNCHEIAT',
     endDateText,
-    hasDouble: doubleNow || doubleSoon, doubleText, doubleNow, doubleSponsor: d.doubleSponsor ?? '',
+    hasDouble: !ended && (doubleNow || doubleSoon), doubleText, doubleNow, doubleSponsor: d.doubleSponsor ?? '',
     isFrozen: live && d.pausedUntil !== null && d.pausedUntil > s.now,
     frozenText: live && d.pausedUntil !== null && d.pausedUntil > s.now
       ? `până pe ${dateRo(d.pausedUntil)}, la ${timeRo(d.pausedUntil)}. Subs și donațiile adaugă timp în continuare.` : '',

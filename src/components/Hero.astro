@@ -101,6 +101,7 @@ const FLAKE = 'M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 4l3 2 3-2M9 20l3-2 3 2';
               </div>
             ))}
           </div>
+          <p {...iff('isEnded')} data-text="endedText" style="margin: 14px 0 0; padding: 10px 12px; border-left: 3px solid var(--ice); background: rgba(63, 208, 255, 0.06); font-size: 15px; font-weight: 600; color: #F2F5FA">{v.endedText}</p>
           <div class="score">
             <div><p class="lbl">Strâns până acum</p><p class="val" data-text="raisedText">{v.raisedText}</p></div>
             <div><p class="lbl">Următorul milestone</p><p class="val" data-text="nextGoalText" style="color: var(--ice)">{v.nextGoalText}</p></div>

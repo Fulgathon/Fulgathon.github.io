@@ -6,7 +6,8 @@
 //   * The first run only sets the starting point: older donations never count.
 //   * Each run looks back two minutes, so a donation listed late isn't missed;
 //     record_event() dedupes on the donation id.
-//   * Donations count only while the subathon is live (and after it started).
+//   * Donations count only while the subathon is live (and after it started), and only in
+//     euros: any other currency goes to /mod for a moderator to decide (tipeee_skip).
 //   * Each new donation may send Iceman's bubble line to Twitch chat (chatLine; /mod switch).
 // Deployed with verify_jwt = false; the cron call is checked with x-cron-secret.
 
@@ -120,7 +121,21 @@ Deno.serve(async (req) => {
     const id = e.id ?? e.ref;
     if (amount <= 0 || id === undefined) continue;
     const currency = String(p.currency ?? 'EUR').toUpperCase();
-    if (currency !== 'EUR') console.warn('donation not in EUR, counted as EUR', id, amount, currency);
+    // Euros only (owner, 23 Nov 2026, B-09): no conversion table. A donation in another
+    // currency adds no time and isn't added to Strâns; it waits on /mod («De făcut acum»)
+    // for a moderator to decide, and the warning stays in the function logs.
+    if (currency !== 'EUR') {
+      console.warn('donation not in EUR, not counted; sent to /mod', id, amount, currency);
+      const { error: skipError } = await db.rpc('tipeee_skip', {
+        p_external_id: `tipeee:${id}`,
+        p_user_name: (p.username ?? '').trim() || 'Anonim',
+        p_amount: amount,
+        p_currency: currency,
+        p_at: new Date(at).toISOString(),
+      });
+      if (skipError) console.error('tipeee_skip', id, skipError.message);
+      continue;
+    }
 
     const { data: ev, error } = await db.rpc('record_event', {
       p_source: 'donation',
