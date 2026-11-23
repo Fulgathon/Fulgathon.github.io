@@ -18,7 +18,17 @@ The mascot art, the overlay and the sponsor deck are all built on the ice look.
 | Fits | Everything that exists: mascot art, overlay, sponsor deck, /mod. | Needs a new palette for the mascot glow, overlay, deck and /mod, and new sponsor screenshots. |
 | Risk | Low; it's a refinement. | High. It's close to what was rejected before, and it means two looks would be live while it's changed, 4 weeks before the start. |
 
-**I'll proceed with A unless you say otherwise.** If you do want B, tell me, and I'll mock one screen in it first, before anything else changes.
+**Decided 23 Nov 2026: A.** The owner saw both side by side (below) and chose the same identity.
+
+### A and B side by side
+
+Both use the proposed hero layout from section 4 on the real build. B is a quick recolour, not a finished design: near-black becomes navy, ice blue becomes gold, boxes get 12–18 px corners and translucent glass, and the background gets navy and evergreen glows. The mascot art and the wheel emote are unchanged, so they stay ice blue in B. In a real B they would need new art.
+
+![Hero at 1440 px, A and B](ux/direction-a-vs-b-hero-1440.jpg)
+
+![«Joacă» at 1440 px, A and B](ux/direction-a-vs-b-games-1440.jpg)
+
+![Phone, 390 px, A and B](ux/direction-a-vs-b-hero-390.jpg)
 
 ## 2. Principles for A
 
