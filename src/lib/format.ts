@@ -43,3 +43,22 @@ export function ago(ms: number, now: number): string {
   if (h < 24) return `acum ${count(h, 'oră', 'ore')}`;
   return `acum ${count(Math.floor(h / 24), 'zi', 'zile')}`;
 }
+
+/** Seconds → "4 h 12 min", "35 min", "2 h". */
+export function duration(sec: number): string {
+  const m = Math.max(0, Math.round(sec / 60));
+  const h = Math.floor(m / 60), r = m % 60;
+  return h ? (r ? `${fmtInt(h)} h ${r} min` : `${fmtInt(h)} h`) : `${r} min`;
+}
+
+/** A Twitch title made readable: no emoji, no !commands or #tags, no "LIVE" shouting. */
+export function cleanTitle(t: string | null): string {
+  if (!t) return '';
+  const parts = t
+    .replace(/\p{Extended_Pictographic}|\uFE0F|\u200D/gu, '|')
+    .split('|')
+    .map((p) => p.split(/\s+/).filter((w) => w && !/^[!#@]/.test(w)).join(' ').trim())
+    .filter((p) => p.length > 2 && !/^live\b/i.test(p));
+  const out = parts[0] ?? '';
+  return out.length > 90 ? out.slice(0, 88).trimEnd() + '…' : out;
+}

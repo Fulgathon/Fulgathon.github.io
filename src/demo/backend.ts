@@ -637,6 +637,9 @@ export class DemoBackend {
       })(),
       bingoSaved: s.viewer.state === 'out' ? null : s.bingo.pick,
       myVote: r && s.myVotes[r.id] !== undefined ? String(s.myVotes[r.id]) : null,
+      // Sample contribution and loyalty for the demo viewer.
+      mine: { seconds: 5400, subs: 1, gifts: 5, bits: 0, donated: 20 },
+      loyalty: { hours: 23, streak: 4, best: 6, days: 9, badges: ['og', 'h10'] },
     };
   }
 
@@ -659,6 +662,36 @@ export class DemoBackend {
 
   private currentRound(s: DemoState) {
     return [...s.rounds].filter((r) => r.opensAt <= Date.now()).sort((a, b) => b.number - a.number)[0] ?? null;
+  }
+
+  /** Today's totals, Fidelii, the community goal and "Acum pe stream", like the live parts. */
+  private community(s: DemoState, now: number) {
+    const midnight = new Date(now); midnight.setHours(0, 0, 0, 0);
+    const todayEv = s.events.filter((e) => e.at >= midnight.getTime());
+    const people = new Set(todayEv.map((e) => (e.user_login || e.user_name || '').toLowerCase()).filter(Boolean));
+    // A busy day so far (sample), plus what happens in the demo.
+    return {
+      today: {
+        seconds: 4 * 3600 + 12 * 60 + todayEv.reduce((a, e) => a + e.seconds_added, 0),
+        people: 230 + people.size,
+        subs: 57 + todayEv.reduce((a, e) => a + (e.kind === 'gift' ? e.quantity : e.kind === 'sub' || e.kind === 'resub' ? 1 : 0), 0),
+        donated: 340 + todayEv.reduce((a, e) => a + (e.kind === 'donation' ? e.quantity : 0), 0),
+        bits: 12_400 + todayEv.reduce((a, e) => a + (e.kind === 'bits' ? e.quantity : 0), 0),
+        events: 96 + todayEv.length,
+      },
+      loyal: [
+        { name: 'teo_mid', hours: 86, streak: 9, badges: ['og', 'night', 'h50', 'streak7'] },
+        { name: 'dianaplays', hours: 79, streak: 9, badges: ['og', 'h50', 'streak7'] },
+        { name: 'kxtrin', hours: 74, streak: 6, badges: ['night', 'h50'] },
+        { name: 'cristi_lol', hours: 71, streak: 8, badges: ['og', 'h50', 'streak7'] },
+        { name: 'Rares1337', hours: 66, streak: 3, badges: ['h50'] },
+      ],
+      together: { hours: 1_840, goals: [
+        { title: 'Chatul alege jocul pentru o oră', hours: 250 }, { title: 'Karaoke cu chatul', hours: 750 },
+        { title: 'Stream IRL în oraș', hours: 1500 }, { title: 'Turneu cu comunitatea', hours: 3000 },
+      ] },
+      now: { title: 'Ranked cu chatul până la Diamond', game: 'League of Legends', viewers: 512, note: null },
+    };
   }
 
   /** Everything the public page shows, in the same shape as the live data. */
@@ -696,6 +729,7 @@ export class DemoBackend {
       recentWins: [...s.spins].filter((x) => s.prizes[x.prize]?.isWin).sort((a, b) => b.at - a.at).slice(0, 4)
         .map((x) => ({ user: x.user, prize: s.prizes[x.prize]?.win ?? '', ago: ago(x.at, now), sponsor: s.prizes[x.prize]?.sponsor ?? null })),
       doubleSponsor: s.timer.doubleSponsor,
+      ...this.community(s, now),
       bingo: {
         closesAt: s.bingo.closesAt, prize: s.bingo.prize, prizeSponsor: s.bingo.prizeSponsor ?? null,
         players: s.bingo.others.length + (s.bingo.pick ? 1 : 0),

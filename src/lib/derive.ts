@@ -4,8 +4,13 @@
 
 import { boardTabs as boardTabDefs, boardUnits, placeholderTicker } from '../data/content';
 import { site } from '../data/site';
-import type { BoardTab, SiteData } from '../data/types';
-import { count, dateRo, dayRo, fmtInt, pad, timeRo } from './format';
+import type { BoardTab, Loyalty, Mine, SiteData } from '../data/types';
+import { ago, cleanTitle, count, dateRo, dayRo, duration, fmtInt, pad, timeRo } from './format';
+
+/** Badges from chat presence (private.loyalty in the database). */
+export const badgeLabels: Record<string, string> = {
+  og: 'Ziua 1 OG', night: 'Tura de noapte', h10: '10 ore', h50: '50 de ore', h100: '100 de ore', streak7: 'Serie de 7 zile',
+};
 
 export type Viewer = 'out' | 'nonsub' | 'sub';
 export type VoteTab = 'open' | 'next' | 'done';
@@ -42,6 +47,9 @@ export interface State {
   copied: boolean;
   /** false: the viewer chose to appear as "Anonim" in public. */
   isPublic: boolean;
+  /** The logged-in viewer's own contribution and loyalty (null when logged out or unknown). */
+  mine: Mine | null;
+  loyalty: Loyalty | null;
 }
 
 export function initialState(): State {
@@ -52,6 +60,8 @@ export function initialState(): State {
     viewer: 'out',
     viewerName: '',
     isPublic: true,
+    mine: null,
+    loyalty: null,
     spins: 0,
     watchedToday: 0,
     spunToday: false,
@@ -228,6 +238,46 @@ export function derive(s: State, d: SiteData) {
     color: tab === id ? '#F2F5FA' : '#7D8899',
   }));
 
+  // ---- Comunitatea ----
+  const live0 = d.status === 'live';
+  const dayNumber = live0 && d.startsAt !== null && s.now >= d.startsAt ? Math.floor((s.now - d.startsAt) / 86_400_000) + 1 : null;
+  // "Acum pe stream": a moderator note wins; otherwise the cleaned Twitch title and game.
+  const nowBits = d.now?.note ? [d.now.note] : [cleanTitle(d.now?.title ?? null), d.now?.game ?? ''].filter(Boolean);
+  const nowText = [...nowBits, ...(dayNumber ? [`Ziua ${dayNumber}`] : [])].join(' · ');
+
+  // Legends: the top 5 of the running totals, per category.
+  const legendRows = (rows: [string, string][], unit: string) => rows.slice(0, 5).map((r, i) => ({ rank: i + 1, name: r[0], total: r[1], unit }));
+  const legendsDon = legendRows(d.boards.donations, '€');
+  const legendsGifts = legendRows(d.boards.gifts, 'subs');
+  const legendsBits = legendRows(d.boards.bits, 'biți');
+
+  const T = d.today;
+  const todayBig = T ? `+${duration(T.seconds)}` : '+0 min';
+  const todayLine = T
+    ? [count(T.people, 'om', 'oameni'), count(T.subs, 'sub', 'subs'), `${fmtInt(T.donated)} €`, ...(T.bits ? [count(T.bits, 'bit', 'biți')] : [])].join(' · ')
+    : 'Încă nimic azi. Primul sub al zilei deschide lista.';
+  const recentFeed = d.ticker.filter((t) => t.time !== '—').slice(0, 6).map((t) => ({ ...t, agoText: t.at ? ago(t.at, s.now) : '' }));
+
+  const loyalRows = d.loyal.map((l, i) => ({ rank: i + 1, name: l.name, hours: count(l.hours, 'oră', 'ore'), streak: l.streak,
+    streakText: l.streak ? `${count(l.streak, 'zi', 'zile')} la rând` : '', badges: l.badges.map((b) => badgeLabels[b] ?? b) }));
+
+  const G = d.together;
+  const tHours = G?.hours ?? 0;
+  const tGoals = (G?.goals ?? []).map((g) => ({ ...g, done: tHours >= g.hours }));
+  const tNext = tGoals.find((g) => !g.done) ?? null;
+  const tPrev = [...tGoals].reverse().find((g) => g.done)?.hours ?? 0;
+  const togetherPct = tNext ? Math.max(0, Math.min(100, Math.round(((tHours - tPrev) / (tNext.hours - tPrev)) * 100))) + '%' : '100%';
+
+  const M = s.mine, L = s.loyalty;
+  const mineStats = M ? [
+    { value: `+${duration(M.seconds)}`, label: 'adăugate de tine' },
+    ...(M.subs || M.gifts ? [{ value: fmtInt(M.subs + M.gifts), label: M.gifts ? `subs (${fmtInt(M.gifts)} dăruite)` : 'subs' }] : []),
+    ...(M.donated ? [{ value: `${fmtInt(M.donated)} €`, label: 'donați' }] : []),
+    ...(M.bits ? [{ value: fmtInt(M.bits), label: 'biți' }] : []),
+    { value: L ? count(L.hours, 'oră', 'ore') : '0 ore', label: 'în chat' },
+    { value: L?.streak ? count(L.streak, 'zi', 'zile') : '0 zile', label: 'la rând' },
+  ] : [];
+
   // Bingo: pick 5 events before the close; moderators tick what happens; all 5 → raffle.
   const B = d.bingo;
   const bingoOpen = B.closesAt === null || s.now < B.closesAt;
@@ -352,6 +402,18 @@ export function derive(s: State, d: SiteData) {
       : 'Numele tău e ascuns: în public apari ca «Anonim». Contribuțiile tale se numără la fel.',
     privacyBtn: s.isPublic ? 'Ascunde-mi numele' : 'Arată-mi numele',
     privacyPressed: bool(!s.isPublic),
+
+    // Comunitatea
+    hasNow: nowText !== '', nowText, nowLabel: d.now?.note ? 'Acum' : 'Acum pe stream',
+    legendsDon, legendsGifts, legendsBits,
+    hasLegends: legendsDon.length + legendsGifts.length + legendsBits.length > 0,
+    todayBig, todayLine, recentFeed, hasRecent: recentFeed.length > 0,
+    loyalRows, hasLoyal: loyalRows.length > 0,
+    togetherHours: fmtInt(tHours) + ' h', togetherPct,
+    togetherNext: tNext ? `Următorul: ${tNext.title} la ${fmtInt(tNext.hours)} h` : tGoals.length ? 'Toate obiectivele comunitare sunt deblocate!' : '',
+    togetherGoals: tGoals.map((g) => ({ title: g.title, hours: fmtInt(g.hours) + ' h', done: g.done, current: g === tNext })),
+    mineStats, mineBadges: (L?.badges ?? []).map((b) => badgeLabels[b] ?? b),
+    mineNote: !M ? '' : M.seconds > 0 ? 'Mulțumim! Fiecare minut adăugat ține maratonul în viață.' : 'Și timpul petrecut în chat contează: seria de zile și insignele vin doar din prezență.',
 
     codeLabel: s.copied ? 'Copiat ✓' : 'Copiază',
     codeStatus: s.copied ? 'Codul a fost copiat' : '',

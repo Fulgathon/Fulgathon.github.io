@@ -1,0 +1,84 @@
+---
+// 02 Comunitatea: a place for all three audiences.
+//   * Contribuția ta: what the logged-in viewer added, their streak and badges.
+//   * Legende: the live top 5 donors / gifters / bits (cumulative; the spot is
+//     yours until someone gives more).
+//   * Timp adăugat azi: today's totals and the newest additions.
+//   * Fidelii: who stays longest in chat (daily streak, badges), free.
+//   * Obiectiv comunitar: hours watched together unlock stream events, free.
+// Names come through public_name() (moderation + opt-out, toggle at the bottom).
+import SectionHead from './SectionHead.astro';
+import { v, iff } from '../lib/ssr';
+import { views } from '../lib/views';
+const cond = "'Barlow Condensed', sans-serif";
+const h3 = `margin: 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: clamp(26px, 2.6cqi, 34px); line-height: 1; text-transform: uppercase`;
+const note = 'margin: 6px 0 0; font-size: 15px; color: #8C97A8';
+const card = 'position: relative; background: #0B1018; border: 1px solid #1C2230; padding: clamp(18px, 2.6cqi, 28px)';
+---
+<section id="comunitate" aria-labelledby="h-comunitate" style="position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 0 clamp(20px, 4cqi, 40px) clamp(56px, 8cqi, 112px)">
+  <SectionHead tag="02" bignum="02" title="Comunitatea" id="h-comunitate">
+    <p style="margin: 0; max-width: 440px; font-size: 17px; color: #AEB8C7">Cine donează, cine dăruiește subs, cine stă cu noi zi și noapte: toți țin maratonul în viață. Aici se vede.</p>
+  </SectionHead>
+
+  <!-- Contribuția ta -->
+  <div style={`${card}; margin-top: 32px`}>
+    <div {...iff('isOut')} style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 24px">
+      <div style="flex: 1 1 320px">
+        <h3 style={h3}>Contribuția ta</h3>
+        <p style={note}>Conectează-te cu Twitch ca să vezi cât ai adăugat la cronometru, câte zile la rând ai fost în chat și ce insigne ai.</p>
+      </div>
+      <button type="button" class="btn-twitch" data-action="login" style={`min-height: 52px; padding: 0 22px; font-family: ${cond}; font-weight: 800; font-size: 18px; text-transform: uppercase; letter-spacing: 0.03em`}>Conectează-te cu Twitch</button>
+    </div>
+    <div {...iff('isIn')}>
+      <h3 style={h3}>Contribuția ta</h3>
+      <div data-region="mine" style="margin-top: 16px; display: flex; flex-wrap: wrap; gap: 16px 0" set:html={views.mine(v)} />
+      <p data-text="mineNote" style={note}>{v.mineNote}</p>
+    </div>
+  </div>
+
+  <!-- Legende -->
+  <div style="margin-top: clamp(40px, 5cqi, 56px)">
+    <h3 style={h3}>Legende</h3>
+    <p style={note}>Cei mai generoși de până acum. Totalurile se adună: locul e al tău până te întrece cineva.</p>
+    <div data-region="legends" style="margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 28px 24px" set:html={views.legends(v)} />
+  </div>
+
+  <div style="margin-top: clamp(40px, 5cqi, 56px); display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 40px 40px">
+    <!-- Timp adăugat azi -->
+    <div>
+      <h3 style={h3}>Timp adăugat azi</h3>
+      <p style="margin: 12px 0 0"><span class="ice-text" data-text="todayBig" style={`font-family: ${cond}; font-weight: 900; font-style: italic; font-size: clamp(44px, 5cqi, 64px); line-height: 1`}>{v.todayBig}</span></p>
+      <p data-text="todayLine" style={note}>{v.todayLine}</p>
+      <ol data-region="todayFeed" aria-label="Cele mai noi adăugări" style="list-style: none; margin: 14px 0 0; padding: 0; border-top: 1px solid #1A2230" set:html={views.todayFeed(v)} />
+    </div>
+    <!-- Fidelii -->
+    <div>
+      <h3 style={h3}>Fidelii</h3>
+      <p style={note}>Cine stă cel mai mult în chat. Nu costă nimic: o zi se numără de la 30 de minute pe stream.</p>
+      <ol data-region="loyal" aria-label="Fidelii" style="list-style: none; margin: 14px 0 0; padding: 0; border-top: 1px solid #1A2230" set:html={views.loyal(v)} />
+      <p style="margin: 12px 0 0; font-size: 13px; color: #7D8899">Insigne: Ziua 1 OG (ai fost în prima zi) · Tura de noapte (o oră între 00 și 06) · 10, 50, 100 de ore · Serie de 7 zile.</p>
+    </div>
+  </div>
+
+  <!-- Obiectiv comunitar -->
+  <div style={`${card}; margin-top: clamp(40px, 5cqi, 56px)`}>
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 24px">
+      <div>
+        <h3 style={h3}>Obiectiv comunitar</h3>
+        <p style={note}>Ore privite împreună. Gratuit: contează doar să fii în chat cât e live.</p>
+      </div>
+      <span class="ice-text" data-text="togetherHours" style={`font-family: ${cond}; font-weight: 900; font-style: italic; font-size: clamp(40px, 4.4cqi, 56px); line-height: 1`}>{v.togetherHours}</span>
+    </div>
+    <div aria-hidden="true" style="margin-top: 16px; height: 12px; background: #1A2230">
+      <div class="cane" data-style="width:togetherPct" style={`width: ${v.togetherPct}; height: 100%`}></div>
+    </div>
+    <p data-text="togetherNext" style="margin: 10px 0 0; font-size: 15px; font-weight: 600; color: #F2F5FA">{v.togetherNext}</p>
+    <ol data-region="together" aria-label="Obiective comunitare" style="list-style: none; margin: 12px 0 0; padding: 0" set:html={views.together(v)} />
+  </div>
+
+  <!-- Privacy: hide your name everywhere in public -->
+  <div style="margin-top: 28px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; font-size: 14px; color: #AEB8C7">
+    <p style="margin: 0; flex: 1 1 260px" data-text="privacyText">{v.privacyText}</p>
+    <button type="button" class="btn-ghost" data-action="togglePublic" aria-pressed={v.privacyPressed} data-attr="aria-pressed:privacyPressed" {...iff('isIn')} style={`min-height: 44px; padding: 0 14px; font-family: ${cond}; font-weight: 800; font-size: 15px; text-transform: uppercase; letter-spacing: 0.04em`} data-text="privacyBtn">{v.privacyBtn}</button>
+  </div>
+</section>

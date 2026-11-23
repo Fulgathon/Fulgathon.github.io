@@ -5,7 +5,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { popSlots, prizeColors } from '../data/content';
 import { site } from '../data/site';
-import type { Completed, Prize, SiteData, TickerItem, UpNext } from '../data/types';
+import type { Completed, Loyalty, Mine, Prize, SiteData, TickerItem, UpNext } from '../data/types';
 import type { Database } from '../lib/database.types';
 import { amount, tickerItem } from '../lib/events';
 import { ago, dateRo, fmtInt } from '../lib/format';
@@ -27,7 +27,14 @@ export interface Me {
   bonusSpins: number;
   /** false when the viewer chose not to appear by name in public. */
   isPublic: boolean;
+  /** What this viewer added in total. */
+  mine: Mine;
+  /** Hours, daily streak and badges from chat presence (null before any watching). */
+  loyalty: Loyalty | null;
+  /** This viewer's latest sub/gift/donation/bits (for "your sub added 6 minutes"). */
+  lastEvent: { id: number; kind: string; quantity: number; seconds: number; at: number } | null;
 }
+
 
 export interface LiveHandlers {
   /** Called with fresh data; `first` is true for the initial full load. */
@@ -153,7 +160,7 @@ export class Live {
     }
     if (has('feed') && Array.isArray(P.feed)) {
       const items = P.feed.map((e: Json) =>
-        tickerItem({ id: e.id, kind: e.kind, tier: e.tier, quantity: e.quantity, currency: e.currency, seconds_added: e.seconds, user_name: e.name, user_login: null }));
+        tickerItem({ id: e.id, at: ms(e.at) ?? undefined, kind: e.kind, tier: e.tier, quantity: e.quantity, currency: e.currency, seconds_added: e.seconds, user_name: e.name, user_login: null }));
       patch.ticker = items;
       patch.pops = items.filter((i: Json) => i.time !== '—').slice(0, popSlots.length).map((i: Json, k: number) => ({ ...i, ...popSlots[k] }));
     }
@@ -195,6 +202,20 @@ export class Live {
       };
     }
 
+    if (has('today') && P.today) {
+      const t = P.today;
+      patch.today = { seconds: Number(t.seconds) || 0, people: Number(t.people) || 0, subs: Number(t.subs) || 0, donated: Number(t.donated) || 0, bits: Number(t.bits) || 0, events: Number(t.events) || 0 };
+    }
+    if (has('loyal') && Array.isArray(P.loyal)) {
+      patch.loyal = P.loyal.map((l: Json) => ({ name: String(l.name), hours: Number(l.hours) || 0, streak: Number(l.streak) || 0, badges: Array.isArray(l.badges) ? l.badges.map(String) : [] }));
+    }
+    if (has('together') && P.together) {
+      patch.together = { hours: Number(P.together.hours) || 0, goals: (P.together.goals ?? []).map((g: Json) => ({ title: String(g.title), hours: Number(g.hours) || 0 })) };
+    }
+    if (has('now') && P.now) {
+      patch.now = { title: P.now.title ?? null, game: P.now.game ?? null, viewers: P.now.viewers ?? null, note: P.now.note ?? null };
+    }
+
     this.data = { ...this.data, ...patch };
     const first = this.first;
     this.first = false;
@@ -225,6 +246,16 @@ export class Live {
       bingoSaved: Array.isArray(m.bingo) ? m.bingo.map(Number) : null,
       bonusSpins: m.bonusSpins ?? 0,
       isPublic: m.public !== false,
+      mine: {
+        seconds: Number(m.mine?.seconds) || 0, subs: Number(m.mine?.subs) || 0, gifts: Number(m.mine?.gifts) || 0,
+        bits: Number(m.mine?.bits) || 0, donated: Number(m.mine?.donated) || 0,
+      },
+      loyalty: m.loyalty ? {
+        hours: Number(m.loyalty.hours) || 0, streak: Number(m.loyalty.streak) || 0, best: Number(m.loyalty.best) || 0,
+        days: Number(m.loyalty.days) || 0, badges: Array.isArray(m.loyalty.badges) ? m.loyalty.badges.map(String) : [],
+      } : null,
+      lastEvent: m.lastEvent ? { id: Number(m.lastEvent.id), kind: String(m.lastEvent.kind), quantity: Number(m.lastEvent.quantity) || 0,
+        seconds: Number(m.lastEvent.seconds) || 0, at: Date.parse(m.lastEvent.at) } : null,
     });
   }
 
@@ -268,7 +299,7 @@ export class Live {
   async feedSince(after: number): Promise<TickerItem[]> {
     const { data, error } = await this.raw.rpc('feed_since', { p_after: after, p_limit: 100 });
     if (error || !Array.isArray(data)) return [];
-    return data.map((e: Json) => tickerItem({ id: e.id, kind: e.kind, tier: e.tier, quantity: e.quantity, currency: e.currency, seconds_added: e.seconds, user_name: e.name, user_login: null }));
+    return data.map((e: Json) => tickerItem({ id: e.id, at: ms(e.at) ?? undefined, kind: e.kind, tier: e.tier, quantity: e.quantity, currency: e.currency, seconds_added: e.seconds, user_name: e.name, user_login: null }));
   }
 
   /** The OBS overlay's current secret code (private key from /mod). */

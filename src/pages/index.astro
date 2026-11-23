@@ -13,9 +13,9 @@ import Vote from '../components/Vote.astro';
 import Wheel from '../components/Wheel.astro';
 import Goals from '../components/Goals.astro';
 import Rates from '../components/Rates.astro';
-import BoardSchedule from '../components/BoardSchedule.astro';
 import Play from '../components/Play.astro';
 import Partners from '../components/Partners.astro';
+import Community from '../components/Community.astro';
 import Footer from '../components/Footer.astro';
 import DemoPanel from '../components/DemoPanel.astro';
 
@@ -56,12 +56,12 @@ const ogUrl = new URL(ogImage.src, Astro.site);
       <main id="main" tabindex="-1">
         <Hero />
         <Partners />
+        <Community />
         <Live />
         <Vote />
         <Wheel />
         <Goals />
         <Rates />
-        <BoardSchedule />
         <Play />
       </main>
       <Footer />

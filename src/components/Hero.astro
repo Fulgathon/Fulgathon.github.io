@@ -59,6 +59,7 @@ const corners = ['c-tl', 'c-tr', 'c-bl', 'c-br'];
         <span data-text="timerLabel" style={`font-family: ${cond}; font-size: 18px; font-weight: 800; font-style: italic; letter-spacing: 0.1em; text-transform: uppercase; color: #AEB8C7`}>{v.timerLabel}</span>
         <span data-text="statusText" data-style="background:liveBg" style={`display: inline-flex; align-items: center; gap: 8px; padding: 3px 12px; transform: skewX(-12deg); background: ${v.liveBg}; color: #FFFFFF; font-family: ${cond}; font-size: 15px; font-weight: 800; letter-spacing: 0.08em`}>{v.statusText}</span>
       </div>
+      <p {...iff('hasNow')} style="margin: 10px 0 0; font-size: 15px; color: #C9D2DF; overflow-wrap: anywhere"><strong data-text="nowLabel" style={`margin-right: 8px; font-family: ${cond}; font-weight: 800; font-size: 15px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ice)`}>{v.nowLabel}</strong><span data-text="nowText">{v.nowText}</span></p>
       <div style="margin-top: clamp(10px, 2cqi, 20px); display: flex; align-items: flex-start; justify-content: space-between; gap: clamp(4px, 1cqi, 12px)">
         {clock.map((unit) => (
           <Fragment>

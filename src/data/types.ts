@@ -5,7 +5,7 @@ export type Status = 'upcoming' | 'live' | 'ended';
 export type BoardTab = 'donations' | 'gifts' | 'bits' | 'hours';
 
 /** id: the event's id, so the overlay can queue every new one; big: a 20+ gift, 50 €+ or 5,000+ bits. */
-export interface TickerItem { time: string; user: string; what: string; color: string; id?: number; big?: boolean }
+export interface TickerItem { time: string; user: string; what: string; color: string; id?: number; big?: boolean; at?: number }
 export interface Pop { time: string; user: string; left: string; delay: string; color: string }
 export interface Challenge { id: string; title: string; desc: string; votes: number }
 export interface UpNext { n: number; title: string; round: number; pct: string; when: string }
@@ -19,6 +19,19 @@ export interface Round { id: number; number: number; closesAt: number }
 export interface BingoItem { id: number; label: string; happened: boolean }
 /** Prediction bingo: pick 5 events before closesAt; all 5 happen → raffle. */
 export interface Bingo { closesAt: number | null; prize: string; prizeSponsor?: string | null; players: number; items: BingoItem[] }
+
+/** What one viewer added in total (my_state). */
+export interface Mine { seconds: number; subs: number; gifts: number; bits: number; donated: number }
+/** One viewer's hours, daily streak and badges from chat presence. */
+export interface Loyalty { hours: number; streak: number; best: number; days: number; badges: string[] }
+/** Today's totals (Romania calendar day). */
+export interface Today { seconds: number; people: number; subs: number; donated: number; bits: number; events: number }
+/** Fidelii: top watchers by hours, daily streak (days with 30+ min in chat) and badges. */
+export interface Loyal { name: string; hours: number; streak: number; badges: string[] }
+/** Free community goal: hours watched together unlock stream events. */
+export interface Together { hours: number; goals: { title: string; hours: number }[] }
+/** "Acum pe stream": Twitch title + game, or a moderator note. */
+export interface NowInfo { title: string | null; game: string | null; viewers: number | null; note: string | null }
 
 export interface SiteData {
   status: Status;
@@ -49,4 +62,8 @@ export interface SiteData {
   recentWins: Win[];
   boards: Record<BoardTab, [user: string, value: string][]>;
   bingo: Bingo;
+  today: Today | null;
+  loyal: Loyal[];
+  together: Together | null;
+  now: NowInfo | null;
 }

@@ -201,6 +201,89 @@ function recentWins(v: Vals): string {
     .join('');
 }
 
+// ---- Comunitatea ----------------------------------------------------------
+
+const CORNERS = ['c-tl', 'c-tr', 'c-bl', 'c-br'].map((c) => `<span aria-hidden="true" class="corner ${c}"></span>`).join('');
+const badge = (label: string) =>
+  `<span style="display: inline-block; padding: 1px 8px; border: 1px solid #2A3445; font-family: ${COND}; font-weight: 800; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: #C9D2DF; white-space: nowrap">${esc(label)}</span>`;
+
+/** One legend column: #1 as a premium card, #2–5 as rows. */
+function legendColumn(title: string, rows: Vals['legendsDon'], empty: string): string {
+  const [first, ...rest] = rows;
+  const head = `<h3 style="margin: 0 0 12px; font-family: ${COND}; font-weight: 800; font-size: 18px; letter-spacing: 0.12em; text-transform: uppercase; color: #AEB8C7">${esc(title)}</h3>`;
+  if (!first) {
+    return `<div>${head}<div style="position: relative; padding: 22px; background: #0B1018; border: 1px dashed #2A3445; color: #8C97A8; font-size: 16px">${esc(empty)}</div></div>`;
+  }
+  return `<div>${head}
+<div style="position: relative; padding: 22px 22px 18px; background: linear-gradient(180deg, rgba(63,208,255,0.10), rgba(63,208,255,0) 70%), #0B1018; border: 1px solid #1C2230">${CORNERS}
+<div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px">
+<span style="padding: 1px 8px; transform: skewX(-12deg); background: var(--ice); color: #04101A; font-family: ${COND}; font-weight: 800; font-size: 13px; letter-spacing: 0.08em">LEGENDA NR. 1</span>
+<span aria-hidden="true" style="font-family: ${COND}; font-weight: 900; font-style: italic; font-size: 44px; line-height: 0.8; color: transparent; -webkit-text-stroke: 1px #2A3445">01</span>
+</div>
+<p style="margin: 10px 0 0; font-family: ${COND}; font-weight: 900; font-style: italic; font-size: clamp(28px, 3cqi, 38px); line-height: 1; text-transform: uppercase; overflow-wrap: anywhere">${esc(first.name)}</p>
+<p style="margin: 8px 0 0"><span class="ice-text" style="font-family: ${COND}; font-weight: 900; font-style: italic; font-size: 40px; line-height: 1">${esc(first.total)}</span> <span style="font-size: 15px; color: #8C97A8">${esc(first.unit)}</span></p>
+</div>
+<ol start="2" style="list-style: none; margin: 0; padding: 0">${rest.map((r) => `<li style="display: flex; align-items: center; gap: 14px; padding: 12px 4px; border-bottom: 1px solid #1A2230">
+<span style="flex: none; width: 26px; font-family: ${COND}; font-weight: 900; font-style: italic; font-size: 24px; line-height: 1; color: ${r.rank <= 3 ? 'var(--ice)' : '#4A5568'}">${r.rank}</span>
+<span style="flex: 1 1 auto; min-width: 0; font-weight: 600; font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">${esc(r.name)}</span>
+<span style="flex: none; font-family: ${COND}; font-weight: 800; font-size: 22px">${esc(r.total)}</span>
+<span style="flex: none; width: 34px; font-size: 13px; color: #7D8899">${esc(r.unit)}</span>
+</li>`).join('')}</ol>
+</div>`;
+}
+
+function legends(v: Vals): string {
+  return [
+    legendColumn('Donatori', v.legendsDon, 'Locul 1 e liber. Prima donație face o legendă.'),
+    legendColumn('Subs dăruite', v.legendsGifts, 'Locul 1 e liber. Primul gift face o legendă.'),
+    legendColumn('Biți', v.legendsBits, 'Locul 1 e liber. Primii biți fac o legendă.'),
+  ].join('');
+}
+
+function todayFeed(v: Vals): string {
+  if (!v.hasRecent) return emptyRow('Aici apare, pe loc, fiecare sub, gift, donație și bit de azi.');
+  return v.recentFeed
+    .map((t) => `<li style="display: flex; align-items: baseline; gap: 12px; padding: 11px 0; border-bottom: 1px solid #1A2230">
+<strong style="flex: none; min-width: 64px; font-family: ${COND}; font-weight: 800; font-size: 18px; color: ${t.color}">${esc(t.time)}</strong>
+<span style="flex: 1 1 auto; min-width: 0"><span style="font-weight: 700">${esc(t.user)}</span> <span style="color: #AEB8C7">${esc(t.what)}</span></span>
+<span style="flex: none; font-size: 13px; color: #7D8899; white-space: nowrap">${esc(t.agoText)}</span>
+</li>`)
+    .join('');
+}
+
+function loyal(v: Vals): string {
+  if (!v.hasLoyal) return emptyRow('Primii fideli apar după prima oră în chat. Se numără singur, cât ești pe stream.');
+  return v.loyalRows
+    .map((r) => `<li style="padding: 12px 0; border-bottom: 1px solid #1A2230">
+<div style="display: flex; align-items: center; gap: 14px">
+<span style="flex: none; width: 26px; font-family: ${COND}; font-weight: 900; font-style: italic; font-size: 24px; line-height: 1; color: ${r.rank === 1 ? '#FFFFFF' : r.rank <= 3 ? 'var(--ice)' : '#4A5568'}">${r.rank}</span>
+<span style="flex: 1 1 auto; min-width: 0; font-weight: 600; font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">${esc(r.name)}</span>
+<span style="flex: none; font-family: ${COND}; font-weight: 800; font-size: 20px">${esc(r.hours)}</span>
+</div>
+${r.streakText || r.badges.length ? `<div style="margin: 6px 0 0 40px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px">${r.streakText ? `<span style="font-size: 13px; color: var(--ice); font-weight: 700; margin-right: 4px">${esc(r.streakText)}</span>` : ''}${r.badges.map(badge).join('')}</div>` : ''}
+</li>`)
+    .join('');
+}
+
+function together(v: Vals): string {
+  return v.togetherGoals
+    .map((g) => `<li style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #1A2230">
+<span style="flex: none; width: 64px; font-family: ${COND}; font-weight: 800; font-size: 18px; color: ${g.done ? 'var(--ice)' : g.current ? '#FFFFFF' : '#4A5568'}">${esc(g.hours)}</span>
+<span style="flex: 1 1 auto; min-width: 0; font-weight: 600; color: ${g.done ? '#8C97A8' : '#F2F5FA'}; text-decoration: ${g.done ? 'line-through' : 'none'}; text-decoration-color: var(--ice)">${esc(g.title)}</span>
+${g.done ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="flex: none; color: var(--ice)" stroke-width="3" stroke-linecap="square" aria-label="Deblocat" role="img"><path d="M4 12l5 5L20 6"></path></svg>' : g.current ? `<span style="flex: none; padding: 1px 8px; transform: skewX(-12deg); background: var(--ice); color: #04101A; font-family: ${COND}; font-size: 13px; font-weight: 800; letter-spacing: 0.06em">URMEAZĂ</span>` : ''}
+</li>`)
+    .join('');
+}
+
+function mine(v: Vals): string {
+  return v.mineStats
+    .map((m) => `<div style="padding: 4px 18px; border-left: 2px solid #2A3445">
+<p style="margin: 0; font-family: ${COND}; font-weight: 900; font-style: italic; font-size: 30px; line-height: 1.05">${esc(m.value)}</p>
+<p style="margin: 2px 0 0; font-size: 14px; color: #8C97A8">${esc(m.label)}</p>
+</div>`)
+    .join('') + (v.mineBadges.length ? `<div style="flex: 1 0 100%; display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 18px 0">${v.mineBadges.map(badge).join('')}</div>` : '');
+}
+
 export const views = {
   ticker,
   voteTabs: (v: Vals) => tabs(v.voteTabs, 'vote', '20px', ' letter-spacing: 0.03em;'),
@@ -215,6 +298,11 @@ export const views = {
   completed,
   wheelPrizes,
   recentWins,
+  legends,
+  todayFeed,
+  loyal,
+  together,
+  mine,
 };
 
 export type RegionName = keyof typeof views;

@@ -6,6 +6,8 @@ import { count, fmtInt, plusTime } from './format';
 
 export interface EventLike {
   id?: number;
+  /** Epoch ms (for "acum 3 min"). */
+  at?: number;
   kind: string;
   tier: string | null;
   quantity: number | string;
@@ -44,6 +46,7 @@ export function tickerItem(e: EventLike): TickerItem {
     color: ['sub', 'resub', 'gift'].includes(e.kind) ? 'var(--ice)' : '#FFFFFF',
     id: e.id,
     big: isBig(e),
+    at: e.at,
   };
 }
 
