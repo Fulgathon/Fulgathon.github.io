@@ -42,7 +42,17 @@ Secrets go only into the dashboards below, never into chat or the repo.
 5. **Switch login on**: done (22 Nov 2026, `twitchLogin: true` in `src/data/site.ts`).
 6. **Iceman** opens https://icemaraton.icemaraton.workers.dev/m, logs in with Twitch
    (he's a moderator automatically), clicks **Conectează contul de streamer**
-   and approves. The page should say "Gata!" with six events "activ".
+   and approves. The page should say "Gata!" with eight events "activ".
+   **He must do this once more after 24 Nov 2026.** The daily check-in needs
+   a new permission (channel points), and the title/game updates need two new
+   events.
+7. **Daily check-in (channel points):** Twitch dashboard → Viewer Rewards →
+   Channel Points → Manage Rewards → Add New Custom Reward:
+   - Title: `Check-in ICEMARATON`. Any title containing "check-in" works.
+   - Cost: something small, e.g. 100.
+   - Limit per user per stream: 1 (optional; the site counts one per day anyway).
+   - Turn on "Skip Reward Requests Queue" so moderators don't have to approve each one.
+   Each redemption counts that day toward the viewer's streak on the site.
 
 Dashboard: https://supabase.com/dashboard/project/yvbxtsuddjqqoogdoqrx
 

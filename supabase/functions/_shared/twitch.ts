@@ -34,7 +34,8 @@ export interface Config {
   token: Token | null;
 }
 
-export const SCOPES = ['channel:read:subscriptions', 'bits:read', 'moderator:read:chatters'];
+// channel:read:redemptions: the daily check-in with channel points ("Check-in ICEMARATON").
+export const SCOPES = ['channel:read:subscriptions', 'bits:read', 'moderator:read:chatters', 'channel:read:redemptions'];
 
 export async function getConfig(db: Db): Promise<Config> {
   const { data, error } = await db.rpc('twitch_config');

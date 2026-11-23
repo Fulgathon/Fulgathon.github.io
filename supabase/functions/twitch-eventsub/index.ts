@@ -4,6 +4,8 @@
 //   channel.subscription.gift    → gift (quantity = number of subs)
 //   channel.cheer                → bits
 //   stream.online / offline      → timer.stream_online
+//   channel.update               → "Acum pe stream" title + game, at once
+//   channel points redemption of "Check-in ICEMARATON" → the day counts for the viewer's streak
 // Every request is verified with the EventSub HMAC signature; Twitch retries
 // reuse the message id, which record_event() dedupes.
 // Deployed with verify_jwt = false (Twitch can't send a Supabase JWT).
@@ -68,6 +70,15 @@ Deno.serve(async (req) => {
       break;
     case 'stream.offline':
       await db.rpc('set_stream_online', { p_online: false });
+      break;
+    case 'channel.update':
+      await db.rpc('save_stream_title', { p_title: e.title ?? null, p_game: e.category_name ?? null });
+      break;
+    case 'channel.channel_points_custom_reward_redemption.add':
+      // Any reward whose title mentions "check-in" / "checkin" (e.g. "Check-in ICEMARATON").
+      if (/check[\s-]?in/i.test(e.reward?.title ?? '')) {
+        await db.rpc('record_checkin', { p_user_id: e.user_id ?? null, p_login: e.user_login ?? null, p_name: e.user_name ?? null });
+      }
       break;
   }
   return new Response(null, { status: 204 });
