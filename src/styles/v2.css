@@ -5,7 +5,10 @@
 
 .cond { font-family: 'Barlow Condensed', sans-serif; }
 .wrap { max-width: 1280px; margin: 0 auto; padding: 0 clamp(16px, 4cqi, 40px); }
-.sec { position: relative; padding-bottom: clamp(36px, 5cqi, 72px); scroll-margin-top: 120px; }
+.wrap { --sec-pad: clamp(32px, 3.4cqi, 52px); --gap-group: clamp(22px, 2.2cqi, 32px); }
+/* One rhythm for the whole page (owner, 23 Nov: fewer gaps, everything on one edge):
+   every section has the same space above and below and a thin line between them. */
+.sec { position: relative; padding: clamp(32px, 3.4cqi, 52px) 0; border-top: 1px solid #141A24; scroll-margin-top: 110px; }
 .panel { background: #0B1018; border: 1px solid #1C2230; }
 /* Frosted glass: panels and cards sit above both snow layers (.snow-front is z-index 6),
    so a flake drifting behind one shows through soft and blurred. Sections and the hero
@@ -33,7 +36,7 @@
 .nav-clock .nc-short { display: none; }
 
 /* ---- Hero ---- */
-.hero { position: relative; overflow: hidden; text-align: center; background: linear-gradient(180deg, #071224 0%, #050608 70%); padding: clamp(22px, 3cqi, 40px) 0 clamp(32px, 4cqi, 56px); }
+.hero { position: relative; overflow: hidden; text-align: center; background: linear-gradient(180deg, #071224 0%, #050608 70%); padding: clamp(22px, 3cqi, 40px) 0 clamp(24px, 2.4cqi, 36px); }
 .hero-eyebrow { position: relative; margin: 0; display: flex; align-items: center; justify-content: center; gap: 14px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: clamp(13px, 1.2cqi, 16px); letter-spacing: 0.3em; text-transform: uppercase; color: #AEB8C7; }
 .hero h1 { margin: 8px 0 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: min(6.2cqi, 92px); line-height: 0.85; text-transform: uppercase; white-space: nowrap; }
 /* Desktop (DESIGN.md §4): mascot left, the line + timer card right, so the digits and «Prezentat de»
@@ -134,16 +137,16 @@
 .blink { animation: blink 1.2s steps(2) infinite; }
 
 /* ---- Section heads ---- */
-.sec { --sh-n: clamp(150px, 15.3cqi, 220px); --sh-t: clamp(46px, 5.6cqi, 80px); }
+.sec { --sh-n: clamp(60px, 5.4cqi, 80px); --sh-t: clamp(34px, 3.4cqi, 50px); }
 /* Section heading, variant B: the numeral is decoration (aria-hidden); the title sits over its lower half. */
-.shead { position: relative; margin-bottom: calc(var(--sh-n) * 0.1); display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 12px 32px; }
-.sh-main { position: relative; min-width: 0; margin-top: max(0px, calc(var(--sh-n) * 0.9 - var(--sh-t) * 0.88 - 21px)); padding-left: calc(var(--sh-n) * 0.536); }
+.shead { position: relative; margin-bottom: 20px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 12px 32px; }
+.sh-main { position: relative; min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "num title" "num bar"; align-items: end; column-gap: 14px; }
 /* Padding wraps the italic overhang: Safari clips a stroked glyph at its box, so the slanted
    "1" lost its top right corner on iPhone; the negative margin keeps the numeral where it was. */
-.sh-num { position: absolute; left: -0.03em; bottom: -0.1em; padding: 0 0.16em 0 0.06em; margin-left: -0.06em; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: var(--sh-n); line-height: 1; letter-spacing: -0.02em; color: transparent; -webkit-text-stroke: 2px rgba(63, 208, 255, 0.7); pointer-events: none; user-select: none; }
-.shead h2 { position: relative; margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: var(--sh-t); line-height: 0.88; text-transform: uppercase; }
-.sh-bar { position: relative; display: block; width: clamp(64px, 7.2cqi, 104px); height: clamp(5px, 0.5cqi, 7px); margin-top: 14px; background: var(--ice); transform: skewX(-12deg); }
-.shead + .intro { padding-left: calc(var(--sh-n) * 0.536); }
+.sh-num { grid-area: num; position: relative; align-self: end; margin-bottom: -0.08em; padding: 0 0.16em 0 0.06em; margin-left: -0.06em; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: var(--sh-n); line-height: 1; letter-spacing: -0.02em; color: transparent; -webkit-text-stroke: 2px rgba(63, 208, 255, 0.7); pointer-events: none; user-select: none; }
+.shead h2 { grid-area: title; position: relative; margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: var(--sh-t); line-height: 0.88; text-transform: uppercase; }
+.sh-bar { grid-area: bar; position: relative; display: block; width: clamp(56px, 5.6cqi, 80px); height: 5px; margin-top: 10px; background: var(--ice); transform: skewX(-12deg); }
+.shead + .intro { margin-top: -6px; margin-bottom: 18px; max-width: 760px; }
 /* The cut-in (motion tokens in global.css; .motion is set by src/scripts/motion.ts unless
    reduced motion is on): the numeral slides in, the ice bar sweeps from the left. It plays
    when a header first scrolls into view and again when a menu link lands on it. */
@@ -151,10 +154,12 @@
 .motion .sh-bar { transform-origin: left center; transition: transform var(--m-slow) var(--m-ease) 90ms; }
 .motion .shead:not(.seen) .sh-num { opacity: 0; transform: translateX(-0.08em); }
 .motion .shead:not(.seen) .sh-bar { transform: skewX(var(--m-skew)) scaleX(0); }
-.shead .side { margin: 0 0 4px; max-width: 380px; color: #AEB8C7; }
+.shead .side { margin: 0 0 2px; max-width: 420px; color: #AEB8C7; text-align: right; }
 /* Narrower: the side line (or button) goes under the title, on the title's left edge, like the intro. */
-@container page (max-width: 1100px) { .shead { grid-template-columns: minmax(0, 1fr); } .shead > :not(.sh-main) { justify-self: start; margin-left: calc(var(--sh-n) * 0.536); } .shead > .side { max-width: 560px; } }
+@container page (max-width: 1100px) { .shead { grid-template-columns: minmax(0, 1fr); } .shead > :not(.sh-main) { justify-self: start; margin-left: 0; } .shead > .side { max-width: 560px; text-align: left; } }
 .intro { margin: 14px 0 0; color: #AEB8C7; }
+.h3-meta { font-size: 0.53em; font-weight: 800; font-style: normal; letter-spacing: 0.08em; color: #8C97A8; }
+@container page (max-width: 760px) { .h3-meta { display: block; margin-top: 4px; font-size: 13px; } .h3-dot { display: none; } }
 
 /* ---- Sponsors up front (owner, 23 Nov: first impression = the marathon and its sponsors) ---- */
 /* «Prezentat de» under the title: calm, no motion, the partner's name in plain white. */
@@ -184,11 +189,11 @@
 .sb-copy { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px; text-transform: uppercase; color: var(--ice); }
 .sb-offer { min-height: 48px; display: inline-flex; align-items: center; padding: 0 20px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 18px; text-transform: uppercase; text-decoration: none; }
 /* Partner wall: every slot, one calm grid. */
-.pwall { position: relative; padding: clamp(28px, 3cqi, 44px) 0 clamp(20px, 2cqi, 28px); border-top: 1px solid #1C2230; }
+.pwall { position: relative; padding: clamp(32px, 3.4cqi, 52px) 0; border-top: 1px solid #141A24; scroll-margin-top: 110px; }
 .pw-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 24px; }
 .pw-title { margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: clamp(26px, 2.4cqi, 34px); line-height: 1; text-transform: uppercase; }
 .pw-side { margin: 0; color: #AEB8C7; }
-.pw-grid { margin-top: 16px; display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(4, minmax(0, 1fr)); gap: 10px; }
+.pw-grid { margin-top: 20px; display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(4, minmax(0, 1fr)); gap: 10px; }
 .pw-main { min-height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 14px; background: #090C11; border: 1px solid #23415E; box-shadow: inset 0 3px 0 var(--ice); color: #FFFFFF; text-decoration: none; }
 .pw-tier { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ice); }
 .pw-main-name { font-weight: 700; font-size: clamp(26px, 2.6cqi, 38px); line-height: 1; letter-spacing: 0.06em; }
@@ -202,7 +207,7 @@
 .pw-demo { margin: 10px 0 0; font-size: 13px; color: #8C97A8; }
 .pw-join a { font-weight: 600; }
 /* «Cum adaugi timp»: rates left, calculator right. */
-.addtime { position: relative; padding: clamp(20px, 2.4cqi, 36px) 0; border-top: 1px solid #1C2230; }
+.addtime { position: relative; padding: clamp(32px, 3.4cqi, 52px) 0; border-top: 1px solid #141A24; }
 .at-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 16px 36px; align-items: start; }
 .at-title { margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: clamp(26px, 2.4cqi, 34px); line-height: 1; text-transform: uppercase; }
 .at-lead { margin: 8px 0 0; color: #AEB8C7; }
@@ -275,7 +280,7 @@
 .tt { flex: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px; }
 .lg-compact { display: none; margin: 6px 0 0; font-size: 13px; color: #8C97A8; }
 .lg-dots { display: none; margin: 6px 0 0; font-size: 12px; color: #7D8899; }
-.duo { margin-top: 40px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.duo { margin-top: var(--gap-group); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .duo > div { padding: 22px; }
 .rows { margin-top: 12px; border-top: 1px solid #1A2230; }
 .rows > li { padding: 10px 0; border-bottom: 1px solid #1A2230; }
@@ -287,7 +292,7 @@
 .streak { font-size: 13px; font-weight: 700; color: var(--ice); margin-right: 2px; }
 
 /* ---- Milestones ---- */
-.mtrack { position: relative; margin-top: 34px; display: grid; gap: 0; }
+.mtrack { position: relative; margin-top: 8px; display: grid; gap: 0; }
 .mtrack-line { position: absolute; top: 21px; height: 4px; }
 .ms { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; text-decoration: none; color: inherit; outline-offset: 4px; }
 .ms-mark { width: 46px; height: 46px; display: grid; place-items: center; transform: skewX(-10deg); border: 2px solid; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 20px; }
@@ -297,7 +302,9 @@
 .ms:hover .ms-name, .ms:focus-visible .ms-name { visibility: visible; opacity: 1; }
 .mseg { display: none; margin-top: 14px; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 3px; }
 .mseg-label { display: none; margin: 6px 0 0; justify-content: space-between; font-size: 12px; color: #8C97A8; }
-.mgrid { margin-top: 30px; display: grid; grid-template-columns: 5fr 7fr; gap: 16px; align-items: start; }
+.mgrid { margin-top: var(--gap-group); display: grid; grid-template-columns: 5fr 7fr; gap: 16px; align-items: stretch; }
+.mgrid > .next-card { display: flex; flex-direction: column; }
+.mgrid > .next-card > :last-child:not([hidden]) { margin-top: auto !important; }
 .next-card { padding: 24px; background: linear-gradient(180deg, rgba(63,208,255,0.10), rgba(63,208,255,0) 80%), #0B1018; border: 2px solid var(--ice); }
 .clips { padding: 24px; }
 .clip { margin-top: 12px; display: flex; align-items: center; gap: 16px; padding-top: 12px; border-top: 1px solid #1A2230; color: #F2F5FA; text-decoration: none; min-height: 44px; }
@@ -319,7 +326,7 @@
 .ag-tag { flex: none; padding: 0 6px; transform: skewX(-12deg); background: #1A2E44; color: #8FE4FF; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 11px; }
 
 /* ---- Joacă ---- */
-.games { margin-top: 18px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "wheel wheel" "vote sug" "bingo bingo"; gap: 16px; }
+.games { margin-top: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "wheel wheel" "vote sug" "bingo bingo"; gap: 16px; }
 .g-wheel { grid-area: wheel; padding: 28px; display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 1fr); gap: 40px; align-items: center; }
 .g-vote { grid-area: vote; padding: 22px; }
 .g-sug { grid-area: sug; padding: 22px; }
@@ -362,8 +369,8 @@
 .kv > span:last-child { font-weight: 700; text-align: right; }
 
 /* ---- Live, Advent, footer ---- */
-.live-grid { margin-top: 18px; display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
-.advent { margin-top: 18px; display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 8px; }
+.live-grid { margin-top: 0; display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+.advent { margin-top: 0; display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 8px; }
 .ad { position: relative; min-height: 118px; padding: 10px; display: flex; flex-direction: column; gap: 2px; text-decoration: none; color: inherit; overflow-wrap: anywhere; }
 .ad-past { background: #0B1018; border: 1px solid #23415E; }
 a.ad-past:hover { border-color: var(--ice); }
@@ -568,12 +575,11 @@ a.ad-past:hover { border-color: var(--ice); }
 @container page (max-width: 760px) {
   .shead .side { display: none; }
   /* Phone: the numeral sits above, the title starts at the left edge over its lower part. */
-  .sec { --sh-n: clamp(110px, 34cqi, 140px); --sh-t: clamp(36px, 11.3cqi, 48px); }
-  .shead { margin-bottom: 0; }
-  .sh-main { margin-top: 0; padding-left: 0; padding-top: calc(var(--sh-n) * 0.59); }
-  .sh-num { top: 0; bottom: auto; -webkit-text-stroke-width: 1.5px; }
+  .sec { --sh-n: clamp(48px, 14cqi, 56px); --sh-t: clamp(30px, 9cqi, 38px); }
+  .shead { margin-bottom: 14px; }
+  .sh-main { column-gap: 10px; }
+  .sh-num { -webkit-text-stroke-width: 1.5px; }
   .sh-bar { margin-top: 10px; }
-  .shead + .intro { padding-left: 0; }
   .shead > :not(.sh-main) { margin-left: 0; }
 }
 /* Tablet: keep the phone-style stage centred instead of stretched. */

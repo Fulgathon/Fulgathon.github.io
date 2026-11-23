@@ -17,8 +17,9 @@ const small = `font-family: ${cond}; font-weight: 800; font-size: 13px; letter-s
     <linearGradient id="g-prism-fill" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9FE8FF" stop-opacity="0.22"></stop><stop offset="0.5" stop-color="#E2B6FF" stop-opacity="0.16"></stop><stop offset="1" stop-color="#C8FFE9" stop-opacity="0.22"></stop></linearGradient>
   </defs></svg>
   <div class="wrap">
-    <SectionHead tag="01" title="Comunitatea" id="h-comunitate" />
-    <p class="intro">Se citește de sus în jos: ce ai adăugat tu, cine conduce, ce se întâmplă azi.</p>
+    <SectionHead tag="01" title="Comunitatea" id="h-comunitate">
+      <p class="side">Ce ai adăugat tu, cine conduce, ce se întâmplă azi.</p>
+    </SectionHead>
 
     <!-- Row 1: you + the shared goal -->
     <div class="band panel">
@@ -55,7 +56,7 @@ const small = `font-family: ${cond}; font-weight: 800; font-size: 13px; letter-s
     </div>
 
     <!-- Row 2: legends -->
-    <h3 style={`margin: 40px 0 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: clamp(26px, 2.4cqi, 34px); text-transform: uppercase`}>Legende <span style="font-size: 0.53em; font-weight: 800; font-style: normal; letter-spacing: 0.08em; color: #8C97A8">· top 5, totaluri adunate pe tot maratonul</span></h3>
+    <h3 style={`margin: var(--gap-group) 0 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: clamp(26px, 2.4cqi, 34px); text-transform: uppercase`}>Legende <span class="h3-meta"><span class="h3-dot" aria-hidden="true">· </span>top 5, totaluri adunate pe tot maratonul</span></h3>
     <div class="legends" data-region="legends" set:html={views.legends(v)} />
     <p class="lg-dots">Se dau cu degetul: Donatori · Subs dăruite · Biți</p>
 
