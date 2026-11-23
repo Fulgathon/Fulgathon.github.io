@@ -10,6 +10,7 @@ import { initBlueprint } from './blueprint';
 
 const api = new DemoBackend('pitch');
 const compact = matchMedia('(max-width: 1000px)');
+const phoneUpright = matchMedia('(max-width: 1000px) and (orientation: portrait)');
 type View = 'site' | 'stream' | 'report' | 'packages';
 interface Action { label: string; primary?: boolean; run: () => void }
 interface Step { title: string | (() => string); view: View; scroll?: string; focus?: 'double' | 'code' | 'promo' | 'wins'; body: () => string; actions?: Action[]; enter?: () => void }
@@ -65,7 +66,8 @@ const steps: Step[] = [
     title: 'ICEMARATON, pe scurt', view: 'site', scroll: 'top',
     body: () => `<p><strong>ICEMARATON</strong> e subathonul de Crăciun al lui <strong>Icemanlucky</strong> pe Twitch: un stream care nu se oprește cât timp comunitatea adaugă timp. Fiecare donație și fiecare sub prelungesc cronometrul.</p>
 <ul>${pitch.audience.map((a) => `<li><strong>${esc(a.value)}</strong> ${esc(a.label)}</li>`).join('')}</ul>
-<p>Lângă stream există un site interactiv: vot pe provocări, roata cu premii, bingo, milestone-uri. ${compact.matches ? 'Deasupra' : 'În dreapta'} e chiar site-ul, cu ${b()} ca partener.</p>`,
+<p>Lângă stream există un site interactiv: vot pe provocări, roata cu premii, bingo, milestone-uri. ${compact.matches ? 'Mai jos' : 'În dreapta'} e chiar site-ul, cu ${b()} ca partener.</p>
+<p class="hint-brand">Scrieți numele brandului ${compact.matches ? 'în câmpul de sus' : 'sus, în dreapta'} (<strong>Brandul vostru</strong>) și îl vedeți peste tot: pe site, pe stream și în raport. Linkul din bara de adrese îl păstrează.</p>`,
     actions: [{ label: 'Vezi brandul pe site', primary: true, run: () => scrollSite('parteneri') }],
   },
   {
@@ -123,7 +125,7 @@ const steps: Step[] = [
   {
     title: 'Raportul vostru', view: 'report',
     body: () => `<p>La final primiți un raport cu ce a adus parteneriatul: click-uri pe linkul vostru, coduri de reducere copiate, coduri secrete revendicate, donațiile din orele voastre și câți oameni erau pe stream atunci.</p>
-<p>Click-urile se numără fără date personale. ${compact.matches ? 'Deasupra' : 'În dreapta'} e un exemplu cu cifre din această demonstrație.</p>`,
+<p>Click-urile se numără fără date personale. ${compact.matches ? 'Mai jos' : 'În dreapta'} e un exemplu cu cifre din această demonstrație.</p>`,
     enter: () => renderReport(),
   },
   {
@@ -133,6 +135,38 @@ const steps: Step[] = [
     enter: () => renderPackages(),
   },
 ];
+
+// S1 «Hai să vorbim»: an inquiry, not a checkout. It opens the visitor's own email app with
+// everything filled in; nothing is stored here. Shown only once site.contactEmail is real.
+const contact = site.contactEmail.startsWith('[') ? '' : site.contactEmail;
+const talk = { pkg: pitch.packages[0].name, name: '', msg: '' };
+if (contact) steps.push({
+  title: 'Hai să vorbim', view: 'packages',
+  body: () => `<p>V-a convins? Lăsați-ne câteva rânduri și vă răspundem cu detaliile, pe ${b()}. Plata se face pe factură, după ce stabilim împreună ce vă trebuie.</p>
+<form class="talk" id="talk" novalidate>
+  <label>Brandul<input class="field" id="talkBrand" maxlength="40" autocomplete="organization" value="${esc(brand.trim())}" placeholder="ex: Zona IT"></label>
+  <label>Pachetul<select class="field" id="talkPkg">${[...pitch.packages.map((p) => p.name), 'Altceva / nu știm încă'].map((n) => `<option${n === talk.pkg ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
+  <label>Numele vostru<input class="field" id="talkName" maxlength="60" autocomplete="name" value="${esc(talk.name)}"></label>
+  <label>Câteva rânduri (opțional)<textarea class="field" id="talkMsg" rows="3" maxlength="600" placeholder="ex: ne interesează Ora dublă în weekend">${esc(talk.msg)}</textarea></label>
+  <button type="submit" class="act primary">Trimite</button>
+  <p class="talk-note">Se deschide aplicația voastră de email, cu mesajul completat. Nu s-a deschis nimic? Scrieți-ne la <a href="mailto:${esc(contact)}">${esc(contact)}</a>.</p>
+</form>`,
+  enter: () => renderPackages(),
+});
+const stepBox = document.getElementById('step')!;
+stepBox.addEventListener('input', (e) => {
+  const t = e.target as HTMLInputElement;
+  if (t.id === 'talkName') talk.name = t.value;
+  if (t.id === 'talkMsg') talk.msg = t.value;
+  if (t.id === 'talkPkg') talk.pkg = t.value;
+  if (t.id === 'talkBrand') { brandInput.value = t.value; brandInput.dispatchEvent(new Event('input')); }
+});
+stepBox.addEventListener('submit', (e) => {
+  if ((e.target as Element).id !== 'talk') return;
+  e.preventDefault();
+  const lines = [`Brand: ${B()}`, `Pachet: ${talk.pkg}`, `Nume: ${talk.name.trim() || '-'}`, '', talk.msg.trim()].join('\n');
+  location.href = `mailto:${contact}?subject=${encodeURIComponent(`Parteneriat ICEMARATON · ${B()}`)}&body=${encodeURIComponent(lines)}`;
+});
 
 // ---- Report and packages -------------------------------------------------------
 function renderReport() {
@@ -154,7 +188,6 @@ function renderReport() {
 }
 
 function renderPackages() {
-  const contact = site.contactEmail.startsWith('[') ? '' : site.contactEmail;
   document.getElementById('packages')!.innerHTML = `
 ${pitch.packages.map((p) => `<section class="card pkg${p.highlight ? ' ice' : ''}">
   ${p.highlight ? '<span class="tag">CEL MAI VIZIBIL</span>' : ''}<h2 style="margin-top:${p.highlight ? '10px' : '0'}">${esc(p.name)}</h2>
@@ -165,7 +198,7 @@ ${pitch.packages.map((p) => `<section class="card pkg${p.highlight ? ' ice' : ''
 <section class="card" style="grid-column: 1 / -1"><h2>Idei speciale, la discuție</h2>
   <ul>${pitch.extras.map((e) => `<li><strong style="color:#F2F5FA">${esc(e.title)}</strong>: ${esc(e.text)}</li>`).join('')}</ul></section>
 <div class="links">
-  ${contact ? `<a href="mailto:${esc(contact)}?subject=${encodeURIComponent('Parteneriat ICEMARATON · ' + B())}">Scrie-ne: ${esc(contact)}</a>` : '<span style="color:#8C97A8">Contact: [EMAIL CONTACT]</span>'}
+  ${contact ? `<a href="mailto:${esc(contact)}?subject=${encodeURIComponent('Parteneriat ICEMARATON · ' + B())}">Scrie-ne: ${esc(contact)}</a>` : ''}
   <a href="../" target="_blank" rel="noopener">Site-ul ICEMARATON ↗</a>
 </div>`;
 }
@@ -233,14 +266,20 @@ ${s.actions?.length ? `<div class="try"><p class="try-label">Vedeți cum arată<
   if (s.scroll) setTimeout(() => { scrollSite(s.scroll!); pushBrand(); }, 300);
   (document.getElementById('prev') as HTMLButtonElement).disabled = current === 0;
   (document.getElementById('next') as HTMLButtonElement).textContent = current === steps.length - 1 ? 'De la început ↺' : 'Mai departe →';
-  history.replaceState(null, '', `${location.search}#${current + 1}`);
+  const q = new URLSearchParams(location.search);
+  if (brand.trim()) q.set('brand', brand.trim()); else q.delete('brand');
+  history.replaceState(null, '', `${q.toString() ? `?${q}` : location.pathname}#${current + 1}`);
   stepEl.scrollTop = 0;
+  // Phones upright (S5): the page scrolls, text first; a new step starts at the top.
+  if (phoneUpright.matches) window.scrollTo({ top: 0 });
 }
 compact.addEventListener('change', () => showStep(current));
 
 stepEl.addEventListener('click', (e) => {
   const btn = (e.target as Element).closest<HTMLElement>('[data-act]');
-  if (btn) steps[current].actions?.[Number(btn.dataset.act)]?.run();
+  if (!btn) return;
+  steps[current].actions?.[Number(btn.dataset.act)]?.run();
+  if (phoneUpright.matches) stage.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 });
 toc.addEventListener('click', (e) => {
   const btn = (e.target as Element).closest<HTMLElement>('[data-goto]');
@@ -266,6 +305,8 @@ brandInput.addEventListener('input', () => {
     if (t.doubleFrom !== null) api.doubleHour(t.doubleFrom, Math.round(((t.doubleUntil ?? t.doubleFrom) - t.doubleFrom) / 60_000) || 60, B());
     pushBrand();
     if (steps[current].view === 'stream') overlay();
+    // Typing the brand in the closing form: keep the form (and the cursor) as it is.
+    if (document.activeElement?.closest('#talk')) { if (steps[current].view === 'packages') renderPackages(); return; }
     showStep(current);
   }, 450);
 });
