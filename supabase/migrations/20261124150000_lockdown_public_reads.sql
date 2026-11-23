@@ -1,6 +1,6 @@
--- RUN ONLY AFTER the site from branch optimize/scale-and-safety is deployed
--- (npm run deploy). The old page reads these tables directly; the new one
--- only calls public_state / my_state / feed_since.
+-- Applied after the site that reads public_state was deployed (24 Nov 2026).
+-- The old page read these tables directly; the current one only calls
+-- public_state / my_state / feed_since.
 --
 -- 1. Personal data stops being publicly readable (who watched how long,
 --    every event with Twitch ids). Names reach the page only through

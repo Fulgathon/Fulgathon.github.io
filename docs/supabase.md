@@ -127,8 +127,8 @@ Secrets go in the dashboards, never in this repo or in chat.
   (`private.known_sponsors` plus any sponsor named in the data).
 - **Health:** `mod_health()` feeds the "Sănătate" card on /mod.
 
-**After deploying the new site, run `supabase/after-deploy/lockdown_public_reads.sql`.**
-It removes direct public reads of `events` and `watch_time`.
+`events` and `watch_time` are not publicly readable any more (migration
+`20261124150000_lockdown_public_reads`), and the old leaderboard views are gone.
 
 ## Edge Functions (deployed)
 
