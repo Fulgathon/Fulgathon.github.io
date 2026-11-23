@@ -98,8 +98,16 @@ function fitNav() {
 if (nav) new ResizeObserver(fitNav).observe(nav);
 document.fonts?.ready.then(fitNav);
 
+/** Moments (thanks, new legend) wait for the current message to close instead of replacing it. */
+const pendingMoments: State['info'][] = [];
+function moment(eyebrow: string, text: string) {
+  if (state.toast) pendingMoments.push({ eyebrow, text });
+  else set({ toast: 'info', info: { eyebrow, text } });
+}
+
 function set(patch: Partial<State>) {
   state = { ...state, ...patch };
+  if (!state.toast && pendingMoments.length) state = { ...state, toast: 'info', info: pendingMoments.shift()! };
   render();
   if ('viewer' in patch || 'viewerName' in patch) fitNav();
 }
@@ -172,13 +180,13 @@ function thankFor(e: Me['lastEvent']) {
   try { seen = Number(localStorage.getItem(MINE_KEY)) || 0; } catch { /* storage blocked */ }
   if (e.id <= seen) return;
   try { localStorage.setItem(MINE_KEY, String(e.id)); } catch { /* storage blocked */ }
-  if (Date.now() - e.at > 15 * 60_000 || e.seconds <= 0 || state.toast) return;
+  if (Date.now() - e.at > 15 * 60_000 || e.seconds <= 0) return;
   const t = duration(e.seconds);
   const text = e.kind === 'gift' ? (e.quantity === 1 ? `Subul dăruit de tine a adăugat ${t} la cronometru.` : `Cele ${count(e.quantity, 'sub', 'subs')} dăruite de tine au adăugat ${t} la cronometru.`)
     : e.kind === 'donation' ? `Donația ta de ${fmtInt(e.quantity)} € a adăugat ${t} la cronometru.`
     : e.kind === 'bits' ? `Cei ${count(e.quantity, 'bit', 'biți')} ai tăi au adăugat ${t} la cronometru.`
     : `Subul tău a adăugat ${t} la cronometru.`;
-  info('Mulțumim!', text);
+  moment('Mulțumim!', text);
 }
 
 /** Someone takes #1 or enters the top 5 of a legend board: celebrate it (not on the first load). */
@@ -188,12 +196,12 @@ function checkLegends(d: SiteData) {
   const now = Object.fromEntries((Object.keys(legendLabels) as (keyof typeof legendLabels)[]).map((k) => [k, d.boards[k].slice(0, 5).map((r) => r[0])]));
   const before = prevLegends;
   prevLegends = now;
-  if (!before || state.toast) return;
+  if (!before) return;
   for (const k of Object.keys(legendLabels) as (keyof typeof legendLabels)[]) {
     const [top] = now[k];
-    if (top && before[k].length && top !== before[k][0]) { info('Legendă nouă', `${top} urcă pe locul 1 la ${legendLabels[k]}!`); return; }
+    if (top && before[k].length && top !== before[k][0]) { moment('Legendă nouă', `${top} urcă pe locul 1 la ${legendLabels[k]}!`); return; }
     const fresh = now[k].find((n) => !before[k].includes(n));
-    if (fresh && before[k].length) { info('Legendă nouă', `${fresh} intră în top 5 la ${legendLabels[k]}.`); return; }
+    if (fresh && before[k].length) { moment('Legendă nouă', `${fresh} intră în top 5 la ${legendLabels[k]}.`); return; }
   }
 }
 
