@@ -417,3 +417,5 @@ a.ad-past:hover { border-color: var(--ice); }
 /* Tablet: keep the phone-style stage centred instead of stretched. */
 @container page (min-width: 761px) and (max-width: 1000px) { .st-mascot { width: 100%; max-width: 560px; justify-self: center; } }
 @container page (max-width: 1000px) { .prize-groups { grid-template-columns: minmax(0, 1fr); } }
+/* Badge tags in lists stay compact but get a 44 px tall hit area. */
+.bdg-tag::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }

@@ -368,7 +368,7 @@ function clips(v: Vals): string {
 /** Phone: the full milestone list behind «Toate cele 12». */
 function allGoals(v: Vals): string {
   const tag = { done: 'FĂCUT', unlocked: 'URMEAZĂ LIVE', next: 'URMĂTORUL', rest: '' } as Record<string, string>;
-  return v.track.map((m) => `<li><span class="ag-no" style="color: ${m.state === 'rest' ? '#4A5568' : 'var(--ice)'}">${m.no}</span><span class="ag-t">${esc(m.title)}</span><span class="ag-a">${esc(m.amount)}</span>${tag[m.state] ? `<span class="ag-tag">${tag[m.state]}</span>` : ''}</li>`).join('');
+  return v.track.map((m) => `<li><span class="ag-no" style="color: ${m.state === 'rest' ? '#6B7689' : 'var(--ice)'}">${m.no}</span><span class="ag-t">${esc(m.title)}</span><span class="ag-a">${esc(m.amount)}</span>${tag[m.state] ? `<span class="ag-tag">${tag[m.state]}</span>` : ''}</li>`).join('');
 }
 
 /** The wheel as SVG: N slices, partner slices in gold, labels along the radius. */
@@ -433,7 +433,7 @@ function advent(v: Vals): string {
       const inner = `<span class="ad-d">${esc(d.date)}</span><span class="ad-n" style="color: var(--ice)">${d.n}</span><span class="ad-t" style="color: #C9D2DF">${d.clip ? `${PLAY}${esc(d.note ? d.note + ' · clip' : 'Clipul zilei')}` : esc(d.note || 'Ziua s-a încheiat')}</span>`;
       return d.clip ? `<a class="ad ad-past${near}" href="${esc(d.clip)}" aria-label="Ziua ${d.n}, ${esc(d.date)}: vezi clipul">${inner}</a>` : `<div class="ad ad-past${near}">${inner}</div>`;
     }
-    return `<div class="ad ad-future${near}">${d.holiday ? TREE16 : FLAKE16}<span class="ad-d">${esc(d.date)}</span><span class="ad-n" style="color: #4A5568">${d.n}</span><span class="ad-t" style="color: #AEB8C7">${esc(d.note)}</span></div>`;
+    return `<div class="ad ad-future${near}">${d.holiday ? TREE16 : FLAKE16}<span class="ad-d">${esc(d.date)}</span><span class="ad-n" style="color: #6B7689">${d.n}</span><span class="ad-t" style="color: #AEB8C7">${esc(d.note)}</span></div>`;
   }).join('');
 }
 

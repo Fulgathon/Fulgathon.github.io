@@ -117,7 +117,7 @@ export const tierColors: Record<BadgeTier, [string, string, string]> = {
 /** One smooth cool gradient: no hard stripes, no rainbow order, no white glare. */
 export const PRISM = 'linear-gradient(135deg, #9FE8FF 0%, #A9B8FF 30%, #E2B6FF 52%, #FFD6C2 74%, #C8FFE9 100%)';
 /** Legend and Fidelii ranks: 1 prism, 2 gold, 3 silver, 4 bronze, then grey. */
-export const rankColors = ['prism', '#E6C46A', '#C9D1DB', '#C98A5B', '#4A5568'];
+export const rankColors = ['prism', '#E6C46A', '#C9D1DB', '#C98A5B', '#6B7689'];
 
 /**
  * Advent calendar defaults: 22 days from the start (20 Dec 2026 → 10 Jan 2027).
