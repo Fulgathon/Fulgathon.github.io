@@ -81,12 +81,12 @@ function checkWin(first: boolean) {
 }
 
 // A calm partner mention every few minutes (10 s), when nothing else is showing.
-if (promoMinutes > 0 && site.sponsor.name) {
-  window.setInterval(() => {
-    if (eventEl.classList.contains('show')) return;
-    popEvent('PARTENER', site.sponsor.name, site.sponsor.code ? `cod ${site.sponsor.code}` : 'partenerul maratonului', 10_000);
-  }, promoMinutes * 60_000);
-}
+// (?demo&brand=… shows another brand, for the sponsor presentation; ?promoNow shows it at once.)
+const promoName = (params.has('demo') && params.get('brand')) || site.sponsor.name;
+const promoCode = params.has('demo') && params.get('brand') ? (promoName.replace(/[^A-Za-z0-9]/g, '').slice(0, 8).toUpperCase() + '10') : site.sponsor.code;
+const promo = () => { if (!eventEl.classList.contains('show')) popEvent('PARTENER', promoName, promoCode ? `cod ${promoCode}` : 'partenerul maratonului', 10_000); };
+if (promoMinutes > 0 && promoName) window.setInterval(promo, promoMinutes * 60_000);
+if (params.has('promoNow')) window.setTimeout(promo, 1500);
 
 let hideTimer: number | undefined;
 function popEvent(time: string, user: string, what: string, ms?: number) {
@@ -122,7 +122,7 @@ if (params.has('demo')) {
     sync();
     // Show the chip once on load, so its place on the stream is visible.
     const first = data.ticker[0];
-    if (first) window.setTimeout(() => popEvent(first.time, first.user, first.what), 600);
+    if (first && !params.has('promoNow')) window.setTimeout(() => popEvent(first.time, first.user, first.what), 600);
   });
 } else {
   void import('./live').then(({ Live }) => {

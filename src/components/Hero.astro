@@ -44,8 +44,8 @@ const corners = ['c-tl', 'c-tr', 'c-bl', 'c-br'];
       <a class="btn-ghost" href="#vote" style={`flex: 0 1 260px; min-height: 58px; display: inline-flex; align-items: center; justify-content: center; padding: 0 24px; font-family: ${cond}; font-weight: 800; font-size: 22px; text-transform: uppercase; text-decoration: none; background: rgba(6,8,13,0.6)`}>Votează provocări</a>
     </div>
     <a href="#parteneri" style="margin-top: 26px; display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 12px; text-decoration: none; color: #AEB8C7; font-size: 15px">
-      <span>Ofertă pentru comunitate de la <strong style="color: #F2F5FA">{site.sponsor.name}</strong></span>
-      <span style={`padding: 3px 10px; border: 1px dashed var(--ice); font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 17px; letter-spacing: 0.04em; color: #F2F5FA`}>{site.sponsor.code}</span>
+      <span>Ofertă pentru comunitate de la <strong style="color: #F2F5FA" data-sponsor="name">{site.sponsor.name}</strong></span>
+      <span style={`padding: 3px 10px; border: 1px dashed var(--ice); font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 17px; letter-spacing: 0.04em; color: #F2F5FA`} data-sponsor="code">{site.sponsor.code}</span>
       <span style={`font-family: ${cond}; font-weight: 800; font-size: 15px; text-transform: uppercase; color: var(--ice)`}>Vezi oferta →</span>
     </a>
   </div>
@@ -80,7 +80,7 @@ const corners = ['c-tl', 'c-tr', 'c-bl', 'c-br'];
         </div>
         <a href="#parteneri" aria-label={`Prezentat de ${site.sponsor.name}, partenerul principal`} style="padding: 4px 20px; border-left: 2px solid #2A3445; text-decoration: none; color: #F2F5FA">
           <p style={statLabel}>Prezentat de</p>
-          <p style="margin: 0; display: flex; align-items: center; min-height: 44px; font-family: Barlow, sans-serif; font-weight: 700; font-size: 28px; letter-spacing: 0.06em; color: #FFFFFF">{site.sponsor.logoText}</p>
+          <p style="margin: 0; display: flex; align-items: center; min-height: 44px; font-family: Barlow, sans-serif; font-weight: 700; font-size: 28px; letter-spacing: 0.06em; color: #FFFFFF" data-sponsor="logo">{site.sponsor.logoText}</p>
         </a>
         <div style="padding: 4px 20px; border-left: 2px solid #2A3445">
           <p style={statLabel}>Următorul milestone</p>
@@ -100,7 +100,7 @@ const corners = ['c-tl', 'c-tr', 'c-bl', 'c-br'];
         <span {...iff('isFrozen')}><strong style={`font-family: ${cond}; font-weight: 800; font-style: italic; font-size: 18px; color: var(--ice); letter-spacing: 0.04em`}>ÎNGHEȚAT</strong> <span data-text="frozenText">{v.frozenText}</span></span>
         <span {...iff('hasDouble')}><strong style={`font-family: ${cond}; font-weight: 800; font-style: italic; font-size: 18px; color: #FFFFFF; letter-spacing: 0.04em`}>ORA DUBLĂ</strong> <span data-text="doubleText">{v.doubleText}</span></span>
         <span>Final programat: <strong data-text="endDateText" style="color: #F2F5FA">{v.endDateText}</strong>, dacă nu se mai adaugă timp.</span>
-        <span style="margin-left: auto; display: inline-flex; align-items: center; gap: 10px; color: #8C97A8">Cronometru oferit de <strong style="font-family: Barlow, sans-serif; font-weight: 700; letter-spacing: 0.06em; color: #F2F5FA">{site.sponsor.logoText}</strong></span>
+        <span style="margin-left: auto; display: inline-flex; align-items: center; gap: 10px; color: #8C97A8">Cronometru oferit de <strong style="font-family: Barlow, sans-serif; font-weight: 700; letter-spacing: 0.06em; color: #F2F5FA" data-sponsor="logo">{site.sponsor.logoText}</strong></span>
       </div>
     </div>
   </div>

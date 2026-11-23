@@ -13,8 +13,10 @@ import type { BoardTab, Goal, Prize, SiteData } from '../data/types';
 import { amount, tickerItem } from '../lib/events';
 import { ago, fmtInt } from '../lib/format';
 
-const KEY = 'icemaraton-demo-v1';
-const CHANNEL = 'icemaraton-demo';
+// ?demo=pitch (the sponsor presentation) keeps its own copy, apart from ?demo.
+const VARIANT = typeof location !== 'undefined' ? (new URLSearchParams(location.search).get('demo') ?? '').replace(/[^a-z0-9-]/gi, '') : '';
+const keyFor = (v: string) => (v ? `icemaraton-demo-${v}-v1` : 'icemaraton-demo-v1');
+const channelFor = (v: string) => (v ? `icemaraton-demo-${v}` : 'icemaraton-demo');
 const MIN = 60_000;
 const HOUR = 60 * MIN;
 const DAY = 24 * HOUR;
@@ -197,12 +199,18 @@ export class DemoBackend {
   private listeners = new Set<() => void>();
   private channel: BroadcastChannel | null = null;
 
-  constructor() {
+  private readonly KEY: string;
+  private readonly CHANNEL: string;
+
+  /** `variant` picks a separate copy (e.g. 'pitch'); by default it follows ?demo=… in the address. */
+  constructor(variant: string = VARIANT) {
+    this.KEY = keyFor(variant);
+    this.CHANNEL = channelFor(variant);
     try {
-      this.channel = new BroadcastChannel(CHANNEL);
+      this.channel = new BroadcastChannel(this.CHANNEL);
       this.channel.onmessage = () => this.emit();
     } catch { /* old browser: storage events still sync other tabs */ }
-    window.addEventListener('storage', (e) => { if (e.key === KEY) this.emit(); });
+    window.addEventListener('storage', (e) => { if (e.key === this.KEY) this.emit(); });
     this.load();
   }
 
@@ -210,7 +218,7 @@ export class DemoBackend {
 
   private load(): DemoState {
     let raw: string | null = null;
-    try { raw = localStorage.getItem(KEY); } catch { /* storage blocked */ }
+    try { raw = localStorage.getItem(this.KEY); } catch { /* storage blocked */ }
     if (raw && raw === this.raw && this.cached) return this.cached;
     if (raw) {
       try {
@@ -229,7 +237,7 @@ export class DemoBackend {
   private save(s: DemoState) {
     this.cached = s;
     this.raw = JSON.stringify(s);
-    try { localStorage.setItem(KEY, this.raw); } catch { /* storage blocked: this tab only */ }
+    try { localStorage.setItem(this.KEY, this.raw); } catch { /* storage blocked: this tab only */ }
   }
 
   private emit() { this.listeners.forEach((fn) => fn()); }
@@ -429,7 +437,8 @@ export class DemoBackend {
     return {
       peak_chatters: 4120, watch_hours: 38500, raised: s.stats.raised,
       sponsors: [...names].sort().map((name) => {
-        const main = name === 'Zona IT';
+        // The main partner (on the Ora dublă) gets the main-partner sample numbers.
+        const main = name === (s.timer.doubleSponsor ?? 'Zona IT');
         return {
           sponsor: name, clicks: main ? s.promo.clicks : 23, code_copies: main ? s.promo.copies : 0,
           codes_shown: s.codes.filter((c) => c.sponsor === name).length,
@@ -566,6 +575,32 @@ export class DemoBackend {
       if (dailyOk) s.viewer.spunDay = today(); else s.viewer.bonus -= 1;
       s.spins.push({ id: ++s.seq, user: s.viewer.name, prize, at: Date.now(), fulfilled: false });
       return { prize, spinsLeft: s.viewer.bonus };
+    });
+  }
+
+  // ---- For the sponsor presentation ------------------------------------------
+  /** A random viewer wins a prize (a sponsored one when there is). */
+  fakeWin() {
+    this.mutate((s) => {
+      const wins = s.prizes.map((p, i) => ({ p, i })).filter((x) => x.p.isWin);
+      const sponsored = wins.filter((x) => x.p.sponsor);
+      const w = pick(sponsored.length ? sponsored : wins);
+      s.spins.push({ id: ++s.seq, user: pick(NAMES), prize: w.i, at: Date.now(), fulfilled: false });
+    });
+  }
+  /** n viewers claim the code on screen. */
+  simulateClaims(n: number) {
+    this.mutate((s) => { const now = Date.now(); const c = s.codes.find((x) => x.shownAt <= now && x.expiresAt > now); if (c) c.claims += n; });
+  }
+  /** Put a brand on wheel slices, the next milestone and the bingo prize. */
+  brandEverything(brand: string) {
+    this.mutate((s) => {
+      s.prizes.forEach((p, i) => { p.sponsor = i === 1 || i === 3 ? brand : p.sponsor === brand ? null : p.sponsor; });
+      const next = s.goals.find((g) => g.threshold > s.stats.raised);
+      s.goals.forEach((g) => { if (g === next) g.sponsor = brand; else if (g.sponsor && g.sponsor !== brand) g.sponsor = null; });
+      s.bingo.prizeSponsor = brand;
+      s.codes.forEach((c) => { c.sponsor = brand; });
+      if (s.bingo.prize.startsWith('[')) s.bingo.prize = 'căști de gaming';
     });
   }
 

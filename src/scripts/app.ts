@@ -257,8 +257,18 @@ function setAutoSim(on: boolean) {
 // The presentation page steers the embedded demo site.
 window.addEventListener('message', (e) => {
   if (!demo || e.origin !== location.origin || e.data?.icemaraton !== 'demo') return;
-  const m = e.data as { scrollTo?: string; closeToast?: boolean };
+  const m = e.data as { scrollTo?: string; closeToast?: boolean; brand?: string };
   if (m.closeToast) set({ toast: null });
+  // Sponsor presentation: show the visiting brand everywhere the main partner appears.
+  if (typeof m.brand === 'string') {
+    const brand = m.brand.trim().slice(0, 40) || site.sponsor.name;
+    const code = (brand.replace(/[^A-Za-z0-9]/g, '').slice(0, 8).toUpperCase() || 'BRAND') + '10';
+    const texts: Record<string, string> = {
+      name: brand, logo: brand.toUpperCase(), code,
+      pitch: `Partenerul principal al IceMaratonului. Oferta ${brand} pentru comunitate: reducere cu codul de mai jos, pe toată durata maratonului.`,
+    };
+    all('[data-sponsor]').forEach((el) => { const t = texts[el.dataset.sponsor!]; if (t !== undefined && el.textContent !== t) el.textContent = t; });
+  }
   if (m.scrollTo) {
     const el = m.scrollTo === 'top' ? document.body : document.getElementById(m.scrollTo);
     el?.scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'start' });

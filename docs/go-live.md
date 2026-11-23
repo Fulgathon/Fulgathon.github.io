@@ -12,6 +12,7 @@ after `?`, so `/o?pos=bl` opens `/overlay/?pos=bl`):
 | https://icemaraton.icemaraton.workers.dev/m | …/mod/ | Moderators (Twitch login, moderator accounts only) |
 | https://icemaraton.icemaraton.workers.dev/o | …/overlay/ | OBS Browser Source, 1920×1080: a slim strip top-right. Options: `?pos=tl/tr/bl/br`, `?scale=0.8`, `?show=timer,goal,events`, `?style=box` (large box), `?demo` (sample data for placing it) |
 | https://icemaraton.icemaraton.workers.dev/d | …/?demo | Preview of the site with sample data |
+| https://icemaraton.icemaraton.workers.dev/s | …/sponsori/ | Presentation for brands: type the brand name at the top and every placement (site, overlay, report) shows it; packages at the end. Audience numbers and prices: `src/data/pitch.ts` |
 | https://icemaraton.icemaraton.workers.dev/p | …/prezentare/ | Guided demo of everything, for presenting (simulated data, never touches the database) |
 | …/m?demo · …/o?demo | …/mod/?demo · …/overlay/?demo | The demo per page; `/d`, `/m?demo`, `/o?demo` and `/p` share one simulated subathon across tabs |
 

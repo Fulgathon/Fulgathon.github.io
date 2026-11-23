@@ -1,0 +1,204 @@
+---
+// Line-art plan of Iceman's League of Legends stream (1920×1080) for the sponsor
+// presentation. The game is traced the way it looks on stream: mid lane, river,
+// brush, an enemy turret, minion waves walking in, his champion (an ice mage),
+// and the game's own HUD (score/timer top-right, abilities bottom-centre,
+// minimap bottom-right). His webcam sits bottom-left, the ICEMARATON overlay
+// top-left. The real overlay iframe runs on top. src/scripts/blueprint.ts
+// makes it playful: click the camera, the champion or the minimap.
+// One callout (data-focus on the parent .scene) marks where the brand appears.
+
+// Minion waves: offsets in px around the wave's start, melee = circle, caster = diamond.
+const wave = [
+  { x: 0, y: 0, m: true }, { x: -30, y: 26, m: true }, { x: 30, y: 18, m: true },
+  { x: -66, y: 2, m: false }, { x: -40, y: 50, m: false }, { x: -10, y: -28, m: false },
+];
+const allyDots = [[1752, 950, 1], [1672, 862, 0], [1812, 1036, 0], [1828, 1046, 0], [1716, 992, 0]];
+const enemyDots = [[1666, 826], [1866, 1030], [1880, 1018], [1804, 878], [1832, 908]];
+---
+<svg class="bp" viewBox="0 0 1920 1080" width="1920" height="1080" aria-hidden="true">
+  <defs>
+    <pattern id="bp-grid" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M60 0H0V60" fill="none" stroke="#3FD0FF" stroke-opacity=".04" stroke-width="1" /></pattern>
+  </defs>
+  <rect width="1920" height="1080" fill="#05090F" />
+  <rect width="1920" height="1080" fill="url(#bp-grid)" />
+
+  <!-- ===== The game, traced ===== -->
+  <g class="game" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- mid lane edges, worn -->
+    <path class="lane" d="M-127 1440 L2253 -36" />
+    <path class="lane" d="M-253 1236 L2127 -240" />
+    <!-- river banks + flowing ripples -->
+    <path class="river" d="M510 9 C515 16 530 36 541 49 C552 62 566 73 577 86 C588 98 599 111 608 125 C618 139 625 154 634 168 C644 182 653 195 664 208 C674 221 687 233 698 246 C708 259 720 272 728 286 C736 301 741 317 747 333 C752 350 755 367 761 383 C767 399 774 414 783 429 C791 443 801 456 810 470 C819 484 828 499 836 513 C844 528 850 544 858 559 C866 573 874 588 884 601 C894 615 908 626 920 638 C932 650 947 660 958 673 C970 686 979 699 988 713 C997 727 1003 743 1010 758 C1018 773 1025 788 1034 802 C1043 817 1053 830 1062 844 C1071 858 1080 872 1087 887 C1094 903 1098 920 1103 936 C1108 952 1112 970 1119 985 C1126 1001 1135 1015 1145 1028 C1155 1042 1168 1053 1178 1066 C1189 1079 1201 1092 1210 1105" />
+    <path class="river" d="M671 -90 C676 -84 694 -65 703 -52 C713 -38 720 -23 729 -9 C738 5 747 20 757 33 C767 46 779 58 789 72 C799 85 810 98 818 113 C826 127 831 144 836 160 C842 176 845 194 851 210 C856 226 863 242 871 256 C880 271 891 283 900 297 C910 311 920 324 928 338 C937 353 943 368 952 383 C960 397 968 412 978 425 C989 438 1002 450 1014 462 C1026 474 1041 484 1052 497 C1064 510 1073 523 1082 538 C1090 552 1095 568 1102 584 C1110 599 1116 614 1124 629 C1132 644 1142 657 1151 671 C1159 686 1169 699 1176 715 C1183 730 1187 747 1193 763 C1199 779 1202 796 1210 811 C1217 826 1226 840 1236 854 C1246 867 1260 878 1271 891 C1283 903 1295 915 1305 929 C1315 942 1323 957 1332 971 C1341 985 1349 999 1359 1013 C1370 1026 1382 1038 1393 1051 C1404 1063 1420 1083 1426 1089" />
+    <g class="ripple">
+      <path d="M672 109 Q695 130 704 160" /><path d="M805 238 Q828 260 837 289" /><path d="M853 420 Q876 442 885 471" />
+      <path d="M961 518 Q984 540 993 569" /><path d="M1086 700 Q1108 721 1117 751" /><path d="M1137 868 Q1159 889 1168 919" />
+    </g>
+    <!-- brush -->
+    <path class="brush" d="M720 470 A25 25 0 0 1 665 514 A25 25 0 0 1 621 521 A25 25 0 0 1 512 505 A25 25 0 0 1 487 488 A25 25 0 0 1 504 439 A25 25 0 0 1 540 425 A25 25 0 0 1 655 424 A25 25 0 0 1 692 437 A25 25 0 0 1 720 470 Z" />
+    <path class="brush" d="M1460 860 A24 24 0 0 1 1408 905 A24 24 0 0 1 1370 913 A24 24 0 0 1 1255 906 A24 24 0 0 1 1225 893 A24 24 0 0 1 1206 843 A24 24 0 0 1 1225 827 A24 24 0 0 1 1328 804 A24 24 0 0 1 1370 807 A24 24 0 0 1 1453 842 A24 24 0 0 1 1460 860 Z" />
+    <path class="brush" d="M1620 560 A21 21 0 0 1 1569 592 A21 21 0 0 1 1522 593 A21 21 0 0 1 1461 565 A21 21 0 0 1 1468 545 A21 21 0 0 1 1546 526 A21 21 0 0 1 1590 533 A21 21 0 0 1 1620 560 Z" />
+
+    <path class="tufts" d="M560 478 l6 -14 l6 14 M600 492 l6 -16 l6 16 M640 470 l6 -14 l6 14 M1262 860 l6 -14 l6 14 M1310 878 l6 -16 l6 16 M1360 852 l6 -14 l6 14 M1404 874 l6 -14 l6 14 M1510 566 l6 -14 l6 14 M1556 556 l6 -16 l6 16" />
+    <!-- enemy turret with its range -->
+    <g class="tower">
+      <ellipse class="range" cx="1476" cy="305" rx="330" ry="170" />
+      <ellipse cx="1476" cy="305" rx="56" ry="20" />
+      <path d="M1442 303 L1454 196 M1510 303 L1498 196 M1447 258 H1505" />
+      <ellipse cx="1476" cy="196" rx="24" ry="8" />
+      <g class="crystal"><path d="M1476 116 L1492 150 L1476 182 L1460 150 Z" /></g>
+      <rect x="1431" y="86" width="90" height="8" /><rect class="fill-enemy" x="1431" y="86" width="64" height="8" />
+    </g>
+
+    <!-- minion waves: ours walk up the lane, theirs walk down, they meet in the river -->
+    <g class="wave ally" style="--dx:366px;--dy:-227px">
+      {wave.map((w) => (
+        <g transform={`translate(${590 + w.x} ${925 + w.y})`}>
+          {w.m ? <circle r="9" /> : <path d="M0 -10 L9 0 L0 10 L-9 0 Z" />}
+          <path class="hp" d="M-10 -18 H10" />
+        </g>
+      ))}
+    </g>
+    <g class="wave enemy" style="--dx:-315px;--dy:195px">
+      {wave.map((w) => (
+        <g transform={`translate(${1366 - w.x} ${373 - w.y})`}>
+          {w.m ? <circle r="9" /> : <path d="M0 -10 L9 0 L0 10 L-9 0 Z" />}
+          <path class="hp" d="M-10 -18 H10" />
+        </g>
+      ))}
+    </g>
+
+    <!-- Iceman's champion: an ice mage with a crystal staff -->
+    <g class="champ" data-hit="champ" transform="translate(-26 -42)">
+      <rect x="740" y="580" width="150" height="190" fill="transparent" stroke="none" />
+      <ellipse class="ring" cx="820" cy="747" rx="50" ry="19" />
+      <ellipse class="ring2" cx="820" cy="747" rx="38" ry="13" pathLength="100" />
+      <path class="solid" d="M798 744 L808 696 Q820 686 832 696 L842 744 Q820 752 798 744 Z" />
+      <circle class="solid" cx="820" cy="680" r="13" />
+      <path d="M805 684 Q806 660 820 658 Q834 660 835 684" />
+      <path d="M850 752 L862 652" />
+      <path class="staff" d="M862 626 L871 642 L862 658 L853 642 Z" />
+      <text x="823" y="597" text-anchor="middle" class="tag">ICEMANLUCKY</text>
+      <rect x="752" y="606" width="16" height="16" /><text x="760" y="619" text-anchor="middle" class="lvl">11</text>
+      <rect x="772" y="606" width="106" height="10" /><rect class="fill-ice" x="772" y="606" width="80" height="10" />
+      <rect class="fill-mana" x="772" y="619" width="62" height="4" />
+    </g>
+    <g class="fx" data-fx></g>
+  </g>
+
+  <!-- ===== HUD ===== -->
+  <!-- score · timer, top-right -->
+  <g class="hud">
+    <rect class="panel" x="1600" y="14" width="306" height="40" />
+    <text x="1616" y="41" class="num ice">12</text>
+    <path class="glyph" d="M1646 26 L1664 44 M1664 26 L1646 44" />
+    <text x="1672" y="41" class="num">4</text>
+    <text x="1694" y="41" class="num" data-bp-kda>7/2/9</text>
+    <circle class="glyph" cx="1766" cy="34" r="5" />
+    <text x="1776" y="41" class="num" data-bp-cs>142</text>
+    <text x="1892" y="41" text-anchor="end" class="num" data-bp-clock>24:13</text>
+  </g>
+
+  <!-- abilities · items, bottom-centre -->
+  <g class="hud">
+    <rect class="panel" x="650" y="926" width="620" height="140" />
+    <circle cx="712" cy="992" r="46" />
+    <circle cx="712" cy="986" r="14" /><path d="M694 992 Q695 962 712 960 Q729 962 730 992" /><path d="M694 1030 Q712 1010 730 1030" />
+    <circle class="panel" cx="745" cy="1031" r="13" /><text x="745" y="1036" text-anchor="middle" class="lvl">11</text>
+    <g class="keys">
+      <rect x="790" y="944" width="62" height="62" /><rect x="862" y="944" width="62" height="62" />
+      <rect x="934" y="944" width="62" height="62" /><rect x="1006" y="944" width="62" height="62" />
+      <rect x="1080" y="944" width="40" height="40" /><rect x="1128" y="944" width="40" height="40" />
+    </g>
+    <rect class="cd" data-bp-cd x="790" y="944" width="62" height="62" />
+    <path class="glyph" d="M806 990 L836 958 M826 958 H836 V968" />
+    <path class="glyph" d="M876 992 L882 960 L888 992 L894 954 L900 992 L906 962 L912 992" />
+    <path class="glyph" d="M948 960 L962 975 L948 990 M962 960 L976 975 L962 990" />
+    <path class="glyph" d="M1037 955 V995 M1020 965 L1054 985 M1054 965 L1020 985" />
+    <path class="glyph" d="M1100 952 V976 M1088 964 H1112" /><circle class="glyph" cx="1148" cy="964" r="8" />
+    <text x="796" y="960" class="key">Q</text><text x="868" y="960" class="key">W</text>
+    <text x="940" y="960" class="key">E</text><text x="1012" y="960" class="key">R</text>
+    <rect x="790" y="1016" width="380" height="14" /><rect class="fill-ice" x="790" y="1016" width="300" height="14" />
+    <rect class="fill-mana" x="790" y="1036" width="230" height="8" />
+    <g class="keys">
+      <rect x="1186" y="944" width="22" height="22" /><rect x="1212" y="944" width="22" height="22" /><rect x="1238" y="944" width="22" height="22" />
+      <rect x="1186" y="970" width="22" height="22" /><rect x="1212" y="970" width="22" height="22" /><rect x="1238" y="970" width="22" height="22" />
+    </g>
+    <text x="1223" y="1030" text-anchor="middle" class="num sm" data-bp-gold>2 140</text>
+  </g>
+
+  <!-- minimap, bottom-right: click to ping -->
+  <g class="hud map" data-hit="map">
+    <rect class="panel" x="1636" y="796" width="270" height="270" />
+    <path class="lanes" d="M1660 1042 V820 H1882 M1662 1044 H1884 V822 M1668 1036 L1876 828" />
+    <path class="river-s" d="M1690 846 Q1740 880 1766 926 Q1792 970 1850 1006 M1704 836 Q1756 870 1780 914 Q1806 958 1862 994" />
+    <path class="base" d="M1644 1000 A58 58 0 0 1 1702 1058 M1840 804 A58 58 0 0 0 1898 862" />
+    <rect class="view" x="1727" y="936" width="50" height="30" />
+    {enemyDots.map(([x, y], i) => <circle class="dot e" cx={x} cy={y} r="5" style={`animation-delay:-${i * 1.3}s`} />)}
+    {allyDots.map(([x, y, me], i) => <circle class={me ? 'dot me' : 'dot a'} cx={x} cy={y} r={me ? 6 : 5} style={`animation-delay:-${i * 1.7}s`} />)}
+    <g class="fx" data-map-fx></g>
+  </g>
+  <text x="1892" y="782" text-anchor="end" class="lbl">MINIMAP · APĂSAȚI PENTRU PING</text>
+
+  <!-- ===== Iceman's webcam, bottom-left: click him ===== -->
+  <g class="cam" data-hit="cam">
+    <rect class="camframe" x="24" y="726" width="440" height="330" />
+    <path class="led" d="M44 748 H444" />
+    <g class="poster"><rect x="370" y="772" width="60" height="74" /><path d="M400 790 V828 M384 799 L416 819 M416 799 L384 819" /></g>
+    <path class="chair" d="M132 1056 L140 870 Q144 836 180 828 L308 828 Q344 836 348 870 L356 1056 M170 852 V950 M318 852 V950" />
+    <g class="who">
+      <path class="solid" d="M112 1056 Q118 994 190 974 Q244 990 298 974 Q370 994 376 1056 Z" />
+      <path d="M196 976 Q244 1004 292 976 M230 992 L226 1028 M258 992 L262 1028" />
+      <circle cx="226" cy="1032" r="3" /><circle cx="262" cy="1032" r="3" />
+      <path d="M228 956 V974 M260 956 V974" />
+      <ellipse class="solid" cx="244" cy="902" rx="48" ry="58" />
+      <path d="M198 884 Q206 846 244 842 Q286 844 292 880 M222 852 Q232 838 246 842 M250 843 Q262 834 276 846" />
+      <g class="eyes"><path d="M224 900 H234 M254 900 H264" /></g>
+      <g class="joy"><path d="M222 904 L229 897 L236 904 M252 904 L259 897 L266 904" /><path class="solid" d="M232 926 Q244 942 256 926 Z" /></g>
+      <path class="mouth" d="M238 930 H250" />
+      <path class="band" d="M190 906 Q186 832 244 828 Q302 832 298 906" />
+      <rect class="solid" x="180" y="888" width="20" height="44" rx="8" /><rect class="solid" x="288" y="888" width="20" height="44" rx="8" />
+      <circle class="ledot" cx="190" cy="924" r="3" />
+      <path d="M190 930 Q196 962 230 960" /><ellipse class="solid" cx="236" cy="960" rx="7" ry="5" />
+      <path class="buzz" d="M170 846 L150 830 M244 812 V790 M318 846 L338 830" />
+    </g>
+    <text x="40" y="776" class="lbl">ICEMANLUCKY · CAMERA</text>
+  </g>
+  <!-- his speech bubble pops out above the camera -->
+  <g class="bubble" data-bp-bubble transform="translate(150 640)">
+    <rect x="0" y="0" width="300" height="60" />
+    <path d="M40 60 L52 84 L70 60" />
+    <text x="22" y="42" data-bp-say>HAI!</text>
+  </g>
+
+  <!-- ICEMARATON overlay zone, top-left (the real overlay runs on top) -->
+  <rect x="16" y="16" width="484" height="300" fill="none" stroke="#3FD0FF" stroke-opacity=".3" stroke-width="1.5" stroke-dasharray="4 6" />
+  <text x="24" y="342" class="lbl ice">OVERLAY ICEMARATON</text>
+
+  <!-- One callout per placement; the parent's data-focus shows one -->
+  <g class="focus" data-k="double">
+    <rect class="box" x="16" y="16" width="440" height="110" pathLength="1" />
+    <path class="lead" pathLength="1" d="M456 71 H640" />
+    <text x="660" y="65" class="cap">ORA DUBLĂ · OFERITĂ DE</text>
+    <text x="660" y="99" class="brand" data-bp-brand>BRANDUL VOSTRU</text>
+  </g>
+  <g class="focus" data-k="wins">
+    <rect class="box" x="16" y="126" width="474" height="52" pathLength="1" />
+    <path class="lead" pathLength="1" d="M490 152 H640" />
+    <text x="660" y="146" class="cap">CÂȘTIGĂTORI · PREMII DE LA</text>
+    <text x="660" y="180" class="brand" data-bp-brand>BRANDUL VOSTRU</text>
+  </g>
+  <g class="focus" data-k="promo">
+    <rect class="box" x="16" y="126" width="474" height="52" pathLength="1" />
+    <path class="lead" pathLength="1" d="M490 152 H640" />
+    <text x="660" y="146" class="cap">LA 10 MINUTE · 10 SECUNDE</text>
+    <text x="660" y="180" class="brand" data-bp-brand>BRANDUL VOSTRU</text>
+  </g>
+  <g class="focus" data-k="code">
+    <rect class="box" x="16" y="170" width="460" height="126" pathLength="1" />
+    <path class="lead" pathLength="1" d="M476 233 H640" />
+    <text x="660" y="227" class="cap">COD SECRET · OFERIT DE</text>
+    <text x="660" y="261" class="brand" data-bp-brand>BRANDUL VOSTRU</text>
+  </g>
+</svg>
