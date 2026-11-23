@@ -200,3 +200,70 @@ Not in Phase 4 unless you say so:
 2. **Calculator before the start:** (a) wording or (b) banked time.
 3. **Sponsor inquiry:** A (email) or B (inbox on /mod), plus the contact email.
 4. **Content, whenever you have it:** the TipeeeStream donation URL, the audience numbers and their source, the package details and prices, and confirmation that Zona IT is signed.
+
+## 9. Phase 4: what was built (23 Nov 2026)
+
+Direction A, built surface by surface in small commits. After each commit: `npm test` (10/10), `astro check` (0 errors) and browser checks. Nothing is pushed or deployed.
+
+### Viewer page
+- **V4:** only sponsors filled in `site.ts` are shown. Open partner slots become one «Locuri libere pentru parteneri» line that links to /sponsori. The `[EMAIL CONTACT]` mailto, the `#` «Vezi oferta» link and the `#` social links stay hidden until real values exist.
+- **V1:** two-column hero on desktop. The rate chips sit under the buttons on desktop and right under the timer card on phones. The calculator puts its six options on one row on desktop.
+- **V2 (part):** «Urmărește live» and «Dă un sub», which uses the real subscribe link. The «Donează» buttons appear once `site.links.donate` is set.
+- **V5:** the «Ce poți face acum» row, per viewer state, shown only while the marathon is live.
+- **V3, option (a) / B-31:** before the start, the calculator says time is added from the start date, and that until then donations count toward Strâns and the milestones.
+- **B-32:** the hours of community goals not yet reached are now `#8C97A8`.
+
+| Screen | Digits end at (before → after) | «Prezentat de» ends at (before → after) |
+| --- | --- | --- |
+| 1280 × 720 | 1,100 → **509 px** | 1,226 → **636 px** |
+| 1440 × 900 | 1,133 → **533 px** | 1,267 → **667 px** |
+| 1920 × 1080 | 1,134 → **547 px** | 1,268 → **681 px** |
+| 390 × 844 | 721 → 721 px | 864 → 864 px |
+
+| Before | After |
+| --- | --- |
+| ![](ux/viewer-1440-first-screen.jpg) | ![](ux/after-viewer-1440-first-screen.jpg) |
+| ![](ux/mock-hero-1280-before.jpg) | ![](ux/after-viewer-1280-first-screen.jpg) |
+| ![](ux/mock-partners-1440-before.jpg) | ![](ux/after-partners-1440.jpg) |
+
+Phone, under the timer card: the rate chips, the calculator with the pre-start note, «Urmărește live» / «Dă un sub», then «Ce poți face acum» while live.
+
+![](ux/after-viewer-390-buttons.jpg)
+
+### /mod
+- **M2:** «Încheie subathonul» now lives in a «Zonă periculoasă» card at the end of LIVE. It opens a dialog where you type ÎNCHEIE (diacritics optional).
+- **M3:** cards with unsent edits get a «Nesalvat» tag, their save row sticks to the bottom, and leaving the page asks first.
+- **M4:** phones show one chip: «Totul merge», «N probleme · …» or «Fără conexiune».
+- **M5:** skip links, a one-Tab-stop menu moved with the arrow keys, and focus moves to the section you open.
+- **B-14:** /mod reloads when Realtime (re)joins, the tab is visible again, or the network returns.
+
+| Before (phone) | After (phone) | After (danger zone) |
+| --- | --- | --- |
+| ![](ux/mod-390-live.jpg) | ![](ux/after-mod-390-live.jpg) | ![](ux/after-mod-1440-danger.jpg) |
+
+### /sponsori
+- **S4:** the address keeps `?brand=` while you type, so the link can be sent already personalised. Step 1 points at the brand field.
+- **S5:** upright phones read the step first, with the live preview under it. «Înapoi / Mai departe» stay pinned to the bottom. Step and action buttons are 44 px.
+- **S1, option A:** a «Hai să vorbim» step (brand, package, name, message) opens the visitor's email app. It appears once `site.contactEmail` is set; until then the deck stays at 9 steps, with no placeholder.
+
+| Before (phone) | After (phone) |
+| --- | --- |
+| ![](ux/sponsori-390-step1.jpg) | ![](ux/after-sponsori-390-step1.jpg) |
+
+### Checks after the last commit
+- **Widths:** 390, 768, 1280, 1440, 1920, 2560 and 3840 px on every page. No horizontal overflow, the navbar stays on one row everywhere, and there are no console errors apart from the expected 404 test page.
+- **Lighthouse 12.6.1** (Phase 1 used 13.6.0):
+  - `/` desktop: 100 / 100 / 100 / 100 (performance, accessibility, best practices, SEO).
+  - `/` mobile: 97 / 100 / 100 / 100. Phase 1 had 98 for performance.
+  - Accessibility: `/?demo` 100, `/mod/?demo` 100, `/sponsori/` 100.
+- **Reduced motion:** every new transition is off. On phones, the jump to the preview in the sponsor deck is instant.
+
+### Waiting on you
+- **Donation URL (TipeeeStream):** the «Donează» buttons appear as soon as it's in `site.links.donate`.
+- **Contact email:** step 10 of the deck and the «Scrie-ne» links appear as soon as it's in `site.contactEmail`.
+- **S2 and S3:** audience numbers with a source, and package details and prices (`src/data/pitch.ts`).
+- **Needs your OK:**
+  - the migration `20261126100000_bug_fixes.sql` (not applied);
+  - M1 (sponsors on /mod) and S1 option B (an inbox on /mod), which both need migrations;
+  - deploying (`npm run deploy`) and pushing.
+

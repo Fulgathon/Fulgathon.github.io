@@ -47,7 +47,7 @@ Severity: **Critical** = money, data loss, auth bypass or the site down for ever
 | B-21 | Low | If the start is late, the page shows «ÎNCEPE ÎN 00:00:00:00» until a moderator starts it | Open |
 | B-22 | Low | Triple click on «Votează» sends 3 requests (harmless: the vote is idempotent) | Open |
 | B-23 | Low | `my_state` is called 3 times on load for a logged-in viewer | Open |
-| B-24 | Low | Touch targets under 44 px: badge tags (31 px), /sponsori step buttons (36 px), /mod brand link | Open |
+| B-24 | Low | Touch targets under 44 px: badge tags (31 px), /sponsori step buttons (36 px), /mod brand link | Partly fixed: /sponsori step and action buttons are 44 px; badge tags and the /mod brand link remain |
 | B-25 | Low | Placeholders visible to visitors: «[DATA DE START]» in the ticker while loading, «[EMAIL CONTACT]», LOGO slots | Owner content |
 | B-26 | Low | No cap or review on huge donations (a 1,000 € test or charged-back donation adds 100 h) | Owner decision |
 | B-27 | Low | Edge Functions can refresh the Twitch token at the same moment | Open |
