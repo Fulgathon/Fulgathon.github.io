@@ -68,7 +68,10 @@
 .sub-line .sl-short { display: none; }
 .timer-card { position: relative; margin: 36px auto 0; padding: clamp(16px, 2.2cqi, 28px) clamp(16px, 2.4cqi, 32px); background: #090C11; border: 1px solid #1C2230; text-align: left; }
 .units { position: relative; margin-top: 16px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(6px, 1.1cqi, 16px); }
-.unit-box { padding: clamp(8px, 1cqi, 14px) 0 clamp(4px, 0.6cqi, 8px); background: linear-gradient(180deg, #16304A, #0B1A2A); border: 1px solid #23415E; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: clamp(48px, 7.6cqi, 110px); line-height: 0.9; color: #DFF6FF; text-align: center; font-variant-numeric: tabular-nums; }
+.unit-box { position: relative; overflow: hidden; padding: clamp(6px, 0.8cqi, 11px) 0; background: linear-gradient(180deg, #16304A, #0B1A2A); border: 1px solid #23415E; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: clamp(48px, 7.6cqi, 110px); line-height: 0.9; color: #DFF6FF; text-align: center; font-variant-numeric: tabular-nums; }
+/* Barlow Condensed leaves ~0.09em more room above the digits than below them, and the italic
+   digits lean ~0.03em right of their box; nudge them back so they sit in the middle. */
+.unit-num { display: block; transform: translate(-0.028em, -0.044em); }
 .unit-label { margin-top: 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: clamp(12px, 1.1cqi, 16px); letter-spacing: 0.12em; color: #8C97A8; text-align: center; }
 .pop-tag { position: absolute; z-index: 2; right: 6px; top: -34px; padding: 0 10px; background: var(--ice); color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 30px; opacity: 0; pointer-events: none; }
 .score { margin-top: 22px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
