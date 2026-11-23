@@ -206,7 +206,7 @@ Not in Phase 4 unless you say so:
 Direction A, built surface by surface in small commits. After each commit: `npm test` (10/10), `astro check` (0 errors) and browser checks. Nothing is pushed or deployed.
 
 ### Viewer page
-- **V4:** only sponsors filled in `site.ts` are shown. Open partner slots become one «Locuri libere pentru parteneri» line that links to /sponsori. The `[EMAIL CONTACT]` mailto, the `#` «Vezi oferta» link and the `#` social links stay hidden until real values exist.
+- **V4 (reverted 23 Nov at the owner's request):** the owner prefers seeing every sponsor slot, so the section is back to the main partner, four partner tiles and six supporter boxes. What follows describes the version that was reverted. Only sponsors filled in `site.ts` are shown. Open partner slots become one «Locuri libere pentru parteneri» line that links to /sponsori. The `[EMAIL CONTACT]` mailto, the `#` «Vezi oferta» link and the `#` social links stay hidden until real values exist.
 - **V1:** two-column hero on desktop. The rate chips sit under the buttons on desktop and right under the timer card on phones. The calculator puts its six options on one row on desktop.
 - **V2 (part):** «Urmărește live» and «Dă un sub», which uses the real subscribe link. The «Donează» buttons appear once `site.links.donate` is set.
 - **V5:** the «Ce poți face acum» row, per viewer state, shown only while the marathon is live.

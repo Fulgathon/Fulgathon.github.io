@@ -5,14 +5,6 @@ import SectionHead from './SectionHead.astro';
 import { v } from '../lib/ssr';
 import { site } from '../data/site';
 const cond = "'Barlow Condensed', sans-serif";
-// Only sponsors the owner has actually filled in are shown; [placeholders] and empty slots stay hidden
-// (DESIGN.md, «Nothing unfinished in public»). Open partner slots become one line linking to /sponsori.
-const filled = (s: { name: string }) => !!s.name && !s.name.startsWith('[');
-const partners = site.partners.filter(filled);
-const supporters = site.supporters.filter(filled);
-const openSlots = partners.length < 4;
-const hasEmail = !!site.contactEmail && !site.contactEmail.startsWith('[');
-const hasOffer = !!site.sponsor.offerUrl && site.sponsor.offerUrl !== '#';
 ---
 <section id="parteneri" aria-labelledby="h-parteneri" class="sec" style="padding-top: clamp(28px, 3cqi, 40px)">
   <div class="wrap">
@@ -36,43 +28,30 @@ const hasOffer = !!site.sponsor.offerUrl && site.sponsor.offerUrl !== '#';
             <span data-text="codeLabel" style={`font-family: ${cond}; font-weight: 800; font-size: 14px; text-transform: uppercase; color: var(--ice)`}>{v.codeLabel}</span>
           </button>
           <span class="sr-only" role="status" data-text="codeStatus"></span>
-          {hasOffer && <a class="btn-primary" href={site.sponsor.offerUrl} data-track={`${site.sponsor.name}|click`} style={`flex: 1 1 auto; max-width: 260px; min-height: 48px; display: inline-flex; align-items: center; justify-content: center; padding: 0 22px; font-family: ${cond}; font-weight: 800; text-transform: uppercase; text-decoration: none`}>Vezi oferta →</a>}
+          <a class="btn-primary" href={site.sponsor.offerUrl} data-track={`${site.sponsor.name}|click`} style={`flex: 1 1 auto; max-width: 260px; min-height: 48px; display: inline-flex; align-items: center; justify-content: center; padding: 0 22px; font-family: ${cond}; font-weight: 800; text-transform: uppercase; text-decoration: none`}>Vezi oferta →</a>
         </div>
       </div>
     </div>
 
-    {partners.length > 0 && (
-      <div class="ptiles">
-        {partners.map((pt) => (
-          <a class="ptile panel" href={pt.url} data-track={`${pt.name}|click`} style="display: block; padding: 16px; text-decoration: none; color: #F2F5FA">
-            {pt.logo
-              ? <span style="height: 64px; display: grid; place-items: center"><img src={pt.logo} alt={pt.name} loading="lazy" decoding="async" style="max-width: 80%; max-height: 52px; object-fit: contain" /></span>
-              : <span style={`height: 64px; display: grid; place-items: center; font-family: ${cond}; font-weight: 800; font-size: 22px; letter-spacing: 0.06em; text-transform: uppercase; color: #FFFFFF`}>{pt.name}</span>}
-            <span style="margin-top: 10px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 8px; font-size: 15px"><strong>{pt.name}</strong><span style="color: #8C97A8">{pt.role}</span></span>
-          </a>
-        ))}
-      </div>
-    )}
+    <div class="ptiles">
+      {site.partners.map((pt) => (
+        <a class="ptile panel" href={pt.url} data-track={`${pt.name}|click`} style="display: block; padding: 16px; text-decoration: none; color: #F2F5FA">
+          {pt.logo
+            ? <span style="height: 64px; display: grid; place-items: center"><img src={pt.logo} alt={pt.name} loading="lazy" decoding="async" style="max-width: 80%; max-height: 52px; object-fit: contain" /></span>
+            : <span style="height: 64px; display: grid; place-items: center; border: 1px dashed #2A3445; font-size: 12px; color: #7D8899">LOGO</span>}
+          <span style="margin-top: 10px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 8px; font-size: 15px"><strong>{pt.name}</strong><span style="color: #8C97A8">{pt.role}</span></span>
+        </a>
+      ))}
+    </div>
 
-    {openSlots && (
-      <p class="open-slots panel">
-        <span><strong style="color: #F2F5FA">Locuri libere pentru parteneri.</strong> Premii pe roată, milestone-uri, Ora dublă, bingo.</span>
-        <a href="/sponsori/" style="font-weight: 700">Vezi cum arată pentru brandul tău →</a>
-      </p>
-    )}
-
-    {supporters.length > 0 && (
-      <>
-        <h3 style={`margin: 28px 0 10px; font-family: ${cond}; font-weight: 800; font-size: 18px; letter-spacing: 0.12em; text-transform: uppercase; color: #AEB8C7`}>Susținători</h3>
-        <div class="stiles">
-          {supporters.map((su) => (
-            su.logo
-              ? <a class="ptile" href={su.url} data-track={`${su.name}|click`} style="height: 64px; display: grid; place-items: center; background: #090C11; border: 1px solid #1C2230"><img src={su.logo} alt={su.name} loading="lazy" decoding="async" style="max-width: 80%; max-height: 40px; object-fit: contain" /></a>
-              : <a class="ptile" href={su.url} data-track={`${su.name}|click`} style={`height: 64px; display: grid; place-items: center; background: #090C11; border: 1px solid #1C2230; font-family: ${cond}; font-weight: 800; font-size: 14px; letter-spacing: 0.1em; color: #C9D2DF; text-decoration: none`}>{su.name}</a>
-          ))}
-        </div>
-      </>
-    )}
-    {hasEmail && <p style="margin: 20px 0 0; font-size: 15px; color: #8C97A8">Vrei să fii partener la subathon? <a href={`mailto:${site.contactEmail}`} style="font-weight: 600">Scrie-ne la {site.contactEmail}</a></p>}
+    <h3 style={`margin: 28px 0 10px; font-family: ${cond}; font-weight: 800; font-size: 18px; letter-spacing: 0.12em; text-transform: uppercase; color: #AEB8C7`}>Susținători</h3>
+    <div class="stiles">
+      {site.supporters.map((su) => (
+        su.logo
+          ? <a class="ptile" href={su.url} data-track={su.name ? `${su.name}|click` : undefined} style="height: 64px; display: grid; place-items: center; background: #090C11; border: 1px solid #1C2230"><img src={su.logo} alt={su.name} loading="lazy" decoding="async" style="max-width: 80%; max-height: 40px; object-fit: contain" /></a>
+          : <a class="ptile" href={su.url} style={`height: 64px; display: grid; place-items: center; background: #090C11; border: 1px solid #1C2230; font-family: ${cond}; font-weight: 800; font-size: 12px; letter-spacing: 0.1em; color: #7D8899; text-decoration: none`}>{su.name || 'LOGO'}</a>
+      ))}
+    </div>
+    <p style="margin: 20px 0 0; font-size: 15px; color: #8C97A8">Vrei să fii partener la subathon? <a href={`mailto:${site.contactEmail}`} style="font-weight: 600">Scrie-ne la {site.contactEmail}</a></p>
   </div>
 </section>
