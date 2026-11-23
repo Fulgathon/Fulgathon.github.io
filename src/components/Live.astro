@@ -1,5 +1,5 @@
 ---
-// 01 Live: Twitch player and chat. The placeholders stay until the section
+// 02 Live: Twitch player and chat. The placeholders stay until the section
 // scrolls into view; then app.ts swaps in the Twitch embeds (with the right
 // parent= for whatever domain the site is on).
 import { Image } from 'astro:assets';
@@ -9,7 +9,7 @@ const cond = "'Barlow Condensed', sans-serif";
 ---
 <!-- The design's scrolling band sat here; the owner removed it. This margin keeps its spacing. -->
 <section id="live" aria-labelledby="h-live" style="position: relative; z-index: 1; max-width: 1280px; margin: clamp(40px, 5cqi, 72px) auto 0; padding: 0 clamp(20px, 4cqi, 40px) clamp(64px, 8cqi, 112px)">
-  <SectionHead tag="01" bignum="01" title="Live" id="h-live">
+  <SectionHead tag="02" bignum="02" title="Live" id="h-live">
     <button class="btn-ghost" type="button" data-action="popout" style={`min-height: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 0 16px; font-family: ${cond}; font-size: 17px; font-weight: 700; text-transform: uppercase`}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"></path></svg>
       Player separat

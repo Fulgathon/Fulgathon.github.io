@@ -1,5 +1,5 @@
 ---
-// 02 Votul abonaților.
+// 03 Votul abonaților.
 import SectionHead from './SectionHead.astro';
 import Emote from './Emote.astro';
 import { v, iff } from '../lib/ssr';
@@ -11,7 +11,7 @@ const emoteStyle = 'flex: none; width: 52px; height: 63px; object-fit: contain';
 ---
 <section id="vote" aria-labelledby="h-vote" style="position: relative; z-index: 1; background: #0A0E15; border-top: 1px solid #1A2230; border-bottom: 1px solid #1A2230">
   <div style="max-width: 1280px; margin: 0 auto; padding: clamp(56px, 8cqi, 112px) clamp(20px, 4cqi, 40px)">
-    <SectionHead tag="02" bignum="02" title="Votul abonaților" id="h-vote">
+    <SectionHead tag="03" bignum="03" title="Votul abonaților" id="h-vote">
       <div {...iff('hasRound')} style="text-align: left">
         <p data-text="roundLabel" style="margin: 0; font-size: 14px; font-weight: 600; color: #8C97A8">{v.roundLabel}</p>
         <p data-text="roundLeft" style={`margin: 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 40px; line-height: 1; font-variant-numeric: tabular-nums`}>{v.roundLeft}</p>
