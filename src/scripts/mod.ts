@@ -393,7 +393,7 @@ function healthHtml(h: any): string {
   // Resubs nobody shared, read from the subscriber badge in chat
   const R = h.resubs;
   if (R) rows.push(!R.canRead ? ['warn', 'Resubs din chat', 'Lipsește permisiunea de citire a chatului. Iceman reconectează o dată contul de streamer (butonul de la Stare).']
-    : ['ok', 'Resubs din chat', `${R.tracked ?? 0} abonați văzuți în chat · ${R.found ?? 0} resubs numărate fără share. Ultimul abonat văzut: ${ago(age(R.lastSeen ?? null))}.`]);
+    : ['ok', 'Resubs din chat', `${R.tracked ?? 0} abonați văzuți în chat · ${R.found ?? 0} resubs numărate fără share. Ultima actualizare: ${ago(age(R.lastSeen ?? null))}.`]);
   // Scheduled jobs
   const failed = (h.jobs ?? []).filter((j: any) => j.status === 'failed');
   rows.push(failed.length ? ['bad', 'Joburi programate', failed.map((j: any) => `${j.job}: ${j.message || 'eșuat'}`).join(' · ')]
