@@ -31,8 +31,8 @@ Severity: **Critical** = money, data loss, auth bypass or the site down for ever
 | B-05 | High | Page says «ÎNCEPE CURÂND» to anyone who loads it while the backend is slow or down, mid-marathon | **Fixed** `ff51962` |
 | B-06 | Medium | Viewer double submits: a triple click sends 3 suggestions, 3 code claims, 3 bingo saves | **Fixed** `ff51962` |
 | B-07 | Medium | During Ora dublă a moderator's «+10 min» adds 20 | **Fixed**: migration `20261126100000` (applied 23 Nov) |
-| B-08 | Medium | At zero the clock shows LIVE 00:00:00 for up to a minute, and an event in that gap revives it | **Decided: zero is final.** Site fixed; DB in migration `20261127100000` (not applied) |
-| B-09 | Medium | A TipeeeStream donation in another currency is counted as euros | **Decided: euros only.** Function + migration `20261127100000` (not applied/deployed) |
+| B-08 | Medium | At zero the clock shows LIVE 00:00:00 for up to a minute, and an event in that gap revives it | **Decided: zero is final.** Site fixed; DB in migration `20261127100000` (applied 23 Nov) |
+| B-09 | Medium | A TipeeeStream donation in another currency is counted as euros | **Decided: euros only.** Migration `20261127100000` applied and `tipeee-donations` v9 deployed (23 Nov) |
 | B-10 | Medium | No security headers (CSP, frame-ancestors, nosniff, referrer policy) | Open |
 | B-11 | Medium | After data has loaded, a lost connection isn't shown; the clock may be minutes behind reality | Open |
 | B-12 | Medium | Parallel requests get past the «3 suggestions per 10 minutes» limit | **Fixed**: migration `20261126100000` (applied 23 Nov) |
@@ -53,7 +53,7 @@ Severity: **Critical** = money, data loss, auth bypass or the site down for ever
 | B-27 | Low | Edge Functions can refresh the Twitch token at the same moment | Open |
 | B-28 | Low | A 140-character suggestion cut in the middle of an emoji can be refused | Open |
 | B-29 | Low | /mod has no `<h1>` before login | Open |
-| B-30 | Low | Any moderator can remove any other moderator, including Iceman | **Decided: protect Iceman.** /mod fixed; DB in migration `20261127100000` (not applied) |
+| B-30 | Low | Any moderator can remove any other moderator, including Iceman | **Decided: protect Iceman.** /mod fixed; DB in migration `20261127100000` (applied 23 Nov) |
 | B-31 | Medium | Before the start, «Cât adaugi tu?» promises «+30 min» but the server adds no time until the timer is live | Fixed (option a, wording): outside LIVE the calculator says time is added from the start |
 | B-32 | Low | Community-goal hours not yet reached are #4A5568 on #090C11 (2.6:1, below 4.5:1) | Fixed: now #8C97A8 (6.6:1) |
 

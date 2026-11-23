@@ -1,5 +1,5 @@
 -- Owner decisions of 23 Nov 2026 on docs/BUGS.md («zero is final, protect Iceman, euros only»).
--- NOT applied yet: apply only with the owner's OK. Every existing function keeps its signature,
+-- Applied 23 Nov 2026 with the owner's OK (as «owner_decisions»). Every existing function keeps its signature,
 -- so its grants stay as they are; the two new functions get explicit grants below.
 --
 --   B-08  Zero is final: once ends_at has passed, record_event adds nothing and ends the timer
