@@ -104,9 +104,11 @@ function set(patch: Partial<State>) {
 }
 
 // Countdowns: derived from the wall clock, so a throttled background tab
-// still shows the right time when it comes back.
+// still shows the right time when it comes back. clockOffset corrects a
+// device whose clock is wrong (server time minus device time).
+let clockOffset = 0;
 setInterval(() => {
-  const now = Date.now();
+  const now = Date.now() + clockOffset;
   if (Math.floor(now / 1000) !== Math.floor(state.now / 1000)) set({ now });
 }, 250);
 
@@ -186,6 +188,8 @@ async function startLive() {
       else render();
     },
     onMe: applyMe,
+    // Only trust a clear difference: small ones are network noise.
+    onClock(offset) { clockOffset = Math.abs(offset) > 2000 ? offset : 0; },
   });
   await live.start();
 }
@@ -297,6 +301,7 @@ function spinTo(idx: number, spinsLeft: number) {
   spinTimer = window.setTimeout(() => {
     set({ spinning: false, result: idx });
     void live?.refreshMe();
+    void live?.poll(); // the win shows up in "Ultimele premii" for everyone
   }, reducedMotion.matches ? 300 : 4700);
 }
 

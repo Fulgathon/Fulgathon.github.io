@@ -1,11 +1,11 @@
 // Live data from Supabase: loads everything the page shows, keeps it fresh
-// with realtime subscriptions, and wraps the viewer actions (login, vote,
-// spin, suggest). Loaded lazily, and never in ?demo mode.
+// (one small versioned call, see Live), and wraps the viewer actions (login,
+// vote, spin, suggest). Loaded lazily, and never in ?demo mode.
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { popSlots, prizeColors } from '../data/content';
 import { site } from '../data/site';
-import type { BoardTab, Completed, Prize, SiteData, UpNext } from '../data/types';
+import type { Completed, Prize, SiteData, UpNext } from '../data/types';
 import type { Database } from '../lib/database.types';
 import { amount, tickerItem } from '../lib/events';
 import { ago, dateRo, fmtInt } from '../lib/format';
@@ -25,239 +25,208 @@ export interface Me {
   bingoSaved: number[] | null;
   /** Bonus spins from secret codes (included in `spins`). */
   bonusSpins: number;
+  /** false when the viewer chose not to appear by name in public. */
+  isPublic: boolean;
 }
 
 export interface LiveHandlers {
   /** Called with fresh data; `first` is true for the initial full load. */
   onData(patch: Patch, first: boolean): void;
   onMe(me: Me | null): void;
+  /** Server time minus this device's time (ms), so countdowns don't trust a wrong clock. */
+  onClock?(offsetMs: number): void;
 }
 
-const ms = (iso: string | null) => (iso ? Date.parse(iso) : null);
+export interface LiveOptions {
+  /** How often to ask for changes while the page is visible (ms). */
+  intervalMs?: number;
+  /** Keep polling while hidden (the OBS overlay). */
+  pollHidden?: boolean;
+}
 
+const ms = (iso: string | null | undefined) => (iso ? Date.parse(iso) : null);
+// Loose JSON from public_state() / my_state().
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Json = any;
+
+/**
+ * Public data comes from ONE call, public_state(versions), which returns only
+ * the parts that changed since the versions this page already has (usually a
+ * few hundred bytes). It is polled every few seconds while the page is
+ * visible, never in a hidden tab (except the overlay), with backoff and jitter
+ * when the backend is unreachable, and immediately on return or reconnect.
+ */
 export class Live {
   readonly db: DB;
   private data: SiteData;
-  private pending = new Set<string>();
-  private timer: number | undefined;
   private handlers: LiveHandlers;
+  private opts: Required<LiveOptions>;
+  private versions: Record<string, number> = {};
+  private parts: Record<string, Json> = {};
+  private pollTimer: number | undefined;
+  private polling = false;
+  private failures = 0;
+  private first = true;
+  private meTimer: number | undefined;
   private subChecked = false;
 
-  constructor(initial: SiteData, handlers: LiveHandlers) {
+  constructor(initial: SiteData, handlers: LiveHandlers, opts: LiveOptions = {}) {
     this.data = initial;
     this.handlers = handlers;
+    this.opts = { intervalMs: opts.intervalMs ?? 8000, pollHidden: opts.pollHidden ?? false };
     this.db = createClient<Database>(site.supabase.url, site.supabase.publishableKey, {
       auth: { persistSession: true, detectSessionInUrl: true, flowType: 'pkce' },
     });
   }
 
   async start() {
-    await this.refresh(Object.keys(this.loaders), true);
-    this.subscribe();
+    await this.poll();
+    await this.refreshMe();
     this.db.auth.onAuthStateChange(() => { void this.refreshMe(); });
-    // Safety net for anything realtime missed (and the "acum 3 min" labels).
-    window.setInterval(() => this.queue(...Object.keys(this.loaders)), 60_000);
-    // Watch minutes for the daily wheel are credited every 5 minutes.
-    window.setInterval(() => { void this.refreshMe(); }, 120_000);
+    this.scheduleMe();
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') this.queue(...Object.keys(this.loaders), 'me');
+      if (document.visibilityState === 'visible') { void this.poll(); void this.refreshMe(); }
     });
+    window.addEventListener('online', () => { this.failures = 0; void this.poll(); });
   }
 
-  // ---- Loaders: each returns the part of SiteData it owns. ----------------
+  /** Visible (or overlay): poll again after the interval, longer after failures; hidden: stop until visible. */
+  private schedule() {
+    clearTimeout(this.pollTimer);
+    if (document.visibilityState === 'hidden' && !this.opts.pollHidden) return;
+    const base = this.failures ? Math.min(120_000, this.opts.intervalMs * 2 ** this.failures) : this.opts.intervalMs;
+    const delay = base * (0.85 + Math.random() * 0.3); // jitter: thousands of tabs don't ask at the same instant
+    this.pollTimer = window.setTimeout(() => void this.poll(), delay);
+  }
 
-  /** Bingo tables aren't in the generated types; this is the same client, untyped. */
+  private scheduleMe() {
+    clearInterval(this.meTimer);
+    // Watch minutes for the daily wheel are credited every 5 minutes.
+    this.meTimer = window.setInterval(() => { if (document.visibilityState === 'visible') void this.refreshMe(); }, 120_000);
+  }
+
+  /** Ask for the parts that changed; safe to call any time (one request at a time). */
+  async poll() {
+    if (this.polling) return;
+    this.polling = true;
+    const sent = Date.now();
+    try {
+      const { data, error } = await this.raw.rpc('public_state', { p_have: this.versions });
+      if (error || !data) throw error ?? new Error('no_data');
+      const got = Date.now();
+      this.handlers.onClock?.(Date.parse(data.now) - (sent + got) / 2);
+      this.failures = 0;
+      this.apply(data.v ?? {}, data.parts ?? {});
+    } catch {
+      this.failures = Math.min(this.failures + 1, 6);
+    } finally {
+      this.polling = false;
+      this.schedule();
+    }
+  }
+
+  /** Bingo/sponsor RPCs aren't in the generated types; this is the same client, untyped. */
   private get raw() { return this.db as unknown as SupabaseClient; }
 
-  private loaders: Record<string, () => Promise<Patch>> = {
-    bingo: async () => {
-      const [{ data: items }, { data: set }, { data: stats }] = await Promise.all([
-        this.raw.from('bingo_items').select('id, label, happened_at').order('position'),
-        this.raw.from('bingo_settings').select('closes_at, prize, prize_sponsor').eq('id', 1).maybeSingle(),
-        this.raw.rpc('bingo_stats'),
-      ]);
-      if (!items) return {};
-      return {
-        bingo: {
-          closesAt: ms(set?.closes_at ?? null), prize: set?.prize ?? '', prizeSponsor: set?.prize_sponsor ?? null, players: stats?.[0]?.players ?? 0,
-          items: items.map((i: { id: number; label: string; happened_at: string | null }) => ({ id: i.id, label: i.label, happened: !!i.happened_at })),
-        },
-      };
-    },
-    timer: async () => {
-      const { data: t } = await this.db.from('timer').select('*').eq('id', 1).maybeSingle();
-      if (!t) return {};
-      return {
-        status: t.status as SiteData['status'],
-        startsAt: ms(t.starts_at), endsAt: ms(t.ends_at),
-        pausedUntil: ms(t.paused_until), scheduledEnd: ms(t.scheduled_end),
-        doubleSponsor: (t as { double_sponsor?: string | null }).double_sponsor ?? null,
-        doubleFrom: ms(t.double_from), doubleUntil: ms(t.double_until),
-      };
-    },
-    stats: async () => {
-      const { data: s } = await this.db.from('stats').select('subs, raised').eq('id', 1).maybeSingle();
-      return s ? { subs: s.subs, raised: `${amount(Number(s.raised))} €`, raisedNum: Number(s.raised) } : {};
-    },
-    goals: async () => {
-      const { data } = await this.raw.from('goals').select('title, threshold, sponsor').order('position');
-      return data?.length ? { goals: data } : {};
-    },
+  private apply(v: Record<string, number>, changed: Record<string, Json>) {
+    Object.assign(this.parts, changed);
+    this.versions = { ...this.versions, ...Object.fromEntries(Object.keys(changed).map((k) => [k, v[k]])) };
+    const P = this.parts;
+    const patch: Patch = {};
+    const has = (k: string) => k in changed;
 
-    events: async () => {
-      const { data } = await this.db.from('events').select('*').order('id', { ascending: false }).limit(12);
-      const items = (data ?? []).map(tickerItem);
-      return {
-        ticker: items,
-        pops: items.filter((i) => i.time !== '—').slice(0, popSlots.length).map((i, k) => ({ ...i, ...popSlots[k] })),
-      };
-    },
-    round: async () => {
-      const { data: rounds } = await this.db.from('vote_rounds')
-        .select('id, number, closes_at').lte('opens_at', new Date().toISOString())
-        .order('opens_at', { ascending: false }).limit(1);
-      const r = rounds?.[0];
-      if (!r) return { round: null, challenges: [] };
-      const { data: rc } = await this.db.from('round_challenges')
-        .select('challenge_id, votes, challenges(title, how)').eq('round_id', r.id).order('position');
-      return {
-        round: { id: r.id, number: r.number, closesAt: Date.parse(r.closes_at) },
-        challenges: (rc ?? []).map((x) => ({
-          id: String(x.challenge_id), title: x.challenges?.title ?? '', desc: x.challenges?.how ?? '', votes: x.votes,
-        })),
-      };
-    },
-    upNext: async () => {
-      const { data: rounds } = await this.db.from('vote_rounds')
-        .select('number, winner_id, round_challenges(challenge_id, votes)')
-        .not('winner_id', 'is', null).order('number', { ascending: false }).limit(20);
-      const ids = (rounds ?? []).map((r) => r.winner_id as number);
-      if (!ids.length) return { upNext: [] };
-      const { data: ch } = await this.db.from('challenges').select('id, title, status, scheduled_for').in('id', ids);
-      const byId = new Map((ch ?? []).map((c) => [c.id, c]));
-      const upNext: UpNext[] = [];
-      for (const r of rounds ?? []) {
-        const c = byId.get(r.winner_id as number);
-        if (!c || c.status !== 'scheduled') continue;
-        const total = r.round_challenges.reduce((a, x) => a + x.votes, 0);
-        const won = r.round_challenges.find((x) => x.challenge_id === c.id)?.votes ?? 0;
-        upNext.push({
-          n: upNext.length + 1, title: c.title, round: r.number,
-          pct: (total ? Math.round((won / total) * 100) : 0) + '%', when: c.scheduled_for || 'În curând',
-        });
-      }
-      return { upNext };
-    },
-    completed: async () => {
-      const { data } = await this.db.from('challenges').select('title, done_at, clip_url')
-        .eq('status', 'done').order('done_at', { ascending: false }).limit(10);
-      const start = this.data.startsAt;
-      const completed: Completed[] = (data ?? []).map((c) => {
-        const done = ms(c.done_at);
-        const when = done && start ? `ZIUA ${Math.floor((done - start) / 86_400_000) + 1}` : done ? dateRo(done).toUpperCase() : '';
-        return { title: c.title, when, clip: c.clip_url };
+    if (has('timer') && P.timer) {
+      const t = P.timer;
+      Object.assign(patch, {
+        status: t.status as SiteData['status'], startsAt: ms(t.startsAt), endsAt: ms(t.endsAt),
+        pausedUntil: ms(t.pausedUntil), scheduledEnd: ms(t.scheduledEnd),
+        doubleSponsor: t.doubleSponsor ?? null, doubleFrom: ms(t.doubleFrom), doubleUntil: ms(t.doubleUntil),
       });
-      return { completed };
-    },
-    prizes: async () => {
-      const { data } = await this.raw.from('prizes').select('position, short_label, full_label, is_win, sponsor').order('position');
-      if (!data?.length) return {};
-      const prizes: Prize[] = data.map((p: { position: number; short_label: string; full_label: string; sponsor: string | null }) =>
-        [p.short_label, p.full_label, prizeColors[p.position] ?? '#F2F5FA', p.sponsor]);
-      const lose = data.find((p: { is_win: boolean }) => !p.is_win);
-      return { prizes, losePrize: lose ? lose.position : -1 };
-    },
-    wins: async () => {
-      type Row = { user_login: string; created_at: string; prizes: { win_label: string | null; is_win: boolean; sponsor: string | null } | null };
-      const { data } = await this.raw.from('spins').select('user_login, created_at, prizes(win_label, is_win, sponsor)')
-        .order('created_at', { ascending: false }).limit(12);
-      const now = Date.now();
-      return {
-        recentWins: ((data ?? []) as unknown as Row[]).filter((s) => s.prizes?.is_win).slice(0, 4)
-          .map((s) => ({ user: s.user_login, prize: s.prizes?.win_label ?? '', ago: ago(Date.parse(s.created_at), now), sponsor: s.prizes?.sponsor ?? null })),
-      };
-    },
-    boards: async () => {
-      const views = { donations: 'leaderboard_donations', gifts: 'leaderboard_gifts', bits: 'leaderboard_bits', hours: 'leaderboard_hours' } as const;
-      const entries = await Promise.all((Object.keys(views) as BoardTab[]).map(async (tab) => {
-        const { data } = await this.db.from(views[tab]).select('user_login, user_name, total').limit(5);
-        return [tab, (data ?? []).map((r) => [r.user_name || r.user_login || '', fmtInt(r.total ?? 0)] as [string, string])] as const;
-      }));
-      return { boards: Object.fromEntries(entries) as SiteData['boards'] };
-    },
-  };
-
-  /** Run some loaders now (in parallel) and hand the merged result over. */
-  private async refresh(names: string[], first = false) {
-    const parts = await Promise.all(names.filter((n) => n in this.loaders).map((n) => this.loaders[n]().catch(() => ({}))));
-    const patch = Object.assign({}, ...parts) as Patch;
-    this.data = { ...this.data, ...patch };
-    this.handlers.onData(patch, first);
-    if (first || names.includes('me')) await this.refreshMe();
-  }
-
-  /** Batch realtime bursts (a 50-gift bomb is 50 events) into one refresh. */
-  private queue(...names: string[]) {
-    names.forEach((n) => this.pending.add(n));
-    clearTimeout(this.timer);
-    this.timer = window.setTimeout(() => {
-      const list = [...this.pending];
-      this.pending.clear();
-      void this.refresh(list);
-    }, 300);
-  }
-
-  private subscribe() {
-    const watch: Record<string, string[]> = {
-      timer: ['timer', 'completed'],
-      stats: ['stats'],
-      goals: ['goals'],
-      events: ['events', 'boards'],
-      spins: ['wins', 'me'],
-      vote_rounds: ['round', 'upNext', 'completed'],
-      round_challenges: ['round'],
-      bingo_items: ['bingo'],
-      bingo_settings: ['bingo'],
-    };
-    const ch = this.db.channel('icemaraton');
-    for (const [table, loaders] of Object.entries(watch)) {
-      ch.on('postgres_changes', { event: '*', schema: 'public', table }, () => this.queue(...loaders));
     }
-    ch.subscribe();
+    if (has('stats') && P.stats) {
+      patch.subs = P.stats.subs;
+      patch.raisedNum = Number(P.stats.raised);
+      patch.raised = `${amount(Number(P.stats.raised))} €`;
+    }
+    if (has('goals') && Array.isArray(P.goals) && P.goals.length) {
+      patch.goals = P.goals.map((g: Json) => ({ title: g.title, threshold: g.threshold, sponsor: g.sponsor }));
+    }
+    if (has('feed') && Array.isArray(P.feed)) {
+      const items = P.feed.slice(0, 12).map((e: Json) => ({
+        ...tickerItem({ kind: e.kind, tier: e.tier, quantity: e.quantity, currency: e.currency, seconds_added: e.seconds, user_name: e.name, user_login: null }),
+        id: e.id,
+      }));
+      patch.ticker = items;
+      patch.pops = items.filter((i: Json) => i.time !== '—').slice(0, popSlots.length).map((i: Json, k: number) => ({ ...i, ...popSlots[k] }));
+    }
+    if ((has('vote') || has('timer')) && P.vote) {
+      const vt = P.vote;
+      const start = patch.startsAt ?? this.data.startsAt;
+      patch.round = vt.round ? { id: vt.round.id, number: vt.round.number, closesAt: Date.parse(vt.round.closesAt) } : null;
+      patch.challenges = (vt.challenges ?? []).map((c: Json) => ({ id: String(c.id), title: c.title ?? '', desc: c.desc ?? '', votes: c.votes }));
+      patch.upNext = (vt.upNext ?? []).map((u: Json, i: number): UpNext => ({
+        n: i + 1, title: u.title, round: u.round,
+        pct: (u.total ? Math.round(((u.won ?? 0) / u.total) * 100) : 0) + '%', when: u.when || 'În curând',
+      }));
+      patch.completed = (vt.completed ?? []).map((c: Json): Completed => {
+        const done = ms(c.doneAt);
+        const when = done && start ? `ZIUA ${Math.floor((done - start) / 86_400_000) + 1}` : done ? dateRo(done).toUpperCase() : '';
+        return { title: c.title, when, clip: c.clip };
+      });
+    }
+    if (has('prizes') && Array.isArray(P.prizes) && P.prizes.length) {
+      patch.prizes = P.prizes.map((p: Json): Prize => [p.short, p.full, prizeColors[p.position] ?? '#F2F5FA', p.sponsor]);
+      const lose = P.prizes.find((p: Json) => !p.isWin);
+      patch.losePrize = lose ? lose.position : -1;
+    }
+    // "acum 3 min" labels age even when the wins don't change.
+    if (Array.isArray(P.wins)) {
+      const now = Date.now();
+      patch.recentWins = P.wins.slice(0, 4).map((w: Json) => ({ user: w.user, prize: w.prize ?? '', ago: ago(Date.parse(w.at), now), sponsor: w.sponsor ?? null }));
+    }
+    if (has('boards') && P.boards) {
+      const b = P.boards;
+      const rows = (list: Json) => (Array.isArray(list) ? list : []).map((r: Json) => [String(r[0]), fmtInt(Number(r[1]))] as [string, string]);
+      patch.boards = { donations: rows(b.donations), gifts: rows(b.gifts), bits: rows(b.bits), hours: rows(b.hours) } as SiteData['boards'];
+    }
+    if (has('bingo') && P.bingo) {
+      const g = P.bingo;
+      patch.bingo = {
+        closesAt: ms(g.closesAt), prize: g.prize ?? '', prizeSponsor: g.prizeSponsor ?? null, players: g.players ?? 0,
+        items: (g.items ?? []).map((i: Json) => ({ id: i.id, label: i.label, happened: !!i.happened })),
+      };
+    }
+
+    this.data = { ...this.data, ...patch };
+    const first = this.first;
+    this.first = false;
+    if (first || Object.keys(patch).length) this.handlers.onData(patch, first);
   }
 
-  // ---- The logged-in viewer. ----------------------------------------------
+  // ---- The logged-in viewer: one call. ------------------------------------
 
   async refreshMe() {
     const { data: { session } } = await this.db.auth.getSession();
     if (!session) { this.handlers.onMe(null); return; }
-    const [{ data: v }, { data: ws }] = await Promise.all([
-      this.db.from('viewers').select('login, display_name, is_subscriber, sub_checked_at').eq('id', session.user.id).maybeSingle(),
-      this.db.rpc('wheel_status'),
-    ]);
+    const { data: m, error } = await this.raw.rpc('my_state', { p_round: this.data.round?.id ?? null });
+    if (error) return;
+    if (!m) { this.handlers.onMe(null); return; }
     // First visit after login (or an old answer): ask Twitch whether they're subscribed.
-    const checkedAt = v?.sub_checked_at ? Date.parse(v.sub_checked_at) : 0;
-    if (v && !this.subChecked && Date.now() - checkedAt > 10 * 60_000) {
+    const checkedAt = m.subCheckedAt ? Date.parse(m.subCheckedAt) : 0;
+    if (!this.subChecked && Date.now() - checkedAt > 10 * 60_000) {
       this.subChecked = true;
       void this.checkSub();
     }
-    let myVote: string | null = null;
-    if (this.data.round) {
-      const { data: vote } = await this.db.from('votes').select('challenge_id')
-        .eq('round_id', this.data.round.id).eq('viewer_id', session.user.id).maybeSingle();
-      myVote = vote ? String(vote.challenge_id) : null;
-    }
-    const w = ws?.[0];
-    const { data: bp } = await this.raw.from('bingo_picks').select('items').eq('viewer_id', session.user.id).maybeSingle();
     this.handlers.onMe({
-      name: v?.display_name || v?.login || 'viewer',
-      isSub: !!v?.is_subscriber,
-      spins: w?.spins_available ?? 0,
-      watchedToday: w?.minutes_today ?? 0,
-      spunToday: !!w?.spun_today,
-      myVote,
-      bingoSaved: Array.isArray(bp?.items) ? bp.items.map(Number) : null,
-      bonusSpins: (w as { bonus_spins?: number } | undefined)?.bonus_spins ?? 0,
+      name: m.name || m.login || 'viewer',
+      isSub: !!m.isSub,
+      spins: m.spins ?? 0,
+      watchedToday: m.minutesToday ?? 0,
+      spunToday: !!m.spunToday,
+      myVote: m.myVote != null ? String(m.myVote) : null,
+      bingoSaved: Array.isArray(m.bingo) ? m.bingo.map(Number) : null,
+      bonusSpins: m.bonusSpins ?? 0,
+      isPublic: m.public !== false,
     });
   }
 
@@ -279,7 +248,7 @@ export class Live {
   async vote(roundId: number, challengeId: number) {
     const { error } = await this.db.rpc('cast_vote', { p_round: roundId, p_challenge: challengeId });
     if (error) throw error;
-    this.queue('round');
+    void this.poll();
   }
 
   async spin() {
@@ -310,7 +279,15 @@ export class Live {
   async saveBingo(items: number[]) {
     const { error } = await this.raw.rpc('bingo_save', { p_items: items });
     if (error) throw error;
-    this.queue('bingo');
+    void this.poll();
+  }
+
+  /** Show or hide this viewer's name in public (leaderboards, feed, overlay). */
+  async setPublic(isPublic: boolean) {
+    const { error } = await this.raw.rpc('set_public_name', { p_public: isPublic });
+    if (error) throw error;
+    await this.refreshMe();
+    void this.poll();
   }
 
   async suggest(body: string) {

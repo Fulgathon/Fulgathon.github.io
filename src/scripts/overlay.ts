@@ -139,7 +139,7 @@ if (params.has('demo')) {
         draw();
       },
       onMe() {},
-    });
+    }, { intervalMs: 3000, pollHidden: true }); // OBS: snappy alerts, never paused
     void live.start();
     if (overlayKey) {
       const poll = async () => {
