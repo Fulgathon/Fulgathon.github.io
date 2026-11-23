@@ -130,11 +130,13 @@ const FLAKE = 'M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 4l3 2 3-2M9 20l3-2 3 2';
           {hasDonate && <a class="btn-ghost cta-donate" href={site.links.donate} style={`font-family: ${cond}; font-weight: 800`}>Donează</a>}
           <a class="btn-ghost" href={site.links.subscribe} style={`font-family: ${cond}; font-weight: 800`}>Dă un sub</a>
         </div>
-        <nav class="next-row" aria-labelledby="nr-title" {...iff('nextOn')}>
-          <p class="nr-t" id="nr-title">Ce poți face acum</p>
-          <div class="nr-tiles" data-region="nextRow" set:html={views.nextRow(v)} />
-        </nav>
       </div>
+
+      <!-- What this viewer can do now: full width under both columns (only while live) -->
+      <nav class="st-next next-row" aria-labelledby="nr-title" {...iff('nextOn')}>
+        <p class="nr-t" id="nr-title">Ce poți face acum</p>
+        <div class="nr-tiles" data-region="nextRow" set:html={views.nextRow(v)} />
+      </nav>
     </div>
   </div>
 </section>

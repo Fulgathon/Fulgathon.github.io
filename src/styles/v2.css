@@ -41,11 +41,12 @@
 .hero h1 { margin: 8px 0 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: min(6.2cqi, 92px); line-height: 0.85; text-transform: uppercase; white-space: nowrap; }
 /* Desktop (DESIGN.md §4): mascot left, the line + timer card right, so the digits and «Prezentat de»
    are on the first screen; the feed sits under the mascot, buttons and calculator under the card. */
-.stage { position: relative; margin: 14px auto 0; display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); grid-template-areas: "mascot line" "mascot timer" "mascot cta"; gap: 0 36px; align-items: start; text-align: left; }
+.stage { position: relative; margin: 14px auto 0; display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); grid-template-areas: "mascot line" "mascot timer" "cta timer" "next next"; grid-template-rows: auto auto 1fr auto; gap: 0 36px; align-items: start; text-align: left; }
 .st-mascot { grid-area: mascot; position: relative; margin-top: -10px; }
 .st-line { grid-area: line; text-align: left; }
 .st-timer { grid-area: timer; justify-self: center; width: 100%; max-width: 1040px; }
-.st-cta { grid-area: cta; }
+.st-cta { grid-area: cta; align-self: end; }
+.st-next { grid-area: next; }
 .mascot { position: relative; display: block; width: 100%; max-width: 460px; height: auto; margin: 0 auto; filter: drop-shadow(0 20px 60px rgba(63, 208, 255, 0.25)); }
 .bubble { --acc: var(--ice); position: absolute; z-index: 3; top: 4%; right: -6%; width: 252px; padding: 11px 14px 12px 17px; background: rgba(8, 13, 20, 0.86); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border: 1px solid color-mix(in srgb, var(--acc) 45%, #1C2230); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55), 0 0 28px color-mix(in srgb, var(--acc) 16%, transparent); color: #F2F5FA; text-align: left; transform-origin: 12% 100%; transition: border-color var(--m-base) var(--m-ease), box-shadow var(--m-base) var(--m-ease), translate var(--m-base) var(--m-ease); }
 .bubble::before { content: ''; position: absolute; left: -1px; top: -1px; bottom: -1px; width: 3px; background: var(--acc); }
@@ -109,7 +110,7 @@
 .cta-row .btn-ghost { font-size: 22px; }
 .cta-row a { white-space: nowrap; }
 /* «Ce poți face acum» (V5) */
-.next-row { margin-top: 12px; }
+.next-row { margin-top: 20px; }
 .nr-t { margin: 0 0 6px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: #8C97A8; }
 .nr-tiles { display: flex; gap: 8px; }
 .nr-tile { flex: 1 1 0; min-width: 0; min-height: 52px; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 1px; padding: 6px 14px; background: #090C11; border: 1px solid #1C2230; border-left: 3px solid var(--ice); color: #F2F5FA; font: inherit; text-align: left; text-decoration: none; cursor: pointer; transition: border-color var(--m-fast) var(--m-ease); }
@@ -392,7 +393,8 @@ a.ad-past:hover { border-color: var(--ice); }
 }
 @container page (max-width: 1000px) {
   .hero h1 { font-size: min(10.4cqi, 150px); }
-  .stage { grid-template-columns: minmax(0, 1fr); grid-template-areas: "mascot" "line" "timer" "cta"; margin-top: -14px; align-items: end; }
+  .stage { grid-template-columns: minmax(0, 1fr); grid-template-areas: "mascot" "line" "timer" "cta" "next"; grid-template-rows: none; margin-top: -14px; align-items: end; }
+  .st-cta { align-self: auto; }
   .st-mascot { margin-top: 0; }
   .st-line { text-align: center; }
   .display { margin: 8px auto 0; justify-content: center; }
