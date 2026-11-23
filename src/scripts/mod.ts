@@ -499,8 +499,9 @@ function healthDots(): string {
   const [cls, text] = !navigator.onLine ? ['bad', 'Fără conexiune']
     : issues.length ? [bad.length ? 'bad' : 'warn', `${issues.length} ${issues.length === 1 ? 'problemă' : 'probleme'} · ${issues.map(([, n]) => n).join(', ')}`]
     : ['ok', 'Totul merge'];
-  const label = dots.map(([c, n, v]) => `${n}: ${c === 'ok' ? 'merge' : c === 'off' ? 'oprit' : c === 'warn' ? 'de verificat' : 'problemă'}, ${v}`).join('; ');
-  return `<a class="hdots" href="#sanatate" aria-label="Conexiuni. ${esc(label)}">${dots.map(([c, n, v]) => `<span class="hd" aria-hidden="true"><span class="dot ${c}"></span><span class="hd-n">${n}</span> <span class="muted">${v}</span></span>`).join('')}<span class="hsum ${cls}" aria-hidden="true">${esc(text)}</span></a>`;
+  // The colour of each dot is also said in words for screen readers; only one of dots / chip is displayed.
+  const state = (c: string) => (c === 'ok' ? 'merge' : c === 'off' ? 'oprit' : c === 'warn' ? 'de verificat' : 'problemă');
+  return `<a class="hdots" href="#sanatate">${dots.map(([c, n, v]) => `<span class="hd"><span class="dot ${c}"></span><span class="hd-n">${n}</span><span class="sr-only">: ${state(c)},</span> <span class="muted">${v}</span></span>`).join('')}<span class="hsum ${cls}">${esc(text)}</span></a>`;
 }
 
 function barHtml(): string {
