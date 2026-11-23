@@ -9,7 +9,10 @@ import { site } from '../data/site';
 import type { DemoBackend } from '../demo/backend';
 import { esc } from '../lib/views';
 import { FALLBACK_LINE, lineGroups, MAX_LINE, MIN_LINES } from '../data/content';
-import type { LineGroup } from '../data/types';
+import type { AdventDay, LineGroup, TickerItem } from '../data/types';
+import { ADVENT_DAYS, adventDates, badgeDefs, PRISM, rankColors, tierColors } from '../data/content';
+import { tickerItem } from '../lib/events';
+import { ago as agoText, count as countRo, fmtInt } from '../lib/format';
 
 const demo = new URLSearchParams(location.search).has('demo');
 let demoApi: DemoBackend | null = null;
@@ -19,10 +22,8 @@ const db = createClient(site.supabase.url, site.supabase.publishableKey, {
 });
 
 const app = document.getElementById('app')!;
-const who = document.getElementById('who')!;
-const dock = document.getElementById('dock')!;
-const dockState = document.getElementById('dockState')!;
-const dockClock = document.getElementById('dockClock')!;
+const bar = document.getElementById('bar')!;
+const nav = document.getElementById('nav')!;
 const msgBox = document.getElementById('msg')!;
 
 const errors: Record<string, string> = {
@@ -107,9 +108,9 @@ let S: {
   prizes: { id: number; user_login: string; created_at: string; prizes: { win_label: string; is_win: boolean } | null }[];
   mods: { login: string; display_name: string | null }[];
   draft: number[];
-  goals: { title: string; threshold: number; unlocked_at: string | null; sponsor?: string | null }[];
+  goals: { title: string; threshold: number; unlocked_at: string | null; sponsor?: string | null; done_at?: string | null; clip_url?: string | null; scheduled_for?: string | null }[];
   /** Milestone list being edited (null = showing the saved list). */
-  goalsDraft: { title: string; threshold: string; sponsor: string }[] | null;
+  goalsDraft: { title: string; threshold: string; sponsor: string; done: boolean; clip: string; when: string }[] | null;
   /** Wheel slices (8) as stored, and the copy being edited. */
   wheel: { short_label: string; full_label: string; win_label: string | null; sponsor: string | null; is_win: boolean; weight: number }[];
   wheelDraft: { short_label: string; full_label: string; sponsor: string; is_win: boolean; weight: string }[] | null;
@@ -136,10 +137,20 @@ let S: {
   linesDraft: Partial<Record<LineGroup, string>> | null;
   /** Twitch-chat echo: the switch, and whether Iceman's token may write in chat (null = not available yet). */
   chat: { on: boolean; canWrite: boolean; connected: boolean; lastAt: string | null } | null;
-} = { chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, together: null, names: { filtered: [], rules: [] }, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
+  /** Which group page is open (live, continut, jocuri, oameni, sponsori, overlay). */
+  page: string;
+  /** Newest events (public feed), Advent days, Fidelii, legends and badge counts (public_state). */
+  feed: TickerItem[];
+  advent: AdventDay[];
+  adventDraft: AdventDay[] | null;
+  adventSel: number;
+  loyal: { name: string; hours: number; streak: number; badges: string[] }[];
+  boards: { donations: [string, number][]; gifts: [string, number][]; bits: [string, number][] };
+  badgeCounts: Record<string, number> | null;
+} = { page: 'live', feed: [], advent: [], adventDraft: null, adventSel: 0, loyal: [], boards: { donations: [], gifts: [], bits: [] }, badgeCounts: null, chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, together: null, names: { filtered: [], rules: [] }, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
 const bingoRows = () => S.bingoDraft ?? (S.bingo?.items ?? []).map((i) => ({ id: i.id, label: i.label }));
 const editBingo = () => { if (!S.bingoDraft) S.bingoDraft = bingoRows(); return S.bingoDraft; };
-const goalRows = () => S.goalsDraft ?? S.goals.map((g) => ({ title: g.title, threshold: String(g.threshold), sponsor: g.sponsor ?? '' }));
+const goalRows = () => S.goalsDraft ?? S.goals.map((g) => ({ title: g.title, threshold: String(g.threshold), sponsor: g.sponsor ?? '', done: !!g.done_at, clip: g.clip_url ?? '', when: g.scheduled_for ?? '' }));
 const wheelRows = () => S.wheelDraft ?? S.wheel.map((p) => ({ short_label: p.short_label, full_label: p.full_label, sponsor: p.sponsor ?? '', is_win: p.is_win, weight: String(p.weight) }));
 const editWheel = () => { if (!S.wheelDraft) S.wheelDraft = wheelRows(); return S.wheelDraft; };
 /** Sponsor names for the suggestions list: the site's partners plus any already used. */
@@ -170,6 +181,12 @@ async function load() {
     S.now = site.now; S.together = site.together;
     S.lines = site.lines; S.smallDonation = site.smallDonation;
     S.chat = demoApi.rpc('mod_chat_status', {}) as typeof S.chat;
+    S.feed = site.ticker.filter((x) => x.time !== '—');
+    S.advent = site.advent;
+    S.loyal = site.loyal;
+    const num = (rows: [string, string][]) => rows.map(([n, v]) => [n, Number(String(v).replace(/\./g, ''))] as [string, number]);
+    S.boards = { donations: num(site.boards.donations), gifts: num(site.boards.gifts), bits: num(site.boards.bits) };
+    S.badgeCounts = site.badgeCounts;
     if (!S.draft.length || S.draft.some((id) => !S.pool.find((p) => p.id === id))) autoDraft();
     return render();
   }
@@ -189,7 +206,7 @@ async function load() {
     db.from('suggestions').select('id, body, created_at, viewers(login, display_name)').eq('status', 'pending').order('created_at'),
     db.from('spins').select('id, user_login, created_at, prizes(win_label, is_win)').is('fulfilled_at', null).order('created_at'),
     db.from('viewers').select('login, display_name').eq('is_moderator', true).order('login'),
-    db.from('goals').select('title, threshold, unlocked_at, sponsor').order('position'),
+    db.from('goals').select('title, threshold, unlocked_at, sponsor, done_at, clip_url, scheduled_for').order('position'),
   ]);
   const [wheel, codes, okey, report, names] = await Promise.all([
     db.from('prizes').select('short_label, full_label, win_label, sponsor, is_win, weight').order('position'),
@@ -201,6 +218,13 @@ async function load() {
   S.now = ps.now ?? null; S.together = ps.together ?? null;
   S.lines = ps.lines?.groups ?? {}; S.smallDonation = Number(ps.lines?.smallDonation) || 10;
   S.chat = ((await (db as any).rpc('mod_chat_status')).data as typeof S.chat) ?? null;
+  S.feed = (Array.isArray(ps.feed) ? ps.feed : []).map((e: any) => tickerItem({ id: e.id, at: e.at ? Date.parse(e.at) : undefined, kind: e.kind, tier: e.tier,
+    quantity: e.quantity, currency: e.currency, seconds_added: e.seconds, user_name: e.name, user_login: null })).filter((x: TickerItem) => x.time !== '—');
+  S.advent = (Array.isArray(ps.advent) ? ps.advent : []).map((a: any) => ({ day: Number(a.day), note: a.note ?? '', clip: a.clip ?? null, sponsor: a.sponsor ?? null }));
+  S.loyal = Array.isArray(ps.loyal) ? ps.loyal : [];
+  const rowsOf = (l: any) => (Array.isArray(l) ? l : []).map((r: any) => [String(r[0]), Number(r[1]) || 0] as [string, number]);
+  S.boards = { donations: rowsOf(ps.boards?.donations), gifts: rowsOf(ps.boards?.gifts), bits: rowsOf(ps.boards?.bits) };
+  S.badgeCounts = ps.badges ?? null;
   S.names = names.data ?? { filtered: [], rules: [] };
   S.wheel = (wheel.data ?? []) as typeof S.wheel;
   S.codes = (codes.data ?? []) as typeof S.codes;
@@ -359,14 +383,256 @@ function healthHtml(h: any): string {
   return `<ul class="list health">${rows.map(([c, name, text]) => `<li><span class="pill ${c}">${label[c]}</span><span class="grow"><strong style="color:#F2F5FA">${esc(name)}</strong><br><span class="muted">${esc(text)}</span></span></li>`).join('')}</ul>`;
 }
 
+// ---- Layout: grouped by job (status bar on top, prism menu on the left) ----
+const ICONS: Record<string, string> = {
+  live: 'M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8',
+  continut: 'M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h7',
+  jocuri: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 3v18M3 12h18',
+  oameni: 'M9 11a4 4 0 1 0 0-8a4 4 0 1 0 0 8M2 21c0-4 3-6 7-6s7 2 7 6M17 3.5a4 4 0 0 1 0 7M22 21c0-3-1.5-5-4-5.7',
+  sponsori: 'M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6-4.5-4.2 6.1-.7z',
+  overlay: 'M3 4h18v13H3zM8 21h8M12 17v4',
+};
+const GROUPS: { id: string; name: string; title: string; lead: string; items: [string, string][] }[] = [
+  { id: 'live', name: 'LIVE', title: 'Cronometru și stream', lead: 'Tot ce schimbi aici apare pe site și pe stream în câteva secunde.',
+    items: [['cronometru', 'Cronometru'], ['inghetare', 'Îngheață'], ['ora-dubla', 'Ora dublă'], ['acum', 'Acum pe stream'], ['stare', 'Contul de streamer']] },
+  { id: 'continut', name: 'CONȚINUT', title: 'Conținut', lead: 'Ce scrie pe site: replicile lui Iceman, milestone-urile, calendarul, votul.',
+    items: [['replici', 'Replicile lui Iceman'], ['milestones', 'Milestone Maraton'], ['comunitar', 'Obiectiv comunitar'], ['advent', 'Calendar de Advent'], ['vot', 'Vot și provocări'], ['propuneri', 'Propuneri']] },
+  { id: 'jocuri', name: 'JOCURI', title: 'Jocuri', lead: 'Roata, premiile de dat, bingo și codurile secrete.',
+    items: [['roata-premii', 'Roata și premiile'], ['premii', 'Premii de dat'], ['bingo', 'Bingo'], ['cod', 'Coduri secrete']] },
+  { id: 'oameni', name: 'OAMENI', title: 'Oameni', lead: 'Numele afișate, insignele, legendele și moderatorii.',
+    items: [['nume', 'Nume afișate'], ['insigne', 'Insigne și Fidelii'], ['legende', 'Legende'], ['moderatori', 'Moderatori']] },
+  { id: 'sponsori', name: 'SPONSORI', title: 'Sponsori', lead: 'Partenerii de pe site și raportul pentru fiecare.',
+    items: [['parteneri', 'Parteneri și logo-uri'], ['raport', 'Raport pe sponsor']] },
+  { id: 'overlay', name: 'OVERLAY', title: 'Overlay OBS', lead: 'Linkul pentru OBS și variantele lui.',
+    items: [['overlay', 'Overlay OBS']] },
+];
+const groupOf = (id: string) => GROUPS.find((g) => g.id === id || g.items.some(([i]) => i === id || (i === 'vot' && id === 'provocari')));
+
+/** How many things wait on each menu item (badges). */
+function waiting(id: string): { n: number; warn?: boolean } {
+  const raised = Number(S.stats?.raised ?? 0);
+  switch (id) {
+    case 'replici': return { n: lineGroups.filter((g) => !lineInfo(g.id).ok).length, warn: true };
+    case 'milestones': return { n: S.goals.filter((g) => raised >= g.threshold && !g.done_at).length };
+    case 'propuneri': return { n: S.suggestions.length };
+    case 'premii': return { n: S.prizes.length };
+    case 'bingo': return { n: S.bingo?.status.winners.length && !S.bingo.status.draws.length ? S.bingo.status.winners.length : 0 };
+    case 'stare': return { n: S.status && !S.status.broadcaster_connected ? 1 : 0, warn: true };
+    default: return { n: 0 };
+  }
+}
+
+function navHtml(): string {
+  const cur = decodeURIComponent(location.hash.slice(1)) || GROUPS.find((g) => g.id === S.page)?.items[0][0];
+  return GROUPS.map((g) => {
+    const on = g.id === S.page;
+    return `<div class="ng${on ? ' on' : ''}">
+      <a class="ng-head" href="#${g.items[0][0]}" ${on ? 'aria-current="true"' : ''}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICONS[g.id]}"></path></svg><span class="prism-text">${esc(g.name)}</span></a>
+      <div class="ng-items">${g.items.map(([id, label]) => {
+        const w = waiting(id);
+        return `<a href="#${id}" data-nav="${id}"${id === cur ? ' class="cur" aria-current="location"' : ''}>${esc(label)}${w.n ? `<span class="nb${w.warn ? ' warn' : ''}">${w.n}</span>` : ''}</a>`;
+      }).join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+/** Health rows → short status dots for the bar. */
+function healthDots(): string {
+  const h = S.health;
+  if (!h) return '';
+  const now = Date.parse(h.now);
+  const age = (iso: string | null) => (iso ? Math.max(0, Math.round((now - Date.parse(iso)) / 1000)) : null);
+  const short = (sec: number | null) => sec === null ? '—' : sec < 90 ? `${sec} s` : sec < 5400 ? `${Math.round(sec / 60)} min` : `${Math.round(sec / 3600)} h`;
+  const live = h.timer?.status === 'live', online = !!h.timer?.online;
+  const tA = age(h.tipeee?.lastRun ?? null), wA = age(h.watch?.lastRun ?? null), eA = age(h.twitch?.lastEvent ?? null);
+  const failed = (h.jobs ?? []).some((j: any) => j.status === 'failed');
+  const dots: [string, string, string][] = [
+    [live && online && (eA === null || eA > 3600) ? 'warn' : 'ok', 'Subs și biți', short(eA)],
+    [!live || !online ? 'off' : wA === null || wA > 720 ? 'bad' : 'ok', 'Timp privit', live && online ? short(wA) : 'oprit'],
+    [h.tipeee?.error || tA === null || tA > 90 ? 'bad' : 'ok', 'Donații', short(tA)],
+    [failed ? 'bad' : 'ok', 'Joburi', failed ? 'eroare' : 'OK'],
+  ];
+  return `<a class="hdots" href="#sanatate" aria-label="Conexiuni">${dots.map(([c, n, v]) => `<span class="hd"><span class="dot ${c}"></span><span class="hd-n">${n}</span> <span class="muted">${v}</span></span>`).join('')}</a>`;
+}
+
+function barHtml(): string {
+  const brand = '<a class="brand" href="#cronometru">ICE<span>MARATON</span> <small>/MOD</small></a>';
+  if (!S.me) return brand;
+  const who = `<span class="who">${demo ? '<span class="pill ok">Demo</span>' : ''}<span class="avatar" aria-hidden="true">${esc((S.me.login || '?').charAt(0).toUpperCase())}</span><span class="who-n">${esc(S.me.login)}</span><button class="btn-ghost" data-act="logout">Ieși</button></span>`;
+  if (!S.me.is_moderator) return brand + '<span class="grow"></span>' + who;
+  const t = S.timer ?? {};
+  const now = Date.now();
+  const live = t.status === 'live';
+  const frozen = t.paused_until && Date.parse(t.paused_until) > now;
+  const dbl = t.double_from && t.double_until && Date.parse(t.double_until) > now;
+  const dblNow = dbl && Date.parse(t.double_from) <= now;
+  const hm = (iso: string) => new Date(iso).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Bucharest' });
+  return `${brand}<span class="sep"></span>
+    <span class="pill ${live ? 'bad' : 'off'} skew">${live ? 'LIVE' : t.status === 'ended' ? 'ÎNCHEIAT' : 'CURÂND'}</span>
+    <span class="bar-clock" data-left>${live ? left(Date.parse(t.ends_at) - (frozen ? Date.parse(t.paused_until) : now)) : '—'}</span>
+    ${live ? (frozen ? `<span class="chip frost">ÎNGHEȚAT PÂNĂ LA ${esc(when(t.paused_until))}</span>` : '<span class="chip run">MERGE</span>') : ''}
+    ${dbl ? `<span class="chip dbl">ORA DUBLĂ ${dblNow ? `×2 PÂNĂ LA ${hm(t.double_until)}` : esc(when(t.double_from))}${t.double_sponsor ? ` · ${esc(String(t.double_sponsor).toUpperCase())}` : ''}</span>` : ''}
+    <span class="grow"></span>${healthDots()}<span class="sep"></span>${who}`;
+}
+
+function unitsHtml(ms: number): string {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const u: [string, string][] = [[pad(Math.floor(s / 86400)), 'ZILE'], [pad(Math.floor((s % 86400) / 3600)), 'ORE'], [pad(Math.floor((s % 3600) / 60)), 'MINUTE'], [pad(s % 60), 'SECUNDE']];
+  return u.map(([v, l]) => `<div class="unit"><div class="unit-v" data-unit>${v}</div><div class="unit-l">${l}</div></div>`).join('');
+}
+
+/** «De făcut acum»: what needs a moderator, from data /mod already has. */
+function todoHtml(): string {
+  const raised = Number(S.stats?.raised ?? 0);
+  const items: { tag: string; cls: string; t: string; d: string; btn: string }[] = [];
+  if (S.status && !S.status.broadcaster_connected) items.push({ tag: 'STREAMER', cls: 'bad', t: 'Contul de streamer nu e conectat', d: 'Fără el nu ajung subs, biții și statusul live.', btn: `<a class="btn btn-twitch" href="${esc(S.status.connect_url ?? '#')}">Conectează</a>` });
+  for (const p of S.prizes.slice(0, 3)) items.push({ tag: 'PREMIU', cls: 'ok', t: `${p.user_login} · ${p.prizes?.win_label ?? ''}`, d: `Câștigat pe roată ${when(p.created_at)}`, btn: `<button class="btn-primary" data-act="fulfil" data-id="${p.id}">Am dat premiul</button>` });
+  if (S.prizes.length > 3) items.push({ tag: 'PREMII', cls: 'ok', t: `Încă ${S.prizes.length - 3} premii de dat`, d: '', btn: '<a class="btn btn-ghost" href="#premii">Vezi toate</a>' });
+  S.goals.forEach((g, i) => { if (raised >= g.threshold && !g.done_at) items.push({ tag: 'MILESTONE', cls: 'white', t: `${pad(i + 1)} · ${g.title}`, d: 'Deblocat. Când s-a făcut live, pune linkul clipului.', btn: '<a class="btn btn-ghost" href="#milestones">Marchează făcut</a>' }); });
+  const lg = lineGroups.filter((g) => !lineInfo(g.id).ok).length;
+  if (lg) items.push({ tag: 'REPLICI', cls: 'warn', t: `${lg} ${lg === 1 ? 'grup are' : 'grupuri au'} sub ${MIN_LINES} replici`, d: `Balonul folosește «${FALLBACK_LINE}» până le completați.`, btn: '<a class="btn btn-ghost" href="#replici">Completează</a>' });
+  if (S.suggestions.length) items.push({ tag: 'PROPUNERI', cls: 'off', t: `${S.suggestions.length} ${S.suggestions.length === 1 ? 'propunere nouă' : 'propuneri noi'} de la abonați`, d: '', btn: '<a class="btn btn-ghost" href="#propuneri">Vezi propunerile</a>' });
+  const bw = S.bingo?.status.winners.length ?? 0;
+  if (bw && !S.bingo?.status.draws.length) items.push({ tag: 'BINGO', cls: 'ok', t: `${bw} cu bingo, gata de tragere`, d: '', btn: '<a class="btn btn-ghost" href="#bingo">Trage la sorți</a>' });
+  return `<section class="card todo" id="todo"><h2>De făcut acum${items.length ? ` · ${items.length}` : ''}</h2>
+    ${items.length ? items.map((x) => `<div class="todo-i"><p><span class="pill ${x.cls}">${x.tag}</span> <strong>${esc(x.t)}</strong></p>${x.d ? `<p class="muted">${esc(x.d)}</p>` : ''}<div class="row">${x.btn}</div></div>`).join('') : '<p class="muted">Nimic nu așteaptă acum.</p>'}
+  </section>`;
+}
+
+function feedHtml(): string {
+  const now = Date.now();
+  return `<section class="card" id="intra"><h2>Intră acum</h2>
+    ${S.feed.length ? `<ul class="list feed">${S.feed.slice(0, 8).map((f) => `<li><strong class="ft">${esc(f.time)}</strong><span class="grow"><strong>${esc(f.user)}</strong> <span class="muted">${esc(f.what)}</span></span><span class="muted">${f.at ? esc(agoText(f.at, now)) : ''}</span></li>`).join('')}</ul>` : '<p class="muted">Încă n-a intrat nimic.</p>'}
+  </section>`;
+}
+
+// ---- Milestones: state, when, clip ----
+function milestonesHtml(): string {
+  const raised = Number(S.stats?.raised ?? 0);
+  const rows = goalRows();
+  let nextFound = false;
+  return `<section class="card wide" id="milestones">
+    <div class="card-head"><h2>Milestone Maraton</h2><span class="muted">Strâns acum: <strong style="color:#F2F5FA">${fmtInt(raised)} €</strong></span></div>
+    <p class="muted" style="margin-top:0">Provocările care se deblochează când donațiile ajung la sumă. «Făcut» + link = apare pe site la «Ai ratat? Vezi clipurile». Lista se ordonează singură după sumă.</p>
+    <div class="ms-headrow" aria-hidden="true"><span>NR.</span><span>SUMA (€)</span><span>PROVOCAREA</span><span>PREZENTAT DE</span><span>STARE</span><span>CÂND SE FACE</span><span>CLIPUL (DUPĂ LIVE)</span><span></span><span></span></div>
+    <ul class="list ms-list">${rows.map((g, i) => {
+      const reached = g.threshold !== '' && raised >= Number(g.threshold);
+      const isNext = !reached && !nextFound && g.threshold !== '';
+      if (isNext) nextFound = true;
+      const state = g.done ? ['FĂCUT ✓', 'ok'] : reached ? ['DEBLOCAT', 'white'] : isNext ? ['URMĂTORUL', 'next'] : ['BLOCAT', 'off'];
+      return `<li class="${reached && !g.done ? 'pending' : ''}">
+        <span class="ms-no">${pad(i + 1)}</span>
+        <input class="field" type="number" inputmode="numeric" min="1" step="1" data-goal-amt="${i}" value="${esc(g.threshold)}" placeholder="€" aria-label="Suma în euro, milestone ${i + 1}">
+        <input class="field" data-goal-title="${i}" value="${esc(g.title)}" placeholder="Provocarea" aria-label="Provocarea ${i + 1}" maxlength="140">
+        <input class="field" data-goal-sponsor="${i}" value="${esc(g.sponsor)}" list="sponsorNames" placeholder="opțional" aria-label="Sponsorul milestone-ului ${i + 1}" maxlength="60">
+        <span><span class="pill ${state[1]}">${state[0]}</span></span>
+        ${reached ? `<input class="field" data-goal-when="${i}" value="${esc(g.when)}" placeholder="ex: vineri seara" aria-label="Când se face milestone-ul ${i + 1}" maxlength="60">
+        <input class="field" type="url" data-goal-clip="${i}" value="${esc(g.clip)}" placeholder="https://clips.twitch.tv/…" aria-label="Linkul clipului, milestone ${i + 1}">
+        <button class="${g.done ? 'btn-primary' : 'btn-ghost'}" data-act="goalDone" data-i="${i}" aria-pressed="${g.done}">${g.done ? 'Făcut ✓' : 'Marchează făcut'}</button>` : '<span class="ms-na">—</span><span class="ms-na">—</span><span></span>'}
+        <button class="btn-ghost" data-act="goalDel" data-i="${i}" aria-label="Șterge milestone-ul ${i + 1}">Șterge</button></li>`;
+    }).join('')}</ul>
+    <div class="row">
+      <button class="btn-ghost" data-act="goalAdd">Adaugă milestone</button>
+      <button class="btn-primary" data-act="goalSave">Salvează lista</button>
+      ${S.goalsDraft ? '<button class="btn-ghost" data-act="goalCancel">Renunță</button><span class="muted">Modificări nesalvate</span>' : ''}
+    </div>
+  </section>`;
+}
+
+// ---- Advent calendar ----
+const roParts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest', year: 'numeric', month: '2-digit', day: '2-digit' });
+const MONTHS = ['IAN', 'FEB', 'MAR', 'APR', 'MAI', 'IUN', 'IUL', 'AUG', 'SEP', 'OCT', 'NOI', 'DEC'];
+const MONTHS_LONG = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie', 'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
+const adventRows = () => S.adventDraft ?? S.advent;
+function adventDay(n: number) {
+  const startAt = S.timer?.starts_at ? Date.parse(S.timer.starts_at) : Date.UTC(2026, 11, 20, 10);
+  const [, m, d] = roParts.format(new Date(startAt + (n - 1) * 86_400_000)).split('-').map(Number);
+  const dayOf = (ms: number) => { const [y, mm, dd] = roParts.format(new Date(ms)).split('-').map(Number); return Date.UTC(y, mm - 1, dd) / 86_400_000; };
+  const today = dayOf(Date.now()) - dayOf(startAt) + 1;
+  const md = `${pad(m)}-${pad(d)}`;
+  const fixed = n === 1 ? 'Startul' : n === ADVENT_DAYS ? 'Finalul programat' : adventDates[md] ?? '';
+  return { short: `${d} ${MONTHS[m - 1]}`, long: `${d} ${MONTHS_LONG[m - 1]}`, fixed, past: n < today, today: n === today };
+}
+function adventHtml(): string {
+  const rows = adventRows();
+  const sel = S.adventSel || 1;
+  const cur = rows.find((r) => r.day === sel) ?? { day: sel, note: '', clip: null, sponsor: null };
+  const info = adventDay(sel);
+  const cells = Array.from({ length: ADVENT_DAYS }, (_, k) => {
+    const n = k + 1, a = adventDay(n), r = rows.find((x) => x.day === n);
+    const note = [r?.note || a.fixed, r?.sponsor ?? ''].filter(Boolean).join(' · ') + (r?.clip ? ' · clip' : '');
+    return `<button type="button" class="ad${n === sel ? ' sel' : ''}${a.today ? ' today' : a.past ? ' past' : ''}" data-act="adventPick" data-day="${n}" aria-pressed="${n === sel}"><span class="ad-d">${a.today ? 'AZI · ' : ''}${a.short}</span><span class="ad-n">${pad(n)}</span><span class="ad-t">${esc(note)}</span></button>`;
+  }).join('');
+  return `<section class="card wide" id="advent">
+    <div class="card-head"><h2>Calendar de Advent</h2><span class="muted">Alege o zi, completează, salvează. Zilele fără nimic arată doar data.</span></div>
+    <div class="advent-wrap">
+      <div class="ad-grid">${cells}</div>
+      <div class="ad-edit">
+        <p class="ad-title">ZIUA ${pad(sel)} · ${info.long.toUpperCase()}${info.today ? ' · AZI' : info.past ? ' · TRECUTĂ' : ''}</p>
+        <label class="inline">Ce e programat (max. 60 de caractere)<input class="field" data-adv="note" maxlength="60" value="${esc(cur.note ?? '')}" placeholder="${esc(info.fixed || 'ex: Provocarea votată')}"></label>
+        <label class="inline">Sponsorul zilei<input class="field" data-adv="sponsor" maxlength="60" list="sponsorNames" value="${esc(cur.sponsor ?? '')}" placeholder="opțional"></label>
+        <label class="inline">Clipul zilei<input class="field" type="url" data-adv="clip" value="${esc(cur.clip ?? '')}" placeholder="https://clips.twitch.tv/…"></label>
+        <div class="row"><button class="btn-primary" data-act="adventSave">Salvează calendarul</button>${S.adventDraft ? '<button class="btn-ghost" data-act="adventCancel">Renunță</button><span class="muted">Modificări nesalvate</span>' : ''}</div>
+      </div>
+    </div>
+  </section>`;
+}
+
+// ---- Read-only views (Oameni, Sponsori, Overlay) ----
+const rankStyle = (i: number) => rankColors[i] === 'prism' ? `background:${PRISM};-webkit-background-clip:text;background-clip:text;color:transparent` : `color:${rankColors[Math.min(i, rankColors.length - 1)]}`;
+function insigneHtml(): string {
+  const counts = S.badgeCounts;
+  return `<section class="card wide" id="insigne">
+    <h2>Insigne și Fidelii</h2>
+    <p class="muted" style="margin-top:0">Insignele se dau singure, din timpul în chat și din check-in-uri. Aici vezi câți le au și cine stă cel mai mult.</p>
+    <ul class="list">${badgeDefs.map((b) => { const [accent, , fg] = tierColors[b.tier]; return `<li><span class="pill" style="background:${b.tier === 'prism' ? PRISM : accent};color:#04101A">${esc(b.label.toUpperCase())}</span><span class="grow muted">${esc(b.how)}</span><strong style="color:${fg}">${counts?.[b.id] !== undefined ? countRo(counts[b.id], 'om', 'oameni') : '—'}</strong></li>`; }).join('')}</ul>
+    <h3 class="h3s">Fidelii</h3>
+    ${S.loyal.length ? `<ul class="list">${S.loyal.map((l, i) => `<li><span class="rk" style="${rankStyle(i)}">${i + 1}</span><span class="grow"><strong>${esc(l.name)}</strong> <span class="muted">· ${countRo(l.streak, 'zi', 'zile')} la rând</span></span><strong>${countRo(l.hours, 'oră', 'ore')}</strong></li>`).join('')}</ul>` : '<p class="muted">Primii fideli apar după prima oră în chat.</p>'}
+  </section>`;
+}
+function legendeHtml(): string {
+  const col = (title: string, rows: [string, number][], unit: string) => `<div><h3 class="h3s">${title}</h3>${rows.length ? `<ul class="list">${rows.slice(0, 5).map(([n, v], i) => `<li><span class="rk" style="${rankStyle(i)}">${i + 1}</span><span class="grow"><strong>${esc(n)}</strong></span><strong>${fmtInt(v)}${unit}</strong></li>`).join('')}</ul>` : '<p class="muted">Încă nimeni.</p>'}</div>`;
+  return `<section class="card wide" id="legende">
+    <h2>Legende</h2>
+    <p class="muted" style="margin-top:0">Top 5 pe tot maratonul, ca pe site. Un nume nepotrivit se ascunde din «Nume afișate».</p>
+    <div class="cols3">${col('Donatori', S.boards.donations, ' €')}${col('Subs dăruite', S.boards.gifts, ' subs')}${col('Biți', S.boards.bits, '')}</div>
+  </section>`;
+}
+function parteneriHtml(): string {
+  const tile = (name: string, role: string, logo: string) => `<li><span class="grow"><strong>${esc(name)}</strong>${role ? ` <span class="muted">· ${esc(role)}</span>` : ''}</span><span class="pill ${logo ? 'ok' : 'warn'}">${logo ? 'logo pus' : 'fără logo'}</span></li>`;
+  return `<section class="card wide" id="parteneri">
+    <h2>Parteneri și logo-uri</h2>
+    <p class="muted" style="margin-top:0">Așa apar pe site. Numele, logo-urile și linkurile se schimbă în <code>src/data/site.ts</code>: trimite-i-le lui Claude (logo SVG sau PNG, ideal și varianta albă).</p>
+    <h3 class="h3s">Partener principal</h3><ul class="list">${tile(site.sponsor.name, `cod ${site.sponsor.code}`, site.sponsor.logo)}</ul>
+    <h3 class="h3s">Parteneri</h3><ul class="list">${site.partners.map((p) => tile(p.name, p.role, p.logo)).join('')}</ul>
+    <h3 class="h3s">Susținători</h3><ul class="list">${site.supporters.map((p, i) => tile(p.name || `Locul ${i + 1} (liber)`, '', p.logo)).join('')}</ul>
+  </section>`;
+}
+function overlayHtml(): string {
+  const base = location.origin + '/overlay/';
+  const key = S.overlayKey;
+  const v = (q: string) => base + '?' + [key ? `key=${key}` : '', q].filter(Boolean).join('&');
+  const rows: [string, string][] = [
+    ['Bandă subțire în colțul din dreapta sus (de bază)', v('')],
+    ['Bandă în stânga jos', v('pos=bl')],
+    ['Cutia mare (cronometru + milestone)', v('style=box')],
+    ['Doar cronometrul, de 1,5 ori mai mare', v('show=timer&scale=1.5')],
+    ['Fără mențiunea partenerilor', v('promo=0')],
+  ];
+  return `<section class="card wide" id="overlay">
+    <h2>Overlay OBS</h2>
+    <p class="muted" style="margin-top:0">În OBS: Browser Source, 1920×1080, cu unul din linkurile de mai jos. ${key ? '<strong style="color:#FF8A95">Linkurile au cheia privată: nu le da nimănui.</strong>' : 'Fără cheie, codurile secrete nu apar pe stream.'}</p>
+    <ul class="list">${rows.map(([label, url], i) => `<li><span class="grow"><strong>${esc(label)}</strong><br><input class="field" readonly value="${esc(url)}" id="ov${i}" aria-label="${esc(label)}" style="width:100%;margin-top:6px"></span><button class="btn-ghost" data-act="copyOv" data-i="${i}">Copiază</button></li>`).join('')}</ul>
+    <p class="muted">Momentele noi pentru overlay (viscol, legendă nouă, bingo live, roata pe stream) vin după ce le alegeți pe planșa «Overlay OBS».</p>
+  </section>`;
+}
+
 function render() {
   const active = document.activeElement;
   if (active && app.contains(active) && /^(INPUT|SELECT|TEXTAREA)$/.test(active.tagName)) { deferred = true; return; }
-  who.innerHTML = S.me
-    ? `${demo ? '<span class="pill ok">Demo</span>' : ''}<span class="muted">Conectat ca <strong style="color:#F2F5FA">${esc(S.me.login)}</strong></span><button class="btn-ghost" data-act="logout">Ieși</button>`
-    : '';
-
-  dock.hidden = !S.me?.is_moderator;
+  const isMod = !!S.me?.is_moderator;
+  nav.hidden = !isMod;
+  bar.innerHTML = barHtml();
   if (!S.me) {
     app.innerHTML = `<div class="card" style="margin-top:20px"><h2>Conectează-te</h2>
       <p>Pagina e pentru moderatorii ICEMARATON. Intră cu contul de Twitch.</p>
@@ -385,19 +651,16 @@ function render() {
   const live = t.status === 'live';
   const remaining = live && t.ends_at ? Date.parse(t.ends_at) - (t.paused_until && Date.parse(t.paused_until) > now ? Date.parse(t.paused_until) : now) : 0;
   const st = S.status;
-  dockState.textContent = live ? 'LIVE' : t.status === 'ended' ? 'Încheiat' : 'Curând';
-  dockState.className = `pill ${live ? 'bad' : 'off'}`;
-  dockClock.textContent = live ? left(remaining) : '—';
   const roundOpen = S.round && Date.parse(S.round.closes_at) > now;
   const totalVotes = S.round?.items.reduce((a, x) => a + x.votes, 0) ?? 0;
   const poolOptions = (sel: number) => S.pool.map((c) =>
     `<option value="${c.id}" ${c.id === sel ? 'selected' : ''}>${esc(c.level)} · ${esc(c.title)}</option>`).join('');
 
-  app.innerHTML = `
-  <datalist id="sponsorNames">${sponsorNames().map((n) => `<option value="${esc(n)}"></option>`).join('')}</datalist>
-  <div class="grid">
+  nav.innerHTML = navHtml();
+  const sec: Record<string, () => string> = {
+    'stare': () => `
     <section class="card" id="stare">
-      <h2>Stare</h2>
+      <h2>Contul de streamer</h2>
       <div class="row">
         <span class="pill ${live ? 'bad' : 'off'}">${live ? 'LIVE' : t.status === 'ended' ? 'Încheiat' : 'Începe curând'}</span>
         <span class="pill ${t.stream_online ? 'ok' : 'off'}">Stream ${t.stream_online ? 'online' : 'offline'}</span>
@@ -411,16 +674,11 @@ function render() {
         <a class="btn btn-${st?.broadcaster_connected ? 'ghost' : 'twitch'}" href="${esc(st?.connect_url ?? '#')}">${st?.broadcaster_connected ? 'Reconectează contul de streamer' : 'Conectează contul de streamer'}</a>
       </div>
       <p class="muted">Doar ${esc(st?.broadcaster_login ?? 'streamerul')} poate face asta, o singură dată. Așa ajung pe site subs, gift-urile, biții și statusul live.</p>
-    </section>
-
-    <section class="card" id="sanatate">
-      <h2>Conexiuni</h2>
-      ${healthHtml(S.health)}
-      <p class="muted">Se actualizează singur la un minut.</p>
-    </section>
-
-    <section class="card" id="cronometru">
-      <h2>Cronometru</h2>
+    </section>`,
+    'cronometru': () => `
+    <section class="card wide" id="cronometru">
+      <div class="card-head"><h2>Cronometru</h2><span class="muted">Final programat: <strong style="color:#F2F5FA">${when(t.scheduled_end)}</strong></span></div>
+      <div class="units" aria-label="Timp rămas">${live ? unitsHtml(remaining) : '<p class="muted" style="margin:0">Cronometrul pornește odată cu subathonul.</p>'}</div>
       ${live ? `
         <div class="row">
           <div class="quick">
@@ -434,26 +692,9 @@ function render() {
             <button class="btn-primary" data-act="addCustom">Adaugă</button>
           </div>
         </div>
-        <div class="row">
-          <div class="pair">
-            <input class="field" type="number" inputmode="numeric" id="freezeMin" value="5" aria-label="Minute înghețat">
-            <button class="btn-ghost" data-act="freeze">Îngheață (minute)</button>
-          </div>
-        </div>
-        <div class="row">
-          <label class="inline">Îngheață până la<input class="field" type="datetime-local" id="freezeUntil"></label>
-          <button class="btn-ghost" data-act="freezeUntil">Îngheață până atunci</button>
-          ${t.paused_until && Date.parse(t.paused_until) > now ? '<button class="btn-ghost" data-act="unfreeze">Dezgheață acum</button>' : ''}
-        </div>
-        <div class="row">
-          <label class="inline">Ora dublă de la<input class="field" type="datetime-local" id="dblFrom"></label>
-          <label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="dblMin" value="60"></label>
-          <label class="inline">Oferită de (sponsor)<input class="field" id="dblSponsor" list="sponsorNames" placeholder="opțional" value="${esc(t.double_sponsor ?? '')}"></label>
-          <button class="btn-ghost" data-act="double">Programează</button>
-          <button class="btn-ghost" data-act="doubleNow">Ora dublă acum</button>
-        </div>
         <div class="row"><button class="btn-ghost" data-act="end" style="border-color:#D5162B">Încheie subathonul</button></div>
       ` : `
+
         <p class="muted" style="margin-top:0">Înainte de start: data și ora de start (pentru numărătoarea inversă) și finalul programat.</p>
         <div class="row">
           <label class="inline">Start<input class="field" type="datetime-local" id="startAt"></label>
@@ -465,28 +706,63 @@ function render() {
           <button class="btn-primary" data-act="start">Pornește acum</button>
         </div>
       `}
-    </section>
-
-    <section class="card wide" id="milestones">
-      <h2>Milestone Maraton</h2>
-      <p class="muted" style="margin-top:0">Provocările care se deblochează când donațiile ajung la sumă. Strâns acum: <strong style="color:#F2F5FA">${Number(S.stats?.raised ?? 0)} €</strong>. Lista se ordonează singură după sumă.</p>
-      <ul class="list">${goalRows().map((g, i) => {
-        const reached = g.threshold !== '' && Number(S.stats?.raised ?? 0) >= Number(g.threshold);
-        return `<li>
-        <span class="pair grow"><input class="field" type="number" inputmode="numeric" min="1" step="1" data-goal-amt="${i}" value="${esc(g.threshold)}" placeholder="€" aria-label="Suma în euro" style="flex:0 0 110px;width:110px"><input class="field" data-goal-title="${i}" value="${esc(g.title)}" placeholder="Provocarea" aria-label="Provocarea" maxlength="140" style="flex:1 1 auto;min-width:0"></span>
-        <input class="field" data-goal-sponsor="${i}" value="${esc(g.sponsor)}" list="sponsorNames" placeholder="Prezentat de (opțional)" aria-label="Sponsorul milestone-ului" maxlength="60" style="flex:0 1 200px;min-width:0">
-        ${reached ? '<span class="pill ok">atins</span>' : ''}
-        <button class="btn-ghost" data-act="goalDel" data-i="${i}">Șterge</button></li>`;
-      }).join('')}</ul>
+    </section>`,
+    'inghetare': () => `
+    <section class="card" id="inghetare">
+      <h2>Îngheață</h2>
+      <p class="muted" style="margin-top:0">Cronometrul stă pe loc. Subs și donațiile adaugă timp în continuare.${t.paused_until && Date.parse(t.paused_until) > now ? ` <span class="pill ok">Înghețat</span> până la <strong style="color:#F2F5FA">${when(t.paused_until)}</strong>.` : ''}</p>
+      ${live ? `
+        <div class="row">
+          <div class="pair">
+            <input class="field" type="number" inputmode="numeric" id="freezeMin" value="5" aria-label="Minute înghețat">
+            <button class="btn-ghost" data-act="freeze">Îngheață (minute)</button>
+          </div>
+        </div>
+        <div class="row">
+          <label class="inline">Îngheață până la<input class="field" type="datetime-local" id="freezeUntil"></label>
+          <button class="btn-ghost" data-act="freezeUntil">Îngheață până atunci</button>
+          ${t.paused_until && Date.parse(t.paused_until) > now ? '<button class="btn-ghost" data-act="unfreeze">Dezgheață acum</button>' : ''}
+        </div>
+` : '<p class="muted">Se poate îngheța după ce pornește cronometrul.</p>'}
+    </section>`,
+    'ora-dubla': () => `
+    <section class="card" id="ora-dubla">
+      <h2>Ora dublă</h2>
+      <p class="muted" style="margin-top:0">${t.double_from ? `${Date.parse(t.double_until) > now ? (Date.parse(t.double_from) <= now ? '<span class="pill ok">Acum</span>' : '<span class="pill off">Programată</span>') : '<span class="pill off">Ultima</span>'} ${when(t.double_from)}–${when(t.double_until)}${t.double_sponsor ? ` · oferită de <strong style="color:#E6C46A">${esc(t.double_sponsor)}</strong>` : ''}` : 'Nicio oră dublă programată.'}</p>
+      ${live ? `
+        <div class="row">
+          <label class="inline">Ora dublă de la<input class="field" type="datetime-local" id="dblFrom"></label>
+          <label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="dblMin" value="60"></label>
+          <label class="inline">Oferită de (sponsor)<input class="field" id="dblSponsor" list="sponsorNames" placeholder="opțional" value="${esc(t.double_sponsor ?? '')}"></label>
+          <button class="btn-ghost" data-act="double">Programează</button>
+          <button class="btn-ghost" data-act="doubleNow">Ora dublă acum</button>
+        </div>
+` : '<p class="muted">Se programează după ce pornește cronometrul.</p>'}
+    </section>`,
+    'acum': () => `
+    <section class="card" id="acum">
+      <h2>Acum pe stream</h2>
+      <p class="muted" style="margin-top:0">De pe Twitch: <strong style="color:#F2F5FA">${esc(S.now?.title ?? '—')}</strong>${S.now?.game ? ` · ${esc(S.now.game)}` : ''}. Se actualizează singur la 5 minute.</p>
+      ${S.now?.note ? `<p><span class="pill ok">Notă</span> ${esc(S.now.note)}</p>` : ''}
       <div class="row">
-        <button class="btn-ghost" data-act="goalAdd">Adaugă milestone</button>
-        <button class="btn-primary" data-act="goalSave">Salvează lista</button>
-        ${S.goalsDraft ? '<button class="btn-ghost" data-act="goalCancel">Renunță</button><span class="muted">Modificări nesalvate</span>' : ''}
+        <input class="field" id="nowNote" placeholder="ex: Pauză de masă, revin în 15 min" maxlength="140" aria-label="Notă scurtă pe site" style="flex:1 1 260px;min-width:0">
+        <input class="field" type="number" id="nowMin" value="30" min="1" max="1440" aria-label="Câte minute">
+        <button class="btn-primary" data-act="noteSet">Arată pe site</button>
+        ${S.now?.note ? '<button class="btn-ghost" data-act="noteClear">Scoate nota</button>' : ''}
       </div>
-    </section>
-
-    ${linesHtml()}
-
+      <p class="muted">Nota înlocuiește titlul de pe Twitch, pe site, pentru câte minute alegi.</p>
+    </section>`,
+    'comunitar': () => `
+    <section class="card" id="comunitar">
+      <h2>Obiectiv comunitar</h2>
+      <p class="muted" style="margin-top:0">Ore privite împreună până acum: <strong style="color:#F2F5FA">${S.together ? Math.round(S.together.hours) : 0} h</strong>.</p>
+      <textarea class="field" id="togetherList" rows="5" aria-label="Obiective comunitare, câte unul pe rând: ore | titlu" style="width:100%;padding:10px;font:inherit">${esc((S.together?.goals ?? []).map((g) => `${g.hours} | ${g.title}`).join('\n'))}</textarea>
+      <div class="row"><button class="btn-primary" data-act="togetherSave">Salvează obiectivele</button></div>
+      <p class="muted">Câte unul pe rând: <strong>ore | ce se deblochează</strong>, de exemplu «500 | Karaoke cu chatul». Gratuit pentru toți: se numără orele din chat cât e live.</p>
+    </section>`,
+    'replici': () => `
+    ${linesHtml()}`,
+    'bingo': () => `
     ${S.bingo ? (() => {
       const B = S.bingo!;
       const open = !B.closes_at || Date.parse(B.closes_at) > now;
@@ -516,8 +792,8 @@ function render() {
       <div class="row"><button class="btn-primary" data-act="bingoDraw" ${B.status.winners.length ? '' : 'disabled'}>Trage la sorți</button></div>
       ${B.status.draws.length ? `<p style="margin:10px 0 0">Extrași: ${B.status.draws.map((d) => `<strong>${esc(d.login)}</strong>${d.drawn_at ? ` <span class="muted">(${when(d.drawn_at)})</span>` : ''}`).join(' · ')}</p>` : ''}
     </section>`;
-    })() : ''}
-
+    })() : ''}`,
+    'roata-premii': () => `
     <section class="card wide" id="roata-premii">
       <h2>Premiile roții</h2>
       <p class="muted" style="margin-top:0">8 felii, în ordinea de pe roată. «Pe roată» = textul scurt de pe felie (max. 16 caractere). Pune sponsorul la premiile oferite de el: apare pe site și pe stream «de la …». Șansa = cât de des iese felia (0 = niciodată).</p>
@@ -530,8 +806,8 @@ function render() {
         <label style="display:inline-flex;align-items:center;gap:6px">șansa<input class="field" type="number" min="0" max="9999" data-wheel="weight" data-i="${i}" value="${esc(p.weight)}" style="width:80px"></label>
       </li>`).join('')}</ul>
       <div class="row"><button class="btn-primary" data-act="wheelSave">Salvează premiile</button>${S.wheelDraft ? '<button class="btn-ghost" data-act="wheelCancel">Renunță</button><span class="muted">Modificări nesalvate</span>' : ''}</div>
-    </section>
-
+    </section>`,
+    'cod': () => `
     <section class="card wide" id="cod">
       <h2>Cod secret</h2>
       ${(() => {
@@ -550,8 +826,8 @@ function render() {
       ${S.overlayKey ? `<p class="muted" style="margin:14px 0 0">Ca să apară codul pe stream, overlay-ul din OBS trebuie să aibă cheia: <strong style="color:#FF8A95">nu da linkul ăsta nimănui</strong>.</p>
         <div class="row"><input class="field" id="overlayLink" readonly value="${esc(location.origin + '/overlay/?key=' + S.overlayKey)}" style="flex:1 1 280px;min-width:0" aria-label="Linkul de overlay cu cheie"><button class="btn-ghost" data-act="copyOverlay">Copiază linkul pentru OBS</button></div>` : ''}
       ${S.codes.length ? `<ul class="list">${S.codes.slice(0, 8).map((c) => `<li><span class="grow"><strong>${esc(c.code)}</strong>${c.sponsor ? ` · ${esc(c.sponsor)}` : ''}<br><span class="muted">${when(c.shown_at)}</span></span><span>${c.claims} revendicări</span></li>`).join('')}</ul>` : ''}
-    </section>
-
+    </section>`,
+    'raport': () => `
     <section class="card wide" id="raport">
       <h2>Raport pentru sponsori</h2>
       ${(() => {
@@ -564,8 +840,8 @@ function render() {
           <span class="muted">Click-uri pe link: <strong style="color:#F2F5FA">${fmt(x.clicks)}</strong> · cod de reducere copiat: <strong style="color:#F2F5FA">${fmt(x.code_copies)}</strong> · coduri secrete: ${fmt(x.codes_shown)} afișate, <strong style="color:#F2F5FA">${fmt(x.code_claims)}</strong> revendicări · ore duble: ${fmt(x.double_hours)} (donat în ele: <strong style="color:#F2F5FA">${fmt(x.donated_in_hours)} €</strong>, vârf ${fmt(x.peak_in_hours)} viewers) · premii câștigate: ${fmt(x.wins)} · milestones: ${fmt(x.milestones_unlocked)} / ${fmt(x.milestones)}</span></span>
           <button class="btn-ghost" data-act="copyReport" data-i="${i}">Copiază</button></li>`).join('')}</ul>` : '<p class="muted">Încă nimic de raportat. Apare aici după ce pui sponsori pe premii, ore duble sau coduri.</p>'}`;
       })()}
-    </section>
-
+    </section>`,
+    'vot': () => `
     <section class="card wide" id="vot">
       <h2>Runda de vot</h2>
       ${S.round ? `
@@ -582,8 +858,8 @@ function render() {
           <label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="roundMin" value="60"></label>
           <button class="btn-primary" data-act="openRound">Deschide runda</button>
         </div>` : ''}
-    </section>
-
+    </section>`,
+    'provocari': () => `
     <section class="card" id="provocari">
       <h2>Provocări câștigătoare</h2>
       ${S.scheduled.length ? `<ul class="list">${S.scheduled.map((c) => `<li>
@@ -594,8 +870,8 @@ function render() {
         <button class="btn-primary" data-act="done" data-id="${c.id}">Făcută</button>
         <button class="btn-ghost" data-act="veto" data-id="${c.id}">Veto</button></span></li>`).join('')}</ul>`
         : '<p class="muted" style="margin-top:0">Nimic programat.</p>'}
-    </section>
-
+    </section>`,
+    'propuneri': () => `
     <section class="card" id="propuneri">
       <h2>Propuneri (${S.suggestions.length})</h2>
       ${S.suggestions.length ? `<ul class="list">${S.suggestions.map((s) => `<li class="acts-row">
@@ -603,34 +879,16 @@ function render() {
         <button class="btn-primary" data-act="approve" data-id="${s.id}">Aprobă</button>
         <button class="btn-ghost" data-act="reject" data-id="${s.id}">Respinge</button></li>`).join('')}</ul>`
         : '<p class="muted" style="margin-top:0">Nicio propunere nouă.</p>'}
-    </section>
-
+    </section>`,
+    'premii': () => `
     <section class="card" id="premii">
       <h2>Premii de dat (${S.prizes.length})</h2>
       ${S.prizes.length ? `<ul class="list">${S.prizes.map((p) => `<li>
         <span class="grow"><strong>${esc(p.user_login)}</strong> · ${esc(p.prizes?.win_label ?? '')}<br><span class="muted">${when(p.created_at)}</span></span>
         <button class="btn-primary" data-act="fulfil" data-id="${p.id}">Dat</button></li>`).join('')}</ul>`
         : '<p class="muted" style="margin-top:0">Toate premiile au fost date.</p>'}
-    </section>
-
-    <section class="card" id="comunitate">
-      <h2>Comunitate</h2>
-      <h3 style="margin:0 0 6px;font-size:15px">Acum pe stream</h3>
-      <p class="muted" style="margin-top:0">De pe Twitch: <strong style="color:#F2F5FA">${esc(S.now?.title ?? '—')}</strong>${S.now?.game ? ` · ${esc(S.now.game)}` : ''}. Se actualizează singur la 5 minute.</p>
-      ${S.now?.note ? `<p><span class="pill ok">Notă</span> ${esc(S.now.note)}</p>` : ''}
-      <div class="row">
-        <input class="field" id="nowNote" placeholder="ex: Pauză de masă, revin în 15 min" maxlength="140" aria-label="Notă scurtă pe site" style="flex:1 1 260px;min-width:0">
-        <input class="field" type="number" id="nowMin" value="30" min="1" max="1440" aria-label="Câte minute">
-        <button class="btn-primary" data-act="noteSet">Arată pe site</button>
-        ${S.now?.note ? '<button class="btn-ghost" data-act="noteClear">Scoate nota</button>' : ''}
-      </div>
-      <p class="muted">Nota înlocuiește titlul de pe Twitch, pe site, pentru câte minute alegi.</p>
-      <h3 style="margin:18px 0 6px;font-size:15px">Obiectiv comunitar (ore privite împreună: ${S.together ? Math.round(S.together.hours) : 0} h)</h3>
-      <textarea class="field" id="togetherList" rows="5" aria-label="Obiective comunitare, câte unul pe rând: ore | titlu" style="width:100%;padding:10px;font:inherit">${esc((S.together?.goals ?? []).map((g) => `${g.hours} | ${g.title}`).join('\n'))}</textarea>
-      <div class="row"><button class="btn-primary" data-act="togetherSave">Salvează obiectivele</button></div>
-      <p class="muted">Câte unul pe rând: <strong>ore | ce se deblochează</strong>, de exemplu «500 | Karaoke cu chatul». Gratuit pentru toți: se numără orele din chat cât e live.</p>
-    </section>
-
+    </section>`,
+    'nume': () => `
     <section class="card" id="nume">
       <h2>Nume afișate public</h2>
       <p class="muted" style="margin-top:0">Numele cu cuvinte urâte, linkuri, e-mailuri sau numere de telefon apar automat ca «Anonim» pe site și pe stream. Contribuțiile se numără la fel.</p>
@@ -645,8 +903,8 @@ function render() {
         </div>
       </div>
       <p class="muted">Ascunde un nume nepotrivit care a scăpat filtrului. Cine vrea să nu apară își poate ascunde singur numele pe site, sub clasament.</p>
-    </section>
-
+    </section>`,
+    'moderatori': () => `
     <section class="card" id="moderatori">
       <h2>Moderatori</h2>
       <ul class="list">${S.mods.map((m) => `<li><span class="grow">${esc(m.display_name ?? m.login)}</span>${m.login === S.me!.login ? '<span class="muted">tu</span>' : `<button class="btn-ghost" data-act="unmod" data-login="${esc(m.login)}">Scoate</button>`}</li>`).join('')}</ul>
@@ -657,8 +915,26 @@ function render() {
         </div>
       </div>
       <p class="muted">Merge și înainte ca persoana să se fi conectat pe site.</p>
-    </section>
-  </div>`;
+    </section>`,
+    milestones: milestonesHtml,
+    advent: adventHtml,
+    insigne: insigneHtml,
+    legende: legendeHtml,
+    parteneri: parteneriHtml,
+    overlay: overlayHtml,
+  };
+  const page = GROUPS.find((g) => g.id === S.page) ?? GROUPS[0];
+  const cards = page.items.flatMap(([id]) => (id === 'vot' ? ['vot', 'provocari'] : [id])).map((id) => sec[id]?.() ?? '').join('\n');
+  app.innerHTML = `
+  <datalist id="sponsorNames">${sponsorNames().map((n) => `<option value="${esc(n)}"></option>`).join('')}</datalist>
+  <div class="page-head">
+    <div><span class="tag-ice">${esc(page.name)}</span><h1>${esc(page.title)}</h1></div>
+    <p class="muted">${esc(page.lead)}</p>
+  </div>
+  ${page.id === 'live' ? `<div class="live-cols"><div class="grid">${cards}</div><aside class="aside">${todoHtml()}${feedHtml()}<section class="card" id="sanatate"><h2>Conexiuni</h2>${healthHtml(S.health)}<p class="muted">Se actualizează singur la un minut.</p></section></aside></div>`
+    : `<div class="grid">${cards}</div>`}`;
+  // Opened with #section in the address: scroll there once the page exists.
+  if (scrollTo) { const el = document.getElementById(scrollTo); scrollTo = ''; el?.scrollIntoView({ block: 'start' }); }
 }
 
 // ---- Actions ----
@@ -734,12 +1010,24 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   approve: (el) => call('mod_review_suggestion', { p_id: Number(el.dataset.id), p_approve: true }, 'Aprobată: e acum în lista de provocări.'),
   reject: (el) => call('mod_review_suggestion', { p_id: Number(el.dataset.id), p_approve: false }, 'Respinsă.'),
   fulfil: (el) => call('mod_fulfil_spin', { p_id: Number(el.dataset.id) }, 'Premiu marcat ca dat.'),
-  goalAdd: () => { editGoals().push({ title: '', threshold: '', sponsor: '' }); render(); },
+  goalAdd: () => { editGoals().push({ title: '', threshold: '', sponsor: '', done: false, clip: '', when: '' }); render(); },
+  goalDone: (el) => { const g = editGoals()[Number(el.dataset.i)]; g.done = !g.done; render(); },
+  adventPick: (el) => { S.adventSel = Number(el.dataset.day) || 1; render(); },
+  adventCancel: () => { S.adventDraft = null; render(); },
+  adventSave: async () => {
+    const list = adventRows().filter((d) => d.note || d.clip || d.sponsor)
+      .map((d) => ({ day: d.day, note: (d.note ?? '').trim(), clip: (d.clip ?? '').trim(), sponsor: (d.sponsor ?? '').trim() }));
+    if (list.some((d) => d.clip && !/^https:\/\//.test(d.clip) && !(demo && d.clip === '#'))) { say('Linkul clipului trebuie să înceapă cu https://', true); return; }
+    await call('mod_set_advent', { p_days: list }, 'Calendarul a fost salvat. Apare pe site în câteva secunde.');
+    S.adventDraft = null;
+  },
+  copyOv: (el) => { const v = val(`ov${el.dataset.i}`); void navigator.clipboard?.writeText(v).then(() => say('Link copiat. Pune-l în OBS ca Browser Source, 1920×1080.')); },
   goalDel: (el) => { editGoals().splice(Number(el.dataset.i), 1); render(); },
   goalCancel: () => { S.goalsDraft = null; render(); },
   goalSave: async () => {
     const list = goalRows().filter((g) => g.title.trim() || g.threshold !== '')
-      .map((g) => ({ title: g.title.trim(), threshold: Number(g.threshold), sponsor: g.sponsor.trim() }));
+      .map((g) => ({ title: g.title.trim(), threshold: Number(g.threshold), sponsor: g.sponsor.trim(), done: g.done, clip: g.clip.trim(), when: g.when.trim() }));
+    if (list.some((g) => g.clip && !/^https:\/\//.test(g.clip) && !(demo && g.clip === '#'))) { say('Linkul clipului trebuie să înceapă cu https://', true); return; }
     await call('mod_set_goals', { p_goals: list }, 'Lista de milestone-uri a fost salvată.');
     S.goalsDraft = null;
   },
@@ -808,6 +1096,17 @@ document.addEventListener('input', (e) => {
     if (row && !row.querySelector('[data-act="linesCancel"]')) row.insertAdjacentHTML('beforeend', '<button class="btn-ghost" data-act="linesCancel">Renunță</button><span class="muted">Modificări nesalvate</span>');
     return;
   }
+  if (el.dataset.adv !== undefined) {
+    const k = el.dataset.adv as 'note' | 'clip' | 'sponsor';
+    const day = S.adventSel || 1;
+    if (!S.adventDraft) S.adventDraft = S.advent.map((d) => ({ ...d }));
+    let row = S.adventDraft.find((d) => d.day === day);
+    if (!row) { row = { day, note: '', clip: null, sponsor: null }; S.adventDraft.push(row); }
+    (row as any)[k] = el.value;
+    return;
+  }
+  if (el.dataset.goalWhen !== undefined) { editGoals()[Number(el.dataset.goalWhen)].when = el.value; return; }
+  if (el.dataset.goalClip !== undefined) { editGoals()[Number(el.dataset.goalClip)].clip = el.value; return; }
   if (el.dataset.goalSponsor !== undefined) { editGoals()[Number(el.dataset.goalSponsor)].sponsor = el.value; return; }
   if (el.dataset.goalAmt !== undefined) editGoals()[Number(el.dataset.goalAmt)].threshold = el.value;
   else if (el.dataset.goalTitle !== undefined) editGoals()[Number(el.dataset.goalTitle)].title = el.value;
@@ -816,14 +1115,31 @@ document.addEventListener('input', (e) => {
   if (box && !box.querySelector('[data-act="goalCancel"]')) box.insertAdjacentHTML('beforeend', '<button class="btn-ghost" data-act="goalCancel">Renunță</button><span class="muted">Modificări nesalvate</span>');
 });
 
-// Live countdown on the page, plus realtime refresh.
+// Live countdown in the bar and the timer card, plus realtime refresh.
 setInterval(() => {
-  const el = app.querySelector<HTMLElement>('[data-left]');
   const t = S.timer;
-  if (!el || t?.status !== 'live' || !t.ends_at) return;
+  if (t?.status !== 'live' || !t.ends_at) return;
   const now = Date.now();
-  el.textContent = dockClock.textContent = left(Date.parse(t.ends_at) - (t.paused_until && Date.parse(t.paused_until) > now ? Date.parse(t.paused_until) : now));
+  const ms = Date.parse(t.ends_at) - (t.paused_until && Date.parse(t.paused_until) > now ? Date.parse(t.paused_until) : now);
+  document.querySelectorAll<HTMLElement>('[data-left]').forEach((el) => { el.textContent = left(ms); });
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const v = [pad(Math.floor(s / 86400)), pad(Math.floor((s % 86400) / 3600)), pad(Math.floor((s % 3600) / 60)), pad(s % 60)];
+  app.querySelectorAll<HTMLElement>('[data-unit]').forEach((el, i) => { if (el.textContent !== v[i]) el.textContent = v[i]; });
 }, 1000);
+
+// Pages: the hash names a section (#bingo); its group's page opens and scrolls to it.
+let scrollTo = decodeURIComponent(location.hash.slice(1));
+function route(scroll: boolean) {
+  const id = decodeURIComponent(location.hash.slice(1));
+  const g = id ? groupOf(id) : null;
+  if (g && g.id !== S.page) { S.page = g.id; deferred = false; if (S.me) render(); }
+  else if (S.me?.is_moderator) nav.innerHTML = navHtml();
+  if (scroll && id) requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: 'start' }));
+}
+window.addEventListener('hashchange', () => route(true));
+// The phone menu sticks right under the status bar, whatever its height.
+new ResizeObserver(() => document.documentElement.style.setProperty('--bar-h', `${bar.offsetHeight}px`)).observe(bar);
+route(false);
 
 let pending: number | undefined;
 const refresh = () => { clearTimeout(pending); pending = window.setTimeout(() => void load(), demoApi ? 50 : 400); };
