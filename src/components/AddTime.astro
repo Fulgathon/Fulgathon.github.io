@@ -1,0 +1,36 @@
+---
+// «Cum adaugi timp»: the rates and the «Cât adaugi tu?» calculator. Was in the hero;
+// moved below the partners so the first screen is only the marathon and its sponsors.
+import { v, iff } from '../lib/ssr';
+import { views } from '../lib/views';
+import { site } from '../data/site';
+import { rateChips } from '../data/content';
+const cond = "'Barlow Condensed', sans-serif";
+const hasDonate = !!site.links.donate && site.links.donate !== '#';
+---
+<section id="adauga" class="addtime" aria-labelledby="h-adauga">
+  <div class="wrap at-grid">
+    <div class="at-rates">
+      <h2 id="h-adauga" class="at-title">Cum adaugi timp</h2>
+      <p class="at-lead">Fiecare sub și fiecare donație adaugă timp pe cronometru.</p>
+      <ul class="rates" role="list">
+        {rateChips.map(([a, b]) => <li class="rate"><strong style="color: #F2F5FA">{a}</strong> = {b}</li>)}
+      </ul>
+    </div>
+    <div class="st-calc">
+      <div class="calc-card">
+        <p style={`margin: 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: clamp(24px, 2cqi, 26px); line-height: 1; text-transform: uppercase`} id="calc-title">Cât adaugi tu?</p>
+        <p data-text="calcSub" style="margin: 4px 0 0; font-size: 13px; color: #8C97A8">{v.calcSub}</p>
+        <div class="calc-grid" role="radiogroup" aria-labelledby="calc-title" data-region="calcOpts" set:html={views.calcOpts(v)} />
+        <div class="calc-row" aria-live="polite">
+          <p class="calc-add" data-text="calcAdd">{v.calcAdd}</p>
+          <p {...iff('calcAtOn')} style="margin: 4px 0 0; font-size: 13px; color: #AEB8C7">Timerul ar sări la <strong data-text="calcAt" style={`color: #F2F5FA; font-family: ${cond}; font-size: 16px`}>{v.calcAt}</strong></p>
+        </div>
+        <p style={`margin: 4px 0 0; font-family: ${cond}; font-weight: 800; font-style: italic; font-size: 18px; color: #F2F5FA`}>≈ <span data-text="calcFun">{v.calcFun}</span></p>
+        <p {...iff('hasCalcNote')} data-text="calcNote" style="margin: 10px 0 0; padding: 8px 10px; border-left: 2px solid var(--ice); background: rgba(63, 208, 255, 0.06); font-size: 13px; line-height: 1.4; color: #C9D2DF">{v.calcNote}</p>
+        <p {...iff('calcDouble')} style="margin: 4px 0 0; font-size: 13px; font-weight: 700; color: var(--ice)">Ora dublă: acum valorează ×2.</p>
+        {hasDonate && <a class="btn-primary" href={site.links.donate} style={`margin-top: 12px; min-height: 46px; display: flex; align-items: center; justify-content: center; text-decoration: none; font-family: ${cond}; font-weight: 800; font-size: 20px; text-transform: uppercase`}>Donează</a>}
+      </div>
+    </div>
+  </div>
+</section>

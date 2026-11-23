@@ -1,0 +1,20 @@
+---
+// «Împreună cu»: the partners' logos on the first screen, next to «Prezentat de».
+// Smaller than the main partner, all four slots (empty ones show a calm LOGO box).
+interface Slot { name: string; role: string; url: string; logo: string }
+const { partners } = Astro.props as { partners: Slot[] };
+---
+<div class="title-partners">
+  <span class="tp-l">Împreună cu</span>
+  <ul class="tp-list">
+    {partners.map((p) => (
+      <li>
+        <a class="tp" href={p.url} data-track={`${p.name}|click`} title={`${p.name} · ${p.role}`}>
+          {p.logo
+            ? <img src={p.logo} alt={p.name} height="40" />
+            : <span class="tp-empty"><span class="sr-only">{p.name}</span><span aria-hidden="true">LOGO</span></span>}
+        </a>
+      </li>
+    ))}
+  </ul>
+</div>

@@ -38,14 +38,11 @@
 .hero h1 { margin: 8px 0 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: min(6.2cqi, 92px); line-height: 0.85; text-transform: uppercase; white-space: nowrap; }
 /* Desktop (DESIGN.md §4): mascot left, the line + timer card right, so the digits and «Prezentat de»
    are on the first screen; the feed sits under the mascot, buttons and calculator under the card. */
-.stage { position: relative; margin: 14px auto 0; display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); grid-template-areas: "mascot line" "mascot timer" "ev cta" "ev rates" "ev calc"; gap: 0 36px; align-items: start; text-align: left; }
-.st-ev { grid-area: ev; margin-top: 14px; }
+.stage { position: relative; margin: 14px auto 0; display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); grid-template-areas: "mascot line" "mascot timer" "mascot cta"; gap: 0 36px; align-items: start; text-align: left; }
 .st-mascot { grid-area: mascot; position: relative; margin-top: -10px; }
-.st-calc { grid-area: calc; margin-top: 28px; }
 .st-line { grid-area: line; text-align: left; }
 .st-timer { grid-area: timer; justify-self: center; width: 100%; max-width: 1040px; }
 .st-cta { grid-area: cta; }
-.st-rates { grid-area: rates; }
 .mascot { position: relative; display: block; width: 100%; max-width: 460px; height: auto; margin: 0 auto; filter: drop-shadow(0 20px 60px rgba(63, 208, 255, 0.25)); }
 .bubble { --acc: var(--ice); position: absolute; z-index: 3; top: 4%; right: -6%; width: 252px; padding: 11px 14px 12px 17px; background: rgba(8, 13, 20, 0.86); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border: 1px solid color-mix(in srgb, var(--acc) 45%, #1C2230); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55), 0 0 28px color-mix(in srgb, var(--acc) 16%, transparent); color: #F2F5FA; text-align: left; transform-origin: 12% 100%; transition: border-color var(--m-base) var(--m-ease), box-shadow var(--m-base) var(--m-ease), translate var(--m-base) var(--m-ease); }
 .bubble::before { content: ''; position: absolute; left: -1px; top: -1px; bottom: -1px; width: 3px; background: var(--acc); }
@@ -94,7 +91,7 @@
 .unit-num { display: block; transform: translate(-0.028em, -0.044em); }
 .unit-label { margin-top: 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: clamp(12px, 1.1cqi, 16px); letter-spacing: 0.12em; color: #8C97A8; text-align: center; }
 .pop-tag { position: absolute; z-index: 2; right: 6px; top: -34px; padding: 0 10px; background: var(--ice); color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 30px; opacity: 0; pointer-events: none; }
-.score { margin-top: 22px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.score { margin-top: 22px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .score > div { padding: 4px 20px; border-left: 2px solid #2A3445; }
 .score > div:first-child { border-left-color: var(--ice); }
 .score .lbl { margin: 0; font-size: 14px; color: #8C97A8; }
@@ -158,6 +155,76 @@
 /* Narrower: the side line (or button) goes under the title, on the title's left edge, like the intro. */
 @container page (max-width: 1100px) { .shead { grid-template-columns: minmax(0, 1fr); } .shead > :not(.sh-main) { justify-self: start; margin-left: calc(var(--sh-n) * 0.536); } .shead > .side { max-width: 560px; } }
 .intro { margin: 14px 0 0; color: #AEB8C7; }
+
+/* ---- Sponsors up front (owner, 23 Nov: first impression = the marathon and its sponsors) ---- */
+/* «Prezentat de» under the title: calm, no motion, the partner's name in plain white. */
+.sponsor-line { position: relative; z-index: 7; margin: 12px auto 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 28px; }
+.title-sponsor { min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 14px; color: #FFFFFF; text-decoration: none; }
+.title-sponsor .ts-l { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: clamp(13px, 1.1cqi, 15px); letter-spacing: 0.3em; text-transform: uppercase; color: #AEB8C7; }
+.title-sponsor .ts-name { font-weight: 700; font-size: clamp(24px, 2.4cqi, 34px); line-height: 1; letter-spacing: 0.06em; }
+.title-sponsor .ts-logo { max-height: 40px; max-width: 220px; object-fit: contain; }
+.title-sponsor:hover .ts-name, .title-sponsor:focus-visible .ts-name { color: var(--ice); }
+/* «Împreună cu»: the partners next to the main partner, smaller and calm. */
+.title-partners { display: flex; align-items: center; gap: 16px; padding-left: 28px; border-left: 1px solid #2A3445; }
+.tp-l { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 0.24em; text-transform: uppercase; color: #8C97A8; white-space: nowrap; }
+.tp-list { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; gap: 18px; }
+.tp { min-height: 44px; display: inline-flex; align-items: center; text-decoration: none; opacity: 0.86; transition: opacity var(--m-fast) var(--m-ease); }
+.tp:hover, .tp:focus-visible { opacity: 1; }
+.tp img { display: block; height: 40px; width: auto; max-width: 150px; object-fit: contain; }
+.tp-empty { width: 72px; height: 30px; display: grid; place-items: center; border: 1px dashed #2A3445; font-size: 11px; color: #7D8899; }
+/* The main partner's offer, attached under the timer card. */
+.sponsor-bar { position: relative; z-index: 7; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 20px; padding: 14px 26px; background: #090C11; border: 1px solid #1C2230; border-top: 0; box-shadow: inset 3px 0 0 var(--ice); }
+.sb-t { margin: 0; font-size: 15px; color: #C9D2DF; }
+.sb-t span { font-weight: 700; color: #FFFFFF; }
+.sb-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.sb-code { min-height: 48px; display: inline-flex; align-items: center; gap: 10px; padding: 0 14px; background: transparent; border: 2px dashed var(--ice); color: #F2F5FA; cursor: pointer; }
+.sb-code:hover, .sb-code:focus-visible { background: rgba(63, 208, 255, 0.08); }
+.sb-code-l { font-size: 13px; color: #AEB8C7; }
+.sb-code-v { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 22px; letter-spacing: 0.04em; }
+.sb-copy { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px; text-transform: uppercase; color: var(--ice); }
+.sb-offer { min-height: 48px; display: inline-flex; align-items: center; padding: 0 20px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 18px; text-transform: uppercase; text-decoration: none; }
+/* Partner wall: every slot, one calm grid. */
+.pwall { position: relative; padding: clamp(28px, 3cqi, 44px) 0 clamp(20px, 2cqi, 28px); border-top: 1px solid #1C2230; }
+.pw-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 24px; }
+.pw-title { margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: clamp(26px, 2.4cqi, 34px); line-height: 1; text-transform: uppercase; }
+.pw-side { margin: 0; color: #AEB8C7; }
+.pw-grid { margin-top: 16px; display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(4, minmax(0, 1fr)); gap: 10px; }
+.pw-main { min-height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 14px; background: #090C11; border: 1px solid #23415E; box-shadow: inset 0 3px 0 var(--ice); color: #FFFFFF; text-decoration: none; }
+.pw-tier { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ice); }
+.pw-main-name { font-weight: 700; font-size: clamp(26px, 2.6cqi, 38px); line-height: 1; letter-spacing: 0.06em; }
+.pw-tile { display: flex; flex-direction: column; justify-content: space-between; gap: 8px; padding: 12px; background: #090C11; border: 1px solid #1C2230; color: #F2F5FA; text-decoration: none; }
+.pw-logo { height: 56px; display: grid; place-items: center; }
+.pw-empty { border: 1px dashed #2A3445; font-size: 12px; color: #7D8899; }
+.pw-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 8px; font-size: 14px; }
+.pw-meta span { color: #8C97A8; }
+.pw-sub { margin: 16px 0 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 0.12em; text-transform: uppercase; color: #AEB8C7; }
+.pw-join { margin: 14px 0 0; font-size: 15px; color: #8C97A8; }
+.pw-demo { margin: 10px 0 0; font-size: 13px; color: #8C97A8; }
+.pw-join a { font-weight: 600; }
+/* «Cum adaugi timp»: rates left, calculator right. */
+.addtime { position: relative; padding: clamp(20px, 2.4cqi, 36px) 0; border-top: 1px solid #1C2230; }
+.at-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 16px 36px; align-items: start; }
+.at-title { margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: clamp(26px, 2.4cqi, 34px); line-height: 1; text-transform: uppercase; }
+.at-lead { margin: 8px 0 0; color: #AEB8C7; }
+.addtime .rates { list-style: none; margin: 14px 0 0; padding: 0; flex-wrap: wrap; overflow: visible; }
+@container page (max-width: 1000px) {
+  .pw-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pw-main { grid-column: 1 / -1; min-height: 96px; }
+  .at-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@container page (max-width: 760px) {
+  .sponsor-line { margin-top: 6px; flex-direction: column; gap: 2px; }
+  .title-sponsor { gap: 10px; }
+  .title-partners { flex-direction: column; gap: 2px; padding-left: 0; border-left: 0; }
+  .tp-list { gap: 12px; }
+  .tp img { height: 28px; max-width: 80px; }
+  .tp-empty { width: 56px; height: 24px; }
+  .sponsor-bar { padding: 12px 16px; }
+  .sb-actions, .sb-code { width: 100%; }
+  .sb-code { justify-content: center; }
+  .sb-offer { flex: 1 1 100%; justify-content: center; }
+  .addtime .rates { flex-wrap: wrap; gap: 6px; }
+}
 
 /* ---- Partners ---- */
 .main-partner { margin-top: 24px; display: grid; grid-template-columns: 5fr 7fr; }
@@ -318,8 +385,7 @@ a.ad-past:hover { border-color: var(--ice); }
 }
 @container page (max-width: 1000px) {
   .hero h1 { font-size: min(10.4cqi, 150px); }
-  .stage { grid-template-columns: minmax(0, 1fr); grid-template-areas: "mascot" "line" "timer" "rates" "calc" "cta"; margin-top: -14px; align-items: end; }
-  .st-rates { justify-self: center; width: 100%; max-width: 1040px; }
+  .stage { grid-template-columns: minmax(0, 1fr); grid-template-areas: "mascot" "line" "timer" "cta"; margin-top: -14px; align-items: end; }
   .st-mascot { margin-top: 0; }
   .st-line { text-align: center; }
   .display { margin: 8px auto 0; justify-content: center; }
@@ -328,8 +394,6 @@ a.ad-past:hover { border-color: var(--ice); }
   .sub-line { margin: 12px auto 0; font-size: clamp(13px, 1.2cqi, 17px); letter-spacing: 0.32em; }
   .timer-card { padding: clamp(16px, 2.2cqi, 28px) clamp(16px, 2.4cqi, 32px); }
   .unit-box { font-size: clamp(48px, 7.6cqi, 110px); }
-  .st-ev { display: none; }
-  .st-calc { margin: 12px auto 0; width: 100%; max-width: 1040px; }
   .chip-ev { display: flex; }
   .mascot { width: min(74%, 420px); margin: 0 auto; }
   .bubble { top: 6%; right: -8px; width: 210px; max-width: 46%; }
@@ -386,10 +450,6 @@ a.ad-past:hover { border-color: var(--ice); }
   .score { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
   .score > div { padding: 2px 10px; }
   .score .lbl { font-size: 12px; }
-  .score .sc-sponsor { grid-column: 1 / -1; order: 3; display: flex; align-items: center; gap: 8px; border-left: 0; padding: 0; }
-  .score .sc-sponsor .lbl { font-size: 13px; color: #AEB8C7; }
-  .score .sc-sponsor .logo-box { width: 40px; height: 28px; font-size: 9px; }
-  .score .sc-sponsor .sp-name { font-size: 15px !important; }
   .rates { flex-wrap: nowrap; overflow-x: auto; gap: 8px; margin-top: 14px; padding-top: 0; border-top: 0; scrollbar-width: none; }
   .rates .rates-title { display: none; }
   .rate { flex: none; font-size: 13px; padding: 3px 8px; }
@@ -567,7 +627,7 @@ a.ad-past:hover { border-color: var(--ice); }
 
 @media (prefers-reduced-motion: reduce) {
   .tip, .ms-name, .bdg:hover .tip, .bdg.open .tip, .ms:hover .ms-name, [data-style^="width:"], .fill, .vo-bar > span,
-  .calc, .vo-btn, .bgrid .bl, .bt2, .btn-more, .clip, a.ad-past, .ms, [role="tab"], .bdg .hex, .clip .clip-cta, .nr-tile { transition: none !important; }
+  .calc, .vo-btn, .bgrid .bl, .bt2, .btn-more, .clip, a.ad-past, .ms, [role="tab"], .bdg .hex, .clip .clip-cta, .nr-tile, .tp { transition: none !important; }
   .tip-panel.on, .prize-wrap.on, .toast:not([hidden]), #mobile-menu:not([hidden]), #mobile-menu:not([hidden]) > *, .rows.show-all .more-row, .advent.show-all .ad.far { animation: none !important; }
   .clip:hover .clip-cta, .bdg:hover .hex, .bdg.open .hex { transform: none; }
   .btn-primary:active, .btn-ghost:active, .btn-twitch:active, .btn-red:active, .calc:active, .vo-btn:active, .bgrid .bl:active, .btn-more:active { transform: none; }

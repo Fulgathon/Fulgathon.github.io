@@ -72,11 +72,12 @@ const steps: Step[] = [
   },
   {
     title: () => `${B()}, în prim-plan`, view: 'site', scroll: 'top',
-    body: () => `<p>Partenerul principal stă <strong>sub cronometru</strong>, locul la care se uită toată lumea: «Prezentat de ${esc(B())}».</p>
-<p>Imediat după cronometru vine secțiunea de parteneri: oferta voastră, <strong>codul de reducere</strong> (cu buton de copiere) și linkul. E primul link din meniul site-ului.</p>`,
+    body: () => `<p>Partenerul principal stă <strong>chiar sub numele maratonului</strong>: «ICEMARATON · prezentat de ${esc(B())}», primul lucru pe care îl vede oricine intră pe site.</p>
+<p>Lipită de cronometru, locul la care se uită toată lumea, e <strong>oferta voastră</strong>: codul de reducere (cu buton de copiere) și linkul. Imediat după vin toți partenerii, primul link din meniul site-ului.</p>`,
     actions: [
-      { label: 'Sub cronometru', primary: true, run: () => scrollSite('prezentat') },
-      { label: 'Secțiunea de parteneri', run: () => scrollSite('parteneri') },
+      { label: 'Sub titlu', primary: true, run: () => scrollSite('top') },
+      { label: 'Oferta, sub cronometru', run: () => scrollSite('oferta') },
+      { label: 'Toți partenerii', run: () => scrollSite('parteneri') },
     ],
   },
   {

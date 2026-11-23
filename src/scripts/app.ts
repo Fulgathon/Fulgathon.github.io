@@ -43,6 +43,14 @@ const BINGO_KEY = 'icemaraton:bingo-pick';
 let data: SiteData = emptyData();
 // state.demo shows the demo panel (not inside the presentation page).
 let state: State = { ...initialState(), demo: demo && !embed && !showcase, now: Date.now() };
+// Demo mode: fill the partner row and wall with the invented brands (src/data/demoSponsors.ts),
+// so the page shows how it looks with every slot taken. The public page keeps the real list.
+if (demo) {
+  document.querySelectorAll<HTMLElement>('[data-demo]').forEach((slot) => {
+    const tpl = document.getElementById(slot.dataset.demo!) as HTMLTemplateElement | null;
+    if (tpl) slot.replaceChildren(tpl.content.cloneNode(true));
+  });
+}
 let live: Live | null = null;
 let demoApi: DemoBackend | null = null;
 

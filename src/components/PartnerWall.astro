@@ -1,0 +1,37 @@
+---
+// The partner grid and the supporters row (all slots). Partners.astro renders it twice:
+// the real list from site.ts, and inside a <template> the invented demo brands, which
+// app.ts swaps in only in demo mode.
+import { site } from '../data/site';
+interface Slot { name: string; role: string; url: string; logo: string }
+interface Props { partners: Slot[]; supporters: Omit<Slot, 'role'>[]; demo?: boolean }
+const { partners, supporters, demo = false } = Astro.props;
+const cond = "'Barlow Condensed', sans-serif";
+const hasOffer = !!site.sponsor.offerUrl && site.sponsor.offerUrl !== '#';
+---
+    <div class="pw-grid">
+      <a class="pw-main ptile" href={hasOffer ? site.sponsor.offerUrl : '#oferta'} data-track={hasOffer ? `${site.sponsor.name}|click` : undefined}>
+        <span class="pw-tier">Partener principal</span>
+        {site.sponsor.logo
+          ? <img src={site.sponsor.logo} alt={site.sponsor.name} loading="lazy" style="max-width: 70%; max-height: 72px; object-fit: contain" />
+          : <span class="pw-main-name" data-sponsor="logo">{site.sponsor.logoText}</span>}
+      </a>
+      {partners.map((pt) => (
+        <a class="pw-tile ptile" href={pt.url} data-track={`${pt.name}|click`}>
+          {pt.logo
+            ? <span class="pw-logo"><img src={pt.logo} alt={pt.name} loading="lazy" decoding="async" style="max-width: 80%; max-height: 44px; object-fit: contain" /></span>
+            : <span class="pw-logo pw-empty">LOGO</span>}
+          <span class="pw-meta"><strong>{pt.name}</strong><span>{pt.role}</span></span>
+        </a>
+      ))}
+    </div>
+
+    <p class="pw-sub">Susținători</p>
+    <div class="stiles">
+      {supporters.map((su) => (
+        su.logo
+          ? <a class="ptile" href={su.url} data-track={su.name ? `${su.name}|click` : undefined} style="height: 56px; display: grid; place-items: center; background: #090C11; border: 1px solid #1C2230"><img src={su.logo} alt={su.name} loading="lazy" decoding="async" style="max-width: 80%; max-height: 36px; object-fit: contain" /></a>
+          : <a class="ptile" href={su.url} style={`height: 56px; display: grid; place-items: center; background: #090C11; border: 1px solid #1C2230; font-family: ${cond}; font-weight: 800; font-size: 12px; letter-spacing: 0.1em; color: #7D8899; text-decoration: none`}>{su.name || 'LOGO'}</a>
+      ))}
+    </div>
+{demo && <p class="pw-demo">Demo: branduri inventate, ca să vezi cum arată peretele plin. Pe site apar partenerii reali.</p>}
