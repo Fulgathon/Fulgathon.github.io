@@ -4,7 +4,6 @@
    and every animation with its reduced-motion fallback. */
 
 .cond { font-family: 'Barlow Condensed', sans-serif; }
-.ital { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; }
 .wrap { max-width: 1280px; margin: 0 auto; padding: 0 clamp(16px, 4cqi, 40px); }
 .sec { position: relative; padding-bottom: clamp(36px, 5cqi, 72px); scroll-margin-top: 120px; }
 .panel { background: #0B1018; border: 1px solid #1C2230; }
@@ -505,7 +504,6 @@ a.ad-past:hover { border-color: var(--ice); }
 @keyframes cutIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes cutDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
 @keyframes toastIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .tip { transform: translate(-50%, 6px); transition: opacity var(--m-fast) var(--m-ease), transform var(--m-fast) var(--m-ease), visibility 0s linear var(--m-fast); }
 .bdg:hover .tip, .bdg:focus-visible .tip, .bdg.open .tip, .bdg-tag:hover .tip, .bdg-tag:focus-visible .tip, .bdg-tag:focus .tip {

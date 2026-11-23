@@ -204,7 +204,6 @@ function recentWins(v: Vals): string {
 
 // ---- Comunitatea ----------------------------------------------------------
 
-const CORNERS = ['c-tl', 'c-tr', 'c-bl', 'c-br'].map((c) => `<span aria-hidden="true" class="corner ${c}"></span>`).join('');
 const badge = (label: string) =>
   `<span style="display: inline-block; padding: 1px 8px; border: 1px solid #2A3445; font-family: ${COND}; font-weight: 800; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: #C9D2DF; white-space: nowrap">${esc(label)}</span>`;
 
@@ -235,7 +234,6 @@ function mine(v: Vals): string {
 
 // ---- Layout v2 --------------------------------------------------------------
 
-const ITAL = `font-family: ${COND}; font-weight: 900; font-style: italic`;
 
 /** «INTRĂ ACUM»: the newest 4 events, the newest one sliding in. */
 function heroRecent(v: Vals): string {
