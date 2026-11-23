@@ -20,6 +20,7 @@ import { emptyData } from '../data/sample';
 import { site } from '../data/site';
 import type { SiteData } from '../data/types';
 import { derive, initialState, type State } from '../lib/derive';
+import { count, duration, fmtInt } from '../lib/format';
 import { views, type RegionName } from '../lib/views';
 import type { DemoBackend } from '../demo/backend';
 import type { Live, Me } from './live';
@@ -162,18 +163,54 @@ function fail(err: unknown) {
 // ---- Live data ----------------------------------------------------------
 const reachedGoals = (d: SiteData) => d.goals.filter((g) => d.raisedNum >= g.threshold).length;
 
+// ---- Moments: "your sub added 6 minutes", "new legend". -------------------
+const MINE_KEY = 'icemaraton:last-mine';
+/** Thank the viewer once for their latest contribution, if it's fresh (15 min). */
+function thankFor(e: Me['lastEvent']) {
+  if (!e) return;
+  let seen = 0;
+  try { seen = Number(localStorage.getItem(MINE_KEY)) || 0; } catch { /* storage blocked */ }
+  if (e.id <= seen) return;
+  try { localStorage.setItem(MINE_KEY, String(e.id)); } catch { /* storage blocked */ }
+  if (Date.now() - e.at > 15 * 60_000 || e.seconds <= 0 || state.toast) return;
+  const t = duration(e.seconds);
+  const text = e.kind === 'gift' ? (e.quantity === 1 ? `Subul dăruit de tine a adăugat ${t} la cronometru.` : `Cele ${count(e.quantity, 'sub', 'subs')} dăruite de tine au adăugat ${t} la cronometru.`)
+    : e.kind === 'donation' ? `Donația ta de ${fmtInt(e.quantity)} € a adăugat ${t} la cronometru.`
+    : e.kind === 'bits' ? `Cei ${count(e.quantity, 'bit', 'biți')} ai tăi au adăugat ${t} la cronometru.`
+    : `Subul tău a adăugat ${t} la cronometru.`;
+  info('Mulțumim!', text);
+}
+
+/** Someone takes #1 or enters the top 5 of a legend board: celebrate it (not on the first load). */
+const legendLabels = { donations: 'donații', gifts: 'subs dăruite', bits: 'biți' } as const;
+let prevLegends: Record<string, string[]> | null = null;
+function checkLegends(d: SiteData) {
+  const now = Object.fromEntries((Object.keys(legendLabels) as (keyof typeof legendLabels)[]).map((k) => [k, d.boards[k].slice(0, 5).map((r) => r[0])]));
+  const before = prevLegends;
+  prevLegends = now;
+  if (!before || state.toast) return;
+  for (const k of Object.keys(legendLabels) as (keyof typeof legendLabels)[]) {
+    const [top] = now[k];
+    if (top && before[k].length && top !== before[k][0]) { info('Legendă nouă', `${top} urcă pe locul 1 la ${legendLabels[k]}!`); return; }
+    const fresh = now[k].find((n) => !before[k].includes(n));
+    if (fresh && before[k].length) { info('Legendă nouă', `${fresh} intră în top 5 la ${legendLabels[k]}.`); return; }
+  }
+}
+
 function applyMe(me: Me | null) {
   if (!me) {
-    set({ viewer: 'out', viewerName: '', isPublic: true, spins: 0, watchedToday: 0, spunToday: false, bonusSpins: 0, myVote: null, result: null, suggestDone: false, bingoSaved: null });
+    set({ viewer: 'out', viewerName: '', isPublic: true, mine: null, loyalty: null, spins: 0, watchedToday: 0, spunToday: false, bonusSpins: 0, myVote: null, result: null, suggestDone: false, bingoSaved: null });
     return;
   }
   set({
     ...withSaved(me.bingoSaved),
     viewer: me.isSub ? 'sub' : 'nonsub', viewerName: me.name, myVote: me.myVote, isPublic: me.isPublic,
+    mine: me.mine, loyalty: me.loyalty,
     // Don't let a refresh jump the counter while the wheel is still turning.
     ...(state.spinning ? {} : { spins: me.spins, spunToday: me.spunToday }),
     watchedToday: me.watchedToday, bonusSpins: me.bonusSpins,
   });
+  thankFor(me.lastEvent);
 }
 
 async function startLive() {
@@ -186,6 +223,7 @@ async function startLive() {
       // Like the design: show the latest goal on arrival, and again whenever one unlocks.
       if (live && ((first && reachedGoals(data) > 0) || (!first && reachedGoals(data) > before))) set({ toast: 'goal' });
       else render();
+      if (patch.boards) checkLegends(data);
     },
     onMe: applyMe,
     // Only trust a clear difference: small ones are network noise.
@@ -204,11 +242,13 @@ function demoSync(first = false) {
   const patch: Partial<State> = {
     ...(state.bingoSaved?.join() === me.bingoSaved?.join() ? {} : withSaved(me.bingoSaved)),
     viewer: me.state, viewerName: me.name, myVote: me.myVote,
+    mine: me.state === 'out' ? null : me.mine, loyalty: me.state === 'out' ? null : me.loyalty,
     watchedToday: me.watchedToday, bonusSpins: me.bonusSpins,
     ...(state.spinning ? {} : { spins: me.spins, spunToday: me.spunToday }),
   };
   const unlocked = data.status === 'live' && (first ? reachedGoals(data) > 0 : reachedGoals(data) > before);
   set(unlocked ? { ...patch, toast: 'goal' } : patch);
+  checkLegends(data);
 }
 async function startDemo() {
   const { DemoBackend } = await import('../demo/backend');

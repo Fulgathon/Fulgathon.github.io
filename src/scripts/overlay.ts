@@ -82,6 +82,24 @@ function checkWin(first: boolean) {
   lastWin = id + '#';
 }
 
+// A new #1 (or a new name in the top 5) on a legend board gets its own big alert.
+const legendLabels = { donations: 'donații', gifts: 'subs dăruite', bits: 'biți' } as const;
+let prevLegends: Record<string, string[]> | null = null;
+function checkLegends() {
+  const now = Object.fromEntries((Object.keys(legendLabels) as (keyof typeof legendLabels)[]).map((k) => [k, data.boards[k].slice(0, 5).map((r) => r[0])]));
+  const before = prevLegends;
+  prevLegends = now;
+  if (!before) return;
+  for (const k of Object.keys(legendLabels) as (keyof typeof legendLabels)[]) {
+    const [top] = now[k];
+    if (top && before[k].length && top !== before[k][0]) popEvent('LEGENDĂ NOUĂ', top, `urcă pe locul 1 la ${legendLabels[k]}`, 10_000, undefined, true);
+    else {
+      const fresh = now[k].find((n) => !before[k].includes(n));
+      if (fresh && before[k].length) popEvent('LEGENDĂ NOUĂ', fresh, `intră în top 5 la ${legendLabels[k]}`, 8_000, undefined, true);
+    }
+  }
+}
+
 // A calm partner mention every few minutes (10 s), when nothing else is showing.
 // (?demo&brand=… shows another brand, for the sponsor presentation; ?promoNow shows it at once.)
 const promoName = (params.has('demo') && params.get('brand')) || site.sponsor.name;
@@ -148,6 +166,7 @@ if (params.has('demo')) {
       showCode(cc ? { code: cc.code, sponsor: cc.sponsor, expires_at: new Date(cc.expiresAt).toISOString() } : null);
       // Every event newer than the mark, straight from the demo state (not just the 12 in the ticker).
       queueEvents(api.state.events.filter((e) => lastId === null || e.id > lastId).reverse().map(tickerItem), lastId === null);
+      checkLegends();
       draw();
     };
     api.subscribe(sync);
@@ -170,6 +189,7 @@ if (params.has('demo')) {
           else void live.feedSince(lastId).then((items) => queueEvents(items, false));
         }
         checkWin(first);
+        if (patch.boards) checkLegends();
         draw();
       },
       onMe() {},
