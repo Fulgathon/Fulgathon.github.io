@@ -99,6 +99,37 @@ Secrets go in the dashboards, never in this repo or in chat.
    - Site URL: `https://icemaraton.icemaraton.workers.dev`
    - Redirect URLs: add `https://icemaraton.icemaraton.workers.dev/**` and `http://localhost:4321/**`
 
+## How the page gets its data (since 24 Nov 2026)
+
+- **One call:** `public_state(versions)`. The public data is split into parts
+  (timer, stats, feed, boards, goals, vote, prizes, wins, bingo). Each part is
+  computed once when its tables change (statement triggers →
+  `private.refresh_parts`) and cached with a version in `private.state_parts`.
+  The page sends the versions it has and gets back only what changed.
+- **Polling:** every 8 seconds while the tab is visible (the OBS overlay every
+  3 s), never in hidden tabs. When it fails it backs off up to 2 minutes with
+  jitter, and it checks again at once on return or reconnect. A cron job
+  (`icemaraton-state`) re-checks the time-based parts every minute.
+- **Per viewer:** `my_state(round)` returns everything about the logged-in
+  viewer in one call.
+- **Overlay:** `feed_since(id)` returns every event after the last one shown,
+  so bursts are queued in full.
+- **Leaderboards** come from `private.supporter_totals`, kept by a trigger on
+  `events`, not from sums over the whole table.
+- **Names:** everything public goes through `public_name(login, name)`:
+  - viewer opt-out (`set_public_name`, button under the leaderboard);
+  - moderator hide or allow (`mod_name_rule`, /mod → Nume);
+  - a word, link and phone filter (`private.blocked_words`, mode `any`, `prefix`
+    or `exact`). To add a word:
+    `insert into private.blocked_words (word, mode) values ('cuvant', 'exact');`
+- **Sponsor tracking:** `track_sponsor` counts once per visitor (a salted daily
+  hash of the IP), sponsor, kind and day, and only known sponsors
+  (`private.known_sponsors` plus any sponsor named in the data).
+- **Health:** `mod_health()` feeds the "Sănătate" card on /mod.
+
+**After deploying the new site, run `supabase/after-deploy/lockdown_public_reads.sql`.**
+It removes direct public reads of `events` and `watch_time`.
+
 ## Edge Functions (deployed)
 
 Source in `supabase/functions/`, shared Twitch helpers in `_shared/twitch.ts`.
