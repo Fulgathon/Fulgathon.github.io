@@ -8,13 +8,13 @@ after `?`, so `/o?pos=bl` opens `/overlay/?pos=bl`):
 
 | Short | Long | For |
 | --- | --- | --- |
-| — | https://icemaraton.icemaraton.workers.dev/ | Viewers |
-| https://icemaraton.icemaraton.workers.dev/m | …/mod/ | Moderators (Twitch login, moderator accounts only) |
-| https://icemaraton.icemaraton.workers.dev/o | …/overlay/ | OBS Browser Source, 1920×1080: a slim strip top-right. Options: `?pos=tl/tr/bl/br`, `?scale=0.8`, `?show=timer,goal,events`, `?style=box` (large box), `?demo` (sample data for placing it) |
-| https://icemaraton.icemaraton.workers.dev/demo | …/?demo=showcase | **Showcase for sponsors:** the real page on day 9 of a busy marathon, fresh on every visit, filling itself with subs, donations, votes and wheel wins; labelled «Demo · date de exemplu». `/m?demo=showcase` and `/o?demo=showcase` show the same subathon |
-| https://icemaraton.icemaraton.workers.dev/d | …/?demo | Preview of the site with sample data |
-| https://icemaraton.icemaraton.workers.dev/s | …/sponsori/ | Presentation for brands: type the brand name at the top and every placement (site, overlay, report) shows it; packages at the end. Audience numbers and prices: `src/data/pitch.ts` |
-| https://icemaraton.icemaraton.workers.dev/p | …/prezentare/ | Guided demo of everything, for presenting (simulated data, never touches the database) |
+| — | https://icemanlucky.ro/ | Viewers (also www.icemanlucky.ro; the old https://icemaraton.icemaraton.workers.dev still works) |
+| https://icemanlucky.ro/m | …/mod/ | Moderators (Twitch login, moderator accounts only) |
+| https://icemanlucky.ro/o | …/overlay/ | OBS Browser Source, 1920×1080: a slim strip top-right. Options: `?pos=tl/tr/bl/br`, `?scale=0.8`, `?show=timer,goal,events`, `?style=box` (large box), `?demo` (sample data for placing it) |
+| https://icemanlucky.ro/demo | …/?demo=showcase | **Showcase for sponsors:** the real page on day 9 of a busy marathon, fresh on every visit, filling itself with subs, donations, votes and wheel wins; labelled «Demo · date de exemplu». `/m?demo=showcase` and `/o?demo=showcase` show the same subathon |
+| https://icemanlucky.ro/d | …/?demo | Preview of the site with sample data |
+| https://icemanlucky.ro/s | …/sponsori/ | Presentation for brands: type the brand name at the top and every placement (site, overlay, report) shows it; packages at the end. Audience numbers and prices: `src/data/pitch.ts` |
+| https://icemanlucky.ro/p | …/prezentare/ | Guided demo of everything, for presenting (simulated data, never touches the database) |
 | …/m?demo · …/o?demo | …/mod/?demo · …/overlay/?demo | The demo per page; `/d`, `/m?demo`, `/o?demo` and `/p` share one simulated subathon across tabs |
 
 After launch, delete the demo pages: `src/pages/d.astro`, `src/pages/p.astro`
@@ -36,12 +36,12 @@ Secrets go only into the dashboards below, never into chat or the repo.
 2. **Supabase → Authentication → Sign In / Providers → Twitch**: enable, paste
    Client ID + Client Secret, save.
 3. **Supabase → Authentication → URL Configuration**: Site URL
-   `https://icemaraton.icemaraton.workers.dev`; Redirect URLs `https://icemaraton.icemaraton.workers.dev/**`
+   `https://icemanlucky.ro`; Redirect URLs `https://icemanlucky.ro/**`, `https://www.icemanlucky.ro/**` and, while it's still used, `https://icemaraton.icemaraton.workers.dev/**`
    and `http://localhost:4321/**`.
 4. **Supabase → Edge Functions → Secrets**: add `TWITCH_CLIENT_ID` and
    `TWITCH_CLIENT_SECRET` (same values).
 5. **Switch login on**: done (22 Nov 2026, `twitchLogin: true` in `src/data/site.ts`).
-6. **Iceman** opens https://icemaraton.icemaraton.workers.dev/m, logs in with Twitch
+6. **Iceman** opens https://icemanlucky.ro/m, logs in with Twitch
    (he's a moderator automatically), clicks **Conectează contul de streamer**
    and approves. The page should say "Gata!" with eight events "activ".
    **He must do this once more after 24 Nov 2026.** The daily check-in needs
@@ -79,7 +79,7 @@ Dashboard: https://supabase.com/dashboard/project/yvbxtsuddjqqoogdoqrx
   activity. Upgrade the IceMaraton organization (Pro) for the event.
 - On `/mod`: set the **start date** (countdown on the site) and the
   **scheduled end**; add the other **moderators** by Twitch login.
-- **OBS**: add a Browser Source, 1920×1080, with the link from `/mod` → Cod secret («Copiază linkul pentru OBS»: the overlay plus the private key, so secret codes show on stream). Keep that link private. Without codes: `https://icemaraton.icemaraton.workers.dev/o`.
+- **OBS**: add a Browser Source, 1920×1080, with the link from `/mod` → Cod secret («Copiază linkul pentru OBS»: the overlay plus the private key, so secret codes show on stream). Keep that link private. Without codes: `https://icemanlucky.ro/o`. A link copied before the domain switch (workers.dev) keeps working; copy it again from /mod on icemanlucky.ro when convenient.
 - Open with Iceman, then tell Claude: time rates (now Tier 1/Prime +1 min,
   Tier 2 +2, Tier 3 +5, gift +1 each, 400 bits +1, 5 € +1), goals, prizes,
   sponsor details, Discord and social links.

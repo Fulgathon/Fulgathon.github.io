@@ -1,7 +1,7 @@
 # ICEMARATON: Icemanlucky's Christmas subathon
 
 Website for Icemanlucky's Christmas subathon on Twitch (Romanian audience).
-Static site built with [Astro](https://astro.build), hosted on Cloudflare Workers (static assets) at https://icemaraton.icemaraton.workers.dev.
+Static site built with [Astro](https://astro.build), hosted on Cloudflare Workers (static assets) at **https://icemanlucky.ro** (also www.icemanlucky.ro; the original https://icemaraton.icemaraton.workers.dev still works).
 
 - Brief: `CLAUDE.md`. Design: `design/` (source) and `docs/design-spec.md` (summary).
 - Challenges for the subscriber vote: `docs/provocari.md` and `data/challenges.json`.
@@ -44,7 +44,7 @@ the browser and shared between tabs. Nothing touches the real database.
 npm run deploy
 ```
 
-Builds with `SITE_URL=https://icemaraton.icemaraton.workers.dev` and uploads `dist/` with wrangler
+Builds with `SITE_URL=https://icemanlucky.ro` and uploads `dist/` with wrangler
 (`wrangler.jsonc`: static assets only, 404 page, no Worker code). The first
 time on a computer, run `npx wrangler login` (opens Cloudflare in the browser).
 GitHub only keeps the code; pushing does not deploy. For a custom domain, add it

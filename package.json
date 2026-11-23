@@ -12,7 +12,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "deploy": "SITE_URL=https://icemaraton.icemaraton.workers.dev astro build && wrangler deploy"
+    "deploy": "SITE_URL=https://icemanlucky.ro astro build && wrangler deploy"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.119.0",

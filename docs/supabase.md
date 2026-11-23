@@ -79,7 +79,7 @@ select public.record_event('twitch','sub','t1','1','test','test','3000'); -- a T
 select public.record_event('twitch','gift','t2','2','test2','test2','1000', 10);
 ```
 
-Open https://icemaraton.icemaraton.workers.dev/ and it updates within a second. Reset afterwards:
+Open https://icemanlucky.ro/ and it updates within a second. Reset afterwards:
 delete from `spins`, `vote_rounds`, `events`; zero `stats`; set `timer` back to
 `upcoming` with null times; clear `goals.unlocked_at`.
 
@@ -96,8 +96,8 @@ Secrets go in the dashboards, never in this repo or in chat.
 2. **Supabase → Authentication → Sign In / Providers → Twitch**: turn it on,
    paste the Client ID and Client Secret, save.
 3. **Supabase → Authentication → URL Configuration**:
-   - Site URL: `https://icemaraton.icemaraton.workers.dev`
-   - Redirect URLs: add `https://icemaraton.icemaraton.workers.dev/**` and `http://localhost:4321/**`
+   - Site URL: `https://icemanlucky.ro` (custom domain since 23 Nov 2026)
+   - Redirect URLs: add `https://icemanlucky.ro/**`, `https://www.icemanlucky.ro/**`, `https://icemaraton.icemaraton.workers.dev/**` (still works) and `http://localhost:4321/**`
 
 ## How the page gets its data (since 24 Nov 2026)
 
