@@ -1,6 +1,6 @@
--- Fixes from the 23 Nov 2026 test pass (docs/BUGS.md). NOT applied yet: apply
--- only with the owner's OK. Every function keeps its signature, so existing
--- grants stay as they are.
+-- Fixes from the 23 Nov 2026 test pass (docs/BUGS.md). Applied to the live
+-- project on 23 Nov 2026 with the owner's OK (as migration «bug_fixes»). Every
+-- function keeps its signature, so existing grants stay as they are.
 --
 --   B-01  Clip links: challenges.clip_url must be https (goals and Advent days
 --         already are), so a javascript: link can't reach viewers' pages.

@@ -24,22 +24,22 @@ Severity: **Critical** = money, data loss, auth bypass or the site down for ever
 
 | # | Sev. | Bug | Status |
 | --- | --- | --- | --- |
-| B-01 | High | A `javascript:` clip link typed on /mod runs code for every viewer who clicks «Vezi clipul» | **Fixed** in the site (`86ee9c3`, `ff51962`); DB check in migration `20261126100000` (not applied) |
-| B-02 | High | One secret code can give several bonus spins (parallel or double-clicked claims) | **Fixed** in the site (`ff51962`); DB fix in migration (not applied) |
+| B-01 | High | A `javascript:` clip link typed on /mod runs code for every viewer who clicks «Vezi clipul» | **Fixed** in the site (`86ee9c3`, `ff51962`); DB check in migration `20261126100000` (applied 23 Nov) |
+| B-02 | High | One secret code can give several bonus spins (parallel or double-clicked claims) | **Fixed** in the site (`ff51962`); DB fix in migration (applied 23 Nov) |
 | B-03 | High | /mod: a double click on «+10 min» (or any action) does it twice | **Fixed** `5b2df7e` |
 | B-04 | High | /mod: a sub arriving while a moderator types resets other fields: «Îngheață 120 min» becomes 5 | **Fixed** `5b2df7e` |
 | B-05 | High | Page says «ÎNCEPE CURÂND» to anyone who loads it while the backend is slow or down, mid-marathon | **Fixed** `ff51962` |
 | B-06 | Medium | Viewer double submits: a triple click sends 3 suggestions, 3 code claims, 3 bingo saves | **Fixed** `ff51962` |
-| B-07 | Medium | During Ora dublă a moderator's «+10 min» adds 20 | Migration (not applied) |
+| B-07 | Medium | During Ora dublă a moderator's «+10 min» adds 20 | **Fixed**: migration `20261126100000` (applied 23 Nov) |
 | B-08 | Medium | At zero the clock shows LIVE 00:00:00 for up to a minute, and an event in that gap revives it | Owner decision |
 | B-09 | Medium | A TipeeeStream donation in another currency is counted as euros | Open |
 | B-10 | Medium | No security headers (CSP, frame-ancestors, nosniff, referrer policy) | Open |
 | B-11 | Medium | After data has loaded, a lost connection isn't shown; the clock may be minutes behind reality | Open |
-| B-12 | Medium | Parallel requests get past the «3 suggestions per 10 minutes» limit | Migration (not applied) |
-| B-13 | Medium | `mod_freeze` / `mod_freeze_until` with an empty value erase the end time (clock dead) | Migration (not applied) |
+| B-12 | Medium | Parallel requests get past the «3 suggestions per 10 minutes» limit | **Fixed**: migration `20261126100000` (applied 23 Nov) |
+| B-13 | Medium | `mod_freeze` / `mod_freeze_until` with an empty value erase the end time (clock dead) | **Fixed**: migration `20261126100000` (applied 23 Nov) |
 | B-14 | Medium | /mod relies on Realtime only: after laptop sleep or a dropped socket it shows old numbers | Fixed: reloads when the channel (re)joins, the tab comes back or the network returns |
 | B-15 | Medium | `check-sub`: no throttle (can exhaust Iceman's Twitch API quota) and no message when it fails | Open |
-| B-16 | Medium | `community_goals`: anon/authenticated hold every table privilege (RLS blocks writes, TRUNCATE isn't reachable from the API) | Migration (not applied) |
+| B-16 | Medium | `community_goals`: anon/authenticated hold every table privilege (RLS blocks writes, TRUNCATE isn't reachable from the API) | **Fixed**: migration `20261126100000` (applied 23 Nov) |
 | B-17 | Medium | Deleting all milestones or prizes on /mod leaves the placeholder list on the site | Open |
 | B-18 | Medium | Resubs add time only if the viewer shares the resub message in chat (Twitch limitation) | Owner decision |
 | B-19 | Low | Logged-in users can read the whole `spins` table, including logins whose names are hidden | Open |

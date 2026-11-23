@@ -263,7 +263,7 @@ Phone, under the timer card: the rate chips, the calculator with the pre-start n
 - **Contact email:** step 10 of the deck and the «Scrie-ne» links appear as soon as it's in `site.contactEmail`.
 - **S2 and S3:** audience numbers with a source, and package details and prices (`src/data/pitch.ts`).
 - **Needs your OK:**
-  - the migration `20261126100000_bug_fixes.sql` (not applied);
+  - ~~the migration `20261126100000_bug_fixes.sql`~~ applied on 23 Nov 2026;
   - M1 (sponsors on /mod) and S1 option B (an inbox on /mod), which both need migrations;
   - deploying (`npm run deploy`) and pushing.
 
