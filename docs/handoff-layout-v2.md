@@ -186,16 +186,16 @@ Ideas built on data the site already has (pitch a set, let the owner pick):
 
 ## Build status (23 Nov 2026, branch `claude/layout-v2-7bf252`)
 
-Done on the branch (not deployed, nothing pushed, migration not applied):
+Done on the branch (not deployed, nothing pushed). **The migration was applied to Supabase on 23 Nov 2026 with the owner's OK.**
 - **Public page v2** (`src/components/*`, `src/styles/v2.css`, `src/lib/derive.ts`, `src/lib/views.ts`, `src/scripts/app.ts`): every section of the mockup at 390 / 768 / 1280 / 1440, demo backend and live data path both working. Lighthouse on the production build: mobile 94, desktop 100, accessibility 100, best practices 100 (same as before). Every animation is covered by a reduced-motion rule (checked in the page).
 - **Iceman's bubble**: `src/lib/lines.ts` (groups, placeholders, no-repeat bag, «Mersi, {nume}!» fallback). The demo ships no lines, so it shows the fallback until someone types lines on `/mod/?demo`.
 - **«Replicile lui Iceman» editor** on the current /mod (it moves into the new /mod when that's built).
 - **Lines in Twitch chat** (owner, 23 Nov: from Iceman's own account, not a bot). The database picks the line when it records the event (`events.bubble_line`, no repeats per group), so the hero bubble and chat say the same thing. `chat_line_claim()` (service role only) decides and builds the text: switch on, at most one message every 5 s, once per event, no hidden names, nothing older than 2 minutes. `chatLine()` in `supabase/functions/_shared/twitch.ts` posts it with `POST /helix/chat/messages` from `twitch-eventsub` and `tipeee-donations`. Needs the `user:write:chat` scope (added to `SCOPES`: Iceman reconnects once) and the two functions redeployed. The /mod switch is off by default. Tested in PGlite (line picking, the claim rules, the message text); not tested against Twitch.
-- **Migration** `supabase/migrations/20261125100000_layout_v2.sql`: `iceman_lines` + `mod_set_lines`, milestone `done_at` / `clip_url` / `scheduled_for` (and `mod_set_goals` accepting `done`, `clip`, `when`), `advent_days` + `mod_set_advent`, and the `lines` / `advent` / `badges` parts of `public_state`. Until it's applied the live site simply has no lines, clips, Advent notes or badge counts (all optional).
+- **Migration** `supabase/migrations/20261125100000_layout_v2.sql`: `iceman_lines` + `mod_set_lines`, milestone `done_at` / `clip_url` / `scheduled_for` (and `mod_set_goals` accepting `done`, `clip`, `when`), `advent_days` + `mod_set_advent`, and the `lines` / `advent` / `badges` parts of `public_state`. Applied 23 Nov 2026 (checked: all 16 parts served, anon can't read the new tables or call `chat_line_claim`, the line picker and the claim tested inside a rolled-back block). `src/lib/database.types.ts` regenerated.
 - **Canvas boards for review**: `ModLive`, `ModContent`, `ModPhone`, `Overlay` (also in `design/layout-v2/`).
 
 Waiting on the owner:
-- OK to apply the migration (then regenerate `src/lib/database.types.ts`).
+- Redeploy the `twitch-auth`, `twitch-eventsub` and `tipeee-donations` Edge Functions (chat lines and the new scope), then Iceman reconnects once on /mod.
 - Comments on the /mod and overlay boards, then build them.
 - Before the chat switch goes on: does StreamElements / Nightbot already thank people in chat? (The account question is answered: Iceman's own.)
 - The small-donation threshold (10 € for now) and the prizes.
