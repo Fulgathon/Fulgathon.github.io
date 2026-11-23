@@ -1,0 +1,3 @@
+# Not part of the site: never upload these (wrangler reads this file from the assets folder).
+.DS_Store
+**/.DS_Store
