@@ -64,8 +64,10 @@ in Cloudflare (Workers → icemaraton → Domains) and change `SITE_URL` in
 | `src/lib/derive.ts` | Port of the design's `renderVals()`: state + data → what the page shows. |
 | `src/lib/views.ts` | HTML for the lists that re-render (ticker, vote, goals, leaderboard, bingo). |
 | `src/scripts/app.ts` | Browser state, timers and click handlers; updates the page via `data-*` bindings. |
-| `src/components/` | One Astro component per section, ported from `design/Main.dc.html`. |
+| `src/components/` | One Astro component per section, ported from `design/layout-v2/Main.dc.html` and `Phone.dc.html`. |
 | `src/styles/global.css` | Global styles from the design's `<helmet>`. |
+| `src/styles/v2.css` | Layout v2: responsive layout (container queries), shared pieces, animations and their reduced-motion fallbacks. |
+| `src/lib/lines.ts` | Iceman's bubble: which group of lines an event uses, placeholders, no-repeat picking. |
 | `supabase/migrations/` | Database schema, functions and seed data for phase 2 (see `docs/supabase.md`). |
 | `supabase/functions/` | Edge Functions: Twitch EventSub, streamer connect, sub check, watch time. |
 | `src/pages/mod.astro`, `src/scripts/mod.ts` | Moderator page. |

@@ -183,3 +183,22 @@ Ideas built on data the site already has (pitch a set, let the owner pick):
 - **Prizes:** the bingo prize and the real wheel prizes. «Căști de gaming de la Zona IT» in the mockup is an example.
 - **Badge tiers:** confirmed as listed above. The owner may want more badges for the upper tiers (for example «30 de zile la rând», «5 nopți»).
 - Everything still open in CLAUDE.md: sponsors, logos, discount code, Discord, socials, domain.
+
+## Build status (23 Nov 2026, branch `claude/layout-v2-7bf252`)
+
+Done on the branch (not deployed, nothing pushed, migration not applied):
+- **Public page v2** (`src/components/*`, `src/styles/v2.css`, `src/lib/derive.ts`, `src/lib/views.ts`, `src/scripts/app.ts`): every section of the mockup at 390 / 768 / 1280 / 1440, demo backend and live data path both working. Lighthouse on the production build: mobile 94, desktop 100, accessibility 100, best practices 100 (same as before). Every animation is covered by a reduced-motion rule (checked in the page).
+- **Iceman's bubble**: `src/lib/lines.ts` (groups, placeholders, no-repeat bag, «Mersi, {nume}!» fallback). The demo ships no lines, so it shows the fallback until someone types lines on `/mod/?demo`.
+- **«Replicile lui Iceman» editor** on the current /mod (it moves into the new /mod when that's built). The Twitch-chat switch is drawn but locked off.
+- **Migration** `supabase/migrations/20261125100000_layout_v2.sql`: `iceman_lines` + `mod_set_lines`, milestone `done_at` / `clip_url` / `scheduled_for` (and `mod_set_goals` accepting `done`, `clip`, `when`), `advent_days` + `mod_set_advent`, and the `lines` / `advent` / `badges` parts of `public_state`. Until it's applied the live site simply has no lines, clips, Advent notes or badge counts (all optional).
+- **Canvas boards for review**: `ModLive`, `ModContent`, `ModPhone`, `Overlay` (also in `design/layout-v2/`).
+
+Waiting on the owner:
+- OK to apply the migration (then regenerate `src/lib/database.types.ts`).
+- Comments on the /mod and overlay boards, then build them.
+- The open questions above (chat account / bot, small-donation threshold, prizes).
+
+Not built yet, on purpose:
+- Editors for milestone done/clip/when and the Advent days: drawn on `ModContent`, built with the new /mod. Until then the RPCs exist but no /mod screen calls them.
+- A 12-slice wheel: the wheel now draws any number of slices, but the database holds 8 (`mod_set_prizes` needs 8). Going to 12 categories needs a prize-table change and the owner's real prize list.
+- The "last change by" line and "Momente pe stream" on `ModLive` are proposals (they need a small mod-action log and an overlay command queue).
