@@ -1,0 +1,7 @@
+---
+// The sponsor showcase: /demo opens the real page on the demo backend, mid-marathon
+// and busy (?demo=showcase, see enrich() in src/demo/backend.ts). Nothing here
+// touches the real database. Delete with the other demos after the event if wanted.
+import ShortLink from '../components/ShortLink.astro';
+---
+<ShortLink to="?demo=showcase" title="Demo" />

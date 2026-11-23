@@ -118,8 +118,13 @@ function next21(now: number) {
   return d.getTime();
 }
 
-/** The design's sample subathon, mid-way through, as a starting point. */
-function seed(now: number): DemoState {
+/** The design's sample subathon, mid-way through, as a starting point. `rich`: the sponsor showcase (/demo). */
+function seed(now: number, rich = false): DemoState {
+  const base = seedBase(now);
+  return rich ? enrich(base, now) : base;
+}
+
+function seedBase(now: number): DemoState {
   const challenges: DemoChallenge[] = (challengesJson as { challenges: any[] }).challenges.map((c) => ({
     id: c.id, title: c.title, how: c.how, level: c.level, category: c.category, votable: c.votable,
     status: 'pool', scheduledFor: null, clip: null,
@@ -212,6 +217,66 @@ function seed(now: number): DemoState {
   };
 }
 
+/**
+ * The sponsor showcase (/demo, ?demo=showcase): the same subathon, further in
+ * (day 9) and busier, so every section looks the way it will once thousands of
+ * viewers take part. Sample data only; nothing in Iceman's voice (his lines stay
+ * empty, so the bubble shows the neutral «Mersi, {nume}!»).
+ */
+function enrich(s: DemoState, now: number): DemoState {
+  const t = s.timer;
+  t.startsAt = now - 8 * DAY - 3 * HOUR;
+  t.endsAt = now + 13 * DAY + 6 * HOUR + 41 * MIN;
+  t.scheduledEnd = now + 13 * DAY;
+  s.stats = { subs: 2_946, bits: 186_400, raised: 2_640 };
+  // 8 milestones unlocked: the first six done on stream (with clips), two planned.
+  s.goals = s.goals.map((g, i) => ({ ...g, doneAt: i < 6 ? now - (7 - i) * DAY : null, clip: i < 6 ? '#' : null,
+    when: i === 6 ? 'diseară, 22:00' : i === 7 ? 'mâine seară' : null }));
+  s.advent = [
+    { day: 1, note: 'Startul', clip: '#', sponsor: null }, { day: 2, note: 'Ora dublă', clip: '#', sponsor: 'Zona IT' },
+    { day: 3, note: 'Provocarea votată', clip: '#', sponsor: null }, { day: 4, note: 'Segment partener', clip: '#', sponsor: 'Zona IT' },
+    { day: 5, note: 'Ajunul · colinde live', clip: '#', sponsor: null }, { day: 6, note: 'Crăciun cu chatul', clip: '#', sponsor: null },
+    { day: 7, note: 'Turneu cu comunitatea', clip: '#', sponsor: 'Zona IT' }, { day: 8, note: 'Karaoke cu colinde', clip: '#', sponsor: null },
+    { day: 9, note: 'Ora dublă diseară', clip: null, sponsor: 'Zona IT' }, { day: 12, note: 'Revelion live', clip: null, sponsor: null },
+  ];
+  // The last half hour of the feed: a mix of everything that adds time.
+  const mix: [number, string, string, string | null, number, string | null][] = [
+    [1, 'donation', 'andreiGG', null, 25, 'EUR'], [2, 'gift', 'vladutz97', '1000', 10, null], [3, 'sub', 'kxtrin', '1000', 1, null],
+    [4, 'bits', 'teo_mid', null, 1000, null], [6, 'sub', 'Rares1337', '3000', 1, null], [7, 'resub', 'mihai_tzr', '1000', 1, null],
+    [9, 'donation', 'dianaplays', null, 10, 'EUR'], [11, 'gift', 'cristi_lol', '1000', 5, null], [13, 'sub', 'alexx_ro', 'prime', 1, null],
+    [15, 'bits', 'xBogdy', null, 500, null], [18, 'donation', 'sebi_jgl', null, 5, 'EUR'], [20, 'sub', 'darius_ro', '2000', 1, null],
+    [23, 'gift', 'radu_nexus', '1000', 20, null], [26, 'resub', 'teodora_x', '1000', 1, null],
+  ];
+  s.events = mix.map(([mins, kind, user, tier, quantity, currency], k) => {
+    const key = kind === 'sub' || kind === 'resub' ? (tier === '2000' ? 'tier2' : tier === '3000' ? 'tier3' : 'tier1') : kind;
+    const [secs, per] = RATES[key as keyof typeof RATES];
+    return { id: 100 + mix.length - k, kind, tier, quantity, currency, seconds_added: Math.floor((quantity / per) * secs),
+      doubled: false, user_login: user, user_name: user, at: now - mins * MIN };
+  });
+  s.seq = 2000;
+  s.boardBase = {
+    donations: { andreiGG: 480, dianaplays: 355, cristi_lol: 260, xBogdy: 175, kxtrin: 120 },
+    gifts: { vladutz97: 214, Rares1337: 168, andreiGG: 120, cristi_lol: 96, kxtrin: 74 },
+    bits: { teo_mid: 98_100, dianaplays: 61_200, Rares1337: 42_000, mihai_tzr: 25_400, xBogdy: 19_800 },
+    hours: { teo_mid: 168, dianaplays: 159, kxtrin: 151, cristi_lol: 146, Rares1337: 139 },
+  };
+  // A vote round that stays open for the whole presentation, with the viewer's vote in it.
+  const round = s.rounds[0];
+  round.number = 9;
+  round.closesAt = now + 3 * HOUR;
+  round.items.forEach((x) => { x.votes *= 3; });
+  round.items[1].votes += 1;
+  s.myVotes = { [round.id]: round.items[1].challengeId };
+  // The visitor is a subscriber who watched long enough today: the wheel can spin.
+  s.viewer = { state: 'sub', name: 'stefan_ro', day: today(), watched: 150, spunDay: null, bonus: 1 };
+  // Their bingo line (row 4) has two events ticked already.
+  s.bingo.pick = [16, 17, 18, 19, 20];
+  s.bingo.others = s.bingo.others.concat(Array.from({ length: 1_460 }, (_, k) => ({
+    user: `viewer_${400 + k}`, items: pick(bingoLines(s.bingo.items.map((it) => it.id))),
+  })));
+  return s;
+}
+
 export class DemoError extends Error {}
 const fail = (code: string): never => { throw new DemoError(code); };
 
@@ -223,10 +288,13 @@ export class DemoBackend {
 
   private readonly KEY: string;
   private readonly CHANNEL: string;
+  /** The sponsor showcase (/demo): busier seed, see enrich(). */
+  readonly rich: boolean;
 
   /** `variant` picks a separate copy (e.g. 'pitch'); by default it follows ?demo=… in the address. */
   constructor(variant: string = VARIANT) {
     this.KEY = keyFor(variant);
+    this.rich = variant === 'showcase';
     this.CHANNEL = channelFor(variant);
     try {
       this.channel = new BroadcastChannel(this.CHANNEL);
@@ -250,7 +318,7 @@ export class DemoBackend {
     }
     // No saved demo (or storage blocked): start from the seed, keep it in memory.
     if (!this.cached) {
-      this.cached = seed(Date.now());
+      this.cached = seed(Date.now(), this.rich);
       this.save(this.cached);
     }
     return this.cached;
@@ -279,7 +347,7 @@ export class DemoBackend {
   subscribe(fn: () => void) { this.listeners.add(fn); return () => this.listeners.delete(fn); }
 
   /** Back to the starting point (subathon mid-way, design sample data). */
-  reset() { this.mutate((s) => { Object.assign(s, seed(Date.now())); }); }
+  reset() { this.mutate((s) => { Object.assign(s, seed(Date.now(), this.rich)); }); }
 
   // ---- Twitch events (what EventSub does on the real site) -------------------
 
@@ -751,7 +819,8 @@ export class DemoBackend {
         { title: 'Chatul alege jocul pentru o oră', hours: 250 }, { title: 'Karaoke cu chatul', hours: 750 },
         { title: 'Stream IRL în oraș', hours: 1500 }, { title: 'Turneu cu comunitatea', hours: 3000 },
       ] },
-      now: { title: 'Ranked cu chatul până la Diamond', game: 'League of Legends', viewers: 512, note: s.note && s.note.until > now ? s.note.text : null },
+      now: { ...(this.rich ? { title: 'Weekend League cu chatul', game: 'EA Sports FC 27', viewers: 534 } : { title: 'Ranked cu chatul până la Diamond', game: 'League of Legends', viewers: 512 }),
+        note: s.note && s.note.until > now ? s.note.text : null },
     };
   }
 
@@ -794,6 +863,8 @@ export class DemoBackend {
       lines: s.lines ?? {},
       smallDonation: s.smallDonation ?? 10,
       advent: s.advent ?? [],
+      // The showcase runs on today's clock but labels the calendar with the real dates (20 Dec, 12:00 RO).
+      calendarStart: this.rich ? Date.parse('2026-12-20T10:00:00Z') : null,
       // Sample counts (the real ones come from the badges part).
       badgeCounts: { og: 1240, h10: 2150, night: 386, streak7: 509, h50: 214, h100: 37 },
       bingo: {

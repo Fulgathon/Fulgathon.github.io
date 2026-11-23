@@ -451,7 +451,7 @@ export function derive(s: State, d: SiteData) {
   const todayN = roDay(s.now) - roDay(startAt) + 1;
   const advent = Array.from({ length: ADVENT_DAYS }, (_, k) => {
     const n = k + 1;
-    const at = startAt + k * 86_400_000;
+    const at = (d.calendarStart ?? startAt) + k * 86_400_000;
     const parts = roParts.format(new Date(at)).split('-').map(Number);
     const set = d.advent.find((a) => a.day === n);
     const md = `${pad(parts[1])}-${pad(parts[2])}`;

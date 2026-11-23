@@ -34,11 +34,13 @@ const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const params = new URLSearchParams(location.search);
 const demo = params.has('demo');
 const embed = params.has('embed');
+// /demo: the sponsor showcase (?demo=showcase). Fresh and busy on every visit, no demo panel.
+const showcase = params.get('demo') === 'showcase';
 const BINGO_KEY = 'icemaraton:bingo-pick';
 
 let data: SiteData = emptyData();
 // state.demo shows the demo panel (not inside the presentation page).
-let state: State = { ...initialState(), demo: demo && !embed, now: Date.now() };
+let state: State = { ...initialState(), demo: demo && !embed && !showcase, now: Date.now() };
 let live: Live | null = null;
 let demoApi: DemoBackend | null = null;
 
@@ -315,13 +317,28 @@ function demoSync(first = false) {
 async function startDemo() {
   const { DemoBackend } = await import('../demo/backend');
   demoApi = new DemoBackend();
+  if (showcase && window.top === window) demoApi.reset();   // always the clean day-9 picture
   demoApi.subscribe(() => demoSync());
   demoSync(true);
+  if (showcase) startShowcase();
   // Background jobs (close rounds, end at zero) run in the top window only.
   if (window.top === window) setInterval(() => demoApi?.tick(), 1000);
   setInterval(() => demoSync(), 30_000);   // "acum 3 min" labels
 }
 if (demo) void startDemo();
+
+/** The showcase keeps itself busy: new subs and donations, votes coming in, a wheel win now and then. */
+function startShowcase() {
+  const tag = document.createElement('p');
+  tag.className = 'showcase-tag';
+  tag.textContent = 'Demo · date de exemplu';
+  document.body.append(tag);
+  if (window.top !== window) return;
+  const quiet = (fn: () => void) => () => { try { fn(); } catch { /* round closed etc. */ } };
+  setInterval(quiet(() => demoApi?.randomEvent()), 5_500);
+  setInterval(quiet(() => demoApi?.simulateVotes(3)), 9_000);
+  setInterval(quiet(() => demoApi?.fakeWin()), 47_000);
+}
 
 /** Demo stand-in for the Twitch login screen. */
 function openLoginModal() {

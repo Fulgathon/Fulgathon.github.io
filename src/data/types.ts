@@ -87,6 +87,8 @@ export interface SiteData {
   smallDonation: number;
   /** Advent calendar notes and clips set on /mod (missing days use the defaults). */
   advent: AdventDay[];
+  /** Demo showcase only: the date the Advent calendar labels start from (the real clock still decides «today»). */
+  calendarStart?: number | null;
   /** How many people hold each badge (for the tooltips); null = not known yet. */
   badgeCounts: Record<string, number> | null;
 }

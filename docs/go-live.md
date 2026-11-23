@@ -11,6 +11,7 @@ after `?`, so `/o?pos=bl` opens `/overlay/?pos=bl`):
 | — | https://icemaraton.icemaraton.workers.dev/ | Viewers |
 | https://icemaraton.icemaraton.workers.dev/m | …/mod/ | Moderators (Twitch login, moderator accounts only) |
 | https://icemaraton.icemaraton.workers.dev/o | …/overlay/ | OBS Browser Source, 1920×1080: a slim strip top-right. Options: `?pos=tl/tr/bl/br`, `?scale=0.8`, `?show=timer,goal,events`, `?style=box` (large box), `?demo` (sample data for placing it) |
+| https://icemaraton.icemaraton.workers.dev/demo | …/?demo=showcase | **Showcase for sponsors:** the real page on day 9 of a busy marathon, fresh on every visit, filling itself with subs, donations, votes and wheel wins; labelled «Demo · date de exemplu». `/m?demo=showcase` and `/o?demo=showcase` show the same subathon |
 | https://icemaraton.icemaraton.workers.dev/d | …/?demo | Preview of the site with sample data |
 | https://icemaraton.icemaraton.workers.dev/s | …/sponsori/ | Presentation for brands: type the brand name at the top and every placement (site, overlay, report) shows it; packages at the end. Audience numbers and prices: `src/data/pitch.ts` |
 | https://icemaraton.icemaraton.workers.dev/p | …/prezentare/ | Guided demo of everything, for presenting (simulated data, never touches the database) |

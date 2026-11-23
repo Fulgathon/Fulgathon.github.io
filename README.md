@@ -29,7 +29,7 @@ Other pages: `/mod/` (moderators: run the timer, vote rounds, suggestions,
 prizes), `/overlay/` (OBS Browser Source) and `/prezentare/` (guided demo of
 everything, for presenting). Going live: `docs/go-live.md`.
 
-**Short addresses:** `/m` → `/mod/`, `/o` → `/overlay/`, `/d` → `/?demo`,
+**Short addresses:** `/m` → `/mod/`, `/o` → `/overlay/`, `/demo` → `/?demo=showcase` (sponsor showcase), `/d` → `/?demo`,
 `/p` → `/prezentare/` (`src/components/ShortLink.astro`; the query string is
 kept, so `/o?pos=bl` and `/m?demo` work). `/d` and `/p` go with the demos
 after launch.
