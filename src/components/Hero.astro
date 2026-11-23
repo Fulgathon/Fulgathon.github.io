@@ -1,107 +1,122 @@
 ---
-// Hero (#timer): beams, grid, ICEMARATON, logo, CTAs, scoreboard (raised · sponsor · next milestone).
+// Hero (#timer): a live stage. Desktop: «INTRĂ ACUM» (left) · Iceman reacting in
+// a bubble (middle) · «Cât adaugi tu?» (right); then the line, the timer card
+// (Acum pe stream, the jumping clock, Strâns · Prezentat de · Următorul
+// milestone, the rate chips) and the two buttons. Phone: the bubble sits on the
+// illustration with one «intră acum» strip, the calculator goes under the timer.
 import { Image } from 'astro:assets';
 import logo from '../../assets/logo-mascot.webp';
 import { v, iff } from '../lib/ssr';
 import { views } from '../lib/views';
 import { site } from '../data/site';
+import { rateChips } from '../data/content';
 
 const cond = "'Barlow Condensed', sans-serif";
-const clock = [
-  { key: 'dd', value: v.dd, label: 'Zile', sep: false, delay: '0s' },
-  { key: 'hh', value: v.hh, label: 'Ore', sep: true, delay: '0.25s' },
-  { key: 'mm', value: v.mm, label: 'Minute', sep: true, delay: '0.5s' },
-  { key: 'ss', value: v.ss, label: 'Secunde', sep: true, delay: '0.75s' },
-] as const;
-const statLabel = 'margin: 0; font-size: 14px; font-weight: 600; color: #8C97A8';
-const statValue = `margin: 0; font-family: ${cond}; font-weight: 800; font-size: 40px; line-height: 1.1`;
-const corners = ['c-tl', 'c-tr', 'c-bl', 'c-br'];
+const units = [['dd', 'ZILE'], ['hh', 'ORE'], ['mm', 'MINUTE'], ['ss', 'SECUNDE']] as const;
+const FLAKE = 'M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 4l3 2 3-2M9 20l3-2 3 2';
 ---
-<section id="timer" aria-label="Timp rămas" style="position: relative; z-index: 1; overflow: hidden; padding: 0 0 clamp(48px, 6cqi, 88px)">
-  <div aria-hidden="true" class="beam" style="left: 20%"></div>
-  <div aria-hidden="true" class="beam beam-b" style="left: 80%"></div>
-  <div aria-hidden="true" style="position: absolute; left: 50%; top: min(52cqi, 760px); transform: translateX(-50%); width: min(1200px, 130%); height: 260px; background: radial-gradient(closest-side, rgba(92,203,255,0.30), rgba(92,203,255,0) 100%); pointer-events: none"></div>
-  <div aria-hidden="true" style="position: absolute; inset: 0; background-image: linear-gradient(rgba(63,208,255,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(63,208,255,0.07) 1px, transparent 1px); background-size: 64px 64px; -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 20%, transparent 80%); mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 20%, transparent 80%); pointer-events: none"></div>
-  <div aria-hidden="true" style={`position: relative; z-index: 4; max-width: 1280px; margin: 0 auto; padding: 18px clamp(20px, 4cqi, 40px) 0; display: flex; justify-content: space-between; gap: 12px; font-family: ${cond}; font-size: 13px; font-weight: 700; letter-spacing: 0.24em; text-transform: uppercase; color: #5B6675`}>
-    <span>Twitch · RO</span>
-    <span>Ediția 01</span>
-  </div>
+<section id="timer" aria-label="ICEMARATON: timp rămas" class="hero">
+  <div class="wrap">
+    <p class="hero-eyebrow">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3FD0FF" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d={FLAKE}></path></svg>
+      Stream maraton 2026–2027
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3FD0FF" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d={FLAKE}></path></svg>
+    </p>
+    <h1><span class="ice-text">ICE</span><span style="color: var(--ice)">MARATON</span></h1>
 
-  <div style="position: relative; z-index: 1; text-align: center; padding: 0 8px">
-    <p style={`margin: clamp(36px, 5cqi, 64px) 0 clamp(10px, 1.6cqi, 22px); font-family: ${cond}; font-weight: 800; font-style: italic; font-size: clamp(15px, 1.5cqi, 21px); letter-spacing: 0.3em; text-transform: uppercase; color: var(--ice)`}>Subathonul de Crăciun · 2026</p>
-    <h1 style={`margin: 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: min(16.5cqi, 252px); line-height: 0.8; letter-spacing: -0.02em; text-transform: uppercase; white-space: nowrap; color: #F2F5FA`}><span class="ice-text">Ice</span><span style="color: transparent; -webkit-text-stroke: max(2px, 0.2cqi) var(--ice)">maraton</span></h1>
-  </div>
-  <div class="float" style="position: relative; z-index: 2; width: min(72%, 560px); margin: max(-4cqi, -60px) auto 0">
-    <Image class="zap" src={logo} alt="Icemanlucky" widths={[400, 560, 720, 960, 1120]} sizes="min(72vw, 560px)" quality={72} loading="eager" fetchpriority="high" style="width: 100%; height: auto; display: block" />
-  </div>
-  <div style="position: relative; z-index: 3; max-width: 760px; margin: clamp(20px, 3cqi, 40px) auto 0; padding: 0 clamp(20px, 4cqi, 40px); text-align: center">
-    <p style="margin: 0 auto; max-width: 560px; font-size: clamp(16px, 1.4cqi, 19px); color: #C9D2DF">Fiecare donație și fiecare sub adaugă timp. Cât timp vin, nu ajungem la zero. Altfel, ne oprim pe <strong data-text="endDateText" style="color: #F2F5FA">{v.endDateText}</strong>.</p>
-    <div style="margin-top: 26px; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px">
-      <a class="btn-primary" href={site.links.twitch} style={`flex: 0 1 260px; min-height: 58px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 0 24px; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 23px; text-transform: uppercase; text-decoration: none`}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4v16l13-8z"></path></svg>
-        Urmărește live
-      </a>
-      <a class="btn-ghost" href="#vote" style={`flex: 0 1 260px; min-height: 58px; display: inline-flex; align-items: center; justify-content: center; padding: 0 24px; font-family: ${cond}; font-weight: 800; font-size: 22px; text-transform: uppercase; text-decoration: none; background: rgba(6,8,13,0.6)`}>Votează provocări</a>
-    </div>
-    <a href="#parteneri" style="margin-top: 26px; display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 12px; text-decoration: none; color: #AEB8C7; font-size: 15px">
-      <span>Ofertă pentru comunitate de la <strong style="color: #F2F5FA" data-sponsor="name">{site.sponsor.name}</strong></span>
-      <span style={`padding: 3px 10px; border: 1px dashed var(--ice); font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 17px; letter-spacing: 0.04em; color: #F2F5FA`} data-sponsor="code">{site.sponsor.code}</span>
-      <span style={`font-family: ${cond}; font-weight: 800; font-size: 15px; text-transform: uppercase; color: var(--ice)`}>Vezi oferta →</span>
-    </a>
-  </div>
-
-  <div style="position: relative; z-index: 3; max-width: 1280px; margin: 0 auto; padding: 0 clamp(20px, 4cqi, 40px)">
-    <!-- Scoreboard -->
-    <div style="position: relative; margin-top: clamp(40px, 6cqi, 80px); background: rgba(9,12,17,0.94); border: 1px solid #1C2230; padding: clamp(18px, 3cqi, 36px)">
-      {corners.map((c) => <span aria-hidden="true" class={`corner ${c}`}></span>)}
-      <div aria-hidden="true" {...iff('isLive')} data-region="pops" style="position: absolute; left: 0; right: 0; top: 0; height: 0" set:html={views.pops(v)} />
-      <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px">
-        <span data-text="timerLabel" style={`font-family: ${cond}; font-size: 18px; font-weight: 800; font-style: italic; letter-spacing: 0.1em; text-transform: uppercase; color: #AEB8C7`}>{v.timerLabel}</span>
-        <span data-text="statusText" data-style="background:liveBg" style={`display: inline-flex; align-items: center; gap: 8px; padding: 3px 12px; transform: skewX(-12deg); background: ${v.liveBg}; color: #FFFFFF; font-family: ${cond}; font-size: 15px; font-weight: 800; letter-spacing: 0.08em`}>{v.statusText}</span>
+    <div class="stage">
+      <!-- Left: the newest events -->
+      <div class="st-ev">
+        <p class="ev-head"><span class="blink" style="width: 8px; height: 8px; background: #D5162B"></span>INTRĂ ACUM</p>
+        <div data-region="heroRecent" aria-live="polite" set:html={views.heroRecent(v)} />
       </div>
-      <p {...iff('hasNow')} style="margin: 10px 0 0; font-size: 15px; color: #C9D2DF; overflow-wrap: anywhere"><strong data-text="nowLabel" style={`margin-right: 8px; font-family: ${cond}; font-weight: 800; font-size: 15px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ice)`}>{v.nowLabel}</strong><span data-text="nowText">{v.nowText}</span></p>
-      <div style="margin-top: clamp(10px, 2cqi, 20px); display: flex; align-items: flex-start; justify-content: space-between; gap: clamp(4px, 1cqi, 12px)">
-        {clock.map((unit) => (
-          <Fragment>
-            {unit.sep && <span aria-hidden="true" style={`align-self: center; margin-top: -24px; font-family: ${cond}; font-weight: 900; font-size: clamp(36px, 7cqi, 110px); line-height: 1; color: var(--ice)`}>:</span>}
-            <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center">
-              <div style="position: relative; width: 100%; overflow: hidden; padding: clamp(8px, 1.6cqi, 22px) 0 clamp(4px, 1cqi, 14px); text-align: center; background: linear-gradient(180deg, #16304A 0%, #0C1A2A 50%, #08111C 50.5%, #0A1624 100%); border: 1px solid rgba(160,225,255,0.35); box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), 0 18px 40px rgba(0,0,0,0.5)">
-                <span class="ice-text" data-text={unit.key} style={`font-family: ${cond}; font-weight: 900; font-style: italic; font-size: clamp(54px, 10cqi, 156px); line-height: 0.9; font-variant-numeric: tabular-nums`}>{unit.value}</span>
-                <span aria-hidden="true" class="glint" style={`animation-delay: ${unit.delay}`}></span>
+
+      <!-- Middle: Iceman reacts -->
+      <div class="st-mascot">
+        <Image class="mascot fx-hop" data-toggle="fxA:fxA;fxB:fxB" src={logo} alt="Icemanlucky" widths={[300, 420, 520, 780, 1040]} sizes="(max-width: 760px) 74vw, 520px" quality={72} loading="eager" fetchpriority="high" />
+        <div class="bubble fx-bub" role="status" {...iff('bubbleOn')} data-toggle="fxA:fxA;fxB:fxB">
+          <span class="bubble-who" data-text="bubbleWho">{v.bubbleWho}</span><span data-text="bubbleText">{v.bubbleText}</span>
+          <span class="bubble-tail" aria-hidden="true"></span>
+        </div>
+        <div class="chip-ev" {...iff('chipOn')} aria-hidden="true">
+          <span class="blink" style="flex: none; width: 7px; height: 7px; background: #D5162B"></span>
+          <strong data-text="chipTime" style={`flex: none; font-family: ${cond}; font-weight: 800; font-size: 17px; color: var(--ice)`}>{v.chipTime}</strong>
+          <span style="flex: 1 1 auto; min-width: 0; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis"><strong data-text="chipUser">{v.chipUser}</strong> <span data-text="chipWhat" style="color: #AEB8C7">{v.chipWhat}</span></span>
+        </div>
+      </div>
+
+      <!-- Right (phone: under the timer): what you'd add -->
+      <div class="st-calc">
+        <div class="calc-card">
+          <p style={`margin: 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: clamp(24px, 2cqi, 26px); line-height: 1; text-transform: uppercase`} id="calc-title">Cât adaugi tu?</p>
+          <p style="margin: 4px 0 0; font-size: 13px; color: #8C97A8">Alege și vezi unde ajunge timerul.</p>
+          <div class="calc-grid" role="radiogroup" aria-labelledby="calc-title" data-region="calcOpts" set:html={views.calcOpts(v)} />
+          <div class="calc-row" aria-live="polite">
+            <p class="calc-add" data-text="calcAdd">{v.calcAdd}</p>
+            <p {...iff('calcAtOn')} style="margin: 4px 0 0; font-size: 13px; color: #AEB8C7">Timerul ar sări la <strong data-text="calcAt" style={`color: #F2F5FA; font-family: ${cond}; font-size: 16px`}>{v.calcAt}</strong></p>
+          </div>
+          <p style={`margin: 4px 0 0; font-family: ${cond}; font-weight: 800; font-style: italic; font-size: 18px; color: #F2F5FA`}>≈ <span data-text="calcFun">{v.calcFun}</span></p>
+          <p {...iff('calcDouble')} style="margin: 4px 0 0; font-size: 13px; font-weight: 700; color: var(--ice)">Ora dublă: acum valorează ×2.</p>
+          <a class="btn-primary" href={site.links.donate} style={`margin-top: 12px; min-height: 46px; display: flex; align-items: center; justify-content: center; text-decoration: none; font-family: ${cond}; font-weight: 800; font-size: 20px; text-transform: uppercase`}>Donează</a>
+        </div>
+      </div>
+
+      <!-- The line -->
+      <div class="st-line">
+        <div class="display">
+          <span class="rule" aria-hidden="true" style="background: linear-gradient(90deg, rgba(63,208,255,0), #3FD0FF)"></span>
+          <p>Voi decideți <span class="br"></span><span class="ice-text">cât durează.</span></p>
+          <span class="rule" aria-hidden="true" style="background: linear-gradient(90deg, #3FD0FF, rgba(63,208,255,0))"></span>
+        </div>
+        <p class="sub-line"><span class="sl-long">Fiecare sub și fiecare donație adaugă timp pe cronometru</span><span class="sl-short">Fiecare sub și donație adaugă timp</span></p>
+      </div>
+
+      <!-- The timer card -->
+      <div class="st-timer">
+        <div class="timer-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px">
+            <span data-text="timerLabel" style={`font-family: ${cond}; font-weight: 800; font-style: italic; font-size: 18px; letter-spacing: 0.1em; text-transform: uppercase; color: #AEB8C7`}>{v.timerLabel}</span>
+            <span data-text="statusText" data-style="background:liveBg" style={`padding: 3px 12px; transform: skewX(-12deg); background: ${v.liveBg}; color: #FFFFFF; font-family: ${cond}; font-weight: 800`}>{v.statusText}</span>
+          </div>
+          <p {...iff('hasNow')} style="margin: 8px 0 0; font-size: 15px; color: #C9D2DF; overflow-wrap: anywhere"><strong data-text="nowLabel" style={`font-family: ${cond}; letter-spacing: 0.1em; color: var(--ice); margin-right: 8px; text-transform: uppercase`}>{v.nowLabel}</strong><span data-text="nowText">{v.nowText}</span></p>
+          <div class="units">
+            <span class="pop-tag fx-pop" aria-hidden="true" data-toggle="fxA:fxA;fxB:fxB" data-text="popText">{v.popText}</span>
+            {units.map(([key, label]) => (
+              <div>
+                <div class="unit-box fx-glow" data-toggle="fxA:fxA;fxB:fxB" data-text={key}>{v[key]}</div>
+                <div class="unit-label">{label}</div>
               </div>
-              <span style={`margin-top: 10px; font-family: ${cond}; font-size: 15px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #8C97A8`}>{unit.label}</span>
-            </div>
-          </Fragment>
-        ))}
-      </div>
-      <div style="margin-top: clamp(20px, 3cqi, 32px); display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 16px 0">
-        <div style="padding: 4px 20px; border-left: 2px solid var(--ice)">
-          <p style={statLabel}>Strâns până acum</p>
-          <p data-text="raisedText" style={statValue}>{v.raisedText}</p>
-        </div>
-        <a id="prezentat" href="#parteneri" aria-label={`Prezentat de ${site.sponsor.name}, partenerul principal`} style="padding: 4px 20px; border-left: 2px solid #2A3445; text-decoration: none; color: #F2F5FA">
-          <p style={statLabel}>Prezentat de</p>
-          <p style="margin: 0; display: flex; align-items: center; min-height: 44px; font-family: Barlow, sans-serif; font-weight: 700; font-size: 28px; letter-spacing: 0.06em; color: #FFFFFF" data-sponsor="logo">{site.sponsor.logoText}</p>
-        </a>
-        <div style="padding: 4px 20px; border-left: 2px solid #2A3445">
-          <p style={statLabel}>Următorul milestone</p>
-          <p data-text="nextGoalText" style={`${statValue}; color: var(--ice)`}>{v.nextGoalText}</p>
-        </div>
-      </div>
-      <div style="margin-top: 24px">
-        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; font-size: 15px; color: #AEB8C7">
-          <span>Urmează: <strong data-text="nextGoalTitle" style="color: #F2F5FA">{v.nextGoalTitle}</strong></span>
-          <span data-text="progressLabel" style="font-weight: 700; color: #F2F5FA">{v.progressLabel}</span>
-        </div>
-        <div aria-hidden="true" style="margin-top: 10px; height: 14px; background: #1A2230">
-          <div class="cane" data-style="width:progressPct" style={`width: ${v.progressPct}; height: 100%`}></div>
+            ))}
+          </div>
+          <div class="score">
+            <div><p class="lbl">Strâns până acum</p><p class="val" data-text="raisedText">{v.raisedText}</p></div>
+            <a id="prezentat" class="sc-sponsor" href="#parteneri" style="text-decoration: none; color: #F2F5FA">
+              <p class="lbl">Prezentat de</p>
+              <span style="margin-top: 4px; display: flex; align-items: center; gap: 12px">
+                {site.sponsor.logo
+                  ? <img src={site.sponsor.logo} alt="" width="64" height="44" style="flex: none; width: 64px; height: 44px; object-fit: contain" />
+                  : <span class="logo-box" aria-hidden="true">LOGO</span>}
+                <span class="sp-name" style="font-weight: 700; font-size: 26px; letter-spacing: 0.06em" data-sponsor="logo">{site.sponsor.logoText}</span>
+              </span>
+            </a>
+            <div><p class="lbl">Următorul milestone</p><p class="val" data-text="nextGoalText" style="color: var(--ice)">{v.nextGoalText}</p></div>
+          </div>
+          <div class="bar" style="margin-top: 16px" role="img" aria-label={`Spre următorul milestone: ${v.progressLabel}`} data-attr="aria-label:progressAria"><span data-style="width:progressPct" style={`width: ${v.progressPct}`}></span></div>
+          <p {...iff('isFrozen')} style="margin: 12px 0 0; font-size: 14px; color: #C9D2DF"><strong style={`font-family: ${cond}; font-weight: 800; font-style: italic; color: var(--ice); letter-spacing: 0.04em`}>ÎNGHEȚAT</strong> <span data-text="frozenText">{v.frozenText}</span></p>
+          <p {...iff('hasDouble')} style="margin: 12px 0 0; font-size: 14px; color: #C9D2DF"><strong style={`font-family: ${cond}; font-weight: 800; font-style: italic; color: #FFFFFF; letter-spacing: 0.04em`}>ORA DUBLĂ</strong> <span data-text="doubleText">{v.doubleText}</span></p>
+          <div class="rates">
+            <span class="rates-title" style={`font-family: ${cond}; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #AEB8C7; margin-right: 6px`}>Cum adaugi timp</span>
+            {rateChips.map(([a, b]) => <span class="rate"><strong style="color: #F2F5FA">{a}</strong> = {b}</span>)}
+          </div>
+          <p class="rates-hint">Cum adaugi timp: rând care se dă cu degetul →</p>
         </div>
       </div>
-      <div style="margin-top: 22px; padding-top: 18px; border-top: 1px dashed #2A3445; display: flex; flex-wrap: wrap; gap: 10px 32px; font-size: 15px; color: #AEB8C7">
-        <span {...iff('isFrozen')}><strong style={`font-family: ${cond}; font-weight: 800; font-style: italic; font-size: 18px; color: var(--ice); letter-spacing: 0.04em`}>ÎNGHEȚAT</strong> <span data-text="frozenText">{v.frozenText}</span></span>
-        <span {...iff('hasDouble')}><strong style={`font-family: ${cond}; font-weight: 800; font-style: italic; font-size: 18px; color: #FFFFFF; letter-spacing: 0.04em`}>ORA DUBLĂ</strong> <span data-text="doubleText">{v.doubleText}</span></span>
-        <span>Final programat: <strong data-text="endDateText" style="color: #F2F5FA">{v.endDateText}</strong>, dacă nu se mai adaugă timp.</span>
-        <span style="margin-left: auto; display: inline-flex; align-items: center; gap: 10px; color: #8C97A8">Cronometru oferit de <strong style="font-family: Barlow, sans-serif; font-weight: 700; letter-spacing: 0.06em; color: #F2F5FA" data-sponsor="logo">{site.sponsor.logoText}</strong></span>
+
+      <div class="st-cta">
+        <div class="cta-row">
+          <a class="btn-primary" href={site.links.twitch} style={`font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 24px`}>Urmărește live</a>
+          <a class="btn-ghost cta-donate" href={site.links.donate} style={`font-family: ${cond}; font-weight: 800; font-size: 22px`}>Donează / dă un sub</a>
+        </div>
       </div>
     </div>
   </div>

@@ -1,6 +1,7 @@
 ---
 import '../styles/fonts.css';
 import '../styles/global.css';
+import '../styles/v2.css';
 
 import { getImage } from 'astro:assets';
 import emote from '../../assets/emote.png';
@@ -9,11 +10,9 @@ import logo from '../../assets/logo-mascot.webp';
 import Top from '../components/Top.astro';
 import Hero from '../components/Hero.astro';
 import Live from '../components/Live.astro';
-import Vote from '../components/Vote.astro';
-import Wheel from '../components/Wheel.astro';
 import Goals from '../components/Goals.astro';
-import Rates from '../components/Rates.astro';
 import Play from '../components/Play.astro';
+import Program from '../components/Program.astro';
 import Partners from '../components/Partners.astro';
 import Community from '../components/Community.astro';
 import Footer from '../components/Footer.astro';
@@ -50,19 +49,17 @@ const ogUrl = new URL(ogImage.src, Astro.site);
     <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>
-    <div id="page" style="width: 100%; container-type: inline-size; container-name: page; position: relative; overflow: hidden; background: #050608; color: #F2F5FA; font-family: Barlow, system-ui, sans-serif; font-size: 16px; line-height: 1.5">
+    <div id="page" style="width: 100%; container-type: inline-size; container-name: page; position: relative; overflow-x: clip; background: #050608; color: #F2F5FA; font-family: Barlow, system-ui, sans-serif; font-size: 16px; line-height: 1.5">
       <a class="skip-link" href="#main">Sari la conținut</a>
       <Top />
       <main id="main" tabindex="-1">
         <Hero />
         <Partners />
         <Community />
-        <Live />
-        <Vote />
-        <Wheel />
         <Goals />
-        <Rates />
         <Play />
+        <Live />
+        <Program />
       </main>
       <Footer />
       <DemoPanel />

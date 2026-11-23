@@ -1,0 +1,17 @@
+---
+// 06 Program și cronologie: an Advent calendar of the 22 days. Past days open
+// with the day's clip, today is lit, future days are closed with what's
+// scheduled (moderators fill notes, clips and sponsors on /mod).
+import SectionHead from './SectionHead.astro';
+import { v } from '../lib/ssr';
+import { views } from '../lib/views';
+---
+<section id="program" aria-labelledby="h-program" class="sec">
+  <div class="wrap">
+    <SectionHead tag="06" title="Program și cronologie" id="h-program" />
+    <p class="intro only-desk" style="max-width: 720px">Ca un calendar de Advent: cele 22 de zile ale maratonului, câte o fereastră pe zi. Zilele trecute se deschid cu clipul zilei; cele care vin arată ce e programat.</p>
+    <p class="intro show-sm" style="font-size: 14px">Calendar de Advent: câte o fereastră pe zi, cu clipul zilei.</p>
+    <div id="advent" class="advent" data-toggle="show-all:moreDays" data-region="advent" set:html={views.advent(v)} />
+    <button type="button" class="btn-more" data-action="more" data-arg="days" aria-controls="advent" aria-pressed={v.moreDaysPressed} data-attr="aria-pressed:moreDaysPressed" data-text="moreDaysLabel">{v.moreDaysLabel}</button>
+  </div>
+</section>

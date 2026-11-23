@@ -1,36 +1,21 @@
 ---
-// Discord strip + footer.
+// Footer (layout v2): name toggle, socials, partner contact.
 import { site } from '../data/site';
-const cond = "'Barlow Condensed', sans-serif";
 const socials: [string, string][] = [
   ['Twitch', site.links.twitch],
+  ['Discord', site.links.discord],
   ['YouTube', site.links.youtube],
   ['TikTok', site.links.tiktok],
   ['Instagram', site.links.instagram],
-  ['Discord', site.links.discord],
 ];
 ---
-<section aria-labelledby="h-discord" style="position: relative; z-index: 1; border-top: 1px solid #1A2230; background: #0A0E15">
-  <div class="cane" aria-hidden="true" style="height: 8px"></div>
-  <div style="max-width: 1280px; margin: 0 auto; padding: clamp(40px, 6cqi, 80px) clamp(20px, 4cqi, 40px); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px 48px">
-    <div style="flex: 1 1 420px; min-width: 0">
-      <h2 id="h-discord" style={`margin: 0; font-family: ${cond}; font-weight: 900; font-style: italic; text-transform: uppercase; font-size: clamp(40px, 5.6cqi, 76px); line-height: 0.92`}>Nu rata nicio deblocare</h2>
-      <p style="margin: 12px 0 0; font-size: 17px; color: #AEB8C7; max-width: 520px">Alertele, ora dublă, rundele de vot și clipurile apar mai întâi pe Discord.</p>
-    </div>
-    <div style="display: flex; flex-wrap: wrap; gap: 12px">
-      <a class="btn-primary" href={site.links.discord} style={`min-height: 58px; display: inline-flex; align-items: center; padding: 0 28px; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 23px; text-transform: uppercase; text-decoration: none`}>Intră pe Discord</a>
-      <a class="btn-ghost" href={site.links.donate} style={`min-height: 58px; display: inline-flex; align-items: center; padding: 0 28px; font-family: ${cond}; font-weight: 800; font-size: 21px; text-transform: uppercase; text-decoration: none`}>Donează</a>
-    </div>
-  </div>
-</section>
-
-<footer style="position: relative; z-index: 1; border-top: 1px solid #1A2230">
-  <div style="max-width: 1280px; margin: 0 auto; padding: 32px clamp(20px, 4cqi, 40px); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px">
-    <p style="margin: 0; font-size: 14px; color: #8C97A8"><strong style={`font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 20px; color: #F2F5FA`}>ICEMARATON</strong> · subathonul de Crăciun al lui Icemanlucky · © 2026</p>
-    <nav aria-label="Rețele sociale" style="display: flex; flex-wrap: wrap; gap: 4px 22px">
-      {socials.map(([label, href]) => (
-        <a class="navlink" href={href} style="min-height: 44px; display: inline-flex; align-items: center; font-size: 17px">{label}</a>
-      ))}
-    </nav>
+<footer style="position: relative; z-index: 1; border-top: 1px solid #1C2230">
+  <div class="wrap" style="padding-top: 24px; padding-bottom: 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 32px; font-size: 14px; color: #8C97A8">
+    <p style="margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px">
+      <strong style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 20px; color: #F2F5FA">ICEMARATON</strong>
+      <a href="#nume" style="min-height: 44px; display: inline-flex; align-items: center; color: #AEB8C7">Ascunde-mi numele</a>
+      {socials.map(([label, href]) => <a href={href} style="min-height: 44px; display: inline-flex; align-items: center; color: #AEB8C7">{label}</a>)}
+    </p>
+    <p style="margin: 0">Vrei să fii partener? <a href={`mailto:${site.contactEmail}`} style="font-weight: 600">Scrie-ne</a></p>
   </div>
 </footer>

@@ -22,6 +22,8 @@ import type { SiteData } from '../data/types';
 import { derive, initialState, type State } from '../lib/derive';
 import { count, duration, fmtInt } from '../lib/format';
 import { views, type RegionName } from '../lib/views';
+import { LineBag, fillLine, groupFor, varsFor } from '../lib/lines';
+import type { TickerItem } from '../data/types';
 import type { DemoBackend } from '../demo/backend';
 import type { Live, Me } from './live';
 
@@ -168,6 +170,52 @@ function fail(err: unknown) {
   info('Nu a mers', key ? errors[key] : 'Ceva n-a mers. Încearcă din nou.');
 }
 
+
+// ---- Hero: Iceman reacts to each new event (bubble, hop, flash, «+18:00»). ----
+const bag = new LineBag();
+let heroLastId: number | null = null;
+const heroQueue: TickerItem[] = [];
+let heroTimer: number | undefined;
+
+function bubbleFor(t: TickerItem): State['bubble'] {
+  const group = groupFor(t, data.smallDonation);
+  if (!group) return null;
+  const vars = varsFor(t);
+  const { line, fallback } = bag.pick(group, data.lines[group]);
+  // Fallback: the event on top, «Mersi, {nume}!» below (no line in Iceman's voice).
+  return fallback
+    ? { who: `${t.time} · ${t.what}`, text: fillLine(line, vars), time: t.time }
+    : { who: `Mersi, ${t.user}!`, text: fillLine(line, vars), time: t.time };
+}
+function showNextHero() {
+  clearTimeout(heroTimer);
+  heroTimer = undefined;
+  const t = heroQueue.shift();
+  if (!t) return;
+  const bubble = bubbleFor(t);
+  if (bubble) set({ bubble, fx: state.fx + 1 });
+  // One reaction at a time, so a burst reads as a burst; reduced motion jumps to the newest.
+  if (heroQueue.length) heroTimer = window.setTimeout(showNextHero, reducedMotion.matches ? 0 : 2600);
+}
+/** New events since the last look: queue them (oldest first). The first load only shows the newest, without animation. */
+function heroEvents(d: SiteData) {
+  const real = d.ticker.filter((t) => t.id !== undefined && t.time !== '—');
+  if (!real.length) return;
+  const newest = Math.max(...real.map((t) => t.id!));
+  if (heroLastId === null) {
+    heroLastId = newest;
+    const b = bubbleFor(real[0]);
+    if (b) set({ bubble: b });
+    return;
+  }
+  const fresh = real.filter((t) => t.id! > heroLastId!).sort((a, b) => a.id! - b.id!);
+  heroLastId = Math.max(heroLastId, newest);
+  if (!fresh.length) return;
+  if (reducedMotion.matches) heroQueue.splice(0, heroQueue.length, fresh[fresh.length - 1]);
+  else heroQueue.push(...fresh.slice(-12));
+  if (heroTimer === undefined) showNextHero();
+}
+
 // ---- Live data ----------------------------------------------------------
 const reachedGoals = (d: SiteData) => d.goals.filter((g) => d.raisedNum >= g.threshold).length;
 
@@ -232,6 +280,7 @@ async function startLive() {
       if (live && ((first && reachedGoals(data) > 0) || (!first && reachedGoals(data) > before))) set({ toast: 'goal' });
       else render();
       if (patch.boards) checkLegends(data);
+      if (patch.ticker || first) heroEvents(data);
     },
     onMe: applyMe,
     // Only trust a clear difference: small ones are network noise.
@@ -257,6 +306,7 @@ function demoSync(first = false) {
   const unlocked = data.status === 'live' && (first ? reachedGoals(data) > 0 : reachedGoals(data) > before);
   set(unlocked ? { ...patch, toast: 'goal' } : patch);
   checkLegends(data);
+  heroEvents(data);
 }
 async function startDemo() {
   const { DemoBackend } = await import('../demo/backend');
@@ -338,11 +388,12 @@ window.addEventListener('message', (e) => {
 let spinTimer: number | undefined;
 let copyTimer: number | undefined;
 
-/** Rotate 5 full turns plus the offset that lands segment `idx` under the pointer. */
+/** Rotate 5 full turns plus the offset that lands slice `idx` (slice 0 centred at the top) under the pointer. */
 function spinTo(idx: number, spinsLeft: number) {
-  const jitter = Math.random() * 30 - 15;
+  const seg = 360 / Math.max(1, data.prizes.length);
+  const jitter = (Math.random() - 0.5) * seg * 0.6;
   const cur = state.wheelDeg;
-  const target = (((360 - (idx * 45 + 22.5 + jitter)) % 360) + 360) % 360;
+  const target = (((360 - (idx * seg + jitter)) % 360) + 360) % 360;
   const delta = (((target - (cur % 360)) % 360) + 360) % 360;
   set({ wheelDeg: cur + 5 * 360 + delta, spinning: true, spins: spinsLeft, spunToday: true, result: null });
   clearTimeout(spinTimer);
@@ -378,6 +429,14 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
     if (demo) return;
     live?.setPublic(next).catch((err) => { set({ isPublic: !next }); fail(err); });
   },
+
+  calcPick: (i) => set({ calcPick: Number(i) || 0 }),
+  badgeTip: (id) => set({ badgeTip: state.badgeTip === id ? null : id }),
+  more: (key) => {
+    const k = key as keyof State['more'];
+    set({ more: { ...state.more, [k]: !state.more[k] } });
+  },
+  player: () => { set({ playerOn: true }); loadEmbeds(); },
 
   toggleMenu: () => set({ menu: !state.menu }),
   closeMenu: () => set({ menu: false }),
@@ -517,14 +576,8 @@ function loadEmbeds() {
     chat.replaceChildren(frame(`https://www.twitch.tv/embed/${site.channel}/chat?parent=${host}&darkpopout`, 'Chatul Twitch'));
   }
 }
-const liveSection = document.getElementById('live');
-// Not inside the presentation page (?embed): three copies of the Twitch player would be too heavy.
-if (liveSection && !embed && 'IntersectionObserver' in window) {
-  const io = new IntersectionObserver((entries) => {
-    if (entries.some((e) => e.isIntersecting)) { io.disconnect(); loadEmbeds(); }
-  }, { rootMargin: '400px 0px' });
-  io.observe(liveSection);
-}
+// The player loads only when asked («Pornește playerul»): whoever is on the site
+// usually has the stream open on Twitch already.
 
 document.addEventListener('click', (e) => {
   const el = (e.target as Element).closest<HTMLElement>('[data-action]');
@@ -566,6 +619,19 @@ document.addEventListener('keydown', (e) => {
     next.click();
     return;
   }
+  // «Cât adaugi tu?» is a radio group: arrows move the choice.
+  const radio = (e.target as Element).closest<HTMLElement>('.calc[role="radio"]');
+  if (radio && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+    const n = Number(radio.dataset.arg) + (e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1);
+    const list = Array.from(radio.parentElement!.querySelectorAll<HTMLElement>('.calc'));
+    const next = list[(n + list.length) % list.length];
+    e.preventDefault();
+    next.click();
+    // The group re-rendered: focus the new copy of the chosen option.
+    document.querySelector<HTMLElement>(`[data-key="${next.dataset.key}"]`)?.focus();
+    return;
+  }
+  if (e.key === 'Escape' && state.badgeTip) { set({ badgeTip: null }); return; }
   if (e.key === 'Escape' && state.menu) {
     set({ menu: false });
     document.querySelector<HTMLElement>('.nav-menu')?.focus();

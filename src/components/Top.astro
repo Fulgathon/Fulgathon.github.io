@@ -6,14 +6,11 @@ import { views } from '../lib/views';
 import { site } from '../data/site';
 
 const links: [string, string, string][] = [
-  ['#parteneri', 'Parteneri', 'Parteneri'],
+  ['#parteneri', 'Parteneri', 'Partenerii'],
   ['#comunitate', 'Comunitatea', 'Comunitatea'],
-  ['#live', 'Live', 'Live'],
-  ['#vote', 'Vot', 'Votul abonaților'],
-  ['#roata', 'Roata', 'Roata lui Lucky'],
   ['#goals', 'Milestones', 'Milestone Maraton'],
-  ['#tarife', 'Cum adaugi timp', 'Cum adaugi timp'],
-  ['#joaca', 'Joacă și tu', 'Joacă și tu'],
+  ['#joaca', 'Joacă', 'Joacă: roata, votul, bingo'],
+  ['#program', 'Program', 'Program și cronologie'],
 ];
 const cond = "'Barlow Condensed', sans-serif";
 ---
@@ -34,8 +31,9 @@ const cond = "'Barlow Condensed', sans-serif";
   </button>
 </div>
 
-<!-- TICKER -->
-<div style="position: relative; z-index: 2; display: flex; align-items: stretch; background: #0B1018; border-bottom: 1px solid #1A2230; font-size: 14px; height: 40px">
+<!-- LIVE STRIP + NAV: sticky, so the clock in the nav is visible everywhere -->
+<div class="sticky-top">
+<div class="strip">
   <span data-style="background:liveBg" style={`flex: none; display: flex; align-items: center; gap: 8px; padding: 0 16px 0 14px; background: ${v.liveBg}; color: #FFFFFF; font-family: ${cond}; font-weight: 800; font-style: italic; letter-spacing: 0.08em; text-transform: uppercase; clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%)`}>
     <span style="width: 8px; height: 8px; border-radius: 50%; background: #FFFFFF"></span>
     <span data-text="statusText">{v.statusText}</span>
@@ -45,14 +43,17 @@ const cond = "'Barlow Condensed', sans-serif";
   </div>
 </div>
 
-<!-- NAV -->
-<header style="position: relative; z-index: 3; border-bottom: 1px solid #1A2230">
-  <nav id="main-nav" aria-label="Principal" style="max-width: 1280px; margin: 0 auto; padding: 12px clamp(20px, 4cqi, 40px); display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 16px">
-    <a class="nav-clock" href="#timer" aria-label="Timp rămas" style={`flex: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: #F2F5FA; font-family: ${cond}; font-weight: 800; font-size: 22px; letter-spacing: 0.02em`}>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--ice)" stroke-width="2.4" stroke-linecap="square" aria-hidden="true"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2.5 2M9 2h6"></path></svg>
-      <span data-text="navClock" style="font-variant-numeric: tabular-nums">{v.navClock}</span>
+<header class="navbar">
+  <nav id="main-nav" aria-label="Principal" style="max-width: 1280px; margin: 0 auto; padding: 0 clamp(16px, 4cqi, 40px); display: flex; flex-wrap: nowrap; align-items: center; gap: clamp(10px, 2cqi, 28px)">
+    <a class="nav-word" href="#timer" aria-label="ICEMARATON, sus">ICE<span style="color: var(--ice)">MARATON</span></a>
+    <a class="nav-clock" href="#timer" style={`flex: none; white-space: nowrap; display: inline-flex; align-items: baseline; gap: 10px; text-decoration: none; color: #F2F5FA; font-family: ${cond}; font-weight: 800; font-size: 22px; letter-spacing: 0.02em; min-height: 44px; align-items: center`}>
+      <span class="nc-label" data-text="timerLabelUp">{v.timerLabel.toUpperCase()}</span>
+      <span class="nc-long" data-text="navClock" style="font-variant-numeric: tabular-nums">{v.navClock}</span>
+      <span class="nc-short" data-text="navShort" style="font-variant-numeric: tabular-nums">{v.navShort}</span>
+      <span class="sr-only" data-text="timerLabel">{v.timerLabel}</span>
     </a>
-    <div class="nav-links" style="align-items: center; gap: 22px; font-size: 16px; white-space: nowrap">
+    <span style="flex: 1 1 auto"></span>
+    <div class="nav-links" style="align-items: center; gap: 28px; font-size: 16px; white-space: nowrap">
       {links.map(([href, label]) => <a class="navlink" href={href}>{label}</a>)}
     </div>
     <div style="flex: none; display: flex; align-items: center; gap: 8px; white-space: nowrap">
@@ -62,9 +63,8 @@ const cond = "'Barlow Condensed', sans-serif";
       <button type="button" class="btn-ghost" data-action="logout" {...iff('isIn')} aria-label={v.chipLabel} data-attr="aria-label:chipLabel" style="min-height: 44px; display: inline-flex; align-items: center; gap: 10px; padding: 0 12px 0 6px; font-size: 15px; font-weight: 600">
         <span style="width: 30px; height: 30px; display: grid; place-items: center; background: #9146FF; color: #FFFFFF; font-weight: 700" data-text="viewerInitial">{v.viewerInitial}</span>
         <span class="hide-sm chip-name" data-text="viewerName">{v.viewerName}</span>
-        <span data-text="badgeText" data-style="background:badgeBg;color:badgeColor" style={`padding: 2px 7px; font-family: ${cond}; font-size: 13px; font-weight: 800; letter-spacing: 0.06em; background: ${v.badgeBg}; color: ${v.badgeColor}`}>{v.badgeText}</span>
+        <span class="chip-badge" data-text="badgeText" data-style="background:badgeBg;color:badgeColor" style={`padding: 2px 7px; font-family: ${cond}; font-size: 13px; font-weight: 800; letter-spacing: 0.06em; background: ${v.badgeBg}; color: ${v.badgeColor}`}>{v.badgeText}</span>
       </button>
-      <a class="btn-primary nav-cta" href={site.links.twitch} style={`align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; font-family: ${cond}; font-size: 17px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; text-decoration: none`}>Urmărește live</a>
       <button class="btn-ghost nav-menu" type="button" aria-label="Meniu" aria-controls="mobile-menu" aria-expanded={v.menuExpanded} data-attr="aria-expanded:menuExpanded" data-action="toggleMenu" style="width: 44px; height: 44px; align-items: center; justify-content: center; padding: 0">
         <svg {...iff('menuClosed')} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"></path></svg>
         <svg {...iff('menuOpen')} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
@@ -75,6 +75,8 @@ const cond = "'Barlow Condensed', sans-serif";
     {links.map(([href, , label]) => (
       <a class="navlink" href={href} data-action="closeMenu" style="padding: 12px 0; font-size: 22px; border-bottom: 1px solid #1A2230">{label}</a>
     ))}
+    <button type="button" class="btn-twitch menu-login" data-action="login" {...iff('isOut')} style={`margin-top: 14px; min-height: 52px; font-family: ${cond}; font-size: 20px; font-weight: 800; text-transform: uppercase`}>Conectează-te cu Twitch</button>
     <a class="btn-primary" href={site.links.twitch} style={`margin-top: 14px; min-height: 52px; display: flex; align-items: center; justify-content: center; font-family: ${cond}; font-size: 20px; font-weight: 800; text-transform: uppercase; text-decoration: none`}>Urmărește live pe Twitch</a>
   </div>
 </header>
+</div>

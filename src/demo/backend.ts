@@ -197,7 +197,8 @@ function seed(now: number): DemoState {
     bingo: {
       closesAt: now + 2 * DAY + 5 * HOUR,
       prize: '[PREMIU]',
-      items: bingoItems.map((label, i) => ({ id: i + 1, label, happened: false })),
+      // A few already ticked by moderators (as in the mockup).
+      items: bingoItems.map((label, i) => ({ id: i + 1, label, happened: [0, 13, 14, 18, 19].includes(i) })),
       pick: null,
       // 340 simulated players, each with a random line of the card.
       others: Array.from({ length: 340 }, (_, k) => ({

@@ -1,15 +1,49 @@
 ---
-// 05 Milestone Maraton: challenges unlocked by the donation total (€), set by the streamer on /mod.
+// 03 Milestone Maraton, three steps: 1. the track (where we are) → 2. the next
+// goal → 3. «Ai ratat? Vezi clipurile» (finished milestones with their clip,
+// pasted by moderators on /mod). Unlocked by the donation total (€).
 import SectionHead from './SectionHead.astro';
-import { v } from '../lib/ssr';
+import { v, iff } from '../lib/ssr';
 import { views } from '../lib/views';
+const cond = "'Barlow Condensed', sans-serif";
 ---
-<section id="goals" aria-labelledby="h-goals" style="position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 0 clamp(20px, 4cqi, 40px) clamp(56px, 8cqi, 112px)">
-  <SectionHead tag="06" bignum="06" title="Milestone Maraton" id="h-goals">
-    <div>
-      <p style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 24px; text-transform: uppercase"><span data-text="unlockedCount" style="color: var(--ice)">{v.unlockedCount}</span> din <span data-text="totalGoals">{v.totalGoals}</span> deblocate</p>
-      <p style="margin: 4px 0 0; max-width: 420px; font-size: 16px; color: #AEB8C7">Provocări deblocate de donații. Când totalul strâns atinge suma, Iceman o face live.</p>
+<section id="goals" aria-labelledby="h-goals" class="sec">
+  <div class="wrap">
+    <SectionHead tag="03" title="Milestone Maraton" id="h-goals">
+      <p class="side" data-text="goalsHead">{v.goalsHead}</p>
+    </SectionHead>
+
+    <!-- 1. The track (desktop) / segments (phone) -->
+    <div class="mtrack" data-style="grid-template-columns:trackCols" style={`grid-template-columns: ${v.trackCols}`}>
+      <span aria-hidden="true" class="mtrack-line" style={`left: ${v.trackLeft}; right: ${v.trackLeft}; background: #1A2230`}></span>
+      <span aria-hidden="true" class="mtrack-line" data-style="width:trackFill" style={`left: ${v.trackLeft}; width: ${v.trackFill}; background: linear-gradient(90deg, #1E6BFF, #3FD0FF)`}></span>
+      <div data-region="track" style="display: contents" set:html={views.track(v)} />
     </div>
-  </SectionHead>
-  <div class="g-goals" data-region="goals" style="display: grid" set:html={views.goals(v)} />
+    <div class="mseg" aria-hidden="true" data-region="segs" data-style="grid-template-columns:trackCols" style={`grid-template-columns: ${v.trackCols}`} set:html={views.segs(v)} />
+    <p class="mseg-label"><span data-text="goalsPhone">{v.goalsPhone}</span><span data-text="goalsLast">{v.goalsLast}</span></p>
+
+    <div class="mgrid">
+      <!-- 2. The next goal -->
+      <div class="next-card">
+        <div {...iff('hasNextGoal')}>
+          <span class="tag-ice" style="padding: 1px 8px; font-size: 13px" data-text="nextTag">{v.nextTag}</span>
+          <p class="only-desk" data-text="nextTitle" style={`margin: 12px 0 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: clamp(28px, 2.8cqi, 40px); line-height: 1; text-transform: uppercase`}>{v.nextTitle}</p>
+          <p class="show-sm" style="margin: 8px 0 0"><span style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px"><span data-text="nextNoTitle" style={`font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 22px; line-height: 1.05; text-transform: uppercase`}>{v.nextNoTitle}</span><span data-text="nextAmount" style={`flex: none; font-family: ${cond}; font-weight: 800; color: var(--ice)`}>{v.nextAmount}</span></span></p>
+          <p data-text="nextSponsor" style="margin: 6px 0 0; font-size: 14px; color: #E6C46A">{v.nextSponsor}</p>
+          <div class="bar" style="margin-top: 12px" aria-hidden="true"><span data-style="width:nextBar" style={`width: ${v.nextBar}`}></span></div>
+          <p style="margin: 8px 0 0; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; font-size: 15px"><span data-text="nextOf" style="color: #AEB8C7">{v.nextOf}</span><strong data-text="nextLeft" style={`font-family: ${cond}; font-size: 20px; color: var(--ice)`}>{v.nextLeft}</strong></p>
+        </div>
+        <p {...iff('allGoalsDone')} style={`margin: 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 32px; line-height: 1; text-transform: uppercase`}>Toate milestone-urile sunt deblocate!</p>
+        <p {...iff('hasPending')} style="margin: 18px 0 0; padding-top: 14px; border-top: 1px solid #1C2230; font-size: 14px; color: #AEB8C7"><strong data-text="pendingTitle" style="color: #F2F5FA">{v.pendingTitle}</strong><span data-text="pendingRest">{v.pendingRest}</span></p>
+      </div>
+
+      <!-- 3. Clips you missed -->
+      <div class="clips panel">
+        <h3 class="h3">Ai ratat? Vezi clipurile</h3>
+        <div class="clip-list" data-region="clips" set:html={views.clips(v)} />
+        <button type="button" class="btn-more" data-action="more" data-arg="goals" aria-pressed={v.moreGoalsPressed} data-attr="aria-pressed:moreGoalsPressed" aria-controls="all-goals" data-text="moreGoalsLabel">{v.moreGoalsLabel}</button>
+        <ol id="all-goals" class="all-goals" {...iff('moreGoals')} data-region="allGoals" set:html={views.allGoals(v)} />
+      </div>
+    </div>
+  </div>
 </section>

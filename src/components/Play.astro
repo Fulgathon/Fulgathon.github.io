@@ -1,62 +1,147 @@
 ---
-// 08 Joacă și tu: prediction bingo (pick 5, saved per viewer) + suggestion form.
+// 04 Joacă: all four games always visible, no tabs. The wheel is first and
+// full width; Vote and Propune side by side; Bingo full width so every square
+// holds its sentence. Phone: one under the other.
 import SectionHead from './SectionHead.astro';
 import Emote from './Emote.astro';
 import { v, iff } from '../lib/ssr';
 import { views } from '../lib/views';
 import { site } from '../data/site';
 const cond = "'Barlow Condensed', sans-serif";
-const h3 = `margin: 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 32px; text-transform: uppercase`;
+const btn = `font-family: ${cond}; font-weight: 800; text-transform: uppercase`;
+const h3big = `margin: 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: clamp(26px, 2.8cqi, 40px); line-height: 1; text-transform: uppercase`;
 const emoteStyle = 'flex: none; width: 44px; height: 54px; object-fit: contain';
 ---
-<section id="joaca" aria-labelledby="h-joaca" style="position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 0 clamp(20px, 4cqi, 40px) clamp(56px, 8cqi, 112px)">
-  <SectionHead tag="08" bignum="08" title="Joacă și tu" id="h-joaca">
-    <p style="margin: 0; max-width: 420px; font-size: 17px; color: #AEB8C7">Bingo cu predicții înainte de start și propuneri pentru următoarele runde de vot.</p>
-  </SectionHead>
-  <div style="margin-top: 32px; display: flex; flex-wrap: wrap; gap: 32px 48px">
+<section id="joaca" aria-labelledby="h-joaca" class="sec">
+  <div class="wrap">
+    <SectionHead tag="04" title="Joacă" id="h-joaca" />
+    <p class="intro">Toate patru, la vedere tot timpul.</p>
 
-    <div style="flex: 3 1 520px; min-width: 0">
-      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px">
-        <h3 style={h3}>Bingo-ul maratonului</h3>
-        <span style="font-size: 15px; color: #8C97A8"><strong data-text="bingoCount" style="color: #F2F5FA">{v.bingoCount}</strong> · <span data-text="bingoPlayers">{v.bingoPlayers}</span></span>
-      </div>
-      <p style="margin: 4px 0 0; font-size: 15px; color: #AEB8C7">Alege o linie de pe cartonaș (rând, coloană sau diagonală) cu 5 lucruri care crezi că se vor întâmpla în maraton. Dacă se întâmplă toate 5, intri la tragerea la sorți pentru <strong data-text="bingoPrize" style="color: #F2F5FA">{v.bingoPrize}</strong>.</p>
-      <p data-text="bingoStatus" style="margin: 6px 0 0; font-size: 14px; font-weight: 600; color: var(--ice)">{v.bingoStatus}</p>
-      <div data-region="bingo" role="group" aria-label="Cartonașul de bingo: alege o linie" style="margin-top: 16px; display: grid; grid-template-columns: 44px repeat(5, minmax(0, 1fr)); gap: 5px" set:html={views.bingo(v)} />
-      <div role="status" style="margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
-        <p data-text="bingoNote" data-toggle="is-bingo:isBingo" class="bingo-note" style="margin: 0; flex: 1 1 260px; font-size: 15px; color: #C9D2DF">{v.bingoNote}</p>
-        <button type="button" {...iff('bingoOpen')} class={v.bingoBtnClass} data-attr="class:bingoBtnClass" data-action="bingoSave" data-text="bingoBtn" style={`min-height: 50px; padding: 0 22px; font-family: ${cond}; font-weight: 800; font-size: 19px; text-transform: uppercase`}>{v.bingoBtn}</button>
-      </div>
-    </div>
-
-    <div style="flex: 2 1 360px; min-width: 0">
-      <h3 style={h3}>Propune o provocare</h3>
-      <p style="margin: 4px 0 0; font-size: 15px; color: #AEB8C7">Doar pentru abonați. Moderatorii aleg cele mai bune idei pentru următoarea rundă de vot.</p>
-      <div style="margin-top: 16px">
-        <div {...iff('suggestForm')}>
-          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600; color: #AEB8C7">Ideea ta
-            <textarea id="suggestion" class="field" rows="4" maxlength="140" data-input="suggestion" placeholder="ex: Vorbește doar în rime 30 de minute" style="padding: 12px; resize: vertical; min-height: 120px"></textarea>
-          </label>
-          <div style="margin-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px">
-            <span style="font-size: 13px; color: #7D8899"><span data-text="suggestLen">{v.suggestLen}</span> / 140</span>
-            <button type="button" class="btn-primary" data-action="sendSuggestion" style={`min-height: 50px; padding: 0 22px; font-family: ${cond}; font-weight: 800; font-size: 19px; text-transform: uppercase`}>Trimite la moderatori</button>
+    <div class="games">
+      <!-- Wheel -->
+      <div id="roata" class="g-wheel panel">
+        <h3 class="show-sm w-title" style={h3big}>Roata lui Lucky</h3>
+        <div class="wheel-box w-wheel" data-toggle="is-spinning:spinning">
+          <span class="wheel-pin" aria-hidden="true"></span>
+          <div class="wheel wheel-rot" data-style="transform:wheelTransform" style={`transform: ${v.wheelTransform}`} data-region="wheelSvg" set:html={views.wheelSvg(v)} />
+          <span class="wheel-hub" aria-hidden="true"><Emote style="display: block; width: 100%; height: auto" /></span>
+        </div>
+        <div class="w-info">
+          <h3 class="only-desk" style={h3big}>Roata lui Lucky</h3>
+          <p style="margin: 6px 0 0; color: #C9D2DF">Abonații: 2 ore în chat într-o zi = o rotire. Plus rotiri bonus din codurile secrete ale partenerilor.</p>
+          <div {...iff('isIn')} style="margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px">
+            <strong data-text="spinsText" style={`font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 22px; text-transform: uppercase`}>{v.spinsText}</strong>
+            <span role="img" aria-label={v.flakesLabel} data-attr="aria-label:flakesLabel" data-region="flakes" style="display: inline-flex; gap: 4px" set:html={views.flakes(v)} />
+          </div>
+          <p {...iff('isIn')} data-text="flakesNote" style="margin: 4px 0 0; font-size: 14px; color: #8C97A8">{v.flakesNote}</p>
+          <button type="button" class={v.spinClass} data-attr="class:spinClass" data-action="spin" data-text="spinLabel" style={`margin-top: 14px; min-height: 50px; padding: 0 22px; font-size: 20px; ${btn}`}>{v.spinLabel}</button>
+          <div role="status">
+            <div {...iff('hasResult')} style="margin-top: 14px; display: flex; align-items: center; gap: 14px; padding: 12px; border: 2px solid var(--ice)">
+              <Emote style={emoteStyle} />
+              <div>
+                <p data-text="resultTitle" style={`margin: 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 22px; line-height: 1.1; text-transform: uppercase`}>{v.resultTitle}</p>
+                <p data-text="resultNote" style="margin: 2px 0 0; font-size: 14px; color: #AEB8C7">{v.resultNote}</p>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="btn-more" data-action="more" data-arg="prizes" aria-controls="prize-wrap" aria-pressed={v.morePrizesPressed} data-attr="aria-pressed:morePrizesPressed" data-text="morePrizesLabel">{v.morePrizesLabel}</button>
+          <div id="prize-wrap" class="prize-wrap" data-toggle="on:morePrizes">
+            <h4 style={`margin: 22px 0 6px; font-family: ${cond}; font-weight: 800; font-size: 18px; letter-spacing: 0.1em; text-transform: uppercase; color: #AEB8C7`}>Toate premiile (<span data-text="prizeTotal">{v.prizeTotal}</span>)</h4>
+            <div class="prize-groups" data-region="prizeGroups" set:html={views.prizeGroups(v)} />
           </div>
         </div>
-        <div {...iff('suggestSent')} role="status" style="display: flex; align-items: center; gap: 14px; padding: 16px; border: 2px solid var(--ice)">
+        <div class="w-extra">
+          <div class="w-code" style="padding: 14px 16px; border: 1px dashed var(--ice)">
+            <label for="secret-code" style={`display: block; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 20px; text-transform: uppercase`}>Ai un cod secret de pe stream?</label>
+            <p style="margin: 2px 0 0; font-size: 14px; color: #AEB8C7">Apare din când în când, câteva minute, de la partenerii noștri. Îți dă o <strong style="color: #F2F5FA">rotire bonus</strong>, chiar dacă nu ești abonat.</p>
+            <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px">
+              <input id="secret-code" class="field" data-input="codeInput" maxlength="16" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ex: EBX-3GY" style={`flex: 1 1 150px; min-width: 0; min-height: 46px; padding: 0 12px; font-family: ${cond}; font-weight: 800; font-size: 20px; letter-spacing: .08em; text-transform: uppercase`} />
+              <button type="button" class="btn-primary" data-action="claimCode" style={`min-height: 46px; padding: 0 18px; font-size: 18px; ${btn}`}>Revendică</button>
+            </div>
+            <p {...iff('hasBonus')} data-text="bonusText" style="margin: 8px 0 0; font-size: 14px; font-weight: 700; color: var(--ice)">{v.bonusText}</p>
+          </div>
+          <div class="w-wins">
+          <h4 style={`margin: 0; font-family: ${cond}; font-weight: 800; font-size: 16px; letter-spacing: 0.1em; text-transform: uppercase; color: #AEB8C7`}>Ultimele premii</h4>
+          <ul data-region="recentWins" style="list-style: none; margin: 4px 0 0; padding: 0; font-size: 14px" set:html={views.recentWins(v)} />
+          </div>
+        </div>
+      </div>
+
+      <!-- Vote -->
+      <div id="vote" class="g-vote panel">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px">
+          <h3 class="h3">Votul abonaților</h3>
+          <span {...iff('hasRound')} data-text="roundLeft" aria-label="Timp rămas din rundă" style={`font-family: ${cond}; font-weight: 800; font-size: 20px; color: var(--ice); font-variant-numeric: tabular-nums`}>{v.roundLeft}</span>
+        </div>
+        <p data-text="voteSub" style="margin: 2px 0 0; font-size: 14px; color: #8C97A8">{v.voteSub}</p>
+        <div data-region="voteOptions" set:html={views.voteOptions(v)} />
+        <p {...iff('isSub')} data-text="voteHint" style="margin: 12px 0 0; font-size: 14px; color: #AEB8C7">{v.voteHint}</p>
+        <div {...iff('isOut')} style="margin-top: 16px">
+          <button type="button" class="btn-twitch" data-action="login" style={`min-height: 46px; padding: 0 18px; ${btn}`}>Votează</button>
+          <p style="margin: 6px 0 0; font-size: 13px; color: #8C97A8">Doar abonații votează. Conectează-te cu Twitch ca să-ți verificăm abonamentul.</p>
+        </div>
+        <div {...iff('isNonsub')} style="margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px">
+          <a class="btn-red" href={site.links.subscribe} style={`min-height: 46px; display: inline-flex; align-items: center; padding: 0 18px; text-decoration: none; ${btn}`}>Abonează-te ca să votezi</a>
+          <button type="button" class="btn-ghost" data-action="becomeSub" style="min-height: 46px; padding: 0 14px; font-weight: 600">M-am abonat, verifică iar</button>
+        </div>
+        <details style="margin-top: 16px; border-top: 1px solid #1A2230">
+          <summary style={`min-height: 44px; display: flex; align-items: center; cursor: pointer; font-family: ${cond}; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #AEB8C7`}>Câștigătoare și clipuri</summary>
+          <p style={`margin: 6px 0 0; font-family: ${cond}; font-weight: 800; font-size: 14px; letter-spacing: 0.1em; color: #8C97A8`}>URMEAZĂ</p>
+          <ol data-region="upNext" style="list-style: none; margin: 0; padding: 0" set:html={views.upNext(v)} />
+          <p style={`margin: 14px 0 0; font-family: ${cond}; font-weight: 800; font-size: 14px; letter-spacing: 0.1em; color: #8C97A8`}>FĂCUTE</p>
+          <ol data-region="completed" style="list-style: none; margin: 0; padding: 0" set:html={views.completed(v)} />
+        </details>
+      </div>
+
+      <!-- Suggest -->
+      <div class="g-sug panel">
+        <h3 class="h3">Propune o provocare</h3>
+        <div {...iff('suggestForm')}>
+          <label for="suggestion" style="display: block; margin-top: 8px; font-size: 14px; color: #8C97A8">Ce să facă Iceman live? (abonații)</label>
+          <textarea id="suggestion" class="field" rows="3" maxlength="140" data-input="suggestion" placeholder="ex: un meci doar cu suport, ales de chat" style="margin-top: 6px; width: 100%; padding: 10px; resize: vertical"></textarea>
+          <div style="margin-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px">
+            <button type="button" class="btn-primary" data-action="sendSuggestion" style={`min-height: 46px; padding: 0 18px; ${btn}`}>Trimite</button>
+            <span style="font-size: 13px; color: #7D8899"><span data-text="suggestLen">{v.suggestLen}</span> / 140</span>
+          </div>
+          <p style="margin: 8px 0 0; font-size: 13px; color: #8C97A8">Moderatorii aleg cele mai bune idei pentru următoarea rundă de vot.</p>
+        </div>
+        <div {...iff('suggestSent')} role="status" style="margin-top: 12px; display: flex; align-items: center; gap: 14px; padding: 14px; border: 2px solid var(--ice)">
           <Emote style={emoteStyle} />
           <div style="flex: 1 1 auto">
             <p style="margin: 0; font-weight: 700">Am trimis-o la moderatori</p>
-            <p style="margin: 2px 0 0; font-size: 15px; color: #AEB8C7">Dacă e aleasă, apare în următoarea rundă de vot.</p>
+            <p style="margin: 2px 0 0; font-size: 14px; color: #AEB8C7">Dacă e aleasă, apare în următoarea rundă de vot.</p>
           </div>
           <button type="button" class="btn-ghost" data-action="newSuggestion" style="min-height: 44px; padding: 0 14px; font-weight: 600">Încă una</button>
         </div>
-        <div {...iff('suggestLocked')} style="display: flex; flex-direction: column; align-items: flex-start; gap: 14px; padding: 22px; border: 2px dashed #2A3445">
-          <span style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: #AEB8C7">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" aria-hidden="true"><rect x="5" y="11" width="14" height="10"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
-            <span data-text="suggestLockText">{v.suggestLockText}</span>
-          </span>
-          <button type="button" class="btn-twitch" data-action="login" {...iff('isOut')} style={`min-height: 50px; padding: 0 20px; font-family: ${cond}; font-weight: 800; font-size: 19px; text-transform: uppercase`}>Conectează-te cu Twitch</button>
-          <a class="btn-red" href={site.links.subscribe} {...iff('isNonsub')} style={`min-height: 50px; display: inline-flex; align-items: center; padding: 0 20px; font-family: ${cond}; font-weight: 800; font-size: 19px; text-transform: uppercase; text-decoration: none`}>Abonează-te pe Twitch</a>
+        <div {...iff('suggestLocked')} style="margin-top: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 18px; border: 2px dashed #2A3445">
+          <span data-text="suggestLockText" style="font-weight: 600; color: #AEB8C7">{v.suggestLockText}</span>
+          <button type="button" class="btn-twitch" data-action="login" {...iff('isOut')} style={`min-height: 46px; padding: 0 18px; ${btn}`}>Conectează-te cu Twitch</button>
+          <a class="btn-red" href={site.links.subscribe} {...iff('isNonsub')} style={`min-height: 46px; display: inline-flex; align-items: center; padding: 0 18px; text-decoration: none; ${btn}`}>Abonează-te pe Twitch</a>
+        </div>
+      </div>
+
+      <!-- Bingo -->
+      <div id="bingo" class="g-bingo panel">
+        <div class="show-sm" style="padding: 0 6px">
+          <h3 style={h3big}>Bingo</h3>
+          <p style="margin: 4px 0 0; font-size: 13px; color: #C9D2DF">Alege o linie cu săgețile. Dacă toate 5 se întâmplă, intri la tragerea la sorți.</p>
+        </div>
+        <div class="bgrid" role="group" aria-label="Cartonașul de bingo: alege o linie" data-region="bingo2" set:html={views.bingo2(v)} />
+        <div>
+          <h3 class="only-desk" style={h3big}>Bingo</h3>
+          <p class="only-desk" style="margin: 8px 0 0; color: #C9D2DF">Alege o linie (rând, coloană sau diagonală) cu 5 lucruri care crezi că se vor întâmpla. Dacă se întâmplă toate 5, intri la tragerea la sorți.</p>
+          <div class="line-box">
+            <p style={`margin: 0; display: flex; justify-content: space-between; gap: 8px; font-family: ${cond}; font-weight: 800; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; color: #8FE4FF`}><span data-text="lineName">{v.lineName}</span></p>
+            <p {...iff('hasLine')} style={`margin: 4px 0 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 34px; line-height: 1`}><span data-text="lineHits">{v.lineHits}</span> <span style="font-size: 18px; font-weight: 800; color: #AEB8C7">s-au întâmplat</span></p>
+            <p {...iff('noLine')} style="margin: 4px 0 0; font-size: 15px; color: #C9D2DF">Alege o linie cu săgețile de pe margine.</p>
+            <div class="line-bar" {...iff('hasLine')} aria-hidden="true" data-region="lineBar" set:html={views.lineBar(v)} />
+            <ul class="my-line" {...iff('hasLine')} data-region="myLine" set:html={views.myLine(v)} />
+          </div>
+          <p class="kv"><span>Premiul</span><span><span data-text="bingoPrizeName">{v.bingoPrizeName}</span> <span data-text="bingoPrizeBy" style="color: #E6C46A">{v.bingoPrizeBy}</span></span></p>
+          <p class="kv"><span data-text="bingoCloseLabel">{v.bingoCloseLabel}</span><span data-text="bingoClose">{v.bingoClose}</span></p>
+          <p class="kv" style="border-bottom: 0"><span>Au ales o linie</span><span data-text="bingoPlayersLong">{v.bingoPlayersLong}</span></p>
+          <p role="status" data-text="bingoNote" data-toggle="is-bingo:isBingo" class="bingo-note" style="margin: 10px 0 0; font-size: 14px; color: #C9D2DF">{v.bingoNote}</p>
+          <button type="button" {...iff('bingoOpen')} class={v.bingoBtnClass} data-attr="class:bingoBtnClass" data-action="bingoSave" data-text="bingoBtn" style={`margin-top: 14px; width: 100%; min-height: 50px; font-size: 20px; ${btn}`}>{v.bingoBtn}</button>
         </div>
       </div>
     </div>

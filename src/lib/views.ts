@@ -307,7 +307,7 @@ function legendPanel(title: string, ic: keyof typeof ICONS, rows: Vals['legendsD
   return `<div class="panel lg">${head}
 <div class="prism-card"><span class="prism-tag">PRISMĂ · LOCUL 1</span>
 <div class="prism-row"><span class="prism-name">${esc(first.name)}</span><span class="prism-total prism-text">${tot(first)}</span></div></div>
-<ol start="2" class="lg-rest">${rest.map((r, i) => `<li><span class="rk" style="${rankStyle(i + 1)}">${r.rank}</span><span class="nm">${esc(r.name)}</span><span class="tt">${esc(r.total)}</span></li>`).join('')}</ol>
+<ol start="2" class="lg-rest">${rest.map((r, i) => `<li><span class="rk" style="${rankStyle(i + 1)}">${r.rank}</span><span class="nm">${esc(r.name)}</span><span class="tt">${esc(r.total)}${unit === '€' ? ' €' : ''}</span></li>`).join('')}</ol>
 <p class="lg-compact">${rest.map((r, i) => `<strong style="${rankStyle(i + 1)}">${r.rank}</strong> ${esc(r.name)}`).join(' · ')}</p>
 </div>`;
 }

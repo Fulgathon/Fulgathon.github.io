@@ -120,11 +120,11 @@ export const PRISM = 'linear-gradient(135deg, #9FE8FF 0%, #A9B8FF 30%, #E2B6FF 5
 export const rankColors = ['prism', '#E6C46A', '#C9D1DB', '#C98A5B', '#4A5568'];
 
 /**
- * Advent calendar defaults: the 22 days from 20 Dec 2026 to 10 Jan 2027.
- * Only the fixed dates are named here; moderators add what's scheduled
- * (and the clip of each day) on /mod.
+ * Advent calendar defaults: 22 days from the start (20 Dec 2026 → 10 Jan 2027).
+ * Only fixed dates are named here (by calendar date, Romania); moderators add
+ * what's scheduled, the clip of each day and sponsors on /mod.
  */
 export const ADVENT_DAYS = 22;
-export const adventDefaults: Record<number, string> = {
-  1: 'Startul', 5: 'Ajunul', 6: 'Crăciun', 12: 'Revelion live', 13: 'Anul Nou', 22: 'Finalul programat',
-};
+export const adventDates: Record<string, string> = { '12-24': 'Ajunul', '12-25': 'Crăciun', '12-31': 'Revelion live', '01-01': 'Anul Nou' };
+/** Days drawn with the fir tree (Ajunul, Crăciun). */
+export const adventTree = ['12-24', '12-25'];

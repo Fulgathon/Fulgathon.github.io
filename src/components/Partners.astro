@@ -1,63 +1,56 @@
 ---
-// 01 Partenerii subathonului (right after the timer, owner's request). Logos are placeholders until sponsors send files.
+// 01 Partenerii subathonului: main partner card, partner tiles, a row of supporters.
+// Logos are placeholders until the sponsors send files (src/data/site.ts).
 import SectionHead from './SectionHead.astro';
 import { v } from '../lib/ssr';
 import { site } from '../data/site';
 const cond = "'Barlow Condensed', sans-serif";
-const h3 = `font-family: ${cond}; font-weight: 800; font-size: 20px; letter-spacing: 0.12em; text-transform: uppercase; color: #AEB8C7`;
-const corners = ['c-tl', 'c-tr', 'c-bl', 'c-br'];
 ---
-<section id="parteneri" aria-labelledby="h-parteneri" style="position: relative; z-index: 1; max-width: 1280px; margin: clamp(40px, 5cqi, 72px) auto 0; padding: 0 clamp(20px, 4cqi, 40px) clamp(56px, 8cqi, 112px)">
-  <SectionHead tag="01" bignum="01" title="Partenerii subathonului" id="h-parteneri">
-    <p style="margin: 0; max-width: 420px; font-size: 17px; color: #AEB8C7">Ei fac posibile premiile, roata și orele în plus. Treceți pe la ei.</p>
-  </SectionHead>
+<section id="parteneri" aria-labelledby="h-parteneri" class="sec" style="padding-top: clamp(28px, 3cqi, 40px)">
+  <div class="wrap">
+    <SectionHead tag="01" title="Partenerii subathonului" id="h-parteneri">
+      <p class="side">Ei fac posibile premiile, roata și orele în plus.</p>
+    </SectionHead>
 
-  <!-- Main partner -->
-  <div style="position: relative; margin-top: 32px; background: #0B1018; border: 1px solid #1C2230; display: flex; flex-wrap: wrap; align-items: stretch">
-    {corners.map((c) => <span aria-hidden="true" class={`corner ${c}`}></span>)}
-    <div style="flex: 1 1 340px; min-width: 0; min-height: 220px; display: grid; place-items: center; padding: clamp(24px, 4cqi, 48px); background: radial-gradient(ellipse at 50% 50%, rgba(63,208,255,0.10), rgba(63,208,255,0) 70%); border-right: 1px solid #1C2230">
-      <span style="display: flex; flex-direction: column; align-items: center; gap: 10px"><span style="font-family: Barlow, sans-serif; font-weight: 700; font-size: clamp(40px, 5cqi, 64px); letter-spacing: 0.06em; color: #FFFFFF" data-sponsor="logo">{site.sponsor.logoText}</span><span style="font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #7D8899">Aici vine logo-ul oficial</span></span>
-    </div>
-    <div style="flex: 1.4 1 420px; min-width: 0; padding: clamp(24px, 4cqi, 48px); display: flex; flex-direction: column; justify-content: center">
-      <span style={`align-self: flex-start; padding: 2px 10px; transform: skewX(-12deg); background: var(--ice); color: #04101A; font-family: ${cond}; font-size: 14px; font-weight: 800; letter-spacing: 0.08em`}>PARTENER PRINCIPAL</span>
-      <h3 style={`margin: 16px 0 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: clamp(34px, 4cqi, 52px); line-height: 0.95; text-transform: uppercase`} data-sponsor="name">{site.sponsor.name}</h3>
-      <p style="margin: 12px 0 0; max-width: 520px; font-size: 17px; color: #AEB8C7" data-sponsor="pitch">{site.sponsor.pitch}</p>
-      <div style="margin-top: 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
-        <button type="button" data-action="copyCode" data-track={`${site.sponsor.name}|code_copy`} aria-label="Copiază codul de reducere" style="min-height: 52px; display: inline-flex; align-items: center; gap: 14px; padding: 0 16px; background: transparent; border: 2px dashed var(--ice); color: #F2F5FA">
-          <span style="font-size: 13px; color: #8C97A8">Cod</span>
-          <span style={`font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 24px; letter-spacing: 0.04em`} data-sponsor="code">{site.sponsor.code}</span>
-          <span data-text="codeLabel" style={`font-family: ${cond}; font-weight: 800; font-size: 15px; text-transform: uppercase; color: var(--ice)`}>{v.codeLabel}</span>
-        </button>
-        <span class="sr-only" role="status" data-text="codeStatus"></span>
-        <a class="btn-primary" href={site.sponsor.offerUrl} data-track={`${site.sponsor.name}|click`} style={`min-height: 52px; display: inline-flex; align-items: center; padding: 0 24px; font-family: ${cond}; font-weight: 800; font-size: 20px; text-transform: uppercase; text-decoration: none`}>Vezi oferta →</a>
+    <div class="main-partner panel">
+      <div class="mp-logo">
+        {site.sponsor.logo
+          ? <img src={site.sponsor.logo} alt={site.sponsor.name} loading="lazy" style="max-width: 70%; max-height: 120px; object-fit: contain" />
+          : <span data-sponsor="logo">{site.sponsor.logoText}</span>}
+      </div>
+      <div style="padding: clamp(16px, 2.4cqi, 32px)">
+        <span class="tag-ice" style="padding: 2px 10px; font-size: 14px">PARTENER PRINCIPAL</span>
+        <p style="margin: 14px 0 0; color: #AEB8C7" data-sponsor="pitch">{site.sponsor.pitch}</p>
+        <div style="margin-top: 18px; display: flex; flex-wrap: wrap; gap: 8px 12px">
+          <button type="button" data-action="copyCode" data-track={`${site.sponsor.name}|code_copy`} aria-label="Copiază codul de reducere" style="flex: 1 1 auto; max-width: 320px; min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 12px; padding: 0 16px; background: transparent; border: 2px dashed var(--ice); color: #F2F5FA">
+            <span style={`font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 22px; letter-spacing: 0.04em`} data-sponsor="code">{site.sponsor.code}</span>
+            <span data-text="codeLabel" style={`font-family: ${cond}; font-weight: 800; font-size: 14px; text-transform: uppercase; color: var(--ice)`}>{v.codeLabel}</span>
+          </button>
+          <span class="sr-only" role="status" data-text="codeStatus"></span>
+          <a class="btn-primary" href={site.sponsor.offerUrl} data-track={`${site.sponsor.name}|click`} style={`flex: 1 1 auto; max-width: 260px; min-height: 48px; display: inline-flex; align-items: center; justify-content: center; padding: 0 22px; font-family: ${cond}; font-weight: 800; text-transform: uppercase; text-decoration: none`}>Vezi oferta →</a>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Partners -->
-  <h3 style={`margin: 48px 0 0; ${h3}`}>Parteneri</h3>
-  <div style="margin-top: 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 12px">
-    {site.partners.map((pt) => (
-      <a class="ptile" href={pt.url} data-track={`${pt.name}|click`} style="display: flex; flex-direction: column; gap: 14px; padding: 20px; background: #0B1018; border: 1px solid #1C2230; text-decoration: none; color: #F2F5FA">
-        {pt.logo
-          ? <span style="width: 100%; height: 96px; display: grid; place-items: center"><img src={pt.logo} alt={pt.name} loading="lazy" decoding="async" style="max-width: 80%; max-height: 72px; object-fit: contain" /></span>
-          : <span class="logo-slot" style="width: 100%; height: 96px; font-size: 12px">Logo</span>}
-        <span style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px">
-          <span style="font-weight: 700; font-size: 17px">{pt.name}</span>
-          <span style={`font-family: ${cond}; font-weight: 700; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; color: #8C97A8`}>{pt.role}</span>
-        </span>
-      </a>
-    ))}
-  </div>
+    <div class="ptiles">
+      {site.partners.map((pt) => (
+        <a class="ptile panel" href={pt.url} data-track={`${pt.name}|click`} style="display: block; padding: 16px; text-decoration: none; color: #F2F5FA">
+          {pt.logo
+            ? <span style="height: 64px; display: grid; place-items: center"><img src={pt.logo} alt={pt.name} loading="lazy" decoding="async" style="max-width: 80%; max-height: 52px; object-fit: contain" /></span>
+            : <span style="height: 64px; display: grid; place-items: center; border: 1px dashed #2A3445; font-size: 12px; color: #7D8899">LOGO</span>}
+          <span style="margin-top: 10px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 8px; font-size: 15px"><strong>{pt.name}</strong><span style="color: #8C97A8">{pt.role}</span></span>
+        </a>
+      ))}
+    </div>
 
-  <!-- Supporters -->
-  <h3 style={`margin: 40px 0 0; ${h3}`}>Susținători</h3>
-  <div style="margin-top: 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); gap: 10px">
-    {site.supporters.map((su) => (
-      su.logo
-        ? <a class="ptile" href={su.url} data-track={su.name ? `${su.name}|click` : undefined} style="height: 72px; display: grid; place-items: center; border: 1px solid #1C2230; background: #090C11"><img src={su.logo} alt={su.name} loading="lazy" decoding="async" style="max-width: 80%; max-height: 44px; object-fit: contain" /></a>
-        : <a class="ptile logo-slot" href={su.url} style="height: 72px; font-size: 11px; text-decoration: none; border-style: solid; border-color: #1C2230; background: #090C11">{su.name || 'Logo'}</a>
-    ))}
+    <h3 style={`margin: 28px 0 10px; font-family: ${cond}; font-weight: 800; font-size: 18px; letter-spacing: 0.12em; text-transform: uppercase; color: #AEB8C7`}>Susținători</h3>
+    <div class="stiles">
+      {site.supporters.map((su) => (
+        su.logo
+          ? <a class="ptile" href={su.url} data-track={su.name ? `${su.name}|click` : undefined} style="height: 64px; display: grid; place-items: center; background: #090C11; border: 1px solid #1C2230"><img src={su.logo} alt={su.name} loading="lazy" decoding="async" style="max-width: 80%; max-height: 40px; object-fit: contain" /></a>
+          : <a class="ptile" href={su.url} style={`height: 64px; display: grid; place-items: center; background: #090C11; border: 1px solid #1C2230; font-family: ${cond}; font-weight: 800; font-size: 12px; letter-spacing: 0.1em; color: #7D8899; text-decoration: none`}>{su.name || 'LOGO'}</a>
+      ))}
+    </div>
+    <p style="margin: 20px 0 0; font-size: 15px; color: #8C97A8">Vrei să fii partener la subathon? <a href={`mailto:${site.contactEmail}`} style="font-weight: 600">Scrie-ne la {site.contactEmail}</a></p>
   </div>
-  <p style="margin: 28px 0 0; font-size: 15px; color: #8C97A8">Vrei să fii partener la subathon? <a href={`mailto:${site.contactEmail}`} style="font-weight: 600">Scrie-ne la {site.contactEmail}</a></p>
 </section>

@@ -18,6 +18,8 @@ export const site = {
   sponsor: {
     /** Plain text standing in for the official logo. */
     logoText: 'ZONA IT',
+    /** Official logo file in public/sponsors/ (e.g. '/sponsors/zona-it.svg'); empty shows the LOGO slot. */
+    logo: '',
     name: 'Zona IT',
     code: 'ICEMAN10',
     offerUrl: '#',

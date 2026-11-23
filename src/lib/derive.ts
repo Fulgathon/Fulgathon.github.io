@@ -2,7 +2,7 @@
 // values the page shows. Pure, so the build (first paint) and the browser
 // (every update) produce exactly the same output.
 
-import { ADVENT_DAYS, adventDefaults, badgeDefs, boardTabs as boardTabDefs, boardUnits, calcOptions, placeholderTicker } from '../data/content';
+import { ADVENT_DAYS, adventDates, adventTree, badgeDefs, boardTabs as boardTabDefs, boardUnits, calcOptions, placeholderTicker } from '../data/content';
 import { site } from '../data/site';
 import type { BoardTab, Loyalty, Mine, SiteData } from '../data/types';
 import { ago, cleanTitle, count, dateRo, dayRo, duration, fmtInt, pad, timeRo } from './format';
@@ -404,7 +404,9 @@ export function derive(s: State, d: SiteData) {
     if (n === undefined) return '';
     return n === 0 ? 'Încă n-o are nimeni din chat' : n === 1 ? 'O are 1 om din chat' : `O au ${count(n, 'om', 'oameni')} din chat`;
   };
-  const myBadges = badgeDefs.map((b) => ({ ...b, earned: held.has(b.id), note: held.has(b.id) ? 'câștigată' : progressFor(b.id), who: whoHas(b.id), open: s.badgeTip === b.id }));
+  const tierNames = { bronze: 'bronz · ușor', silver: 'argint · mediu', gold: 'aur · greu', plat: 'platină · foarte greu', prism: 'prismă · legendar' };
+  const myBadges = badgeDefs.map((b) => ({ ...b, earned: held.has(b.id),
+    note: held.has(b.id) ? 'câștigată' : isOut ? tierNames[b.tier] : progressFor(b.id), who: whoHas(b.id), open: s.badgeTip === b.id }));
   const tip = s.badgeTip ? myBadges.find((b) => b.id === s.badgeTip) ?? null : null;
 
   // ---- Milestone Maraton: track → next goal → clips ----
@@ -451,9 +453,11 @@ export function derive(s: State, d: SiteData) {
     const at = startAt + k * 86_400_000;
     const parts = roParts.format(new Date(at)).split('-').map(Number);
     const set = d.advent.find((a) => a.day === n);
-    const note = [set?.note || adventDefaults[n] || '', set?.sponsor ?? ''].filter(Boolean).join(' · ');
+    const md = `${pad(parts[1])}-${pad(parts[2])}`;
+    const fixed = n === 1 ? 'Startul' : n === ADVENT_DAYS ? 'Finalul programat' : adventDates[md] ?? '';
+    const note = [set?.note || fixed, set?.sponsor ?? ''].filter(Boolean).join(' · ');
     return { n: pad(n), date: `${parts[2]} ${shortMonths[parts[1] - 1]}`, note, clip: set?.clip ?? null,
-      past: n < todayN, today: n === todayN, future: n > todayN, holiday: n === 5 || n === 6 };
+      past: n < todayN, today: n === todayN, future: n > todayN, holiday: adventTree.includes(md) };
   });
   const dayFrom = Math.min(Math.max(0, todayN - 4), ADVENT_DAYS - 8);
 
@@ -466,6 +470,7 @@ export function derive(s: State, d: SiteData) {
     statusText: live ? 'LIVE' : upcoming ? 'ÎNCEPE CURÂND' : 'ÎNCHEIAT',
     liveBg: live ? '#D5162B' : '#2A3445',
     timerLabel: live ? 'Timp rămas' : upcoming ? 'Începe în' : 'Subathonul s-a încheiat',
+    timerLabelUp: live ? 'TIMP RĂMAS' : upcoming ? 'ÎNCEPE ÎN' : 'ÎNCHEIAT',
     endDateText,
     hasDouble: doubleNow || doubleSoon, doubleText, doubleNow, doubleSponsor: d.doubleSponsor ?? '',
     isFrozen: live && d.pausedUntil !== null && d.pausedUntil > s.now,
@@ -477,6 +482,7 @@ export function derive(s: State, d: SiteData) {
     raisedText: d.raised,
     progressPct: progress.toFixed(1) + '%',
     progressLabel: fmtInt(Math.floor(raised)) + ' / ' + fmtInt(nextMark) + ' €',
+    progressAria: `Spre următorul milestone: ${fmtInt(Math.floor(raised))} din ${fmtInt(nextMark)} €`,
     goals, unlockedCount, totalGoals: goals.length, board, boardTabs, boardLabelledBy: 'tab-board-' + tab,
     boardEmpty: board.length === 0,
 
@@ -489,6 +495,7 @@ export function derive(s: State, d: SiteData) {
     badgeColor: isSub ? '#04101A' : '#AEB8C7',
 
     hasRound: round !== null, roundLabel, roundLeft,
+    voteSub: round ? (roundOpen ? `Runda ${round.number} · câștigătoarea se face live` : `Runda ${round.number} s-a închis · urmează una nouă`) : 'Prima rundă se deschide odată cu maratonul.',
     challenges, voteHint, voteTabs,
     upNext: d.upNext, completed: d.completed,
     tabOpen: vt === 'open', tabNext: vt === 'next', tabDone: vt === 'done',
@@ -523,6 +530,7 @@ export function derive(s: State, d: SiteData) {
     bingoPrizeName: B.prize && !B.prize.startsWith('[') ? B.prize.charAt(0).toUpperCase() + B.prize.slice(1) : 'Se anunță în curând',
     bingoPrizeBy: B.prizeSponsor ? `· de la ${B.prizeSponsor}` : '',
     bingoClose: closeText || 'se anunță',
+    bingoCloseLabel: bingoOpen ? 'Poți schimba linia până pe' : 'Alegerile s-au închis pe',
     bingoPlayersLong: B.players === 1 ? '1 jucător' : count(B.players, 'jucător', 'jucători'),
 
     suggestForm: isSub && !s.suggestDone,
@@ -588,6 +596,7 @@ export function derive(s: State, d: SiteData) {
     morePrizesLabel: s.more.prizes ? 'Ascunde premiile' : 'Vezi toate premiile',
     moreFeedPressed: bool(s.more.feed), moreLoyalPressed: bool(s.more.loyal), moreGoalsPressed: bool(s.more.goals),
     moreDaysPressed: bool(s.more.days), morePrizesPressed: bool(s.more.prizes),
+    trackCols: `repeat(${Math.max(1, N)}, minmax(0, 1fr))`,
     track, trackFill: fillW.toFixed(2) + '%', trackLeft: (step / 2).toFixed(2) + '%', segs,
     goalsHead: `Donațiile deblochează provocări. ${happenedCount} din ${N} făcute până acum.`,
     goalsPhone: `${happenedCount} din ${N} făcute${pending ? ` · ${pending.no} urmează live` : ''}`,
