@@ -59,6 +59,8 @@ Secrets go only into the dashboards below, never into chat or the repo.
    `channel.subscription.end`. /mod → Conexiuni → «Resubs din chat» shows
    whether the permission is there. Do this as early as possible before
    20 Dec, so regular chatters already have a month count at the start.
+   The same reconnect also asks for `clips:edit`: «Făcută» on /mod then
+   clips the moment on Twitch by itself.
 7. **Daily check-in (channel points):** Twitch dashboard → Viewer Rewards →
    Channel Points → Manage Rewards → Add New Custom Reward:
    - Title: `Check-in ICEMARATON`. Any title containing "check-in" works.

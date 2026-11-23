@@ -52,6 +52,12 @@ export interface DemoState {
   communityGoals?: { title: string; hours: number }[];
   /** Moderator name rules (hide / allow), like private.name_rules. */
   nameRules?: { name: string; rule: 'hide' | 'allow'; at: number }[];
+  /** /mod autopilot settings, the plan, Discord alerts and the shared checklist (demo: nothing runs or is sent). */
+  autopilot?: {
+    autoStart: boolean; startHours: number; voteOn: boolean; voteAt: string; voteMinutes: number; hasWebhook: boolean;
+    plan: { id: number; kind: string; at: number; minutes: number | null; until: number | null; sponsor: string | null; by: string }[];
+    checklist: Record<string, { by: string; at: number }>;
+  };
   v: 8;
   seq: number;
   timer: {
@@ -80,7 +86,7 @@ export interface DemoState {
   /** Prediction bingo: the viewer's pick plus simulated players' picks. */
   bingo: {
     closesAt: number | null; prize: string; prizeSponsor?: string | null;
-    items: { id: number; label: string; happened: boolean }[];
+    items: { id: number; label: string; happened: boolean; rule?: Record<string, unknown> | null }[];
     pick: number[] | null;
     others: { user: string; items: number[] }[];
     draws: string[];
@@ -661,6 +667,10 @@ export class DemoBackend {
       if (s.viewer.state !== 'sub') fail('not_subscribed');
       const recent = s.suggestions.filter((x) => x.user === s.viewer.name && Date.now() - x.at < 10 * MIN).length;
       if (recent >= 3) fail('too_many');
+      // Same clean-up as the database: no links, nothing already proposed.
+      const key = (t: string) => t.toLowerCase().replace(/[ăâ]/g, 'a').replace(/î/g, 'i').replace(/[șş]/g, 's').replace(/[țţ]/g, 't').replace(/[^a-z0-9]/g, '');
+      if (/(https?:|www\.|\.(com|ro|net)\b)/i.test(body)) fail('blocked_text');
+      if (key(body).length >= 3 && s.suggestions.some((x) => x.status !== 'rejected' && key(x.body) === key(body))) fail('duplicate');
       s.suggestions.push({ id: ++s.seq, body: body.trim(), user: s.viewer.name, at: Date.now(), status: 'pending' });
     });
   }
@@ -890,6 +900,23 @@ export class DemoBackend {
   }
 
   /** What the moderator page shows, in the same shape it reads from the database. */
+  private autopilotOf(s: DemoState) {
+    s.autopilot ??= { autoStart: false, startHours: 24, voteOn: false, voteAt: '20:00', voteMinutes: 60, hasWebhook: false, plan: [], checklist: {} };
+    return s.autopilot;
+  }
+
+  /** Same shape as mod_autopilot() on the real site. */
+  autopilot() {
+    const ap = this.autopilotOf(this.load());
+    return {
+      autoStart: ap.autoStart, startHours: ap.startHours, voteOn: ap.voteOn, voteAt: ap.voteAt, voteMinutes: ap.voteMinutes, lastVoteDay: null,
+      hasWebhook: ap.hasWebhook, updatedAt: null, updatedBy: null,
+      plan: ap.plan.filter((x) => x.at > Date.now() - 2 * 86_400_000).map((x) => ({ id: x.id, kind: x.kind, at: new Date(x.at).toISOString(), minutes: x.minutes,
+        until: x.until ? new Date(x.until).toISOString() : null, sponsor: x.sponsor, by: x.by, done: x.at <= Date.now() ? new Date(x.at).toISOString() : null, result: x.at <= Date.now() ? 'done' : null })),
+      checklist: Object.fromEntries(Object.entries(ap.checklist).map(([k, v]) => [k, { by: v.by, at: new Date(v.at).toISOString() }])),
+    };
+  }
+
   modState() {
     const s = this.load();
     const iso = (ms: number | null) => (ms ? new Date(ms).toISOString() : null);
@@ -922,7 +949,7 @@ export class DemoBackend {
       mods: s.mods.map((login) => ({ login, display_name: login === 'icemanlucky' ? 'Icemanlucky' : null })),
       bingo: {
         closes_at: iso(s.bingo.closesAt), prize: s.bingo.prize, prize_sponsor: s.bingo.prizeSponsor ?? null,
-        items: s.bingo.items.map((it) => ({ id: it.id, label: it.label, happened_at: it.happened ? 'yes' : null })),
+        items: s.bingo.items.map((it) => ({ id: it.id, label: it.label, happened_at: it.happened ? 'yes' : null, auto_rule: it.rule ?? null })),
         status: {
           players: s.bingo.others.length + (s.bingo.pick ? 1 : 0),
           winners: this.bingoWinners(s).map((login) => ({ login, saved_at: null })),
@@ -967,6 +994,50 @@ export class DemoBackend {
       case 'mod_bingo_tick': return this.bingoTick(Number(a.p_id), !!a.p_happened);
       case 'mod_bingo_settings': return this.bingoSettings(ms(a.p_closes_at), String(a.p_prize ?? ''), a.p_prize_sponsor ?? null);
       case 'mod_bingo_draw': return this.bingoDraw();
+      case 'mod_autopilot': return this.autopilot();
+      case 'mod_autopilot_set': return this.mutate((s) => {
+        const ap = this.autopilotOf(s);
+        const p = a.p ?? {};
+        if ('discordWebhook' in p) {
+          const hook = String(p.discordWebhook ?? '').trim();
+          if (hook && !/^https:\/\/(discord\.com|discordapp\.com|canary\.discord\.com)\/api\/webhooks\/\d+\/[\w-]+$/.test(hook)) fail('bad_webhook');
+          ap.hasWebhook = !!hook;
+        }
+        if (p.voteAt !== undefined && !/^([01]\d|2[0-3]):[0-5]\d$/.test(String(p.voteAt))) fail('bad_autopilot');
+        if (p.voteMinutes !== undefined && !(Number(p.voteMinutes) >= 10 && Number(p.voteMinutes) <= 720)) fail('bad_autopilot');
+        for (const k of ['autoStart', 'voteOn'] as const) if (p[k] !== undefined) ap[k] = !!p[k];
+        if (p.voteAt !== undefined) ap.voteAt = String(p.voteAt);
+        if (p.voteMinutes !== undefined) ap.voteMinutes = Number(p.voteMinutes);
+        if (p.startHours !== undefined) ap.startHours = Number(p.startHours) || 24;
+      });
+      case 'mod_alert_test': if (!this.autopilotOf(this.load()).hasWebhook) fail('no_webhook'); return true;
+      case 'mod_plan_add': return this.mutate((s) => {
+        const at = ms(a.p_at) ?? 0;
+        if (at < Date.now() - 60_000) fail('plan_in_past');
+        if (a.p_kind === 'freeze' && !((ms(a.p_until) ?? 0) > at)) fail('bad_until');
+        if (a.p_kind !== 'freeze' && !(Number(a.p_minutes) >= 1 && Number(a.p_minutes) <= (a.p_kind === 'code' ? 60 : 720))) fail('bad_minutes');
+        const ap = this.autopilotOf(s);
+        ap.plan.push({ id: ++s.seq, kind: a.p_kind, at, minutes: a.p_kind === 'freeze' ? null : Number(a.p_minutes),
+          until: a.p_kind === 'freeze' ? ms(a.p_until) : null, sponsor: (a.p_sponsor ?? '').trim() || null, by: 'icemanlucky' });
+        ap.plan.sort((x, y) => x.at - y.at);
+      });
+      case 'mod_plan_del': return this.mutate((s) => { const ap = this.autopilotOf(s); ap.plan = ap.plan.filter((x) => x.id !== Number(a.p_id)); });
+      case 'mod_checklist_set': return this.mutate((s) => {
+        const ap = this.autopilotOf(s);
+        if (a.p_done) ap.checklist[String(a.p_key)] = { by: 'icemanlucky', at: Date.now() };
+        else delete ap.checklist[String(a.p_key)];
+      });
+      case 'mod_bingo_rule': return this.mutate((s) => {
+        const r = a.p_rule;
+        if (r && (Object.keys(r).length > 1 && !(Number(Object.values(r)[1]) > 0))) fail('bad_rule');
+        const it = s.bingo.items.find((x) => x.id === Number(a.p_id));
+        if (it) it.rule = r ?? null;
+      });
+      case 'mod_review_all': {
+        const ids = this.load().suggestions.filter((x) => x.status === 'pending').map((x) => x.id);
+        ids.forEach((id) => this.reviewSuggestion(id, !!a.p_approve));
+        return ids.length;
+      }
       default: return fail(`unknown_${fn}`);
     }
   }

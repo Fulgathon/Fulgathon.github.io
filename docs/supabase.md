@@ -142,14 +142,18 @@ All are deployed with `verify_jwt = false` and authenticate themselves.
 | `check-sub` | The site, after login and "M-am abonat, verifică iar" | Checks the viewer's sub with the broadcaster token, updates `viewers.is_subscriber` |
 | `watch-time` | pg_cron every 5 min (`x-cron-secret`) | Chatters list + sub status → `credit_watch_time` (only while live and online) |
 | `tipeee-donations` | pg_cron every 15 s (`x-cron-secret`) | New TipeeeStream donations (euros) → `record_event('donation', …)`, deduped on `tipeee:<id>`; counts only while live; state in `private.tipeee_state` |
+| `make-clip` | `/mod`, on «Făcută» (a challenge or milestone done), moderators only | Creates a Twitch clip of the last ~30 s with Iceman's token (`clips:edit`) and returns its link; nothing when offline |
 
 Edge Function secrets to set once: `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`.
 Generated in Vault by the migrations: `eventsub_secret`, `cron_secret`; later
 `twitch_broadcaster_token`.
 
 Scheduled jobs (pg_cron): `icemaraton-minute` (closes finished vote rounds,
-ends the timer at zero), `icemaraton-watch-time` (every 5 minutes) and
-`icemaraton-tipeee` (every 15 seconds).
+ends the timer at zero), `icemaraton-watch-time` (every 5 minutes),
+`icemaraton-tipeee` (every 15 seconds) and `icemaraton-autopilot` (every
+minute, `private.autopilot_tick()`: auto start, the planned Ora dublă / codes /
+freezes in `private.plan`, the daily vote round, bingo auto-ticks and Discord
+alerts; settings in `private.autopilot`, changed on /mod → PROGRAM).
 
 Moderator functions (`mod_*`, used by `/mod`) check `viewers.is_moderator`.
 Logins in `private.settings.moderator_logins` (initially `icemanlucky`) become

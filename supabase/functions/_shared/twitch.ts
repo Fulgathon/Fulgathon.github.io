@@ -41,7 +41,8 @@ export const CHAT_SCOPE = 'user:write:chat';
 // user:read:chat + user:bot + channel:bot: read chat through EventSub (channel.chat.message)
 // with the app token, for the subscriber badge months (resubs nobody shared).
 export const READ_CHAT_SCOPES = ['user:read:chat', 'user:bot', 'channel:bot'];
-export const SCOPES = ['channel:read:subscriptions', 'bits:read', 'moderator:read:chatters', 'channel:read:redemptions', CHAT_SCOPE, ...READ_CHAT_SCOPES];
+// clips:edit: «Făcută» on /mod clips the moment (make-clip).
+export const SCOPES = ['channel:read:subscriptions', 'bits:read', 'moderator:read:chatters', 'channel:read:redemptions', CHAT_SCOPE, ...READ_CHAT_SCOPES, 'clips:edit'];
 
 export async function getConfig(db: Db): Promise<Config> {
   const { data, error } = await db.rpc('twitch_config');

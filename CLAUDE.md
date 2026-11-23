@@ -99,6 +99,7 @@ Build the static site so it matches the design, with every interaction working o
 - **Iceman is protected (23 Nov 2026):** no moderator can remove or demote the broadcaster login (icemanlucky) on /mod. See B-30.
 - **Euros only (23 Nov 2026):** only EUR TipeeeStream donations add time and count toward Strâns; no conversion table. A donation in another currency goes to /mod «De făcut acum» for a moderator to handle by hand. See B-09.
 - **Resubs without sharing (24 Nov 2026):** resubs count even when the viewer doesn't press Share: the site reads the subscriber badge months in chat and counts an increase as a resub (no double counting with shared resubs or new/gifted subs). Viewers who never chat can't be seen. Gift subs add time for the gifter; the recipient counts as a subscriber at once. See BUGS.md B-18.
+- **/mod on autopilot (24 Nov 2026):** Iceman has at most 3 helpers, so /mod is split by how often it's used (AZI · PROGRAM · PREGĂTIRE · SETĂRI) and as much as possible runs by itself: optional auto start, a daily vote round opened automatically, Ora dublă / secret codes / freezes planned ahead, bingo auto-ticks for events the site can see, suggestions that refuse links, blocked words and duplicates, a Twitch clip on «Făcută», Discord alerts for whatever needs a person, and a shared preparation checklist. The moderators' guide is the doc «ICEMARATON · Ghidul moderatorilor» (https://claude.ai/artifact/N6cMZBE8Tuma1PMJAsVg2g).
 
 ## Open (ask, don't guess)
 

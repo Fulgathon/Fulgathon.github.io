@@ -177,6 +177,8 @@ const errors: Record<string, string> = {
   bad_pick: 'Alege o linie întreagă de pe cartonaș.',
   not_a_line: 'Alege un rând, o coloană sau o diagonală întreagă.',
   too_many: 'Ai trimis deja 3 propuneri. Mai încearcă peste câteva minute.',
+  duplicate: 'Cineva a propus deja asta. Încearcă altceva.',
+  blocked_text: 'Propunerea nu poate avea linkuri, numere de telefon sau cuvinte urâte.',
 };
 function info(eyebrow: string, text: string) {
   set({ toast: 'info', info: { eyebrow, text } });
