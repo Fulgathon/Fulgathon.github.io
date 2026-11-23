@@ -38,6 +38,8 @@ const errors: Record<string, string> = {
   card_locked: 'Jucătorii și-au ales deja linii: poți doar redenumi evenimentele, nu le poți muta, adăuga sau șterge.',
   no_bingo_winners: 'Nu e nimeni (nou) pe lista de bingo: încă nu s-au întâmplat toate cele 5 evenimente la cineva.',
   freeze_in_past: 'Alege o dată din viitor (după înghețarea de acum, dacă e una).',
+  bad_minutes: 'Scrie un număr de minute mai mare decât 0.',
+  bad_clip: 'Linkul clipului trebuie să înceapă cu https://',
   duplicate_amount: 'Două milestone-uri au aceeași sumă. Fiecare sumă trebuie să fie diferită.',
   bad_lines: 'Replicile nu au putut fi salvate: cel mult 40 pe grup.',
   line_too_long: 'O replică are mai mult de 70 de caractere. Scurteaz-o ca să încapă în balon.',
@@ -58,6 +60,7 @@ async function call(fn: string, args: Record<string, unknown> = {}, ok = 'Gata.'
     try {
       const data = demoApi.rpc(fn, args);
       say(ok);
+      resetTyped = true;
       void load();
       return data;
     } catch (err) {
@@ -74,6 +77,7 @@ async function call(fn: string, args: Record<string, unknown> = {}, ok = 'Gata.'
     throw error;
   }
   say(ok);
+  resetTyped = true;
   void load();
   return data;
 }
@@ -628,6 +632,21 @@ function overlayHtml(): string {
   </section>`;
 }
 
+/** Values the moderator changed in this page's own fields (by id), not yet sent. */
+function typedValues(): Map<string, string> {
+  const out = new Map<string, string>();
+  app.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('input[id], textarea[id], select[id]').forEach((el) => {
+    if ((el as HTMLInputElement).readOnly || (el as HTMLInputElement).type === 'checkbox') return;
+    const dirty = el instanceof HTMLSelectElement
+      ? [...el.options].some((o) => o.selected !== o.defaultSelected)
+      : el.value !== el.defaultValue;
+    if (dirty) out.set(el.id, el.value);
+  });
+  return out;
+}
+/** Set after an action succeeded: the next render starts the forms afresh. */
+let resetTyped = false;
+
 function render() {
   const active = document.activeElement;
   if (active && app.contains(active) && /^(INPUT|SELECT|TEXTAREA)$/.test(active.tagName)) { deferred = true; return; }
@@ -926,6 +945,10 @@ function render() {
   };
   const page = GROUPS.find((g) => g.id === S.page) ?? GROUPS[0];
   const cards = page.items.flatMap(([id]) => (id === 'vot' ? ['vot', 'provocari'] : [id])).map((id) => sec[id]?.() ?? '').join('\n');
+  // A live refresh (every sub re-draws the page) must not undo what a moderator
+  // typed but hasn't sent yet: «Îngheață 120 min» would quietly become the default 5.
+  const typed = resetTyped ? new Map<string, string>() : typedValues();
+  resetTyped = false;
   app.innerHTML = `
   <datalist id="sponsorNames">${sponsorNames().map((n) => `<option value="${esc(n)}"></option>`).join('')}</datalist>
   <div class="page-head">
@@ -934,6 +957,10 @@ function render() {
   </div>
   ${page.id === 'live' ? `<div class="live-cols"><div class="grid">${cards}</div><aside class="aside">${todoHtml()}${feedHtml()}<section class="card" id="sanatate"><h2>Conexiuni</h2>${healthHtml(S.health)}<p class="muted">Se actualizează singur la un minut.</p></section></aside></div>`
     : `<div class="grid">${cards}</div>`}`;
+  for (const [id, v] of typed) {
+    const el = document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
+    if (el && app.contains(el)) el.value = v;
+  }
   // Opened with #section in the address: scroll there once the page exists.
   if (scrollTo) { const el = document.getElementById(scrollTo); scrollTo = ''; el?.scrollIntoView({ block: 'start' }); }
 }
@@ -1006,7 +1033,11 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     return call('mod_open_round', { p_challenges: ids, p_minutes: num('roundMin') || 60 }, 'Runda e deschisă.');
   },
   setWhen: (el) => call('mod_set_challenge', { p_id: Number(el.dataset.id), p_status: 'scheduled', p_scheduled_for: (document.querySelector<HTMLInputElement>(`[data-when="${el.dataset.id}"]`)?.value ?? '') || null }, 'Salvat.'),
-  done: (el) => call('mod_set_challenge', { p_id: Number(el.dataset.id), p_status: 'done', p_clip: document.querySelector<HTMLInputElement>(`[data-clip="${el.dataset.id}"]`)?.value ?? null }, 'Marcată ca făcută.'),
+  done: (el) => {
+    const clip = (document.querySelector<HTMLInputElement>(`[data-clip="${el.dataset.id}"]`)?.value ?? '').trim();
+    if (clip && !/^https:\/\//.test(clip) && !(demo && clip === '#')) { say('Linkul clipului trebuie să înceapă cu https://', true); return; }
+    return call('mod_set_challenge', { p_id: Number(el.dataset.id), p_status: 'done', p_clip: clip || null }, 'Marcată ca făcută.');
+  },
   veto: (el) => confirm('Veto pe provocarea asta?') && call('mod_set_challenge', { p_id: Number(el.dataset.id), p_status: 'vetoed' }, 'Veto.'),
   approve: (el) => call('mod_review_suggestion', { p_id: Number(el.dataset.id), p_approve: true }, 'Aprobată: e acum în lista de provocări.'),
   reject: (el) => call('mod_review_suggestion', { p_id: Number(el.dataset.id), p_approve: false }, 'Respinsă.'),
@@ -1063,10 +1094,28 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   unmod: (el) => confirm(`Scoți moderatorul ${el.dataset.login}?`) && call('mod_set_moderator', { p_login: el.dataset.login, p_on: false }, 'Moderator scos.'),
 };
 
+// One request per click: a double click on «+10 min» must not add 20 minutes.
+// The control is busy (disabled, aria-busy) until its request has answered;
+// the same action on the same row (data-id / data-i / data-min) waits too, even
+// if a live refresh re-drew the button in the meantime.
+const busy = new Set<string>();
 document.addEventListener('click', (e) => {
   const el = (e.target as Element).closest<HTMLElement>('[data-act]');
   if (!el) return;
-  void Promise.resolve(acts[el.dataset.act!]?.(el)).catch(() => {});
+  const act = el.dataset.act!;
+  const key = [act, el.dataset.id, el.dataset.i, el.dataset.min, el.dataset.name, el.dataset.login].join('|');
+  if (busy.has(key)) { e.preventDefault(); return; }
+  const result = acts[act]?.(el);
+  if (!(result instanceof Promise)) return;
+  busy.add(key);
+  const control = el as HTMLButtonElement;
+  const wasDisabled = control.disabled;
+  if (el.tagName === 'BUTTON') { control.disabled = true; el.setAttribute('aria-busy', 'true'); }
+  // At least 700 ms, so the second click of a double click lands while it's still busy.
+  void Promise.allSettled([result, new Promise((r) => setTimeout(r, 700))]).then(() => {
+    busy.delete(key);
+    if (el.isConnected && el.tagName === 'BUTTON') { control.disabled = wasDisabled; el.removeAttribute('aria-busy'); }
+  });
 });
 document.addEventListener('change', (e) => {
   const sel = (e.target as Element).closest<HTMLSelectElement>('[data-draft]');
