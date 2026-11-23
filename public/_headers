@@ -1,5 +1,13 @@
-# Cloudflare static assets: hashed build files never change; fonts rarely do.
-/_astro/*
-  Cache-Control: public, max-age=31536000, immutable
+# Cloudflare static assets.
+#
+# /_astro/* (hashed CSS/JS) keeps Cloudflare's default, "public, max-age=0,
+# must-revalidate" with an ETag: browsers reuse their copy after a quick 304
+# check. Do NOT set a long "immutable" cache here. A deploy takes a few seconds
+# to reach every Cloudflare location, so new HTML can be served while another
+# location still answers the new stylesheet with 404 (version skew). _headers
+# rules also apply to that 404, so an immutable rule would keep the page
+# unstyled in that visitor's browser for a year (seen on 23 Nov 2026).
+#
+# Font file names never change between deploys, so a long cache is safe.
 /fonts/*
   Cache-Control: public, max-age=2592000
