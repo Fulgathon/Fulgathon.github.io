@@ -121,7 +121,10 @@ let S: {
   names: { filtered: string[]; rules: { name: string; rule: 'hide' | 'allow' | 'opt_out'; at: string }[] };
   /** mod_health(): is everything still arriving? */
   health: any;
-} = { health: null, names: { filtered: [], rules: [] }, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
+  /** "Acum pe stream" (Twitch title/game + note) and the community goal list. */
+  now: { title: string | null; game: string | null; note: string | null } | null;
+  together: { hours: number; goals: { title: string; hours: number }[] } | null;
+} = { health: null, now: null, together: null, names: { filtered: [], rules: [] }, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
 const bingoRows = () => S.bingoDraft ?? (S.bingo?.items ?? []).map((i) => ({ id: i.id, label: i.label }));
 const editBingo = () => { if (!S.bingoDraft) S.bingoDraft = bingoRows(); return S.bingoDraft; };
 const goalRows = () => S.goalsDraft ?? S.goals.map((g) => ({ title: g.title, threshold: String(g.threshold), sponsor: g.sponsor ?? '' }));
@@ -151,6 +154,8 @@ async function load() {
     Object.assign(S, demoApi.modState());
     S.names = demoApi.rpc('mod_names', {}) as typeof S.names;
     S.health = demoHealth();
+    const site = demoApi.toSiteData();
+    S.now = site.now; S.together = site.together;
     if (!S.draft.length || S.draft.some((id) => !S.pool.find((p) => p.id === id))) autoDraft();
     return render();
   }
@@ -178,6 +183,8 @@ async function load() {
     (db as any).rpc('mod_names'),
   ]);
   S.health = (await (db as any).rpc('mod_health')).data ?? null;
+  const ps = (await (db as any).rpc('public_state', { p_have: {} })).data?.parts ?? {};
+  S.now = ps.now ?? null; S.together = ps.together ?? null;
   S.names = names.data ?? { filtered: [], rules: [] };
   S.wheel = (wheel.data ?? []) as typeof S.wheel;
   S.codes = (codes.data ?? []) as typeof S.codes;
@@ -510,6 +517,24 @@ function render() {
         : '<p class="muted" style="margin-top:0">Toate premiile au fost date.</p>'}
     </section>
 
+    <section class="card" id="comunitate">
+      <h2>Comunitate</h2>
+      <h3 style="margin:0 0 6px;font-size:15px">Acum pe stream</h3>
+      <p class="muted" style="margin-top:0">De pe Twitch: <strong style="color:#F2F5FA">${esc(S.now?.title ?? '—')}</strong>${S.now?.game ? ` · ${esc(S.now.game)}` : ''}. Se actualizează singur la 5 minute.</p>
+      ${S.now?.note ? `<p><span class="pill ok">Notă</span> ${esc(S.now.note)}</p>` : ''}
+      <div class="row">
+        <input class="field" id="nowNote" placeholder="ex: Pauză de masă, revin în 15 min" maxlength="140" aria-label="Notă scurtă pe site" style="flex:1 1 260px;min-width:0">
+        <input class="field" type="number" id="nowMin" value="30" min="1" max="1440" aria-label="Câte minute">
+        <button class="btn-primary" data-act="noteSet">Arată pe site</button>
+        ${S.now?.note ? '<button class="btn-ghost" data-act="noteClear">Scoate nota</button>' : ''}
+      </div>
+      <p class="muted">Nota înlocuiește titlul de pe Twitch, pe site, pentru câte minute alegi.</p>
+      <h3 style="margin:18px 0 6px;font-size:15px">Obiectiv comunitar (ore privite împreună: ${S.together ? Math.round(S.together.hours) : 0} h)</h3>
+      <textarea class="field" id="togetherList" rows="5" aria-label="Obiective comunitare, câte unul pe rând: ore | titlu" style="width:100%;padding:10px;font:inherit">${esc((S.together?.goals ?? []).map((g) => `${g.hours} | ${g.title}`).join('\n'))}</textarea>
+      <div class="row"><button class="btn-primary" data-act="togetherSave">Salvează obiectivele</button></div>
+      <p class="muted">Câte unul pe rând: <strong>ore | ce se deblochează</strong>, de exemplu «500 | Karaoke cu chatul». Gratuit pentru toți: se numără orele din chat cât e live.</p>
+    </section>
+
     <section class="card" id="nume">
       <h2>Nume afișate public</h2>
       <p class="muted" style="margin-top:0">Numele cu cuvinte urâte, linkuri, e-mailuri sau numere de telefon apar automat ca «Anonim» pe site și pe stream. Contribuțiile se numără la fel.</p>
@@ -621,6 +646,13 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
       .map((g) => ({ title: g.title.trim(), threshold: Number(g.threshold), sponsor: g.sponsor.trim() }));
     await call('mod_set_goals', { p_goals: list }, 'Lista de milestone-uri a fost salvată.');
     S.goalsDraft = null;
+  },
+  noteSet: () => val('nowNote').trim() && call('mod_set_note', { p_note: val('nowNote'), p_minutes: Number(val('nowMin')) || 30 }, 'Nota apare pe site.'),
+  noteClear: () => call('mod_set_note', { p_note: '', p_minutes: 1 }, 'Nota a fost scoasă.'),
+  togetherSave: () => {
+    const list = val('togetherList').split('\n').map((l) => l.split('|')).filter((p) => p.length >= 2)
+      .map(([h, ...t]) => ({ hours: Math.round(Number(h.trim())), title: t.join('|').trim() })).filter((g) => g.hours > 0 && g.title);
+    return call('mod_set_community_goals', { p_goals: list }, 'Obiectivele comunitare au fost salvate.');
   },
   nameHide: () => val('hideName').trim() && call('mod_name_rule', { p_name: val('hideName'), p_rule: 'hide' }, 'Numele e ascuns peste tot.'),
   nameAllow: (el) => call('mod_name_rule', { p_name: el.dataset.name, p_rule: 'allow' }, 'Numele apare din nou.'),

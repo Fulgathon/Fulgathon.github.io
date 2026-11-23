@@ -39,6 +39,9 @@ interface DemoSpin { id: number; user: string; prize: number; at: number; fulfil
 interface DemoSuggestion { id: number; body: string; user: string; at: number; status: 'pending' | 'approved' | 'rejected' }
 
 export interface DemoState {
+  /** Moderator note for "Acum pe stream" and the community goal list (demo only). */
+  note?: { text: string; until: number } | null;
+  communityGoals?: { title: string; hours: number }[];
   /** Moderator name rules (hide / allow), like private.name_rules. */
   nameRules?: { name: string; rule: 'hide' | 'allow'; at: number }[];
   v: 6;
@@ -355,6 +358,12 @@ export class DemoBackend {
       if (!bingoLines(s.bingo.items.map((it) => it.id)).some((l) => l.join() === ids.join())) fail('not_a_line');
       s.bingo.pick = ids;
     });
+  }
+  setNote(text: string, minutes: number) {
+    this.mutate((s) => { s.note = text.trim() ? { text: text.trim().slice(0, 140), until: Date.now() + Math.max(1, Math.min(1440, minutes)) * 60_000 } : null; });
+  }
+  setCommunityGoals(list: { title: string; hours: number }[]) {
+    this.mutate((s) => { s.communityGoals = list.filter((g) => g.title.trim() && g.hours > 0).map((g) => ({ title: g.title.trim(), hours: g.hours })).sort((a, b) => a.hours - b.hours); });
   }
   nameRule(name: string, rule: 'hide' | 'allow' | null) {
     const k = name.trim().toLowerCase();
@@ -686,11 +695,11 @@ export class DemoBackend {
         { name: 'cristi_lol', hours: 71, streak: 8, badges: ['og', 'h50', 'streak7'] },
         { name: 'Rares1337', hours: 66, streak: 3, badges: ['h50'] },
       ],
-      together: { hours: 1_840, goals: [
+      together: { hours: 1_840, goals: s.communityGoals ?? [
         { title: 'Chatul alege jocul pentru o oră', hours: 250 }, { title: 'Karaoke cu chatul', hours: 750 },
         { title: 'Stream IRL în oraș', hours: 1500 }, { title: 'Turneu cu comunitatea', hours: 3000 },
       ] },
-      now: { title: 'Ranked cu chatul până la Diamond', game: 'League of Legends', viewers: 512, note: null },
+      now: { title: 'Ranked cu chatul până la Diamond', game: 'League of Legends', viewers: 512, note: s.note && s.note.until > now ? s.note.text : null },
     };
   }
 
@@ -797,6 +806,8 @@ export class DemoBackend {
       case 'mod_review_suggestion': return this.reviewSuggestion(Number(a.p_id), !!a.p_approve);
       case 'mod_fulfil_spin': return this.fulfilSpin(Number(a.p_id));
       case 'mod_set_moderator': return this.setModerator(String(a.p_login), !!a.p_on);
+      case 'mod_set_note': return this.setNote(String(a.p_note ?? ''), Number(a.p_minutes) || 60);
+      case 'mod_set_community_goals': return this.setCommunityGoals(a.p_goals ?? []);
       case 'mod_name_rule': return this.nameRule(String(a.p_name ?? ''), a.p_rule ?? null);
       case 'mod_names': return { filtered: [], rules: (this.load().nameRules ?? []).map((r) => ({ name: r.name, rule: r.rule, at: new Date(r.at).toISOString() })) };
       case 'mod_set_goals': return this.setGoals(a.p_goals);
