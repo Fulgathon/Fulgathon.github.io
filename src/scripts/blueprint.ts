@@ -6,7 +6,9 @@
 // With prefers-reduced-motion it stays still and only the speech bubble shows.
 
 const NS = 'http://www.w3.org/2000/svg';
-const IDLE = ['HAI CĂ PUTEM!', 'FACEM VISCOL!', 'ÎNCĂ UN MECI?', 'CE PLAY!', 'MERSI PENTRU SUB!', 'MID E AL NOSTRU!'];
+// What he says on camera now and then: everyday LoL stream talk (he's 1/16).
+const IDLE = ['JUNGLERUL UNDE E?!', 'CE-A FOST ASTA?!', 'DE CE MĂ TOT OMOARĂ?', 'AM ULTI-UL, INTRĂM!', 'NU MAI DAU FLASH-UL...',
+  'ÎNCĂ UN MECI ȘI GATA', 'MERSI PENTRU SUB!', 'HAI CĂ ÎL PRINDEM!', 'NU E VINA MEA, E LAG'];
 
 // Lane frame, same as the component: D along the mid lane, N across it.
 const C = [1000, 600], D = [0.85, -0.527], N = [0.527, 0.85];
