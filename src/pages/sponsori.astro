@@ -186,7 +186,11 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
       .bp .chair { stroke-opacity: .3; stroke-width: 1.6; }
       .bp .who { animation: bp-breathe 3.6s ease-in-out infinite alternate; }
       .bp .head { transform-box: fill-box; transform-origin: 50% 100%; animation: bp-tilt 11s ease-in-out infinite; }
-      .bp .brow { stroke-width: 2; stroke-opacity: .9; }
+      .bp .beard { fill: #3FD0FF; fill-opacity: .8; stroke-width: 1; }
+      .bp .beard.soft { fill-opacity: .4; }
+      .bp .stubble { stroke-width: 2; stroke-opacity: .45; }
+      .bp .dashed { stroke-dasharray: 2 4; }
+      .bp .lid { stroke-width: 1.6; }
       .bp .eyes { transform-box: fill-box; transform-origin: center; animation: bp-blink 5s infinite; }
       .bp .eyes ellipse { stroke-width: 1.4; fill: #05090F; }
       .bp .pupil { fill: #3FD0FF; stroke: none; }

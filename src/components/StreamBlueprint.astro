@@ -39,6 +39,18 @@ const towersBlue = [[16, 150], [16, 92], [96, 238], [156, 238], [70, 184], [96, 
 const towersRed = [[104, 16], [164, 16], [238, 104], [238, 162], [184, 70], [158, 96]];
 const allies = [[105, 149, 1], [16, 124, 0], [62, 132, 0], [150, 232, 0], [166, 238, 0]];
 const enemies = [[140, 116], [62, 16], [200, 110], [238, 150], [232, 168]];
+// Buzz-cut stubble on Iceman's scalp (webcam), deterministic dots.
+const scalp = (() => {
+  let seed = 11; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const d: string[] = [];
+  for (let i = 0; i < 140 && d.length < 55; i++) {
+    const x = 206 + rnd() * 76, y = 838 + rnd() * 36;
+    const inHead = ((x - 244) / 42) ** 2 + ((y - 886) / 50) ** 2 < 1;
+    const aboveHairline = y < 848 + ((x - 244) / 38) ** 2 * 26;
+    if (inHead && aboveHairline) d.push(`M${x.toFixed(1)} ${y.toFixed(1)}h.01`);
+  }
+  return d.join(' ');
+})();
 ---
 <svg class="bp" viewBox="0 0 1920 1080" width="1920" height="1080" aria-hidden="true">
   <defs>
@@ -226,26 +238,36 @@ const enemies = [[140, 116], [62, 16], [200, 110], [238, 150], [232, 168]];
     <path class="chair solid" d="M150 1056 L156 880 Q160 836 196 826 H292 Q328 836 332 880 L338 1056 Z" />
     <path class="chair" d="M172 858 V1010 M316 858 V1010" stroke-dasharray="5 5" />
     <g class="who">
+      <!-- black crew-neck T-shirt -->
       <path class="solid" d="M104 1056 C108 1010 140 984 192 974 L214 970 Q244 986 274 970 L296 974 C348 984 380 1010 384 1056 Z" />
-      <path class="fine" d="M150 992 Q162 1022 160 1056 M338 992 Q326 1022 328 1056 M206 990 l8 8 M214 986 l8 8 M266 994 l8 -8 M274 990 l8 -8" />
-      <path d="M196 976 C206 1002 282 1002 292 976 M230 996 C229 1010 227 1020 226 1034 M258 996 C259 1010 261 1020 262 1034" />
-      <path class="aglet" d="M226 1034 V1042 M262 1034 V1042" />
-      <path class="solid" d="M226 948 C226 960 224 968 220 976 Q244 990 268 976 C264 968 262 960 262 948 Z" /><path class="fine" d="M232 966 l6 6 M240 966 l6 6 M248 966 l6 6" />
+      <path class="fine" d="M150 992 Q162 1022 160 1056 M338 992 Q326 1022 328 1056 M190 1010 Q196 1030 194 1056 M298 1010 Q292 1030 294 1056" />
+      <path class="solid" d="M223 950 C223 962 221 972 214 982 Q244 1000 274 982 C267 972 265 962 265 950 Z" />
+      <path class="fine" d="M232 968 Q244 976 256 968" />
+      <path d="M200 980 Q244 1010 288 980" /><path class="fine" d="M207 978 Q244 1002 281 978" />
       <g class="head">
-        <path class="solid" d="M198 890 C198 930 214 960 244 963 C274 960 290 930 290 890 C290 856 270 838 244 838 C218 838 198 856 198 890 Z" />
-        <path class="fine" d="M220 852 Q230 845 242 844 M262 847 Q268 849 272 853" />
-        <path class="brow" d="M219 885 Q227 880 236 884 M252 884 Q261 880 269 885" />
-        <g class="eyes"><ellipse cx="228" cy="898" rx="4.5" ry="2.8" /><ellipse cx="260" cy="898" rx="4.5" ry="2.8" /><circle class="pupil" cx="229" cy="898" r="1.7" /><circle class="pupil" cx="261" cy="898" r="1.7" /></g>
-        <g class="joy"><path d="M222 900 L228 893 L234 900 M254 900 L260 893 L266 900" /><path class="solid" d="M232 930 Q244 946 256 930 Z" /></g>
-        <path class="fine" d="M244 902 L240.5 918 L247 919.5" />
-        <path class="mouth" d="M235 934 Q244 938 253 934" />
-        <ellipse class="talk solid" cx="244" cy="935" rx="7" ry="4.5" />
-        <path class="band" d="M190 902 C186 852 212 832 244 832 C276 832 302 852 298 902" />
+        <!-- longer face, buzz-cut scalp -->
+        <path class="solid" d="M200 886 C200 932 218 968 244 972 C270 968 288 932 288 886 C288 852 268 834 244 834 C220 834 200 852 200 886 Z" />
+        <path class="stubble" d={scalp} />
+        <path class="fine dashed" d="M207 874 Q213 852 244 848 Q275 852 281 874" />
+        <path class="fine" d="M233 928 Q229 937 231 946 M255 928 Q259 937 257 946" />
+        <!-- strong straight brows, almond eyes -->
+        <path class="beard" d="M216 886 Q226 878 238 881 L238 885 Q227 883 217 889 Z M272 886 Q262 878 250 881 L250 885 Q261 883 271 889 Z" />
+        <g class="eyes"><path class="lid" d="M222 897 Q228 892 235 897 M253 897 Q260 892 266 897" /><ellipse cx="228.5" cy="898.5" rx="5" ry="2.8" /><ellipse cx="259.5" cy="898.5" rx="5" ry="2.8" /><circle class="pupil" cx="229.5" cy="898.5" r="1.8" /><circle class="pupil" cx="260.5" cy="898.5" r="1.8" /></g>
+        <g class="joy"><path d="M222 901 L228.5 894 L235 901 M253 901 L259.5 894 L266 901" /><path class="solid" d="M233 942 Q244 958 255 942 Z" /></g>
+        <!-- long straight nose -->
+        <path class="fine" d="M244 894 L240.5 921 Q238 927 243 928 Q248 929 250.5 925.5 M238.5 924.5 q2 2.2 4.5 1" />
+        <!-- thin chevron moustache, soul patch, chin beard -->
+        <path class="beard" d="M227 938 Q235 931 244 933.5 Q253 931 261 938 Q253 936.5 244 938.5 Q235 936.5 227 938 Z" />
+        <path class="mouth" d="M236 944 Q244 947 252 944" />
+        <ellipse class="talk solid" cx="244" cy="945" rx="6.5" ry="4.2" />
+        <path class="beard" d="M241 951 H247 L244 957 Z" /><path class="beard soft" d="M233 960 Q244 955 255 960 Q253 970 244 972 Q235 970 233 960 Z" />
+        <path class="fine" d="M237 962 l1 6 M241 960 l.5 8 M247 960 l-.5 8 M251 962 l-1 6" />
+        <path class="band" d="M190 902 C186 852 212 830 244 830 C276 830 302 852 298 902" />
         <rect class="solid" x="177" y="878" width="25" height="50" rx="10" /><rect class="fine" x="182" y="884" width="15" height="38" rx="6" />
         <rect class="solid" x="286" y="878" width="25" height="50" rx="10" /><rect class="fine" x="291" y="884" width="15" height="38" rx="6" />
         <path class="fine" d="M298.5 896 V910 M292.5 899.5 L304.5 906.5 M304.5 899.5 L292.5 906.5" />
         <circle class="ledot" cx="189.5" cy="918" r="2.6" />
-        <path d="M186 926 C190 956 206 964 226 962" /><ellipse class="solid" cx="233" cy="961" rx="8" ry="6" /><path class="fine" d="M229 958 l4 6 M233 956 l4 6" />
+        <path d="M186 926 C188 946 198 952 213 951" /><ellipse class="solid" cx="219" cy="950" rx="7" ry="5.5" /><path class="fine" d="M215.5 947 l3.5 6 M219.5 945.5 l3.5 6" />
       </g>
       <path class="buzz" d="M170 846 L150 830 M244 808 V786 M318 846 L338 830" />
     </g>
