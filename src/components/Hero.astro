@@ -4,7 +4,7 @@
 // (Acum pe stream, the jumping clock, Strâns · Prezentat de · Următorul
 // milestone, the rate chips) and the two buttons. Phone: the bubble sits on the
 // illustration with one «intră acum» strip, the calculator goes under the timer.
-import { Image } from 'astro:assets';
+import { getImage } from 'astro:assets';
 import logo from '../../assets/logo-mascot.webp';
 import { v, iff } from '../lib/ssr';
 import { views } from '../lib/views';
@@ -12,6 +12,13 @@ import { site } from '../data/site';
 import { rateChips } from '../data/content';
 
 const cond = "'Barlow Condensed', sans-serif";
+// The mascot is the largest thing on a phone's first screen (its main paint), so it gets
+// AVIF at a lower quality setting (half the bytes of WebP, same look up close) with WebP
+// for older browsers. getImage, not <Picture>, because the two formats need different qualities.
+const mascotWidths = [300, 420, 520, 600, 700, 780, 1040, 1200];
+const mascotSizes = '(min-width: 3400px) 1040px, (min-width: 2400px) 694px, (max-width: 760px) 74vw, 520px';
+const mascotAvif = await getImage({ src: logo, format: 'avif', quality: 48, widths: mascotWidths, sizes: mascotSizes });
+const mascotWebp = await getImage({ src: logo, format: 'webp', quality: 72, widths: mascotWidths, sizes: mascotSizes });
 const units = [['dd', 'ZILE'], ['hh', 'ORE'], ['mm', 'MINUTE'], ['ss', 'SECUNDE']] as const;
 const FLAKE = 'M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 4l3 2 3-2M9 20l3-2 3 2';
 ---
@@ -33,7 +40,10 @@ const FLAKE = 'M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 4l3 2 3-2M9 20l3-2 3 2';
 
       <!-- Middle: Iceman reacts -->
       <div class="st-mascot">
-        <Image class="mascot fx-hop" data-toggle="fxA:fxA;fxB:fxB" src={logo} alt="Icemanlucky" widths={[300, 420, 520, 600, 700, 780, 1040, 1200]} sizes="(min-width: 3400px) 1040px, (min-width: 2400px) 694px, (max-width: 760px) 74vw, 520px" quality={72} loading="eager" fetchpriority="high" />
+        <picture>
+          <source type="image/avif" srcset={mascotAvif.srcSet.attribute} sizes={mascotSizes} />
+          <img class="mascot fx-hop" data-toggle="fxA:fxA;fxB:fxB" src={mascotWebp.src} srcset={mascotWebp.srcSet.attribute} sizes={mascotSizes} width={mascotWebp.attributes.width} height={mascotWebp.attributes.height} alt="Icemanlucky" loading="eager" decoding="async" fetchpriority="high" />
+        </picture>
         <!-- Iceman's callout: who gave what (+time), his line typed in, the queue behind it.
              Hover or focus holds it; «încă N ›» skips to the next one. -->
         <div class="bubble fx-bub" {...iff('bubbleOn')} data-toggle="fxA:fxA;fxB:fxB" data-style="--acc:bubbleAccent" style={`--acc: ${v.bubbleAccent}`}>
