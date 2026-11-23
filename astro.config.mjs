@@ -8,5 +8,6 @@ export default defineConfig({
   base: process.env.BASE_PATH || '/',
   trailingSlash: 'ignore',
   output: 'static',
-  build: { inlineStylesheets: 'auto' },
+  // Inline the CSS (≈14 KB gzipped): no extra round trips before the first paint.
+  build: { inlineStylesheets: 'always' },
 });

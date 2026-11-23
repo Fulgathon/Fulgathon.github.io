@@ -1,8 +1,10 @@
 // Live data from Supabase: loads everything the page shows, keeps it fresh
 // (one small versioned call, see Live), and wraps the viewer actions (login,
 // vote, spin, suggest). Loaded lazily, and never in ?demo mode.
+// Public data is plain fetch; the Supabase library (~57 KB) loads only for a viewer
+// who logs in or already has a session.
 
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { popSlots, prizeColors } from '../data/content';
 import { site } from '../data/site';
 import type { Completed, Loyalty, Mine, Prize, SiteData, TickerItem, UpNext } from '../data/types';
@@ -64,7 +66,7 @@ type Json = any;
  * when the backend is unreachable, and immediately on return or reconnect.
  */
 export class Live {
-  readonly db: DB;
+  private client: Promise<DB> | null = null;
   private data: SiteData;
   private handlers: LiveHandlers;
   private opts: Required<LiveOptions>;
@@ -81,15 +83,47 @@ export class Live {
     this.data = initial;
     this.handlers = handlers;
     this.opts = { intervalMs: opts.intervalMs ?? 8000, pollHidden: opts.pollHidden ?? false };
-    this.db = createClient<Database>(site.supabase.url, site.supabase.publishableKey, {
-      auth: { persistSession: true, detectSessionInUrl: true, flowType: 'pkce' },
+  }
+
+  /** The Supabase client, loaded on first need (login, an existing session, a viewer action). */
+  private db(): Promise<DB> {
+    this.client ??= import('@supabase/supabase-js').then(({ createClient }) => {
+      const db = createClient<Database>(site.supabase.url, site.supabase.publishableKey, {
+        auth: { persistSession: true, detectSessionInUrl: true, flowType: 'pkce' },
+      });
+      db.auth.onAuthStateChange(() => { void this.refreshMe(); });
+      return db;
     });
+    return this.client;
+  }
+  private async raw() { return (await this.db()) as unknown as SupabaseClient; }
+
+  /** Public calls without the library: one plain request (public state, feed, overlay code, tracking). */
+  private async anon<T = Json>(fn: string, args: Record<string, unknown>): Promise<{ data: T | null; error: Error | null }> {
+    try {
+      const r = await fetch(`${site.supabase.url}/rest/v1/rpc/${fn}`, {
+        method: 'POST',
+        headers: { apikey: site.supabase.publishableKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify(args),
+      });
+      if (!r.ok) return { data: null, error: new Error(`${fn}_${r.status}`) };
+      const text = await r.text();
+      return { data: text ? (JSON.parse(text) as T) : null, error: null };
+    } catch (err) {
+      return { data: null, error: err as Error };
+    }
+  }
+
+  /** Could this visitor be logged in? A stored session, or the page is the return from Twitch. */
+  private maySignIn() {
+    if (this.client) return true;
+    if (new URLSearchParams(location.search).has('code')) return true;
+    try { return Object.keys(localStorage).some((k) => k.startsWith('sb-') && k.endsWith('-auth-token')); } catch { return false; }
   }
 
   async start() {
     await this.poll();
     await this.refreshMe();
-    this.db.auth.onAuthStateChange(() => { void this.refreshMe(); });
     this.scheduleMe();
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') { void this.poll(); void this.refreshMe(); }
@@ -118,7 +152,7 @@ export class Live {
     this.polling = true;
     const sent = Date.now();
     try {
-      const { data, error } = await this.raw.rpc('public_state', { p_have: this.versions });
+      const { data, error } = await this.anon('public_state', { p_have: this.versions });
       if (error || !data) throw error ?? new Error('no_data');
       const got = Date.now();
       this.handlers.onClock?.(Date.parse(data.now) - (sent + got) / 2);
@@ -133,8 +167,6 @@ export class Live {
   }
 
   /** Bingo/sponsor RPCs aren't in the generated types; this is the same client, untyped. */
-  private get raw() { return this.db as unknown as SupabaseClient; }
-
   private apply(v: Record<string, number>, changed: Record<string, Json>) {
     Object.assign(this.parts, changed);
     this.versions = { ...this.versions, ...Object.fromEntries(Object.keys(changed).map((k) => [k, v[k]])) };
@@ -239,9 +271,11 @@ export class Live {
   // ---- The logged-in viewer: one call. ------------------------------------
 
   async refreshMe() {
-    const { data: { session } } = await this.db.auth.getSession();
+    if (!this.maySignIn()) { this.handlers.onMe(null); return; }
+    const db = await this.db();
+    const { data: { session } } = await db.auth.getSession();
     if (!session) { this.handlers.onMe(null); return; }
-    const { data: m, error } = await this.raw.rpc('my_state', { p_round: this.data.round?.id ?? null });
+    const { data: m, error } = await (db as unknown as SupabaseClient).rpc('my_state', { p_round: this.data.round?.id ?? null });
     if (error) return;
     if (!m) { this.handlers.onMe(null); return; }
     // First visit after login (or an old answer): ask Twitch whether they're subscribed.
@@ -273,36 +307,36 @@ export class Live {
     });
   }
 
-  login() {
-    return this.db.auth.signInWithOAuth({ provider: 'twitch', options: { redirectTo: location.origin + location.pathname } });
+  async login() {
+    return (await this.db()).auth.signInWithOAuth({ provider: 'twitch', options: { redirectTo: location.origin + location.pathname } });
   }
 
   async logout() {
-    await this.db.auth.signOut();
+    if (this.client) await (await this.db()).auth.signOut();
     this.handlers.onMe(null);
   }
 
   /** "M-am abonat, verifică iar": ask the backend to re-check with Twitch, then reload. */
   async checkSub() {
-    try { await this.db.functions.invoke('check-sub'); } catch { /* function not deployed yet */ }
+    try { await (await this.db()).functions.invoke('check-sub'); } catch { /* function not deployed yet */ }
     await this.refreshMe();
   }
 
   async vote(roundId: number, challengeId: number) {
-    const { error } = await this.db.rpc('cast_vote', { p_round: roundId, p_challenge: challengeId });
+    const { error } = await (await this.db()).rpc('cast_vote', { p_round: roundId, p_challenge: challengeId });
     if (error) throw error;
     void this.poll();
   }
 
   async spin() {
-    const { data, error } = await this.db.rpc('spin');
+    const { data, error } = await (await this.db()).rpc('spin');
     if (error) throw error;
     return data[0];
   }
 
   /** Secret code from the stream → 1 bonus spin. Throws with the error code. */
   async claimCode(code: string): Promise<{ sponsor: string | null; bonus_spins: number }> {
-    const { data, error } = await this.raw.rpc('claim_code', { p_code: code });
+    const { data, error } = await (await this.raw()).rpc('claim_code', { p_code: code });
     if (error) throw error;
     if (data?.error) throw new Error(data.error);
     await this.refreshMe();
@@ -311,30 +345,30 @@ export class Live {
 
   /** Every event after `after` (oldest first, public names): the overlay queues them all. */
   async feedSince(after: number): Promise<TickerItem[]> {
-    const { data, error } = await this.raw.rpc('feed_since', { p_after: after, p_limit: 100 });
+    const { data, error } = await this.anon('feed_since', { p_after: after, p_limit: 100 });
     if (error || !Array.isArray(data)) return [];
     return data.map((e: Json) => tickerItem({ id: e.id, at: ms(e.at) ?? undefined, kind: e.kind, tier: e.tier, quantity: e.quantity, currency: e.currency, seconds_added: e.seconds, user_name: e.name, user_login: null }));
   }
 
   /** The OBS overlay's current secret code (private key from /mod). */
   overlayCode(key: string) {
-    return this.raw.rpc('overlay_code', { p_key: key }) as unknown as Promise<{ data: { code: string; sponsor: string | null; expires_at: string }[] | null }>;
+    return this.anon<{ code: string; sponsor: string | null; expires_at: string }[]>('overlay_code', { p_key: key });
   }
 
   /** Count a sponsor click / code copy (no personal data). */
   track(sponsor: string, kind: 'click' | 'code_copy') {
-    void this.raw.rpc('track_sponsor', { p_sponsor: sponsor, p_kind: kind });
+    void this.anon('track_sponsor', { p_sponsor: sponsor, p_kind: kind });
   }
 
   async saveBingo(items: number[]) {
-    const { error } = await this.raw.rpc('bingo_save', { p_items: items });
+    const { error } = await (await this.raw()).rpc('bingo_save', { p_items: items });
     if (error) throw error;
     void this.poll();
   }
 
 
   async suggest(body: string) {
-    const { error } = await this.db.rpc('suggest', { p_body: body });
+    const { error } = await (await this.db()).rpc('suggest', { p_body: body });
     if (error) throw error;
   }
 }
