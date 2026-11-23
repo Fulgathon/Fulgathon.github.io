@@ -34,5 +34,9 @@ export function emptyData(): SiteData {
     loyal: [],
     together: null,
     now: null,
+    lines: {},
+    smallDonation: 10,
+    advent: [],
+    badgeCounts: null,
   };
 }

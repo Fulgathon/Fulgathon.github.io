@@ -6,6 +6,7 @@
 // come from Twitch and the backend.
 
 import type { Vals } from './derive';
+import { badgeDefs, badgeIcons, PRISM, rankColors, tierColors } from '../data/content';
 
 export function esc(v: unknown): string {
   return String(v)
@@ -208,62 +209,9 @@ const badge = (label: string) =>
   `<span style="display: inline-block; padding: 1px 8px; border: 1px solid #2A3445; font-family: ${COND}; font-weight: 800; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: #C9D2DF; white-space: nowrap">${esc(label)}</span>`;
 
 /** One legend column: #1 as a premium card, #2–5 as rows. */
-function legendColumn(title: string, rows: Vals['legendsDon'], empty: string): string {
-  const [first, ...rest] = rows;
-  const head = `<h3 style="margin: 0 0 12px; font-family: ${COND}; font-weight: 800; font-size: 18px; letter-spacing: 0.12em; text-transform: uppercase; color: #AEB8C7">${esc(title)}</h3>`;
-  if (!first) {
-    return `<div>${head}<div style="position: relative; padding: 22px; background: #0B1018; border: 1px dashed #2A3445; color: #8C97A8; font-size: 16px">${esc(empty)}</div></div>`;
-  }
-  return `<div>${head}
-<div style="position: relative; padding: 22px 22px 18px; background: linear-gradient(180deg, rgba(63,208,255,0.10), rgba(63,208,255,0) 70%), #0B1018; border: 1px solid #1C2230">${CORNERS}
-<div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px">
-<span style="padding: 1px 8px; transform: skewX(-12deg); background: var(--ice); color: #04101A; font-family: ${COND}; font-weight: 800; font-size: 13px; letter-spacing: 0.08em">LEGENDA NR. 1</span>
-<span aria-hidden="true" style="font-family: ${COND}; font-weight: 900; font-style: italic; font-size: 44px; line-height: 0.8; color: transparent; -webkit-text-stroke: 1px #2A3445">01</span>
-</div>
-<p style="margin: 10px 0 0; font-family: ${COND}; font-weight: 900; font-style: italic; font-size: clamp(28px, 3cqi, 38px); line-height: 1; text-transform: uppercase; overflow-wrap: anywhere">${esc(first.name)}</p>
-<p style="margin: 8px 0 0"><span class="ice-text" style="font-family: ${COND}; font-weight: 900; font-style: italic; font-size: 40px; line-height: 1">${esc(first.total)}</span> <span style="font-size: 15px; color: #8C97A8">${esc(first.unit)}</span></p>
-</div>
-<ol start="2" style="list-style: none; margin: 0; padding: 0">${rest.map((r) => `<li style="display: flex; align-items: center; gap: 14px; padding: 12px 4px; border-bottom: 1px solid #1A2230">
-<span style="flex: none; width: 26px; font-family: ${COND}; font-weight: 900; font-style: italic; font-size: 24px; line-height: 1; color: ${r.rank <= 3 ? 'var(--ice)' : '#4A5568'}">${r.rank}</span>
-<span style="flex: 1 1 auto; min-width: 0; font-weight: 600; font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">${esc(r.name)}</span>
-<span style="flex: none; font-family: ${COND}; font-weight: 800; font-size: 22px">${esc(r.total)}</span>
-<span style="flex: none; width: 34px; font-size: 13px; color: #7D8899">${esc(r.unit)}</span>
-</li>`).join('')}</ol>
-</div>`;
-}
 
-function legends(v: Vals): string {
-  return [
-    legendColumn('Donatori', v.legendsDon, 'Locul 1 e liber. Prima donație face o legendă.'),
-    legendColumn('Subs dăruite', v.legendsGifts, 'Locul 1 e liber. Primul gift face o legendă.'),
-    legendColumn('Biți', v.legendsBits, 'Locul 1 e liber. Primii biți fac o legendă.'),
-  ].join('');
-}
 
-function todayFeed(v: Vals): string {
-  if (!v.hasRecent) return emptyRow('Aici apare, pe loc, fiecare sub, gift, donație și bit de azi.');
-  return v.recentFeed
-    .map((t) => `<li style="display: flex; align-items: baseline; gap: 12px; padding: 11px 0; border-bottom: 1px solid #1A2230">
-<strong style="flex: none; min-width: 64px; font-family: ${COND}; font-weight: 800; font-size: 18px; color: ${t.color}">${esc(t.time)}</strong>
-<span style="flex: 1 1 auto; min-width: 0"><span style="font-weight: 700">${esc(t.user)}</span> <span style="color: #AEB8C7">${esc(t.what)}</span></span>
-<span style="flex: none; font-size: 13px; color: #7D8899; white-space: nowrap">${esc(t.agoText)}</span>
-</li>`)
-    .join('');
-}
 
-function loyal(v: Vals): string {
-  if (!v.hasLoyal) return emptyRow('Primii fideli apar după prima oră în chat. Se numără singur, cât ești pe stream.');
-  return v.loyalRows
-    .map((r) => `<li style="padding: 12px 0; border-bottom: 1px solid #1A2230">
-<div style="display: flex; align-items: center; gap: 14px">
-<span style="flex: none; width: 26px; font-family: ${COND}; font-weight: 900; font-style: italic; font-size: 24px; line-height: 1; color: ${r.rank === 1 ? '#FFFFFF' : r.rank <= 3 ? 'var(--ice)' : '#4A5568'}">${r.rank}</span>
-<span style="flex: 1 1 auto; min-width: 0; font-weight: 600; font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">${esc(r.name)}</span>
-<span style="flex: none; font-family: ${COND}; font-weight: 800; font-size: 20px">${esc(r.hours)}</span>
-</div>
-${r.streakText || r.badges.length ? `<div style="margin: 6px 0 0 40px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px">${r.streakText ? `<span style="font-size: 13px; color: var(--ice); font-weight: 700; margin-right: 4px">${esc(r.streakText)}</span>` : ''}${r.badges.map(badge).join('')}</div>` : ''}
-</li>`)
-    .join('');
-}
 
 function together(v: Vals): string {
   return v.togetherGoals
@@ -282,6 +230,211 @@ function mine(v: Vals): string {
 <p style="margin: 2px 0 0; font-size: 14px; color: #8C97A8">${esc(m.label)}</p>
 </div>`)
     .join('') + (v.mineBadges.length ? `<div style="flex: 1 0 100%; display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 18px 0">${v.mineBadges.map(badge).join('')}</div>` : '');
+}
+
+
+// ---- Layout v2 --------------------------------------------------------------
+
+const ITAL = `font-family: ${COND}; font-weight: 900; font-style: italic`;
+
+/** «INTRĂ ACUM»: the newest 4 events, the newest one sliding in. */
+function heroRecent(v: Vals): string {
+  if (!v.hasHeroRecent) return `<p class="hero-empty">Aici apar, pe loc, subs, gift-urile și donațiile.</p>`;
+  return v.heroRecent.map((e) => `<div class="ev${e.fresh ? ' ev-in' : ''}" style="background: ${e.bg}; border-color: ${e.border}; opacity: ${e.op}">
+<strong>${esc(e.time)}</strong><span><strong>${esc(e.user)}</strong> <span style="color: #AEB8C7">${esc(e.what)}</span></span></div>`).join('');
+}
+
+function calcOpts(v: Vals): string {
+  return v.calcOpts.map((o) => `<button type="button" class="calc${o.on ? ' on' : ''}" role="radio" aria-checked="${o.on}" tabindex="${o.on ? 0 : -1}" data-action="calcPick" data-arg="${o.i}" data-key="calc-${o.i}">${esc(o.label)}</button>`).join('');
+}
+
+type BadgeDef = (typeof badgeDefs)[number];
+const isPrism = (b: BadgeDef) => b.tier === 'prism';
+/** Hexagon emblem; locked ones are grey. */
+function hexagon(b: BadgeDef, size: number, earned: boolean): string {
+  const [accent, tint] = tierColors[b.tier];
+  const stroke = !earned ? '#2A3445' : isPrism(b) ? 'url(#g-prism)' : accent;
+  const fill = !earned ? '#0B1018' : isPrism(b) ? 'url(#g-prism-fill)' : tint;
+  const icon = !earned ? '#4A5568' : stroke;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 56 56" aria-hidden="true" class="hex${earned && isPrism(b) ? ' hex-prism' : ''}"><polygon points="28,2 51,15 51,41 28,54 5,41 5,15" fill="${fill}" stroke="${stroke}" stroke-width="2"></polygon><polygon points="28,8 46,18.5 46,37.5 28,48 10,37.5 10,18.5" fill="none" stroke="${stroke}" stroke-opacity="0.4" stroke-width="1"></polygon><g transform="translate(16 16)"><path d="${badgeIcons[b.icon]}" fill="none" stroke="${icon}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></g></svg>`;
+}
+/** The tooltip: name, «Cum o obții:», how many have it. */
+function tooltip(b: BadgeDef, id: string, extra: string, who: string): string {
+  const [accent, , fg] = tierColors[b.tier];
+  const name = isPrism(b) ? `<span class="prism-text">${esc(b.label.toUpperCase())}</span>` : esc(b.label.toUpperCase());
+  return `<span role="tooltip" id="${id}" class="tip" style="border-color: ${accent}"><span class="tip-name" style="color: ${fg}">${name}${extra ? ` <span class="tip-extra">${esc(extra)}</span>` : ''}</span><span class="tip-how"><strong>Cum o obții:</strong> ${esc(b.how)}</span>${who ? `<span class="tip-who">${esc(who)}</span>` : ''}<span class="tip-arrow" style="border-color: ${accent}"></span></span>`;
+}
+/** Slanted tag with an icon block, for lists. */
+function badgeTag(id: string, key: string, who = ''): string {
+  const b = badgeDefs.find((x) => x.id === id);
+  if (!b) return '';
+  const [accent, tint, fg] = tierColors[b.tier];
+  const block = isPrism(b) ? PRISM : accent;
+  const label = isPrism(b) ? `<span class="prism-text">${esc(b.label.toUpperCase())}</span>` : esc(b.label.toUpperCase());
+  const tid = `tip-${key}`;
+  return `<button type="button" class="bdg-tag" aria-describedby="${tid}" data-key="${key}"><span class="tag" style="border-color: ${accent}; background: ${tint}"><span class="tag-icon" style="background: ${block}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#04101A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${badgeIcons[b.icon]}"></path></svg></span><span class="tag-label" style="color: ${fg}">${label}</span></span>${tooltip(b, tid, '', who)}</button>`;
+}
+
+/** «Insignele tale»: six hexagons, earned or grey with progress. */
+function myBadges(v: Vals): string {
+  return v.myBadges.map((b) => {
+    const [, , fg] = tierColors[b.tier];
+    const tid = `tip-my-${b.id}`;
+    const label = b.earned && isPrism(b) ? `<span class="prism-text">${esc(b.label.toUpperCase())}</span>` : esc(b.label.toUpperCase());
+    return `<button type="button" class="bdg${b.open ? ' open' : ''}" aria-describedby="${tid}" aria-expanded="${b.open}" data-action="badgeTip" data-arg="${b.id}" data-key="bdg-${b.id}">
+${tooltip(b, tid, b.earned ? '' : b.note, b.who)}${hexagon(b, 56, b.earned)}
+<span class="bdg-label" style="color: ${b.earned ? fg : '#7D8899'}">${label}</span><span class="bdg-note">${esc(b.note)}</span></button>`;
+  }).join('');
+}
+
+const rankStyle = (i: number) => {
+  const c = rankColors[Math.min(i, rankColors.length - 1)];
+  return c === 'prism' ? `background: ${PRISM}; -webkit-background-clip: text; background-clip: text; color: transparent` : `color: ${c}`;
+};
+const ICONS = {
+  star: '<path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6-4.5-4.2 6.1-.7z"></path>',
+  gift: '<rect x="3" y="9" width="18" height="12"></rect><path d="M3 13h18M12 9v12M12 9c-2-4-6-4-6-1.5S10 9 12 9zM12 9c2-4 6-4 6-1.5S14 9 12 9z"></path>',
+  flake: '<path d="M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 4l3 2 3-2M9 20l3-2 3 2"></path>',
+};
+const icon = (k: keyof typeof ICONS, size = 18) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#3FD0FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k]}</svg>`;
+
+/** Legende: three equal panels; #1 is the prism card, 2/3/4 gold/silver/bronze, 5 grey. */
+function legendPanel(title: string, ic: keyof typeof ICONS, rows: Vals['legendsDon'], unit: string, empty: string): string {
+  const head = `<p class="lg-head">${icon(ic)}${esc(title)}</p>`;
+  const [first, ...rest] = rows;
+  if (!first) return `<div class="panel lg">${head}<div class="lg-empty">${esc(empty)}</div></div>`;
+  const tot = (r: Vals['legendsDon'][number]) => `${esc(r.total)}${unit ? ' ' + esc(unit) : ''}`;
+  return `<div class="panel lg">${head}
+<div class="prism-card"><span class="prism-tag">PRISMĂ · LOCUL 1</span>
+<div class="prism-row"><span class="prism-name">${esc(first.name)}</span><span class="prism-total prism-text">${tot(first)}</span></div></div>
+<ol start="2" class="lg-rest">${rest.map((r, i) => `<li><span class="rk" style="${rankStyle(i + 1)}">${r.rank}</span><span class="nm">${esc(r.name)}</span><span class="tt">${esc(r.total)}</span></li>`).join('')}</ol>
+<p class="lg-compact">${rest.map((r, i) => `<strong style="${rankStyle(i + 1)}">${r.rank}</strong> ${esc(r.name)}`).join(' · ')}</p>
+</div>`;
+}
+function legends(v: Vals): string {
+  return [
+    legendPanel('Donatori', 'star', v.legendsDon, '€', 'Locul 1 e liber. Prima donație face o legendă.'),
+    legendPanel('Subs dăruite', 'gift', v.legendsGifts, 'subs', 'Locul 1 e liber. Primul gift face o legendă.'),
+    legendPanel('Biți', 'flake', v.legendsBits, '', 'Locul 1 e liber. Primii biți fac o legendă.'),
+  ].join('');
+}
+
+function todayFeed(v: Vals): string {
+  if (!v.hasRecent) return emptyRow('Aici apare, pe loc, fiecare sub, gift, donație și bit de azi.');
+  return v.recentFeed.map((t, i) => `<li class="${i >= 3 ? 'more-row' : ''}"><strong class="ft">${esc(t.time)}</strong><span class="fw"><strong>${esc(t.user)}</strong> <span style="color: #AEB8C7">${esc(t.what)}</span></span><span class="fa">${esc(t.agoText)}</span></li>`).join('');
+}
+
+function loyal(v: Vals): string {
+  if (!v.hasLoyal) return emptyRow('Primii fideli apar după prima oră în chat. Se numără singur, cât ești pe stream.');
+  return v.loyalRows.map((r, i) => `<li class="${i >= 3 ? 'more-row' : ''}">
+<div class="ly-row"><span class="rk" style="${rankStyle(i)}">${r.rank}</span><span class="nm">${esc(r.name)}</span><span class="tt">${esc(r.hours)}</span></div>
+${r.streakText || r.badgeIds.length ? `<div class="ly-badges">${r.streakText ? `<span class="streak">${esc(r.streakText)}</span>` : ''}${r.badgeIds.map((b) => badgeTag(b, `ly-${i}-${b}`, r.who[b] ?? '')).join('')}</div>` : ''}
+</li>`).join('');
+}
+
+/** Milestone track: numbered steps (done ✓ CLIP, unlocked URMEAZĂ LIVE, next URMĂTORUL, rest grey). */
+function track(v: Vals): string {
+  const st = {
+    done: ['var(--ice)', 'var(--ice)', '#04101A', 'none', '#C9D2DF', 'CLIP', 'var(--ice)'],
+    unlocked: ['#F2F5FA', '#F2F5FA', '#04101A', 'none', '#F2F5FA', 'URMEAZĂ LIVE', '#F2F5FA'],
+    next: ['#0B1018', 'var(--ice)', 'var(--ice)', '0 0 18px rgba(63,208,255,0.5)', 'var(--ice)', 'URMĂTORUL', 'var(--ice)'],
+    rest: ['#080B10', '#2A3445', '#7D8899', 'none', '#8C97A8', '', '#8C97A8'],
+  } as const;
+  return v.track.map((m) => {
+    const [bg, border, fg, glow, amt, tag, tagColor] = st[m.state as keyof typeof st];
+    const label = `${m.no} · ${m.title}${m.state === 'done' ? ' · făcut' : m.state === 'unlocked' ? ' · deblocat' : m.state === 'next' ? ' · următorul' : ''}`;
+    const inner = `<span class="ms-mark" style="background: ${bg}; border-color: ${border}; color: ${fg}; box-shadow: ${glow}">${m.state === 'done' ? '✓' : m.no}</span>
+<span class="ms-amt" style="color: ${amt}">${esc(m.amount)}</span><span class="ms-tag" style="color: ${tagColor}">${tag}</span>
+<span class="ms-name" role="tooltip">${esc(m.title)}</span>`;
+    return m.state === 'done' && m.clip
+      ? `<a class="ms" href="${esc(m.clip)}" aria-label="${esc(label)}, vezi clipul">${inner}</a>`
+      : `<span class="ms" tabindex="0" aria-label="${esc(label)}">${inner}</span>`;
+  }).join('');
+}
+
+function segs(v: Vals): string {
+  return v.segs.map((g) => `<span style="height: 8px; background: ${g.bg}"></span>`).join('');
+}
+
+const PLAY = '<svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z" fill="#3FD0FF"></path></svg>';
+function clips(v: Vals): string {
+  if (!v.hasClips) return `<p class="clip-empty">Când o provocare se face live, clipul ei apare aici.</p>`;
+  return v.clips.map((c) => `<a class="clip" href="${esc(c.clip)}" aria-label="Vezi clipul: ${esc(c.no)} ${esc(c.title)}">
+<span class="thumb"><span class="thumb-no">✓ ${esc(c.no)}</span><span class="play">${PLAY}</span></span>
+<span class="clip-text"><span class="clip-title"><span class="clip-no">${esc(c.no)}</span>${esc(c.title)}</span><span class="clip-when">${esc([c.when, `deblocat la ${c.amount}`].filter(Boolean).join(' · '))}</span></span>
+<span class="clip-cta">Vezi clipul →</span></a>`).join('');
+}
+
+/** Phone: the full milestone list behind «Toate cele 12». */
+function allGoals(v: Vals): string {
+  const tag = { done: 'FĂCUT', unlocked: 'URMEAZĂ LIVE', next: 'URMĂTORUL', rest: '' } as Record<string, string>;
+  return v.track.map((m) => `<li><span class="ag-no" style="color: ${m.state === 'rest' ? '#4A5568' : 'var(--ice)'}">${m.no}</span><span class="ag-t">${esc(m.title)}</span><span class="ag-a">${esc(m.amount)}</span>${tag[m.state] ? `<span class="ag-tag">${tag[m.state]}</span>` : ''}</li>`).join('');
+}
+
+/** The wheel as SVG: N slices, partner slices in gold, labels along the radius. */
+function wheelSvg(v: Vals): string {
+  const n = Math.max(1, v.slices.length);
+  const seg = 360 / n;
+  const R = 200, C = 210;
+  const pt = (deg: number) => { const a = (deg * Math.PI) / 180; return `${(C + R * Math.cos(a)).toFixed(1)} ${(C + R * Math.sin(a)).toFixed(1)}`; };
+  const size = n > 10 ? 15 : n > 8 ? 17 : 19;
+  const paths = v.slices.map((sl, i) => {
+    const mid = -90 + i * seg;
+    const a0 = mid - seg / 2, a1 = mid + seg / 2;
+    const fill = sl.sponsor ? '#16304A' : i % 2 ? '#0B1622' : '#0E1A28';
+    return `<path d="M${C} ${C} L${pt(a0)} A${R} ${R} 0 ${seg > 180 ? 1 : 0} 1 ${pt(a1)} Z" fill="${fill}" stroke="#23415E" stroke-width="1.5"></path><text transform="translate(${C} ${C}) rotate(${mid.toFixed(2)}) translate(188 5)" text-anchor="end" fill="${sl.sponsor ? '#E6C46A' : '#F2F5FA'}" font-family="Barlow Condensed, sans-serif" font-weight="800" font-style="italic" font-size="${size}">${esc(sl.label)}</text>`;
+  }).join('');
+  return `<svg viewBox="-10 -10 440 440" aria-hidden="true" style="display: block; width: 100%; height: auto">${paths}<circle cx="${C}" cy="${C}" r="${R}" fill="none" stroke="#3FD0FF" stroke-width="3"></circle><circle cx="${C}" cy="${C}" r="50" fill="#050608" stroke="#3FD0FF" stroke-width="3"></circle></svg>`;
+}
+
+function prizeGroups(v: Vals): string {
+  return v.prizeGroups.map((p) => `<div class="pg"><p class="pg-head"><span style="color: ${p.color}">${esc(p.name)}</span><span class="pg-n">${p.count}</span></p><p class="pg-items">${esc(p.items)}</p></div>`).join('');
+}
+
+/** Vote: one row per option; a subscriber taps the row to vote or move the vote. */
+function voteOptions(v: Vals): string {
+  if (!v.challenges.length) return emptyRow('Prima rundă de vot se deschide odată cu subathonul.', 'p');
+  return v.challenges.map((c) => {
+    const body = `<span class="vo-top"><span class="vo-t">${esc(c.title)}${c.pressed === 'true' ? ' <span class="vo-mine">VOTUL TĂU</span>' : ''}</span><span class="vo-p">${c.pct}</span></span><span class="vo-bar" aria-hidden="true"><span style="width: ${c.pct}; background: ${c.pressed === 'true' ? 'var(--ice)' : c.leading ? '#FFFFFF' : '#3FD0FF'}"></span></span>`;
+    return c.canVote
+      ? `<button type="button" class="vo vo-btn" data-action="vote" data-arg="${esc(c.id)}" data-key="vote-${esc(c.id)}" aria-pressed="${c.pressed}" aria-label="${esc(c.btnLabel)}: ${esc(c.title)}, ${c.pct}">${body}</button>`
+      : `<div class="vo">${body}</div>`;
+  }).join('');
+}
+
+/** Bingo, full width: arrows for rows, columns, diagonals; ✓ S-A ÎNTÂMPLAT on squares that happened. */
+function bingo2(v: Vals): string {
+  const L = v.bingoLines;
+  const btn = (n: number) => {
+    const l = L[n];
+    return l ? `<button type="button" class="bl${l.on ? ' on' : ''}" aria-pressed="${l.pressed}" aria-label="${esc(l.aria)}" data-action="bingoLine" data-arg="${l.n}" data-key="bl-${l.n}"${l.disabled ? ' disabled' : ''}>${l.arrow}</button>` : '<span></span>';
+  };
+  const tile = (b: Vals['bingo2'][number]) => `<div class="bt2 ${b.cls}">${b.hit ? `<span class="hit">✓<span class="hit-l"> S-A ÎNTÂMPLAT</span></span>` : ''}${esc(b.text)}</div>`;
+  let html = btn(10) + [5, 6, 7, 8, 9].map(btn).join('');
+  for (let r = 0; r < 5; r++) html += btn(r) + v.bingo2.slice(r * 5, r * 5 + 5).map(tile).join('');
+  return html + btn(11);
+}
+function myLine(v: Vals): string {
+  return v.myLine.map((l) => `<li><span class="${l.hit ? 'ml-hit' : 'ml-miss'}" aria-hidden="true">${l.hit ? '✓' : '·'}</span>${esc(l.text)}${l.hit ? '<span class="sr-only"> (s-a întâmplat)</span>' : ''}</li>`).join('');
+}
+function lineBar(v: Vals): string {
+  return v.myLine.map((l) => `<span style="height: 6px; background: ${l.hit ? 'var(--ice)' : '#1A2230'}"></span>`).join('');
+}
+
+const FLAKE16 = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A5568" stroke-width="2" stroke-linecap="round" aria-hidden="true" class="ad-flake"><path d="M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 4l3 2 3-2M9 20l3-2 3 2"></path></svg>';
+const TREE16 = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A5568" stroke-width="2" stroke-linejoin="round" aria-hidden="true" class="ad-flake"><path d="M12 2l5 7h-3l4 6h-4l3 5H7l3-5H6l4-6H7z"></path><path d="M12 20v2"></path></svg>';
+/** Advent calendar: past = open with the clip, today = lit, future = closed with what's scheduled. */
+function advent(v: Vals): string {
+  const from = v.adventFrom;
+  return v.advent.map((d, i) => {
+    const near = i >= from && i < from + 8 ? '' : ' far';
+    if (d.today) return `<div class="ad ad-today${near}" aria-current="date"><span class="ad-azi">AZI · ${esc(d.date)}</span><span class="ad-n" style="color: #FFFFFF">${d.n}</span><span class="ad-t" style="color: #F2F5FA">${esc(d.note || 'Live azi')}</span></div>`;
+    if (d.past) {
+      const inner = `<span class="ad-d">${esc(d.date)}</span><span class="ad-n" style="color: var(--ice)">${d.n}</span><span class="ad-t" style="color: #C9D2DF">${d.clip ? `${PLAY}${esc(d.note ? d.note + ' · clip' : 'Clipul zilei')}` : esc(d.note || 'Ziua s-a încheiat')}</span>`;
+      return d.clip ? `<a class="ad ad-past${near}" href="${esc(d.clip)}" aria-label="Ziua ${d.n}, ${esc(d.date)}: vezi clipul">${inner}</a>` : `<div class="ad ad-past${near}">${inner}</div>`;
+    }
+    return `<div class="ad ad-future${near}">${d.holiday ? TREE16 : FLAKE16}<span class="ad-d">${esc(d.date)}</span><span class="ad-n" style="color: #4A5568">${d.n}</span><span class="ad-t" style="color: #AEB8C7">${esc(d.note)}</span></div>`;
+  }).join('');
 }
 
 export const views = {
@@ -303,6 +456,20 @@ export const views = {
   loyal,
   together,
   mine,
+  heroRecent,
+  calcOpts,
+  myBadges,
+  track,
+  segs,
+  clips,
+  allGoals,
+  wheelSvg,
+  prizeGroups,
+  voteOptions,
+  bingo2,
+  myLine,
+  lineBar,
+  advent,
 };
 
 export type RegionName = keyof typeof views;

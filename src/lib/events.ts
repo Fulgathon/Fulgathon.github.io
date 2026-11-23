@@ -47,6 +47,10 @@ export function tickerItem(e: EventLike): TickerItem {
     id: e.id,
     big: isBig(e),
     at: e.at,
+    kind: e.kind,
+    tier: e.tier,
+    qty: Number(e.quantity) || 0,
+    seconds: e.seconds_added,
   };
 }
 

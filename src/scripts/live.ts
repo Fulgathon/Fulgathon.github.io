@@ -156,7 +156,7 @@ export class Live {
       patch.raised = `${amount(Number(P.stats.raised))} €`;
     }
     if (has('goals') && Array.isArray(P.goals) && P.goals.length) {
-      patch.goals = P.goals.map((g: Json) => ({ title: g.title, threshold: g.threshold, sponsor: g.sponsor }));
+      patch.goals = P.goals.map((g: Json) => ({ title: g.title, threshold: g.threshold, sponsor: g.sponsor, doneAt: ms(g.doneAt), clip: g.clip ?? null, when: g.when ?? null }));
     }
     if (has('feed') && Array.isArray(P.feed)) {
       const items = P.feed.map((e: Json) =>
@@ -214,6 +214,18 @@ export class Live {
     }
     if (has('now') && P.now) {
       patch.now = { title: P.now.title ?? null, game: P.now.game ?? null, viewers: P.now.viewers ?? null, note: P.now.note ?? null };
+    }
+
+    if (has('lines') && P.lines) {
+      const groups = P.lines.groups ?? {};
+      patch.lines = Object.fromEntries(Object.entries(groups).filter(([, l]) => Array.isArray(l)).map(([k, l]) => [k, (l as unknown[]).map(String)]));
+      patch.smallDonation = Number(P.lines.smallDonation) || 10;
+    }
+    if (has('advent') && Array.isArray(P.advent)) {
+      patch.advent = P.advent.map((a: Json) => ({ day: Number(a.day), note: a.note ?? '', clip: a.clip ?? null, sponsor: a.sponsor ?? null }));
+    }
+    if (has('badges') && P.badges) {
+      patch.badgeCounts = Object.fromEntries(Object.entries(P.badges).map(([k, n]) => [k, Number(n) || 0]));
     }
 
     this.data = { ...this.data, ...patch };

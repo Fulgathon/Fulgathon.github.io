@@ -9,7 +9,7 @@
 
 import challengesJson from '../../data/challenges.json';
 import { bingoItems, defaultGoals, defaultPrizes, popSlots, prizeColors } from '../data/content';
-import type { BoardTab, Goal, Prize, SiteData } from '../data/types';
+import type { AdventDay, LineGroup, BoardTab, Goal, Prize, SiteData } from '../data/types';
 import { amount, tickerItem } from '../lib/events';
 import { ago, fmtInt } from '../lib/format';
 
@@ -39,12 +39,17 @@ interface DemoSpin { id: number; user: string; prize: number; at: number; fulfil
 interface DemoSuggestion { id: number; body: string; user: string; at: number; status: 'pending' | 'approved' | 'rejected' }
 
 export interface DemoState {
+  /** Iceman's bubble lines per group and the small/large donation threshold (layout v2). */
+  lines?: Partial<Record<LineGroup, string[]>>;
+  smallDonation?: number;
+  /** Advent calendar notes, clips and sponsors set on /mod. */
+  advent?: AdventDay[];
   /** Moderator note for "Acum pe stream" and the community goal list (demo only). */
   note?: { text: string; until: number } | null;
   communityGoals?: { title: string; hours: number }[];
   /** Moderator name rules (hide / allow), like private.name_rules. */
   nameRules?: { name: string; rule: 'hide' | 'allow'; at: number }[];
-  v: 6;
+  v: 7;
   seq: number;
   timer: {
     status: Status; startsAt: number | null; endsAt: number | null; pausedUntil: number | null;
@@ -132,7 +137,7 @@ function seed(now: number): DemoState {
     ({ id, kind, tier, quantity, currency, seconds_added: seconds, doubled: false, user_login: user, user_name: user, at: now - minsAgo * MIN });
 
   return {
-    v: 6,
+    v: 7,
     seq: 1000,
     timer: {
       status: 'live',
@@ -146,7 +151,16 @@ function seed(now: number): DemoState {
       doubleSponsor: 'Zona IT',
     },
     stats: { subs: 1284, bits: 48_500, raised: 1_180 },
-    goals: defaultGoals.map((g, i) => ({ ...g, sponsor: i === 5 || i === 8 ? 'Zona IT' : null })),
+    // The first four happened live (with clips), the fifth is unlocked and planned.
+    goals: defaultGoals.map((g, i) => ({ ...g, sponsor: i === 5 || i === 8 ? 'Zona IT' : null,
+      doneAt: i < 4 ? now - (2 - i * 0.5) * DAY : null, clip: i < 4 ? '#' : null, when: i === 4 ? 'vineri seara' : null })),
+    lines: {},
+    smallDonation: 10,
+    advent: [
+      { day: 1, note: 'Startul', clip: '#', sponsor: null }, { day: 2, note: 'Ora dublă', clip: '#', sponsor: 'Zona IT' },
+      { day: 3, note: 'Provocarea votată', clip: null, sponsor: null }, { day: 4, note: 'Segment partener', clip: null, sponsor: null },
+      { day: 5, note: 'Ajunul · colinde live', clip: null, sponsor: null }, { day: 12, note: 'Revelion live', clip: null, sponsor: null },
+    ],
     events: [
       ev(6, 1, 'donation', 'andreiGG', null, 20, 7200, 'EUR'),
       ev(5, 3, 'sub', 'Rares1337', '3000', 1, 1080),
@@ -228,7 +242,7 @@ export class DemoBackend {
     if (raw) {
       try {
         const s = JSON.parse(raw) as DemoState;
-        if (s.v === 6) { this.raw = raw; this.cached = s; return s; }
+        if (s.v === 7) { this.raw = raw; this.cached = s; return s; }
       } catch { /* corrupt: reseed */ }
     }
     // No saved demo (or storage blocked): start from the seed, keep it in memory.
@@ -625,10 +639,45 @@ export class DemoBackend {
 
   /** Milestone Maraton list from the moderator page (title + € amount). */
   setGoals(list: { title: string; threshold: number | string }[]) {
-    const goals = (Array.isArray(list) ? list : []).map((g) => ({ title: String(g.title ?? '').trim(), threshold: Number(g.threshold), sponsor: String((g as { sponsor?: string }).sponsor ?? '').trim() || null }));
+    const before = this.load().goals;
+    const goals = (Array.isArray(list) ? list : []).map((g) => {
+      const x = g as { title?: string; threshold?: number | string; sponsor?: string; done?: boolean; clip?: string; when?: string };
+      const title = String(x.title ?? '').trim(), threshold = Number(x.threshold);
+      const old = before.find((o) => o.title === title && o.threshold === threshold);
+      const clip = 'clip' in x ? String(x.clip ?? '').trim() || null : old?.clip ?? null;
+      if (clip && !/^https:\/\//.test(clip) && clip !== '#') fail('bad_goals');
+      return {
+        title, threshold, sponsor: String(x.sponsor ?? '').trim() || null,
+        doneAt: 'done' in x ? (x.done ? old?.doneAt ?? Date.now() : null) : old?.doneAt ?? null,
+        clip, when: 'when' in x ? String(x.when ?? '').trim().slice(0, 60) || null : old?.when ?? null,
+      };
+    });
     if (goals.length > 40 || goals.some((g) => !g.title || g.title.length > 140 || !Number.isInteger(g.threshold) || g.threshold <= 0)) fail('bad_goals');
     if (new Set(goals.map((g) => g.threshold)).size !== goals.length) fail('duplicate_amount');
     this.mutate((s) => { s.goals = goals.sort((a, b) => a.threshold - b.threshold); });
+  }
+
+  /** «Replicile lui Iceman» from /mod (same checks as mod_set_lines). */
+  setLines(lines: Record<string, string[]>, smallDonation?: number | null) {
+    const groups = ['sub', 'sub23', 'gift', 'donSmall', 'donBig', 'bits'];
+    if (!lines || typeof lines !== 'object') fail('bad_lines');
+    const out: Partial<Record<LineGroup, string[]>> = {};
+    for (const [k, list] of Object.entries(lines)) {
+      if (!groups.includes(k) || !Array.isArray(list) || list.length > 40) fail('bad_lines');
+      const clean = list.map((l) => String(l).trim()).filter(Boolean);
+      if (clean.some((l) => l.length > 70)) fail('line_too_long');
+      out[k as LineGroup] = clean;
+    }
+    if (smallDonation != null && !(smallDonation > 0 && smallDonation <= 10000)) fail('bad_threshold');
+    this.mutate((s) => { s.lines = out; if (smallDonation != null) s.smallDonation = smallDonation; });
+  }
+
+  /** Advent calendar days from /mod (same checks as mod_set_advent). */
+  setAdvent(days: { day: number | string; note?: string; clip?: string; sponsor?: string }[]) {
+    if (!Array.isArray(days) || days.length > 40) fail('bad_days');
+    const out = days.map((d) => ({ day: Number(d.day), note: String(d.note ?? '').trim(), clip: String(d.clip ?? '').trim() || null, sponsor: String(d.sponsor ?? '').trim() || null }));
+    if (out.some((d) => !Number.isInteger(d.day) || d.day < 1 || d.day > 40 || d.note.length > 60 || (d.sponsor ?? '').length > 60 || (d.clip && !/^https:\/\//.test(d.clip) && d.clip !== '#'))) fail('bad_days');
+    this.mutate((s) => { s.advent = out.filter((d) => d.note || d.clip || d.sponsor).sort((a, b) => a.day - b.day); });
   }
 
   viewerInfo() {
@@ -739,6 +788,11 @@ export class DemoBackend {
         .map((x) => ({ user: x.user, prize: s.prizes[x.prize]?.win ?? '', ago: ago(x.at, now), sponsor: s.prizes[x.prize]?.sponsor ?? null })),
       doubleSponsor: s.timer.doubleSponsor,
       ...this.community(s, now),
+      lines: s.lines ?? {},
+      smallDonation: s.smallDonation ?? 10,
+      advent: s.advent ?? [],
+      // Sample counts (the real ones come from the badges part).
+      badgeCounts: { og: 1240, h10: 2150, night: 386, streak7: 509, h50: 214, h100: 37 },
       bingo: {
         closesAt: s.bingo.closesAt, prize: s.bingo.prize, prizeSponsor: s.bingo.prizeSponsor ?? null,
         players: s.bingo.others.length + (s.bingo.pick ? 1 : 0),
@@ -764,7 +818,11 @@ export class DemoBackend {
         scheduled_end: iso(s.timer.scheduledEnd), double_from: iso(s.timer.doubleFrom), double_until: iso(s.timer.doubleUntil),
       } as Record<string, any>,
       stats: { subs: s.stats.subs, bits: s.stats.bits, raised: s.stats.raised } as Record<string, any>,
-      goals: s.goals.map((g) => ({ title: g.title, threshold: g.threshold, unlocked_at: s.stats.raised >= g.threshold ? 'yes' : null })),
+      goals: s.goals.map((g) => ({ title: g.title, threshold: g.threshold, sponsor: g.sponsor ?? null, unlocked_at: s.stats.raised >= g.threshold ? 'yes' : null,
+        done_at: g.doneAt ? new Date(g.doneAt).toISOString() : null, clip_url: g.clip ?? null, scheduled_for: g.when ?? null })),
+      lines: s.lines ?? {},
+      smallDonation: s.smallDonation ?? 10,
+      advent: s.advent ?? [],
       round: r ? { id: r.id, number: r.number, closes_at: iso(r.closesAt)!, winner_id: r.winnerId, items: r.items.map((x) => ({ challenge_id: x.challengeId, votes: x.votes, title: title(x.challengeId) })) } : null,
       pool: s.challenges.filter((c) => c.status === 'pool' && c.votable).map(toCh),
       scheduled: s.challenges.filter((c) => c.status === 'scheduled').map(toCh),
@@ -811,6 +869,8 @@ export class DemoBackend {
       case 'mod_name_rule': return this.nameRule(String(a.p_name ?? ''), a.p_rule ?? null);
       case 'mod_names': return { filtered: [], rules: (this.load().nameRules ?? []).map((r) => ({ name: r.name, rule: r.rule, at: new Date(r.at).toISOString() })) };
       case 'mod_set_goals': return this.setGoals(a.p_goals);
+      case 'mod_set_lines': return this.setLines(a.p_lines, a.p_small_donation ?? null);
+      case 'mod_set_advent': return this.setAdvent(a.p_days ?? []);
       case 'mod_freeze_until': return this.freezeUntil(ms(a.p_until) ?? 0);
       case 'mod_unfreeze': return this.unfreeze();
       case 'mod_bingo_set_items': return this.setBingoItems(a.p_items);

@@ -55,3 +55,76 @@ export const bingoItems = [
 ];
 
 // Partners and supporters now live in src/data/site.ts (site.partners, site.supporters).
+
+// ---- Layout v2 ---------------------------------------------------------------
+
+/** «Cum adaugi timp» chips in the timer card (owner's rates, 23 Nov 2026). */
+export const rateChips: [string, string][] = [
+  ['1 €', '+6 min'], ['Tier 1 / Prime', '+6 min'], ['Tier 2', '+12 min'],
+  ['Tier 3', '+18 min'], ['Gift sub', '+6 min'], ['400 biți', '+4 min'],
+];
+
+/** «Cât adaugi tu?»: what each choice adds (seconds) and a light equivalent (approved in the mockup). */
+export const calcOptions: { label: string; seconds: number; fun: string }[] = [
+  { label: '5 €', seconds: 1800, fun: 'cam un meci ranked' },
+  { label: '10 €', seconds: 3600, fun: 'două meciuri și o cafea' },
+  { label: '25 €', seconds: 9000, fun: 'un film de Crăciun, cu tot cu reclame' },
+  { label: 'Sub T1', seconds: 360, fun: 'două colinde, cântate prost' },
+  { label: 'Sub T3', seconds: 1080, fun: 'o pauză de masă cu sarmale' },
+  { label: '5 gift', seconds: 1800, fun: 'cam un meci ranked' },
+];
+
+/**
+ * Iceman's bubble: the six groups moderators fill on /mod. The site never
+ * ships lines in his voice; a group with fewer than 5 lines uses FALLBACK_LINE.
+ */
+export const lineGroups: { id: import('./types').LineGroup; name: string; when: string }[] = [
+  { id: 'sub', name: 'Sub (Tier 1 / Prime)', when: 'Un sub nou sau reînnoit, Tier 1 sau Prime.' },
+  { id: 'sub23', name: 'Sub Tier 2 / 3', when: 'Sub Tier 2 sau Tier 3.' },
+  { id: 'gift', name: 'Subs cadou', when: 'Cineva dăruiește unul sau mai multe subs.' },
+  { id: 'donSmall', name: 'Donație mică', when: 'Donație sub pragul de donație mare.' },
+  { id: 'donBig', name: 'Donație mare', when: 'Donație de la prag în sus.' },
+  { id: 'bits', name: 'Biți', when: 'Orice cheer cu biți.' },
+];
+export const MIN_LINES = 5;
+export const MAX_LINE = 70;
+export const FALLBACK_LINE = 'Mersi, {nume}!';
+
+/** Badge tiers (Badges.dc.html): 1 bronz … 5 prismă. Rules match private.loyalty. */
+export type BadgeTier = 'bronze' | 'silver' | 'gold' | 'plat' | 'prism';
+export const badgeIcons = {
+  star: 'M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6-4.5-4.2 6.1-.7z',
+  moon: 'M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z',
+  clock: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 7v5l3 2',
+  bolt: 'M13 2L4 14h7l-1 8 9-12h-7z',
+};
+export const badgeDefs: { id: string; label: string; tier: BadgeTier; icon: keyof typeof badgeIcons; how: string }[] = [
+  { id: 'og', label: 'Ziua 1 OG', tier: 'bronze', icon: 'star', how: 'Fii în chat în prima zi a maratonului, 20 decembrie.' },
+  { id: 'h10', label: '10 ore', tier: 'bronze', icon: 'clock', how: 'Strânge 10 ore în chat, adunate pe tot maratonul.' },
+  { id: 'night', label: 'Tura de noapte', tier: 'silver', icon: 'moon', how: 'Stai în total o oră în chat între 00:00 și 06:00.' },
+  { id: 'streak7', label: 'Serie de 7 zile', tier: 'gold', icon: 'bolt', how: '7 zile la rând cu cel puțin 30 de minute în chat sau un check-in cu puncte de canal.' },
+  { id: 'h50', label: '50 de ore', tier: 'plat', icon: 'clock', how: 'Strânge 50 de ore în chat, adunate pe tot maratonul.' },
+  { id: 'h100', label: '100 de ore', tier: 'prism', icon: 'clock', how: 'Strânge 100 de ore în chat, adunate pe tot maratonul.' },
+];
+/** [accent, tint, text] per tier. Platinum is teal-green; prism uses the gradient below. */
+export const tierColors: Record<BadgeTier, [string, string, string]> = {
+  bronze: ['#C98A5B', 'rgba(201,138,91,0.14)', '#E3B08A'],
+  silver: ['#C9D1DB', 'rgba(201,209,219,0.10)', '#E6EBF1'],
+  gold: ['#E6C46A', 'rgba(230,196,106,0.12)', '#F2D98E'],
+  plat: ['#5FDDBF', 'rgba(95,221,191,0.12)', '#A6F0DD'],
+  prism: ['#C3B8FF', 'rgba(169,184,255,0.10)', '#E2DAFF'],
+};
+/** One smooth cool gradient: no hard stripes, no rainbow order, no white glare. */
+export const PRISM = 'linear-gradient(135deg, #9FE8FF 0%, #A9B8FF 30%, #E2B6FF 52%, #FFD6C2 74%, #C8FFE9 100%)';
+/** Legend and Fidelii ranks: 1 prism, 2 gold, 3 silver, 4 bronze, then grey. */
+export const rankColors = ['prism', '#E6C46A', '#C9D1DB', '#C98A5B', '#4A5568'];
+
+/**
+ * Advent calendar defaults: the 22 days from 20 Dec 2026 to 10 Jan 2027.
+ * Only the fixed dates are named here; moderators add what's scheduled
+ * (and the clip of each day) on /mod.
+ */
+export const ADVENT_DAYS = 22;
+export const adventDefaults: Record<number, string> = {
+  1: 'Startul', 5: 'Ajunul', 6: 'Crăciun', 12: 'Revelion live', 13: 'Anul Nou', 22: 'Finalul programat',
+};
