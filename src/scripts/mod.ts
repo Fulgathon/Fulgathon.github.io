@@ -367,7 +367,7 @@ function demoHealth() {
   return { now, timer: { status: S.timer?.status, online: S.timer?.stream_online }, tipeee: { lastRun: now, lastCount: 0, error: null },
     watch: { lastRun: now, chatters: 412 }, twitch: { lastEvent: now }, donation: { lastEvent: now },
     jobs: ['icemaraton-minute', 'icemaraton-state', 'icemaraton-tipeee', 'icemaraton-watch-time'].map((job) => ({ job, status: 'succeeded', at: now, message: '' })),
-    skipped: [], httpErrors: [], httpCalls: 120 };
+    skipped: [], httpErrors: [], httpCalls: 120, resubs: { canRead: true, tracked: 186, lastSeen: now, found: 4 } };
 }
 function healthHtml(h: any): string {
   if (!h) return '<p class="muted">Nu pot citi starea acum.</p>';
@@ -390,6 +390,10 @@ function healthHtml(h: any): string {
   const eAge = age(h.twitch?.lastEvent ?? null);
   rows.push(live && online && (eAge === null || eAge > 3600) ? ['warn', 'Subs și biți (Twitch)', `Nicio notificare ${ago(eAge)}. Normal dacă nu a venit niciun sub; altfel verifică pe /mod conectarea streamerului.`]
     : ['ok', 'Subs și biți (Twitch)', `Ultima notificare: ${ago(eAge)}.`]);
+  // Resubs nobody shared, read from the subscriber badge in chat
+  const R = h.resubs;
+  if (R) rows.push(!R.canRead ? ['warn', 'Resubs din chat', 'Lipsește permisiunea de citire a chatului. Iceman reconectează o dată contul de streamer (butonul de la Stare).']
+    : ['ok', 'Resubs din chat', `${R.tracked ?? 0} abonați văzuți în chat · ${R.found ?? 0} resubs numărate fără share. Ultimul abonat văzut: ${ago(age(R.lastSeen ?? null))}.`]);
   // Scheduled jobs
   const failed = (h.jobs ?? []).filter((j: any) => j.status === 'failed');
   rows.push(failed.length ? ['bad', 'Joburi programate', failed.map((j: any) => `${j.job}: ${j.message || 'eșuat'}`).join(' · ')]

@@ -41,7 +41,7 @@ Severity: **Critical** = money, data loss, auth bypass or the site down for ever
 | B-15 | Medium | `check-sub`: no throttle (can exhaust Iceman's Twitch API quota) and no message when it fails | Open |
 | B-16 | Medium | `community_goals`: anon/authenticated hold every table privilege (RLS blocks writes, TRUNCATE isn't reachable from the API) | **Fixed**: migration `20261126100000` (applied 23 Nov) |
 | B-17 | Medium | Deleting all milestones or prizes on /mod leaves the placeholder list on the site | Open |
-| B-18 | Medium | Resubs add time only if the viewer shares the resub message in chat (Twitch limitation) | Owner decision |
+| B-18 | Medium | Resubs add time only if the viewer shares the resub message in chat (Twitch limitation) | **Fixed** (24 Nov): resubs read from the subscriber badge in chat; migration `20261128100000` (not applied yet) |
 | B-19 | Low | Logged-in users can read the whole `spins` table, including logins whose names are hidden | Open |
 | B-20 | Low | The `#section` is lost through the Twitch login redirect (`/mod/#bingo` → `/mod/`) | Open |
 | B-21 | Low | If the start is late, the page shows «ÎNCEPE ÎN 00:00:00:00» until a moderator starts it | Open |
@@ -141,6 +141,8 @@ Any logged-in viewer can call `check-sub` in a loop; each call is a Helix reques
 
 ### B-18 · Resubs that aren't shared add no time
 EventSub sends `channel.subscription.message` only when the viewer shares the resub in chat; there is no event for a silent resub. Worth telling viewers on stream («dă share la resub ca să adauge timp»), and putting it in the «Cum adaugi timp» chips.
+
+**Fixed 24 Nov 2026 (owner: "not all users will share their sub", avoid backlash).** Every chat message carries the subscriber badge with the cumulative months. `twitch-eventsub` now reads chat (`channel.chat.message`) and `chat_sub_months()` remembers each chatter's months; when the number goes up while the marathon is live, it records a `resub` (external id `chatbadge:<user>:<months>`, tier asked from Twitch). A shared resub and the badge share `credited_months`, so whichever comes first counts and the other is skipped; a new or gifted sub sets `skip_next`, so its badge increase isn't counted again. Badges are remembered before the start too, so regular chatters have a baseline on 20 Dec. Limits: viewers who never write in chat stay invisible; a viewer first seen in chat during the marathon only gets a baseline (their next renewal or a share counts). Also: `channel.subscribe` / `channel.subscription.end` now set `viewers.is_subscriber` at once. Needs Iceman to reconnect once (`user:read:chat`, `user:bot`, `channel:bot`). Checks: `tests/chat-resubs.test.ts`, `supabase/tests/chat_resubs.sql`.
 
 ### B-31 · The calculator promises time before the start
 `record_event` sets the added seconds to 0 unless `timer.status = 'live'`, so a donation before 20 Dec counts toward «Strâns» and milestones but not the clock. The hero calculator still shows «+30 min» (≈ «cam un meci ranked») while the page says «ÎNCEPE CURÂND». Either change the calculator's text before the start, or bank the time into the opening duration (database change). See [UX_AUDIT.md](UX_AUDIT.md) V3.

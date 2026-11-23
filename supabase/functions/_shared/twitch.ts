@@ -38,7 +38,10 @@ export interface Config {
 // user:write:chat: Iceman's bubble line also goes to Twitch chat, from his own account
 // (only when the /mod switch is on). Older connections lack it until he reconnects once.
 export const CHAT_SCOPE = 'user:write:chat';
-export const SCOPES = ['channel:read:subscriptions', 'bits:read', 'moderator:read:chatters', 'channel:read:redemptions', CHAT_SCOPE];
+// user:read:chat + user:bot + channel:bot: read chat through EventSub (channel.chat.message)
+// with the app token, for the subscriber badge months (resubs nobody shared).
+export const READ_CHAT_SCOPES = ['user:read:chat', 'user:bot', 'channel:bot'];
+export const SCOPES = ['channel:read:subscriptions', 'bits:read', 'moderator:read:chatters', 'channel:read:redemptions', CHAT_SCOPE, ...READ_CHAT_SCOPES];
 
 export async function getConfig(db: Db): Promise<Config> {
   const { data, error } = await db.rpc('twitch_config');

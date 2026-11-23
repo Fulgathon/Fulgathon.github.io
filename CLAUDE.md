@@ -98,6 +98,7 @@ Build the static site so it matches the design, with every interaction working o
 - **Zero is final (23 Nov 2026):** once the clock reaches 00:00:00:00 the marathon is over. Nothing adds time after that (subs, donations, mod «+min» and freeze are refused), and the site shows «Timpul a expirat» instead of LIVE. See BUGS.md B-08.
 - **Iceman is protected (23 Nov 2026):** no moderator can remove or demote the broadcaster login (icemanlucky) on /mod. See B-30.
 - **Euros only (23 Nov 2026):** only EUR TipeeeStream donations add time and count toward Strâns; no conversion table. A donation in another currency goes to /mod «De făcut acum» for a moderator to handle by hand. See B-09.
+- **Resubs without sharing (24 Nov 2026):** resubs count even when the viewer doesn't press Share: the site reads the subscriber badge months in chat and counts an increase as a resub (no double counting with shared resubs or new/gifted subs). Viewers who never chat can't be seen. Gift subs add time for the gifter; the recipient counts as a subscriber at once. See BUGS.md B-18.
 
 ## Open (ask, don't guess)
 

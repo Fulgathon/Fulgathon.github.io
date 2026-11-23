@@ -2,15 +2,19 @@
 //   GET /twitch-auth            → redirect to Twitch to approve the scopes
 //   GET /twitch-auth?code=…     → save his token in Vault, then (re)create the
 //                                  EventSub webhooks for subs, gifts, bits, live,
-//                                  title/game changes and channel-point check-ins
+//                                  title/game changes, channel-point check-ins and chat
+//                                  (subscriber badges: resubs nobody shared)
 // Only the broadcaster account set in private.settings is accepted.
 // Deployed with verify_jwt = false (it's a browser redirect target).
 
 import { admin, appToken, exchangeCode, getConfig, helix, hmacHex, page, safeEqual, SCOPES, twitchApp } from '../_shared/twitch.ts';
 
-const EVENTS: [type: string, version: string][] = [
+// [type, version, needs user_id in the condition (chat is read as Iceman himself)]
+const EVENTS: [type: string, version: string, asUser?: boolean][] = [
   ['channel.subscribe', '1'],
+  ['channel.subscription.end', '1'],
   ['channel.subscription.message', '1'],
+  ['channel.chat.message', '1', true],
   ['channel.subscription.gift', '1'],
   ['channel.cheer', '1'],
   ['stream.online', '1'],
@@ -91,12 +95,12 @@ Deno.serve(async (req) => {
       cursor = j.pagination?.cursor ?? '';
     } while (cursor);
 
-    for (const [type, version] of EVENTS) {
+    for (const [type, version, asUser] of EVENTS) {
       const r = await helix('/eventsub/subscriptions', at, {
         method: 'POST',
         body: JSON.stringify({
           type, version,
-          condition: { broadcaster_user_id: token.user_id },
+          condition: asUser ? { broadcaster_user_id: token.user_id, user_id: token.user_id } : { broadcaster_user_id: token.user_id },
           transport: { method: 'webhook', callback, secret: cfg.eventsub_secret },
         }),
       });

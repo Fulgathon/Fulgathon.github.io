@@ -52,6 +52,13 @@ Secrets go only into the dashboards below, never into chat or the repo.
    `user:write:chat` permission ("Send chat messages as you"). The connect
    page now asks for it and refuses the connection without it. Until he
    reconnects, /mod shows «Lipsește permisiunea» and nothing is sent.
+   **And once more after the chat-resubs migration (`20261128100000`):** the
+   site reads chat to count resubs nobody shared (subscriber badge months),
+   which needs `user:read:chat`, `user:bot` and `channel:bot`. The page then
+   lists ten events, including `channel.chat.message` and
+   `channel.subscription.end`. /mod → Conexiuni → «Resubs din chat» shows
+   whether the permission is there. Do this as early as possible before
+   20 Dec, so regular chatters already have a month count at the start.
 7. **Daily check-in (channel points):** Twitch dashboard → Viewer Rewards →
    Channel Points → Manage Rewards → Add New Custom Reward:
    - Title: `Check-in ICEMARATON`. Any title containing "check-in" works.
