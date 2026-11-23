@@ -53,7 +53,9 @@ export interface State {
   /** «Cât adaugi tu?»: the chosen option. */
   calcPick: number;
   /** Iceman's bubble: what he says about the latest event (null = nothing yet). */
-  bubble: { who: string; text: string; time: string } | null;
+  bubble: { user: string; what: string; text: string; time: string; accent: string } | null;
+  /** Reactions still waiting behind the one on screen. */
+  bubbleQueue: number;
   /** Bumped on every reaction; its parity restarts the hop / flash / pop animations. */
   fx: number;
   /** The badge whose explanation is open (tap on phones). */
@@ -95,6 +97,7 @@ export function initialState(): State {
     copied: false,
     calcPick: 0,
     bubble: null,
+    bubbleQueue: 0,
     fx: 0,
     badgeTip: null,
     more: { feed: false, loyal: false, goals: false, days: false, prizes: false },
@@ -565,7 +568,11 @@ export function derive(s: State, d: SiteData) {
     navShort: `${dd}:${hh}:${mm}`,
     heroRecent, hasHeroRecent: heroRecent.length > 0, noHeroRecent: heroRecent.length === 0,
     chipOn: chip !== null, chipTime: chip?.time ?? '', chipUser: chip?.user ?? '', chipWhat: chip?.what ?? '',
-    bubbleOn: s.bubble !== null, bubbleWho: s.bubble?.who ?? '', bubbleText: s.bubble?.text ?? '',
+    bubbleOn: s.bubble !== null, bubbleUser: s.bubble?.user ?? '', bubbleWhat: s.bubble?.what ?? '',
+    bubbleTime: s.bubble?.time ?? '', bubbleText: s.bubble?.text ?? '', bubbleAccent: s.bubble?.accent ?? 'var(--ice)',
+    bubbleSay: s.bubble ? `${s.bubble.user}, ${s.bubble.what}, ${s.bubble.time}: ${s.bubble.text}` : '',
+    bubbleQueueOn: s.bubbleQueue > 0, bubbleQueueText: `încă ${s.bubbleQueue}`,
+    bubbleNextLabel: `Următoarea reacție (încă ${s.bubbleQueue} în așteptare)`,
     fxA: fxOn && s.fx % 2 === 1, fxB: fxOn && s.fx % 2 === 0, popText: s.bubble?.time ?? '',
     calcOpts: calcOptions.map((o, i) => ({ i, label: o.label, on: i === calcI })),
     calcAdd: words(calcSec), calcFun: calcOptions[calcI].fun, calcAt: calcAtOn ? rClock(r! + calcSec) : '', calcAtOn,

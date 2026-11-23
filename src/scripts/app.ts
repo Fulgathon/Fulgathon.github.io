@@ -180,34 +180,83 @@ function fail(err: unknown) {
 }
 
 
-// ---- Hero: Iceman reacts to each new event (bubble, hop, flash, «+18:00»). ----
+// ---- Hero: Iceman reacts to each new event (callout, hop, flash, «+18:00»). ----
 const bag = new LineBag();
 let heroLastId: number | null = null;
 const heroQueue: TickerItem[] = [];
-let heroTimer: number | undefined;
+/** How long one reaction stays when others are waiting (typing + reading). */
+const DWELL = 3200;
+let heroTimer: number | undefined;   // the pending "next" step
+let heroDue = 0;                     // when it fires (ms)
+let heroHold = false;                // pointer or focus on the callout: wait
+let heroPending = 0;                 // ms left while held
+
+/** Edge colour per kind of support (subtle: a 3 px edge, the corner and the «+time»). */
+const ACCENT: Record<string, string> = { sub: '#3FD0FF', sub23: '#9FE8FF', gift: '#F2F5FA', donSmall: '#3FD0FF', donBig: '#E6C46A', bits: '#B794FF' };
 
 function bubbleFor(t: TickerItem): State['bubble'] {
   const group = groupFor(t, data.smallDonation);
   if (!group) return null;
   const vars = varsFor(t);
   // The server picks the line when it records the event (the same one goes to Twitch chat).
-  const { line, fallback } = t.line !== undefined
-    ? (t.line ? { line: t.line, fallback: false } : { line: FALLBACK_LINE, fallback: true })
+  const { line } = t.line !== undefined
+    ? (t.line ? { line: t.line } : { line: FALLBACK_LINE })
     : bag.pick(group, data.lines[group]);
-  // Fallback: the event on top, «Mersi, {nume}!» below (no line in Iceman's voice).
-  return fallback
-    ? { who: `${t.time} · ${t.what}`, text: fillLine(line, vars), time: t.time }
-    : { who: `Mersi, ${t.user}!`, text: fillLine(line, vars), time: t.time };
+  // No line in Iceman's voice is ever invented: without his lines it says «Mersi, {nume}!».
+  return { user: t.user, what: t.what, text: fillLine(line, vars), time: t.time, accent: ACCENT[group] ?? '#3FD0FF' };
+}
+
+/** Type the line in (the space is reserved by a hidden copy, so the callout doesn't grow). */
+let typeTimer: number | undefined;
+function typeLine(text: string, animate: boolean) {
+  const ghost = document.querySelector<HTMLElement>('.bub-ghost');
+  const typed = document.querySelector<HTMLElement>('.bub-typed');
+  if (!ghost || !typed) return;
+  clearInterval(typeTimer);
+  ghost.textContent = text;
+  const line = typed.parentElement!;
+  if (!animate || reducedMotion.matches) { typed.textContent = text; line.classList.remove('typing'); return; }
+  const chars = [...text];
+  const step = Math.max(14, Math.min(32, 560 / chars.length));
+  let n = 0;
+  typed.textContent = '';
+  line.classList.add('typing');
+  typeTimer = window.setInterval(() => {
+    n += 1;
+    typed.textContent = chars.slice(0, n).join('');
+    if (n >= chars.length) { clearInterval(typeTimer); window.setTimeout(() => line.classList.remove('typing'), 700); }
+  }, step);
+}
+/** Restart the thin bar that shows when the next reaction comes. */
+function restartBar(ms: number) {
+  const bar = document.querySelector<HTMLElement>('.bub-bar > i');
+  if (!bar) return;
+  bar.style.setProperty('--d', `${ms}ms`);
+  bar.style.animation = 'none';
+  void bar.offsetWidth;
+  bar.style.animation = '';
+}
+
+function heroSchedule(ms: number) {
+  clearTimeout(heroTimer);
+  heroTimer = undefined;
+  if (heroHold) { heroPending = Math.max(ms, 1); return; }
+  heroDue = Date.now() + ms;
+  heroTimer = window.setTimeout(showNextHero, ms);
 }
 function showNextHero() {
   clearTimeout(heroTimer);
   heroTimer = undefined;
+  heroPending = 0;
   const t = heroQueue.shift();
-  if (!t) return;
+  if (!t) { set({ bubbleQueue: 0 }); return; }
   const bubble = bubbleFor(t);
-  if (bubble) set({ bubble, fx: state.fx + 1 });
+  if (bubble) {
+    set({ bubble, fx: state.fx + 1, bubbleQueue: heroQueue.length });
+    typeLine(bubble.text, true);
+  } else set({ bubbleQueue: heroQueue.length });
   // One reaction at a time, so a burst reads as a burst; reduced motion jumps to the newest.
-  if (heroQueue.length) heroTimer = window.setTimeout(showNextHero, reducedMotion.matches ? 0 : 2600);
+  if (heroQueue.length) { const ms = reducedMotion.matches ? 0 : DWELL; restartBar(ms); heroSchedule(ms); }
 }
 /** New events since the last look: queue them (oldest first). The first load only shows the newest, without animation. */
 function heroEvents(d: SiteData) {
@@ -217,7 +266,7 @@ function heroEvents(d: SiteData) {
   if (heroLastId === null) {
     heroLastId = newest;
     const b = bubbleFor(real[0]);
-    if (b) set({ bubble: b });
+    if (b) { set({ bubble: b }); typeLine(b.text, false); }
     return;
   }
   const fresh = real.filter((t) => t.id! > heroLastId!).sort((a, b) => a.id! - b.id!);
@@ -225,7 +274,28 @@ function heroEvents(d: SiteData) {
   if (!fresh.length) return;
   if (reducedMotion.matches) heroQueue.splice(0, heroQueue.length, fresh[fresh.length - 1]);
   else heroQueue.push(...fresh.slice(-12));
-  if (heroTimer === undefined) showNextHero();
+  if (heroTimer === undefined && !heroPending) {
+    if (heroHold) { heroPending = 400; set({ bubbleQueue: heroQueue.length }); }
+    else showNextHero();
+  } else set({ bubbleQueue: heroQueue.length });
+}
+// Hovering or focusing the callout holds the queue (the bar pauses with it, in CSS).
+{
+  const callout = document.querySelector<HTMLElement>('.bubble');
+  const hold = () => {
+    if (heroHold) return;
+    heroHold = true;
+    if (heroTimer !== undefined) { heroPending = Math.max(1, heroDue - Date.now()); clearTimeout(heroTimer); heroTimer = undefined; }
+  };
+  const release = () => {
+    if (!heroHold || callout?.matches(':hover, :focus-within')) return;
+    heroHold = false;
+    if (heroPending) { const ms = heroPending; heroPending = 0; heroSchedule(ms); }
+  };
+  callout?.addEventListener('pointerenter', hold);
+  callout?.addEventListener('pointerleave', () => window.setTimeout(release));
+  callout?.addEventListener('focusin', hold);
+  callout?.addEventListener('focusout', () => window.setTimeout(release));
 }
 
 // ---- Live data ----------------------------------------------------------
@@ -458,6 +528,7 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
   },
   player: () => { set({ playerOn: true }); loadEmbeds(); },
 
+  bubbleNext: () => showNextHero(),
   toggleMenu: () => set({ menu: !state.menu }),
   closeMenu: () => set({ menu: false }),
   closeToast: () => set({ toast: null }),
