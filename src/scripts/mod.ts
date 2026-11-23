@@ -5,7 +5,6 @@
 // /?demo, /overlay/?demo and /prezentare/).
 
 import { createClient } from '@supabase/supabase-js';
-import { partners } from '../data/content';
 import { site } from '../data/site';
 import type { DemoBackend } from '../demo/backend';
 import { esc } from '../lib/views';
@@ -131,7 +130,7 @@ const goalRows = () => S.goalsDraft ?? S.goals.map((g) => ({ title: g.title, thr
 const wheelRows = () => S.wheelDraft ?? S.wheel.map((p) => ({ short_label: p.short_label, full_label: p.full_label, sponsor: p.sponsor ?? '', is_win: p.is_win, weight: String(p.weight) }));
 const editWheel = () => { if (!S.wheelDraft) S.wheelDraft = wheelRows(); return S.wheelDraft; };
 /** Sponsor names for the suggestions list: the site's partners plus any already used. */
-const sponsorNames = () => [...new Set([site.sponsor.name, ...partners.map((p) => p.name), ...((S.report?.sponsors ?? []).map((x: any) => x.sponsor))]
+const sponsorNames = () => [...new Set([site.sponsor.name, ...site.partners.map((p) => p.name), ...((S.report?.sponsors ?? []).map((x: any) => x.sponsor))]
   .filter((n) => n && !n.startsWith('[')))];
 const editGoals = () => { if (!S.goalsDraft) S.goalsDraft = goalRows(); return S.goalsDraft; };
 

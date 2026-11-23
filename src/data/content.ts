@@ -54,10 +54,4 @@ export const bingoItems = [
   'Apare cineva neanunțat pe cameră',
 ];
 
-export const partners = [
-  { name: '[Partener 1]', role: 'Premii roată', href: '#' },
-  { name: '[Partener 2]', role: 'Milestones', href: '#' },
-  { name: '[Partener 3]', role: 'Ora dublă', href: '#' },
-  { name: '[Partener 4]', role: 'Bingo', href: '#' },
-];
-export const supporters = Array.from({ length: 6 }, () => ({ label: 'Logo', href: '#' }));
+// Partners and supporters now live in src/data/site.ts (site.partners, site.supporters).
