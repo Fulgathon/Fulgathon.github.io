@@ -334,7 +334,7 @@ function todayFeed(v: Vals): string {
 }
 
 function loyal(v: Vals): string {
-  if (!v.hasLoyal) return emptyRow('Primii fideli apar după prima oră în chat. Se numără singur, cât ești pe stream.');
+  if (!v.hasLoyal) return emptyRow('Primii fideli apar după prima oră în chat.');
   return v.loyalRows.map((r, i) => `<li class="${i >= 3 ? 'more-row' : ''}">
 <div class="ly-row"><span class="rk" style="${rankStyle(i)}">${r.rank}</span><span class="nm">${esc(r.name)}</span><span class="tt">${esc(r.hours)}</span></div>
 ${r.streakText || r.badgeIds.length ? `<div class="ly-badges">${r.streakText ? `<span class="streak">${esc(r.streakText)}</span>` : ''}${r.badgeIds.map((b) => badgeTag(b, `ly-${i}-${b}`, r.who[b] ?? '')).join('')}</div>` : ''}

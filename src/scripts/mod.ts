@@ -325,13 +325,13 @@ function chatHtml(): string {
   const preview = `${sample.ok ? linesOf('donBig')[0].replace(/\{nume\}/g, '@andreigg').replace(/\{suma\}/g, '20 €').replace(/\{timp\}/g, '+2 h') : 'Mersi, @andreigg!'}${sample.ok && linesOf('donBig')[0].includes('{timp}') ? '' : ' (+2 h pe ceas)'}`;
   const state = !C ? '<span class="pill off">Indisponibil</span> <span class="muted">Are nevoie de actualizarea bazei de date (migrarea layout v2).</span>'
     : !C.connected ? '<span class="pill bad">Streamer neconectat</span> <span class="muted">Conectează contul de streamer (la Stare).</span>'
-    : !C.canWrite ? '<span class="pill warn">Lipsește permisiunea</span> <span class="muted">Iceman reconectează o dată contul de streamer (butonul de la Stare) și aprobă «scrie în chat».</span>'
+    : !C.canWrite ? '<span class="pill warn">Lipsește permisiunea</span> <span class="muted">Iceman reconectează contul de streamer.</span>'
     : C.on ? `<span class="pill ok">Pornit</span> <span class="muted">Scrie din contul lui Iceman.${C.lastAt ? ` Ultimul mesaj: ${when(C.lastAt)}.` : ''}</span>`
     : '<span class="pill off">Oprit</span>';
   return `<div style="padding:14px 16px;border:1px solid #23415E">
-        <label style="display:flex;align-items:center;gap:14px;min-height:44px"><input type="checkbox" data-act="chatToggle" ${C?.on ? 'checked' : ''} ${C && C.canWrite ? '' : 'disabled'} aria-describedby="chat-state chat-warn"><span><strong style="font-family:'Barlow Condensed',sans-serif;font-size:20px;text-transform:uppercase;color:#F2F5FA">Trimite replica și în chatul Twitch</strong><span style="display:block;font-size:14px;color:#AEB8C7">Aceeași replică din balon, din contul lui Iceman, cu @ la cel care a dat și timpul adăugat. Cel mult un mesaj la 5 secunde; un val de subs cadou primește un singur mesaj; numele ascunse nu primesc mesaj.</span></span></label>
+        <label style="display:flex;align-items:center;gap:14px;min-height:44px"><input type="checkbox" data-act="chatToggle" ${C?.on ? 'checked' : ''} ${C && C.canWrite ? '' : 'disabled'} aria-describedby="chat-state chat-warn"><span><strong style="font-family:'Barlow Condensed',sans-serif;font-size:20px;text-transform:uppercase;color:#F2F5FA">Trimite replica și în chatul Twitch</strong><span style="display:block;font-size:14px;color:#AEB8C7">Replica din balon, scrisă de contul lui Iceman. Maxim un mesaj la 5 secunde.</span></span></label>
         <p id="chat-state" style="margin:8px 0 0;font-size:14px">${state}</p>
-        <p id="chat-warn" style="margin:6px 0 0;font-size:14px;color:#F2C14E">Înainte să-l pornești: dacă StreamElements sau Nightbot mulțumesc deja în chat, oamenii primesc două mulțumiri.</p>
+        <p id="chat-warn" style="margin:6px 0 0;font-size:14px;color:#F2C14E">Dacă un bot mulțumește deja în chat, oamenii primesc două mulțumiri.</p>
         <p style="margin:8px 0 0;font-size:13px;color:#8C97A8">În chat: <span style="color:#EFEFF1"><strong style="color:#9147FF">icemanlucky</strong>: ${esc(preview)}</span></p>
       </div>`;
 }
@@ -352,12 +352,12 @@ function linesHtml(): string {
   }).join('');
   return `<section class="card wide" id="replici">
     <h2>Replicile lui Iceman</h2>
-    <p class="muted" style="margin-top:0;max-width:900px">Ce zice Iceman în balonul din hero când intră ceva. Câte o replică pe rând, minim ${MIN_LINES} pe grup. Site-ul alege una la întâmplare și nu o repetă până nu le folosește pe toate. Poți folosi: <code>{nume}</code> <code>{timp}</code> <code>{suma}</code> <code>{subs}</code>. Maxim ${MAX_LINE} de caractere, ca să încapă în balon. Numele trec prin același filtru ca restul site-ului.</p>
+    <p class="muted" style="margin-top:0;max-width:900px">O replică pe rând, minim ${MIN_LINES} pe grup, maxim ${MAX_LINE} de caractere. Poți folosi <code>{nume}</code> <code>{timp}</code> <code>{suma}</code> <code>{subs}</code>.</p>
     <div style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:12px">
       ${chatHtml()}
       <div style="padding:14px 16px;border:1px solid #23415E">
         <label class="inline">Donație mare de la (€)<input class="field" type="number" inputmode="decimal" min="1" max="10000" id="smallDonation" value="${esc(S.smallDonation)}" style="width:110px"></label>
-        <p class="muted" style="margin:8px 0 0;font-size:14px">Sub prag: replicile «Donație mică». De la prag în sus: «Donație mare».</p>
+        <p class="muted" style="margin:8px 0 0;font-size:14px">Sub prag = «Donație mică».</p>
       </div>
     </div>
     <div style="margin-top:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px">${groups}</div>
@@ -365,7 +365,7 @@ function linesHtml(): string {
       <button class="btn-primary" data-act="linesSave">Salvează tot</button>
       ${S.linesDraft ? '<button class="btn-ghost" data-act="linesCancel">Renunță</button><span class="muted">Modificări nesalvate</span>' : ''}
     </div>
-    <p class="muted">Un grup cu mai puțin de ${MIN_LINES} replici e marcat cu galben și folosește replica de rezervă «${esc(FALLBACK_LINE)}».</p>
+    <p class="muted">Sub ${MIN_LINES} replici: galben, cu «${esc(FALLBACK_LINE)}» în loc.</p>
   </section>`;
 }
 
@@ -400,11 +400,11 @@ function healthHtml(h: any): string {
     : ['ok', 'Timp privit (chat)', `Numărat ${ago(wAge)}: ${h.watch?.chatters ?? 0} în chat.`]);
   // Twitch EventSub
   const eAge = age(h.twitch?.lastEvent ?? null);
-  rows.push(live && online && (eAge === null || eAge > 3600) ? ['warn', 'Subs și biți (Twitch)', `Nicio notificare ${ago(eAge)}. Normal dacă nu a venit niciun sub; altfel verifică pe /mod conectarea streamerului.`]
+  rows.push(live && online && (eAge === null || eAge > 3600) ? ['warn', 'Subs și biți (Twitch)', `Nicio notificare ${ago(eAge)}. Normal dacă nu a venit niciun sub.`]
     : ['ok', 'Subs și biți (Twitch)', `Ultima notificare: ${ago(eAge)}.`]);
   // Resubs nobody shared, read from the subscriber badge in chat
   const R = h.resubs;
-  if (R) rows.push(!R.canRead ? ['warn', 'Resubs din chat', 'Lipsește permisiunea de citire a chatului. Iceman reconectează o dată contul de streamer (butonul de la Stare).']
+  if (R) rows.push(!R.canRead ? ['warn', 'Resubs din chat', 'Lipsește permisiunea. Iceman reconectează contul de streamer.']
     : ['ok', 'Resubs din chat', `${R.tracked ?? 0} abonați văzuți în chat · ${R.found ?? 0} resubs numărate fără share. Ultima actualizare: ${ago(age(R.lastSeen ?? null))}.`]);
   // Scheduled jobs
   const failed = (h.jobs ?? []).filter((j: any) => j.status === 'failed');
@@ -429,25 +429,25 @@ const ICONS: Record<string, string> = {
 // ---- Autopilot helpers ----
 /** The preparation checklist (shared between moderators; some items the site checks by itself). */
 const CHECK: { key: string; label: string; card?: string; auto?: () => boolean }[] = [
-  { key: 'mods', label: 'Cei 3 moderatori sunt adăugați (fiecare a intrat o dată cu Twitch)', card: 'moderatori' },
-  { key: 'streamer', label: 'Iceman a reconectat contul de streamer și a aprobat tot', card: 'stare', auto: () => !!S.status?.broadcaster_connected && !!S.chat?.canWrite && !!S.health?.resubs?.canRead },
-  { key: 'reward', label: 'Recompensa cu puncte de canal «Check-in ICEMARATON» există pe Twitch' },
-  { key: 'obs', label: 'Overlay-ul e în OBS: piesele așezate în scena fiecărui joc (sau scena întreagă)', card: 'overlay-piese' },
-  { key: 'schedule', label: 'Startul (20.12, 12:00) și finalul programat sunt corecte', card: 'cronometru' },
-  { key: 'start', label: 'Pornirea: automată (PROGRAM → Pilot automat) sau știm cine apasă «Pornește acum»', card: 'pilot', auto: () => !!S.auto?.autoStart },
-  { key: 'lines', label: 'Replicile lui Iceman: minim 5 pe fiecare grup, cum vorbește el', card: 'replici', auto: () => lineGroups.every((g) => lineInfo(g.id).ok) },
-  { key: 'chatline', label: 'Replicile în chatul Twitch: pornite (sau hotărât că nu)', card: 'replici' },
-  { key: 'milestones', label: 'Milestone-urile finale, cu suma în euro', card: 'milestones' },
+  { key: 'mods', label: 'Cei 3 moderatori sunt adăugați', card: 'moderatori' },
+  { key: 'streamer', label: 'Iceman a reconectat contul de streamer', card: 'stare', auto: () => !!S.status?.broadcaster_connected && !!S.chat?.canWrite && !!S.health?.resubs?.canRead },
+  { key: 'reward', label: 'Recompensa «Check-in ICEMARATON» pe Twitch' },
+  { key: 'obs', label: 'Overlay-ul așezat în OBS și testat', card: 'overlay-piese' },
+  { key: 'schedule', label: 'Start și final verificate', card: 'cronometru' },
+  { key: 'start', label: 'Pornirea: automată sau manuală', card: 'pilot', auto: () => !!S.auto?.autoStart },
+  { key: 'lines', label: 'Replicile lui Iceman: minim 5 pe grup', card: 'replici', auto: () => lineGroups.every((g) => lineInfo(g.id).ok) },
+  { key: 'chatline', label: 'Replicile în chat: da sau nu', card: 'replici' },
+  { key: 'milestones', label: 'Milestone-urile finale', card: 'milestones' },
   { key: 'together', label: 'Obiectivul comunitar', card: 'comunitar' },
-  { key: 'advent', label: 'Calendarul de Advent: toate cele 22 de zile', card: 'advent', auto: () => S.advent.filter((d) => d.note).length >= ADVENT_DAYS },
-  { key: 'bingo', label: 'Bingo: 25 de evenimente, premiul și regulile automate', card: 'bingo', auto: () => (S.bingo?.items.length ?? 0) === 25 && !!S.bingo?.prize && !S.bingo.prize.startsWith('[') },
-  { key: 'wheel', label: 'Roata: cele 8 premii, cu sponsorii lor', card: 'roata-premii' },
-  { key: 'vote', label: 'Votul: lista de provocări citită cu Iceman și votul automat pornit', card: 'pilot' },
-  { key: 'plan', label: 'Program: înghețul 20–25 dec, orele duble și codurile sponsorilor', card: 'plan', auto: () => (S.auto?.plan ?? []).some((x: any) => x.kind === 'freeze') },
-  { key: 'alerts', label: 'Alerte în Discord: webhook pus și testat', card: 'alerte', auto: () => !!S.auto?.hasWebhook },
-  { key: 'sponsors', label: 'Sponsorii: nume, logo-uri, linkuri și codul de reducere, trimise pentru site', card: 'parteneri' },
-  { key: 'tipeee', label: 'Pagina TipeeeStream acceptă doar euro' },
-  { key: 'pro', label: 'Supabase trecut pe planul Pro (în jur de 15 dec)' },
+  { key: 'advent', label: 'Advent: toate cele 22 de zile', card: 'advent', auto: () => S.advent.filter((d) => d.note).length >= ADVENT_DAYS },
+  { key: 'bingo', label: 'Bingo: 25 de evenimente și premiul', card: 'bingo', auto: () => (S.bingo?.items.length ?? 0) === 25 && !!S.bingo?.prize && !S.bingo.prize.startsWith('[') },
+  { key: 'wheel', label: 'Roata: cele 8 premii', card: 'roata-premii' },
+  { key: 'vote', label: 'Votul: lista verificată cu Iceman', card: 'pilot' },
+  { key: 'plan', label: 'Program: înghețul 20–25 dec', card: 'plan', auto: () => (S.auto?.plan ?? []).some((x: any) => x.kind === 'freeze') },
+  { key: 'alerts', label: 'Alerte în Discord', card: 'alerte', auto: () => !!S.auto?.hasWebhook },
+  { key: 'sponsors', label: 'Sponsorii trimiși pentru site', card: 'parteneri' },
+  { key: 'tipeee', label: 'TipeeeStream doar în euro' },
+  { key: 'pro', label: 'Supabase Pro (până pe 15 dec)' },
 ];
 function checkState(c: (typeof CHECK)[number]): { done: boolean; auto: boolean; by?: string; at?: string } {
   if (c.auto?.()) return { done: true, auto: true };
@@ -489,11 +489,11 @@ async function clipNow(): Promise<string | null> {
 }
 
 const GROUPS: { id: string; name: string; title: string; lead: string; items: [string, string][] }[] = [
-  { id: 'azi', name: 'AZI', title: 'Azi', lead: 'Doar ce cere un om acum. Restul merge singur (vezi PROGRAM).',
+  { id: 'azi', name: 'AZI', title: 'Azi', lead: 'Ce cere un om acum.',
     items: [['rapid', 'Acțiuni rapide'], ['vot', 'Vot și provocări'], ['bingo-bife', 'Bife de bingo'], ['propuneri', 'Propuneri'], ['premii', 'Premii de dat']] },
-  { id: 'program', name: 'PROGRAM', title: 'Program automat', lead: 'Se setează o dată; pornesc singure la ora lor, pe site și pe stream.',
+  { id: 'program', name: 'PROGRAM', title: 'Program automat', lead: 'Se setează o dată, merg singure.',
     items: [['pilot', 'Pilot automat'], ['plan', 'Ore duble, coduri, înghețuri'], ['alerte', 'Alerte în Discord']] },
-  { id: 'pregatire', name: 'PREGĂTIRE', title: 'Pregătire', lead: 'Se face o singură dată, înainte de 20 decembrie. Bifele se văd la toți moderatorii.',
+  { id: 'pregatire', name: 'PREGĂTIRE', title: 'Pregătire', lead: 'O singură dată, înainte de 20 decembrie.',
     items: [['checklist', 'Checklist'], ['cronometru', 'Cronometru'], ['stare', 'Contul de streamer'], ['replici', 'Replicile lui Iceman'], ['milestones', 'Milestone Maraton'], ['comunitar', 'Obiectiv comunitar'], ['advent', 'Calendar de Advent'], ['roata-premii', 'Roata'], ['bingo', 'Bingo']] },
   { id: 'setari', name: 'SETĂRI', title: 'Setări și rapoarte', lead: 'Lucruri folosite rar.',
     items: [['nume', 'Nume afișate'], ['moderatori', 'Moderatori'], ['acum', 'Acum pe stream'], ['inghetare', 'Îngheață manual'], ['ora-dubla', 'Ora dublă manual'], ['cod', 'Cod secret manual'], ['insigne', 'Insigne și Fidelii'], ['legende', 'Legende'], ['parteneri', 'Parteneri'], ['raport', 'Raport pe sponsor'], ['overlay-piese', 'Overlay OBS'], ['zona', 'Zonă periculoasă']] },
@@ -614,7 +614,7 @@ function todoHtml(): string {
   if (S.status && !S.status.broadcaster_connected) items.push({ tag: 'STREAMER', cls: 'bad', t: 'Contul de streamer nu e conectat', d: 'Fără el nu ajung subs, biții și statusul live.', btn: `<a class="btn btn-twitch" href="${esc(S.status.connect_url ?? '#')}">Conectează</a>` });
   // Euros only (B-09): a donation in another currency added nothing; a moderator decides.
   for (const d of (S.health?.skipped ?? []) as { id: string; user: string; amount: number; currency: string; at: string }[]) {
-    items.push({ tag: 'DONAȚIE', cls: 'warn', t: `${d.user} · ${d.amount} ${d.currency}`, d: `Nu e în euro, așa că nu a adăugat timp și nu intră la Strâns (${when(d.at)}). Dacă vreți să conteze, adăugați minutele din Cronometru.`, btn: `<button class="btn-ghost" data-act="skipDone" data-id="${esc(d.id)}">Am rezolvat</button>` });
+    items.push({ tag: 'DONAȚIE', cls: 'warn', t: `${d.user} · ${d.amount} ${d.currency}`, d: `Nu e în euro: nu a adăugat timp (${when(d.at)}). Adăugați minutele de mână, dacă vreți.`, btn: `<button class="btn-ghost" data-act="skipDone" data-id="${esc(d.id)}">Am rezolvat</button>` });
   }
   for (const p of S.prizes.slice(0, 3)) items.push({ tag: 'PREMIU', cls: 'ok', t: `${p.user_login} · ${p.prizes?.win_label ?? ''}`, d: `Câștigat pe roată ${when(p.created_at)}`, btn: `<button class="btn-primary" data-act="fulfil" data-id="${p.id}">Am dat premiul</button>` });
   if (S.prizes.length > 3) items.push({ tag: 'PREMII', cls: 'ok', t: `Încă ${S.prizes.length - 3} premii de dat`, d: '', btn: '<a class="btn btn-ghost" href="#premii">Vezi toate</a>' });
@@ -643,7 +643,7 @@ function milestonesHtml(): string {
   let nextFound = false;
   return `<section class="card wide" id="milestones">
     <div class="card-head"><h2>Milestone Maraton</h2><span class="muted">Strâns acum: <strong style="color:#F2F5FA">${fmtInt(raised)} €</strong></span></div>
-    <p class="muted" style="margin-top:0">Provocările care se deblochează când donațiile ajung la sumă. «Făcut» + link = apare pe site la «Ai ratat? Vezi clipurile». Lista se ordonează singură după sumă.</p>
+    <p class="muted" style="margin-top:0">Se deblochează la suma în euro. «Făcut» + link = clip pe site.</p>
     <div class="ms-headrow" aria-hidden="true"><span>NR.</span><span>SUMA (€)</span><span>PROVOCAREA</span><span>PREZENTAT DE</span><span>STARE</span><span>CÂND SE FACE</span><span>CLIPUL (DUPĂ LIVE)</span><span></span><span></span></div>
     <ul class="list ms-list">${rows.map((g, i) => {
       const reached = g.threshold !== '' && raised >= Number(g.threshold);
@@ -694,7 +694,7 @@ function adventHtml(): string {
     return `<button type="button" class="ad${n === sel ? ' sel' : ''}${a.today ? ' today' : a.past ? ' past' : ''}" data-act="adventPick" data-day="${n}" aria-pressed="${n === sel}"><span class="ad-d">${a.today ? 'AZI · ' : ''}${a.short}</span><span class="ad-n">${pad(n)}</span><span class="ad-t">${esc(note)}</span></button>`;
   }).join('');
   return `<section class="card wide" id="advent">
-    <div class="card-head"><h2>Calendar de Advent</h2><span class="muted">Alege o zi, completează, salvează. Zilele fără nimic arată doar data.</span></div>
+    <div class="card-head"><h2>Calendar de Advent</h2><span class="muted">Alege o zi, completează, salvează.</span></div>
     <div class="advent-wrap">
       <div class="ad-grid">${cells}</div>
       <div class="ad-edit">
@@ -714,7 +714,7 @@ function insigneHtml(): string {
   const counts = S.badgeCounts;
   return `<section class="card wide" id="insigne">
     <h2>Insigne și Fidelii</h2>
-    <p class="muted" style="margin-top:0">Insignele se dau singure, din timpul în chat și din check-in-uri. Aici vezi câți le au și cine stă cel mai mult.</p>
+    <p class="muted" style="margin-top:0">Se dau singure. Aici vezi câți le au.</p>
     <ul class="list">${badgeDefs.map((b) => { const [accent, , fg] = tierColors[b.tier]; return `<li><span class="pill" style="background:${b.tier === 'prism' ? PRISM : accent};color:#04101A">${esc(b.label.toUpperCase())}</span><span class="grow muted">${esc(b.how)}</span><strong style="color:${fg}">${counts?.[b.id] !== undefined ? countRo(counts[b.id], 'om', 'oameni') : '—'}</strong></li>`; }).join('')}</ul>
     <h3 class="h3s">Fidelii</h3>
     ${S.loyal.length ? `<ul class="list">${S.loyal.map((l, i) => `<li><span class="rk" style="${rankStyle(i)}">${i + 1}</span><span class="grow"><strong>${esc(l.name)}</strong> <span class="muted">· ${countRo(l.streak, 'zi', 'zile')} la rând</span></span><strong>${countRo(l.hours, 'oră', 'ore')}</strong></li>`).join('')}</ul>` : '<p class="muted">Primii fideli apar după prima oră în chat.</p>'}
@@ -724,7 +724,7 @@ function legendeHtml(): string {
   const col = (title: string, rows: [string, number][], unit: string) => `<div><h3 class="h3s">${title}</h3>${rows.length ? `<ul class="list">${rows.slice(0, 5).map(([n, v], i) => `<li><span class="rk" style="${rankStyle(i)}">${i + 1}</span><span class="grow"><strong>${esc(n)}</strong></span><strong>${fmtInt(v)}${unit}</strong></li>`).join('')}</ul>` : '<p class="muted">Încă nimeni.</p>'}</div>`;
   return `<section class="card wide" id="legende">
     <h2>Legende</h2>
-    <p class="muted" style="margin-top:0">Top 5 pe tot maratonul, ca pe site. Un nume nepotrivit se ascunde din «Nume afișate».</p>
+    <p class="muted" style="margin-top:0">Top 5, ca pe site.</p>
     <div class="cols3">${col('Donatori', S.boards.donations, ' €')}${col('Subs dăruite', S.boards.gifts, ' subs')}${col('Biți', S.boards.bits, '')}</div>
   </section>`;
 }
@@ -732,7 +732,7 @@ function parteneriHtml(): string {
   const tile = (name: string, role: string, logo: string) => `<li><span class="grow"><strong>${esc(name)}</strong>${role ? ` <span class="muted">· ${esc(role)}</span>` : ''}</span><span class="pill ${logo ? 'ok' : 'warn'}">${logo ? 'logo pus' : 'fără logo'}</span></li>`;
   return `<section class="card wide" id="parteneri">
     <h2>Parteneri și logo-uri</h2>
-    <p class="muted" style="margin-top:0">Așa apar pe site. Numele, logo-urile și linkurile se schimbă în <code>src/data/site.ts</code>: trimite-i-le lui Claude (logo SVG sau PNG, ideal și varianta albă).</p>
+    <p class="muted" style="margin-top:0">Așa apar pe site. Pentru schimbări, trimiteți numele, logo-ul (SVG) și linkul.</p>
     <h3 class="h3s">Partener principal</h3><ul class="list">${tile(site.sponsor.name, `cod ${site.sponsor.code}`, site.sponsor.logo)}</ul>
     <h3 class="h3s">Parteneri</h3><ul class="list">${site.partners.map((p) => tile(p.name, p.role, p.logo)).join('')}</ul>
     <h3 class="h3s">Susținători</h3><ul class="list">${site.supporters.map((p, i) => tile(p.name || `Locul ${i + 1} (liber)`, '', p.logo)).join('')}</ul>
@@ -743,7 +743,7 @@ function overlayHtml(): string {
   const key = S.overlayKey;
   const v = (q: string) => base + '?' + [key ? `key=${key}` : '', q].filter(Boolean).join('&');
   const rows: [string, string][] = [
-    ['Scena întreagă (de bază): cronometrul, milestone-ul, orele împreună, balonul lui Iceman și momentele', v('')],
+    ['Scena întreagă', v('')],
     ['La fel, cu mai puțină mișcare (fără ninsoare și sărituri)', v('calm=1')],
     ['Scena de pauză «Revin imediat» (o scenă separată în OBS)', v('scene=brb')],
     ['Doar cronometrul și momentele (fără balon și fără ore împreună)', v('show=timer,moments,code')],
@@ -753,14 +753,14 @@ function overlayHtml(): string {
   const piece = (id: string, withKey: boolean) => base + '?' + [withKey && key ? `key=${key}` : '', `part=${id}`].filter(Boolean).join('&');
   const pieces = `<section class="card wide" id="overlay-piese">
     <h2>Piesele overlay-ului, una câte una</h2>
-    <p class="muted" style="margin-top:0">Pentru scene diferite pe fiecare joc: în OBS adaugi fiecare piesă ca Browser Source separat (mărimea de mai jos, fundal transparent), apoi o muți și o scalezi unde vrei în scena jocului. Aceeași piesă se poate folosi în mai multe scene (în OBS: «Add Existing»), deci o setezi o singură dată. Piesa stă lipită de colțul din stânga sus al sursei.</p>
-    <p class="muted">Ca s-o vezi cât o așezi (chiar dacă apare doar la evenimente): linkul «de așezat» o arată conturată, cu date de exemplu. După ce ai așezat-o, pune linkul normal.</p>
+    <p class="muted" style="margin-top:0">Fiecare piesă = un Browser Source în OBS, la mărimea scrisă. O așezi unde vrei în scena fiecărui joc; în alte scene: «Add Existing».</p>
+    <p class="muted">«De așezat» = piesa conturată, cu date de exemplu.</p>
     <ul class="list">${overlayPieces.map((x, i) => `<li style="align-items:flex-start"><span class="grow"><strong>${esc(x.label)}</strong> <span class="pill off">${x.w} × ${x.h}</span>${x.key ? ' <span class="pill warn">cheie privată</span>' : ''}<br><span class="muted">${esc(x.what)}</span>
       <input class="field" readonly value="${esc(piece(x.id, !!x.key))}" id="ovp${i}" aria-label="Linkul pentru ${esc(x.label)}" style="width:100%;margin-top:6px"></span>
       <span class="pair" style="flex-direction:column;align-items:stretch"><button class="btn-ghost" data-act="copyOvp" data-i="${i}">Copiază</button><a class="btn btn-ghost" href="${esc(base + '?demo&frame=1&part=' + x.id)}" target="_blank" rel="noopener">De așezat</a></span></li>`).join('')}</ul>
-    <p class="muted">Toate piesele merg și cu <strong>&amp;scale=1.2</strong> (mai mare) sau <strong>&amp;calm=1</strong> (fără mișcare) la finalul linkului.</p>
+    <p class="muted">Opțional la final: <strong>&amp;scale=1.2</strong> sau <strong>&amp;calm=1</strong>.</p>
     <h3 class="h3s" style="margin-top:18px">Testează pe stream</h3>
-    <p class="muted" style="margin:4px 0 0">După ce le-ai pus în OBS: apasă un test și se vede în overlay în câteva secunde, cu numele «TEST». Nu adaugă timp și nu intră nicăieri (statistici, legende, istoric). Dacă ești live, spune-le că e un test.</p>
+    <p class="muted" style="margin:4px 0 0">Apare în overlay în câteva secunde, cu numele «TEST». Nu adaugă timp.</p>
     <div class="row">
       <button class="btn-ghost" data-act="ovTest" data-kind="event">Sub, biți și donație</button>
       <button class="btn-ghost" data-act="ovTest" data-kind="gift">Val de subs cadou (viscol)</button>
@@ -771,9 +771,9 @@ function overlayHtml(): string {
   </section>`;
   return pieces + `<section class="card wide" id="overlay">
     <h2>Overlay OBS: scena întreagă</h2>
-    <p class="muted" style="margin-top:0">Sau totul dintr-o bucată: în OBS, Browser Source 1920×1080, cu unul din linkurile de mai jos. ${key ? '<strong style="color:#FF8A95">Linkurile au cheia privată: nu le da nimănui.</strong>' : 'Fără cheie, codurile secrete nu apar pe stream.'}</p>
+    <p class="muted" style="margin-top:0">Tot overlay-ul dintr-o bucată: Browser Source 1920×1080. ${key ? '<strong style="color:#FF8A95">Linkurile au cheia privată.</strong>' : ''}</p>
     <ul class="list">${rows.map(([label, url], i) => `<li><span class="grow"><strong>${esc(label)}</strong><br><input class="field" readonly value="${esc(url)}" id="ov${i}" aria-label="${esc(label)}" style="width:100%;margin-top:6px"></span><button class="btn-ghost" data-act="copyOv" data-i="${i}">Copiază</button></li>`).join('')}</ul>
-    <p class="muted">Momentele apar pe rând, în mijloc: viscol la valuri de subs cadou, milestone deblocat, legendă nouă, insignă de 50 sau 100 de ore, bingo, câștigătoarea votului, roata când cineva învârte pe site, momente mari (50 €+, 5.000 de biți). Codul secret apare calm, în stânga jos, doar cu linkul cu cheie.</p>
+    <p class="muted">Codurile secrete apar doar cu linkul cu cheie.</p>
   </section>`;
 }
 
@@ -883,10 +883,10 @@ function render() {
           <button class="btn-ghost" data-act="quickDouble">Ora dublă acum · 60 min</button>
           <button class="btn-ghost" data-act="quickCode">Cod secret acum · 10 min${mainSponsor() ? ` · ${esc(mainSponsor())}` : ''}</button>
         </div>`
-      : t.status === 'ended' ? '<p class="muted" style="margin-top:0">Maratonul s-a încheiat. Rămân de dat premiile și rapoartele pentru sponsori.</p>'
+      : t.status === 'ended' ? '<p class="muted" style="margin-top:0">Maratonul s-a încheiat.</p>'
       : `<p style="margin-top:0">Start: <strong>${when(t.starts_at)}</strong> · ${A?.autoStart ? `<span class="pill ok">pornește singur</span> cu ${A.startHours} ore` : '<span class="pill warn">pornire manuală</span> din PREGĂTIRE → Cronometru'}</p>`}
       <h3 class="h3s">Urmează din program</h3>
-      ${next.length ? `<ul class="list">${next.map((x: any) => `<li><span class="grow">${planLine(x)}</span></li>`).join('')}</ul>` : '<p class="muted" style="margin:4px 0 0">Nimic programat. Orele duble, codurile și înghețurile se pun din PROGRAM.</p>'}
+      ${next.length ? `<ul class="list">${next.map((x: any) => `<li><span class="grow">${planLine(x)}</span></li>`).join('')}</ul>` : '<p class="muted" style="margin:4px 0 0">Nimic programat.</p>'}
       <p class="muted" style="margin:10px 0 0">Votul automat: ${A?.voteOn ? `<strong style="color:#F2F5FA">pornit</strong>, o rundă pe zi după ${esc(A.voteAt)}, când Iceman e live` : 'oprit (PROGRAM → Pilot automat)'} · Alerte în Discord: ${A?.hasWebhook ? '<strong style="color:#F2F5FA">pornite</strong>' : 'oprite'}</p>
     </section>`;
     },
@@ -896,16 +896,16 @@ function render() {
     <section class="card wide" id="pilot">
       <h2>Pilot automat</h2>
       <h3 class="h3s">Votul</h3>
-      <label class="inline" style="display:flex;align-items:center;gap:10px;min-height:44px"><input type="checkbox" id="apVoteOn" ${A.voteOn ? 'checked' : ''}> O rundă de vot pe zi, deschisă singură</label>
+      <label style="display:flex;align-items:center;gap:10px;min-height:44px;margin-top:6px;cursor:pointer"><input type="checkbox" style="width:22px;height:22px;flex:none" id="apVoteOn" ${A.voteOn ? 'checked' : ''}> O rundă de vot pe zi, deschisă singură</label>
       <div class="row">
         <label class="inline">După ora (România)<input class="field" type="time" id="apVoteAt" value="${esc(A.voteAt ?? '20:00')}"></label>
         <label class="inline">Cât durează (minute)<input class="field" type="number" inputmode="numeric" id="apVoteMin" min="10" max="720" value="${esc(A.voteMinutes ?? 60)}"></label>
       </div>
-      <p class="muted" style="margin:4px 0 0">Prima dată când Iceman e live după ora asta, site-ul deschide singur o rundă: 2 ușoare, 2 medii, 1 grea, din categorii diferite. Se închide singură și alege câștigătoarea. Voi doar dați veto, dacă e cazul.${A.lastVoteDay ? ` Ultima rundă automată: ${esc(A.lastVoteDay)}.` : ''}</p>
+      <p class="muted" style="margin:4px 0 0">Se deschide singură când Iceman e live după ora asta. Voi doar dați veto.${A.lastVoteDay ? ` Ultima rundă automată: ${esc(A.lastVoteDay)}.` : ''}</p>
       <h3 class="h3s" style="margin-top:18px">Pornirea maratonului</h3>
-      <label class="inline" style="display:flex;align-items:center;gap:10px;min-height:44px"><input type="checkbox" id="apAutoStart" ${A.autoStart ? 'checked' : ''}> Cronometrul pornește singur la ora de start (${when(t.starts_at)})</label>
+      <label style="display:flex;align-items:center;gap:10px;min-height:44px;margin-top:6px;cursor:pointer"><input type="checkbox" style="width:22px;height:22px;flex:none" id="apAutoStart" ${A.autoStart ? 'checked' : ''}> Cronometrul pornește singur la ora de start (${when(t.starts_at)})</label>
       <div class="row"><label class="inline">Ore pe cronometru la start<input class="field" type="number" id="apStartHours" step="0.5" min="0.5" value="${esc(A.startHours ?? 24)}"></label></div>
-      <p class="muted" style="margin:4px 0 0">Dacă e oprit, rolul 1 apasă «Pornește acum» din PREGĂTIRE → Cronometru. Pornirea automată nu se face dacă startul a trecut de mai mult de 6 ore.</p>
+      <p class="muted" style="margin:4px 0 0">Altfel: «Pornește acum» din PREGĂTIRE → Cronometru.</p>
       <div class="row"><button class="btn-primary" data-act="autoSave">Salvează</button>${A.updatedBy ? `<span class="muted">Ultima schimbare: ${esc(A.updatedBy)}, ${when(A.updatedAt)}</span>` : ''}</div>
     </section>`;
     },
@@ -916,7 +916,7 @@ function render() {
       return `
     <section class="card wide" id="plan">
       <h2>Ore duble, coduri, înghețuri</h2>
-      <p class="muted" style="margin-top:0">Le programați o dată. Pornesc singure la ora lor (pe site și în overlay) cât timp cronometrul merge; dacă nu merge, așteaptă până la 30 de minute, apoi apar ca «ratat».</p>
+      <p class="muted" style="margin-top:0">Pornesc singure la ora lor, cât timp cronometrul merge.</p>
       <div class="row">
         <label class="inline">Ce<select class="field" id="planKind"><option value="double" selected>Ora dublă</option><option value="code">Cod secret</option><option value="freeze">Îngheț</option></select></label>
         <label class="inline">Când<input class="field" type="datetime-local" id="planAt"></label>
@@ -933,21 +933,21 @@ function render() {
     'alerte': () => `
     <section class="card wide" id="alerte">
       <h2>Alerte în Discord</h2>
-      <p class="muted" style="margin-top:0">Când ceva cere un om (o conexiune picată, un premiu de dat, o donație în altă monedă, bingo gata de tragere, un program ratat), site-ul scrie pe canalul vostru de Discord. Nu mai trebuie să stați cu /mod deschis.</p>
+      <p class="muted" style="margin-top:0">Site-ul vă scrie pe Discord când ceva cere un om.</p>
       <p style="margin:0">${S.auto?.hasWebhook ? '<span class="pill ok">Pornite</span> Webhook-ul e salvat (nu se mai afișează).' : '<span class="pill off">Oprite</span>'}</p>
       <div class="row">
         <input class="field" type="password" id="hookUrl" autocomplete="off" placeholder="https://discord.com/api/webhooks/…" aria-label="Linkul webhook-ului de Discord" style="flex:1 1 320px;min-width:0">
         <button class="btn-primary" data-act="hookSave">Salvează</button>
         ${S.auto?.hasWebhook ? '<button class="btn-ghost" data-act="hookTest">Trimite un test</button><button class="btn-ghost" data-act="hookClear">Oprește alertele</button>' : ''}
       </div>
-      <p class="muted">Linkul se ia din Discord: Setările serverului → Integrări → Webhook-uri → Webhook nou → alegeți canalul moderatorilor → Copiază URL-ul. Nu dați linkul nimănui: oricine îl are poate scrie pe canal.</p>
+      <p class="muted">Discord → Setările serverului → Integrări → Webhook-uri → Webhook nou → Copiază URL-ul. Linkul rămâne privat.</p>
     </section>`,
     'checklist': () => {
       const done = CHECK.filter((c) => checkState(c).done).length;
       return `
     <section class="card wide" id="checklist">
       <div class="card-head"><h2>Checklist de pregătire</h2><span class="muted"><strong style="color:#F2F5FA">${done} din ${CHECK.length}</strong> gata</span></div>
-      <p class="muted" style="margin-top:0">Bifele se văd la toți moderatorii. Unele le verifică site-ul singur.</p>
+      <p class="muted" style="margin-top:0">Bifele se văd la toți.</p>
       <ul class="list">${CHECK.map((c) => {
         const st = checkState(c);
         return `<li><label style="display:flex;align-items:center;gap:12px;min-height:44px;flex:1 1 auto">${st.auto
@@ -965,7 +965,7 @@ function render() {
       return `
     <section class="card wide" id="bingo-bife">
       <div class="card-head"><h2>Bife de bingo</h2><span class="muted">${B.items.filter((i) => i.happened_at).length} din ${B.items.length} s-au întâmplat</span></div>
-      <p class="muted" style="margin-top:0">Bifați doar ce se vede pe stream. Cele marcate «automat» se bifează singure.${B.status.winners.length ? ` <strong style="color:#F2F5FA">${B.status.winners.length} cu bingo</strong>: trageți la sorți din PREGĂTIRE → Bingo.` : ''}</p>
+      <p class="muted" style="margin-top:0">Bifați ce se vede pe stream. «Automat» = se bifează singur.${B.status.winners.length ? ` <strong style="color:#F2F5FA">${B.status.winners.length} cu bingo</strong>: trageți la sorți din PREGĂTIRE → Bingo.` : ''}</p>
       <ul class="list">${B.items.map((i) => `<li>
         <button class="${i.happened_at ? 'btn-primary' : 'btn-ghost'}" data-act="bingoTick" data-id="${i.id}" data-on="${i.happened_at ? '0' : '1'}" aria-pressed="${!!i.happened_at}">${i.happened_at ? '✓ S-a întâmplat' : 'Bifează'}</button>
         <span class="grow">${esc(i.label)}${i.auto_rule ? `<br><span class="muted">${esc(ruleText(i.auto_rule))}</span>` : ''}</span></li>`).join('')}</ul>
@@ -986,7 +986,7 @@ function render() {
       <div class="row">
         <a class="btn btn-${st?.broadcaster_connected ? 'ghost' : 'twitch'}" href="${esc(st?.connect_url ?? '#')}">${st?.broadcaster_connected ? 'Reconectează contul de streamer' : 'Conectează contul de streamer'}</a>
       </div>
-      <p class="muted">Doar ${esc(st?.broadcaster_login ?? 'streamerul')} poate face asta, o singură dată. Așa ajung pe site subs, gift-urile, biții și statusul live.</p>
+      <p class="muted">Doar ${esc(st?.broadcaster_login ?? 'streamerul')}, o singură dată.</p>
     </section>`,
     'cronometru': () => `
     <section class="card wide" id="cronometru">
@@ -1007,7 +1007,7 @@ function render() {
         </div>
       ` : `
 
-        <p class="muted" style="margin-top:0">Înainte de start: data și ora de start (pentru numărătoarea inversă) și finalul programat.</p>
+        <p class="muted" style="margin-top:0">Startul și finalul programat.</p>
         <div class="row">
           <label class="inline">Start<input class="field" type="datetime-local" id="startAt"></label>
           <label class="inline">Final programat<input class="field" type="datetime-local" id="endAt"></label>
@@ -1024,7 +1024,7 @@ function render() {
     <section class="card danger" id="zona">
       <h2>Zonă periculoasă</h2>
       ${live
-        ? `<p style="margin:0">«Încheie subathonul» oprește cronometrul pentru totdeauna: site-ul și overlay-ul arată «Încheiat», iar subs și donațiile nu mai adaugă timp. Nu se poate anula de aici.</p>
+        ? `<p style="margin:0">Oprește cronometrul pentru totdeauna. Nu se poate anula.</p>
            <div class="row"><button class="btn-ghost btn-danger" data-act="end">Încheie subathonul…</button></div>`
         : `<p class="muted" style="margin:0">Butonul de încheiere apare aici doar cât timp cronometrul merge.</p>`}
     </section>`,
@@ -1079,7 +1079,7 @@ function render() {
       <p class="muted" style="margin-top:0">Ore privite împreună până acum: <strong style="color:#F2F5FA">${S.together ? Math.round(S.together.hours) : 0} h</strong>.</p>
       <textarea class="field" id="togetherList" rows="5" aria-label="Obiective comunitare, câte unul pe rând: ore | titlu" style="width:100%;padding:10px;font:inherit">${esc((S.together?.goals ?? []).map((g) => `${g.hours} | ${g.title}`).join('\n'))}</textarea>
       <div class="row"><button class="btn-primary" data-act="togetherSave">Salvează obiectivele</button></div>
-      <p class="muted">Câte unul pe rând: <strong>ore | ce se deblochează</strong>, de exemplu «500 | Karaoke cu chatul». Gratuit pentru toți: se numără orele din chat cât e live.</p>
+      <p class="muted">Câte unul pe rând: <strong>ore | ce se deblochează</strong>, ex. «500 | Karaoke cu chatul».</p>
     </section>`,
     'replici': () => `
     ${linesHtml()}`,
@@ -1090,7 +1090,7 @@ function render() {
       const happened = (id?: number) => !!B.items.find((i) => i.id === id)?.happened_at;
       return `<section class="card wide" id="bingo">
       <h2>Bingo</h2>
-      <p class="muted" style="margin-top:0">${B.status.players} jucători · ${open ? `alegerile se închid la <strong style="color:#F2F5FA">${when(B.closes_at)}</strong>` : '<strong style="color:#F2F5FA">alegerile s-au închis</strong>'}. Fiecare jucător alege 5 evenimente; cine le are pe toate 5 bifate intră la tragere.</p>
+      <p class="muted" style="margin-top:0">${B.status.players} jucători · ${open ? `alegerile se închid la <strong style="color:#F2F5FA">${when(B.closes_at)}</strong>` : '<strong style="color:#F2F5FA">alegerile s-au închis</strong>'}.</p>
       <div class="row">
         <label class="inline">Alegerile se închid la<input class="field" type="datetime-local" id="bingoClose" value="${toLocal(B.closes_at)}"></label>
         <label class="inline" style="flex:1 1 220px">Premiul<input class="field" id="bingoPrize" value="${esc(B.prize)}" maxlength="120"></label>
@@ -1098,7 +1098,7 @@ function render() {
         <button class="btn-ghost" data-act="bingoSettings">Salvează</button>
       </div>
       <h3 style="margin:20px 0 0;font-family:'Barlow Condensed',sans-serif;font-size:18px;text-transform:uppercase">Cartonașul (25 = 5×5, rând cu rând) · bifează când se întâmplă</h3>
-      <p class="muted" style="margin:4px 0 0">Ordinea de aici e ordinea de pe cartonaș: primele 5 = rândul 1, următoarele 5 = rândul 2 etc. ${bingoRows().length !== 25 ? `<strong style="color:#FF8A95">Acum sunt ${bingoRows().length}; trebuie exact 25.</strong>` : ''}</p>
+      <p class="muted" style="margin:4px 0 0">Ordinea de pe cartonaș, rând cu rând. ${bingoRows().length !== 25 ? `<strong style="color:#FF8A95">Acum sunt ${bingoRows().length}; trebuie exact 25.</strong>` : ''}</p>
       <ul class="list">${bingoRows().map((r, i) => `<li>
         ${r.id !== undefined ? `<button class="${happened(r.id) ? 'btn-primary' : 'btn-ghost'}" data-act="bingoTick" data-id="${r.id}" data-on="${happened(r.id) ? '0' : '1'}" aria-pressed="${happened(r.id)}">${happened(r.id) ? '✓ S-a întâmplat' : 'Bifează'}</button>` : '<span class="pill off">nou</span>'}
         <input class="field grow" data-bingo-label="${i}" value="${esc(r.label)}" maxlength="80" aria-label="Evenimentul ${i + 1}" style="flex:1 1 200px;min-width:0">
@@ -1124,7 +1124,7 @@ function render() {
     'roata-premii': () => `
     <section class="card wide" id="roata-premii">
       <h2>Premiile roții</h2>
-      <p class="muted" style="margin-top:0">8 felii, în ordinea de pe roată. «Pe roată» = textul scurt de pe felie (max. 16 caractere). Pune sponsorul la premiile oferite de el: apare pe site și pe stream «de la …». Șansa = cât de des iese felia (0 = niciodată).</p>
+      <p class="muted" style="margin-top:0">8 felii. «Pe roată» = max. 16 caractere. Șansa 0 = niciodată.</p>
       <ul class="list">${wheelRows().map((p, i) => `<li>
         <span class="muted" style="flex:0 0 22px">${i + 1}</span>
         <input class="field" data-wheel="short_label" data-i="${i}" value="${esc(p.short_label)}" maxlength="16" aria-label="Pe roată, felia ${i + 1}" style="flex:0 1 130px;min-width:0">
@@ -1144,14 +1144,14 @@ function render() {
           <p class="big" style="margin:10px 0 4px;letter-spacing:.06em">${esc(cur.code)}</p>
           <p class="muted" style="margin:0">${cur.sponsor ? `oferit de <strong style="color:#F2F5FA">${esc(cur.sponsor)}</strong> · ` : ''}valabil până la ${when(cur.expires_at)} · ${cur.claims} revendicări</p>
           <div class="row"><button class="btn-ghost" data-act="codeEnd">Oprește codul</button></div>`
-          : '<p class="muted" style="margin-top:0">Niciun cod pe stream acum. Arată unul în timpul unui moment cu sponsorul: cine îl scrie pe site primește o rotire bonus.</p>';
+          : '<p class="muted" style="margin-top:0">Niciun cod acum. Cine îl scrie pe site primește o rotire bonus.</p>';
       })()}
       <div class="row">
         <label class="inline" style="flex:1 1 200px">Oferit de<input class="field" id="codeSponsor" list="sponsorNames" value="${esc(site.sponsor.name)}" maxlength="60"></label>
         <label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="codeMin" value="10" min="1" max="60"></label>
         <button class="btn-primary" data-act="codeShow">Arată un cod nou pe stream</button>
       </div>
-      ${S.overlayKey ? `<p class="muted" style="margin:14px 0 0">Ca să apară codul pe stream, overlay-ul din OBS trebuie să aibă cheia: <strong style="color:#FF8A95">nu da linkul ăsta nimănui</strong>.</p>
+      ${S.overlayKey ? `<p class="muted" style="margin:14px 0 0">Linkul pentru OBS, cu cheie: <strong style="color:#FF8A95">privat</strong>.</p>
         <div class="row"><input class="field" id="overlayLink" readonly value="${esc(location.origin + '/overlay/?key=' + S.overlayKey)}" style="flex:1 1 280px;min-width:0" aria-label="Linkul de overlay cu cheie"><button class="btn-ghost" data-act="copyOverlay">Copiază linkul pentru OBS</button></div>` : ''}
       ${S.codes.length ? `<ul class="list">${S.codes.slice(0, 8).map((c) => `<li><span class="grow"><strong>${esc(c.code)}</strong>${c.sponsor ? ` · ${esc(c.sponsor)}` : ''}<br><span class="muted">${when(c.shown_at)}</span></span><span>${c.claims} revendicări</span></li>`).join('')}</ul>` : ''}
     </section>`,
@@ -1162,11 +1162,11 @@ function render() {
         const R = S.report;
         if (!R) return '<p class="muted">Se încarcă…</p>';
         const fmt = (n: any) => (n === null || n === undefined ? '—' : Number(n).toLocaleString('ro-RO'));
-        return `<p class="muted" style="margin-top:0">Vârf de viewers în chat: <strong style="color:#F2F5FA">${fmt(R.peak_chatters)}</strong> · ore privite în total: <strong style="color:#F2F5FA">${fmt(R.watch_hours)}</strong> · strâns: <strong style="color:#F2F5FA">${fmt(R.raised)} €</strong>. Click-urile se numără o dată pe vizită, fără date personale.</p>
+        return `<p class="muted" style="margin-top:0">Vârf de viewers în chat: <strong style="color:#F2F5FA">${fmt(R.peak_chatters)}</strong> · ore privite în total: <strong style="color:#F2F5FA">${fmt(R.watch_hours)}</strong> · strâns: <strong style="color:#F2F5FA">${fmt(R.raised)} €</strong>.</p>
         ${(R.sponsors ?? []).length ? `<ul class="list">${R.sponsors.map((x: any, i: number) => `<li style="align-items:flex-start">
           <span class="grow"><strong style="font-size:18px">${esc(x.sponsor)}</strong><br>
           <span class="muted">Click-uri pe link: <strong style="color:#F2F5FA">${fmt(x.clicks)}</strong> · cod de reducere copiat: <strong style="color:#F2F5FA">${fmt(x.code_copies)}</strong> · coduri secrete: ${fmt(x.codes_shown)} afișate, <strong style="color:#F2F5FA">${fmt(x.code_claims)}</strong> revendicări · ore duble: ${fmt(x.double_hours)} (donat în ele: <strong style="color:#F2F5FA">${fmt(x.donated_in_hours)} €</strong>, vârf ${fmt(x.peak_in_hours)} viewers) · premii câștigate: ${fmt(x.wins)} · milestones: ${fmt(x.milestones_unlocked)} / ${fmt(x.milestones)}</span></span>
-          <button class="btn-ghost" data-act="copyReport" data-i="${i}">Copiază</button></li>`).join('')}</ul>` : '<p class="muted">Încă nimic de raportat. Apare aici după ce pui sponsori pe premii, ore duble sau coduri.</p>'}`;
+          <button class="btn-ghost" data-act="copyReport" data-i="${i}">Copiază</button></li>`).join('')}</ul>` : '<p class="muted">Încă nimic de raportat.</p>'}`;
       })()}
     </section>`,
     'vot': () => `
@@ -1180,7 +1180,7 @@ function render() {
       ${!roundOpen && S.auto?.voteOn ? `<p style="margin:14px 0 0"><span class="pill ok">Vot automat</span> Următoarea rundă se deschide singură${S.auto.lastVoteDay === new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Bucharest' }) ? ' mâine' : ' azi'}, după ${esc(S.auto.voteAt)}, când Iceman e live.</p>` : ''}
       ${!roundOpen ? `
         <details${S.auto?.voteOn ? '' : ' open'} style="margin-top:14px"><summary style="cursor:pointer;min-height:44px;display:flex;align-items:center;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:20px;text-transform:uppercase">Deschide o rundă acum, de mână</summary>
-        <p class="muted" style="margin-top:0">Propunere automată: 2 ușoare, 2 medii, 1 grea, din categorii diferite. Schimbă ce vrei.</p>
+        <p class="muted" style="margin-top:0">2 ușoare, 2 medii, 1 grea. Schimbă ce vrei.</p>
         ${S.draft.map((id, i) => `<div class="row"><select class="field" data-draft="${i}" aria-label="Provocarea ${i + 1}">${poolOptions(id)}</select></div>`).join('')}
         <div class="row">
           <button class="btn-ghost" data-act="reroll">Alege altele</button>
@@ -1203,7 +1203,7 @@ function render() {
     'propuneri': () => `
     <section class="card" id="propuneri">
       <h2>Propuneri (${S.suggestions.length})</h2>
-      <p class="muted" style="margin-top:0">Linkurile, cuvintele urâte și dublurile sunt refuzate automat, înainte să ajungă aici.</p>
+      <p class="muted" style="margin-top:0">Spam-ul și dublurile sunt refuzate automat.</p>
       ${S.suggestions.length > 1 ? '<div class="row"><button class="btn-primary" data-act="approveAll">Aprobă tot</button><button class="btn-ghost" data-act="rejectAll">Respinge tot</button></div>' : ''}
       ${S.suggestions.length ? `<ul class="list">${S.suggestions.map((s) => `<li class="acts-row">
         <span class="grow">${esc(s.body)}<br><span class="muted">${esc(s.viewers?.display_name ?? s.viewers?.login ?? '')} · ${when(s.created_at)}</span></span>
@@ -1222,7 +1222,7 @@ function render() {
     'nume': () => `
     <section class="card" id="nume">
       <h2>Nume afișate public</h2>
-      <p class="muted" style="margin-top:0">Numele cu cuvinte urâte, linkuri, e-mailuri sau numere de telefon apar automat ca «Anonim» pe site și pe stream. Contribuțiile se numără la fel.</p>
+      <p class="muted" style="margin-top:0">Numele urâte, linkurile și numerele de telefon apar automat ca «Anonim».</p>
       ${S.names.filtered.length ? `<h3 style="margin:12px 0 6px;font-size:15px">Ascunse automat (${S.names.filtered.length})</h3>
       <ul class="list">${S.names.filtered.map((n) => `<li><span class="grow">${esc(n)}</span><button class="btn-ghost" data-act="nameAllow" data-name="${esc(n)}">E în regulă, arată-l</button></li>`).join('')}</ul>` : '<p class="muted">Niciun nume ascuns automat.</p>'}
       ${S.names.rules.length ? `<h3 style="margin:12px 0 6px;font-size:15px">Reguli</h3>
@@ -1233,7 +1233,7 @@ function render() {
           <button class="btn-primary" data-act="nameHide">Ascunde</button>
         </div>
       </div>
-      <p class="muted">Ascunde un nume nepotrivit care a scăpat filtrului. Cine vrea să nu apară își poate ascunde singur numele pe site, sub clasament.</p>
+      <p class="muted">Ascunde un nume care a scăpat filtrului.</p>
     </section>`,
     'moderatori': () => `
     <section class="card" id="moderatori">
@@ -1383,7 +1383,7 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     S.adventDraft = null;
   },
   ovTest: (el) => call('mod_overlay_test', { p_kind: el.dataset.kind }, 'Test trimis. Apare în overlay în câteva secunde.'),
-  copyOvp: (el) => { const v = val(`ovp${el.dataset.i}`); void navigator.clipboard?.writeText(v).then(() => say('Link copiat. În OBS: Browser Source, cu mărimea scrisă lângă piesă.')); },
+  copyOvp: (el) => { const v = val(`ovp${el.dataset.i}`); void navigator.clipboard?.writeText(v).then(() => say('Link copiat.')); },
   copyOv: (el) => { const v = val(`ov${el.dataset.i}`); void navigator.clipboard?.writeText(v).then(() => say('Link copiat. Pune-l în OBS ca Browser Source, 1920×1080.')); },
   goalDel: (el) => { editGoals().splice(Number(el.dataset.i), 1); render(); },
   goalCancel: () => { S.goalsDraft = null; render(); },
@@ -1408,7 +1408,7 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   linesCancel: () => { S.linesDraft = null; render(); },
   chatToggle: (el) => {
     const on = (el as HTMLInputElement).checked;
-    if (on && !confirm('Pornești replicile în chatul Twitch, din contul lui Iceman? Verifică întâi că niciun bot nu mulțumește deja în chat.')) { (el as HTMLInputElement).checked = false; return; }
+    if (on && !confirm('Pornești replicile în chatul Twitch, din contul lui Iceman?')) { (el as HTMLInputElement).checked = false; return; }
     return call('mod_set_chat_echo', { p_on: on }, on ? 'Replicile apar și în chatul Twitch.' : 'Replicile nu mai apar în chat.');
   },
   noteSet: () => val('nowNote').trim() && call('mod_set_note', { p_note: val('nowNote'), p_minutes: Number(val('nowMin')) || 30 }, 'Nota apare pe site.'),

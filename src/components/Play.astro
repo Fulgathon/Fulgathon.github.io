@@ -29,7 +29,7 @@ const emoteStyle = 'flex: none; width: 44px; height: 54px; object-fit: contain';
         </div>
         <div class="w-info">
           <h3 class="only-desk" style={h3big}>Roata lui Lucky</h3>
-          <p style="margin: 6px 0 0; color: #C9D2DF">Abonații: 2 ore în chat într-o zi = o rotire. Plus rotiri bonus din codurile secrete ale partenerilor.</p>
+          <p style="margin: 6px 0 0; color: #C9D2DF">Abonații: 2 ore în chat pe zi = o rotire.</p>
           <div {...iff('isIn')} style="margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px">
             <strong data-text="spinsText" style={`font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 22px; text-transform: uppercase`}>{v.spinsText}</strong>
             <span role="img" aria-label={v.flakesLabel} data-attr="aria-label:flakesLabel" data-region="flakes" style="display: inline-flex; gap: 4px" set:html={views.flakes(v)} />
@@ -54,7 +54,7 @@ const emoteStyle = 'flex: none; width: 44px; height: 54px; object-fit: contain';
         <div class="w-extra">
           <div class="w-code" style="padding: 14px 16px; border: 1px dashed var(--ice)">
             <label for="secret-code" style={`display: block; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 20px; text-transform: uppercase`}>Ai un cod secret de pe stream?</label>
-            <p style="margin: 2px 0 0; font-size: 14px; color: #AEB8C7">Apare din când în când, câteva minute, de la partenerii noștri. Îți dă o <strong style="color: #F2F5FA">rotire bonus</strong>, chiar dacă nu ești abonat.</p>
+            <p style="margin: 2px 0 0; font-size: 14px; color: #AEB8C7">Apare pe stream câteva minute. Îți dă o <strong style="color: #F2F5FA">rotire bonus</strong>.</p>
             <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px">
               <input id="secret-code" class="field" data-input="codeInput" maxlength="16" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ex: EBX-3GY" style={`flex: 1 1 150px; min-width: 0; min-height: 46px; padding: 0 12px; font-family: ${cond}; font-weight: 800; font-size: 20px; letter-spacing: .08em; text-transform: uppercase`} />
               <button type="button" class="btn-primary" data-action="claimCode" style={`min-height: 46px; padding: 0 18px; font-size: 18px; ${btn}`}>Revendică</button>
@@ -79,7 +79,7 @@ const emoteStyle = 'flex: none; width: 44px; height: 54px; object-fit: contain';
         <p {...iff('isSub')} data-text="voteHint" style="margin: 12px 0 0; font-size: 14px; color: #AEB8C7">{v.voteHint}</p>
         <div {...iff('isOut')} style="margin-top: 16px">
           <button type="button" class="btn-twitch" data-action="login" style={`min-height: 46px; padding: 0 18px; ${btn}`}>Votează</button>
-          <p style="margin: 6px 0 0; font-size: 13px; color: #8C97A8">Doar abonații votează. Conectează-te cu Twitch ca să-ți verificăm abonamentul.</p>
+          <p style="margin: 6px 0 0; font-size: 13px; color: #8C97A8">Doar abonații votează. Conectează-te cu Twitch.</p>
         </div>
         <div {...iff('isNonsub')} style="margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px">
           <a class="btn-red" href={site.links.subscribe} style={`min-height: 46px; display: inline-flex; align-items: center; padding: 0 18px; text-decoration: none; ${btn}`}>Abonează-te ca să votezi</a>
@@ -125,12 +125,12 @@ const emoteStyle = 'flex: none; width: 44px; height: 54px; object-fit: contain';
       <div id="bingo" class="g-bingo panel">
         <div class="show-sm" style="padding: 0 6px">
           <h3 style={h3big}>Bingo</h3>
-          <p style="margin: 4px 0 0; font-size: 13px; color: #C9D2DF">Alege o linie cu săgețile. Dacă toate 5 se întâmplă, intri la tragerea la sorți.</p>
+          <p style="margin: 4px 0 0; font-size: 13px; color: #C9D2DF">Alege o linie. Toate 5 se întâmplă = intri la tragere.</p>
         </div>
         <div class="bgrid" role="group" aria-label="Cartonașul de bingo: alege o linie" data-region="bingo2" set:html={views.bingo2(v)} />
         <div>
           <h3 class="only-desk" style={h3big}>Bingo</h3>
-          <p class="only-desk" style="margin: 8px 0 0; color: #C9D2DF">Alege o linie (rând, coloană sau diagonală) cu 5 lucruri care crezi că se vor întâmpla. Dacă se întâmplă toate 5, intri la tragerea la sorți.</p>
+          <p class="only-desk" style="margin: 8px 0 0; color: #C9D2DF">Alege o linie de 5. Toate se întâmplă = intri la tragere.</p>
           <div class="line-box">
             <p style={`margin: 0; display: flex; justify-content: space-between; gap: 8px; font-family: ${cond}; font-weight: 800; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; color: #8FE4FF`}><span data-text="lineName">{v.lineName}</span></p>
             <p {...iff('hasLine')} style={`margin: 4px 0 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 34px; line-height: 1`}><span data-text="lineHits">{v.lineHits}</span> <span style="font-size: 18px; font-weight: 800; color: #AEB8C7">s-au întâmplat</span></p>

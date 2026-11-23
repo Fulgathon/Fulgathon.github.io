@@ -256,8 +256,8 @@ export function derive(s: State, d: SiteData) {
   const flakesLabel = `${watched} din ${NEED} de minute privite azi`;
   const wheelLive = live;
   const flakesNote = !isSub
-    ? 'Roata e doar pentru abonați. După ce te abonezi, apasă «M-am abonat, verifică iar».'
-    : s.spunToday ? 'Ai învârtit azi. Mâine ai o nouă rotire după 2 ore de privit (ziua începe la 00:00).'
+    ? 'Roata e doar pentru abonați.'
+    : s.spunToday ? 'Ai învârtit azi. Revino mâine.'
     : !wheelLive ? 'Roata se deschide odată cu maratonul.'
     : watched >= NEED ? 'Ai stat 2 ore azi: rotirea ta te așteaptă.'
     : `Mai ai ${count(NEED - watched, 'minut', 'minute')} de privit azi până la rotire.`;
@@ -378,12 +378,12 @@ export function derive(s: State, d: SiteData) {
   const prize = (B.prize && !B.prize.startsWith('[') ? B.prize : 'premiul cel mare') + (B.prizeSponsor ? ` de la ${B.prizeSponsor}` : '');
   const bingoStatus = bingoOpen
     ? (closeText ? `Alegerile se închid pe ${closeText}.` : 'Alegerile sunt deschise.')
-    : 'Alegerile s-au închis. Moderatorii bifează pe parcurs ce se întâmplă pe stream.';
+    : 'Alegerile s-au închis.';
   const bingoNote = bingoOpen
-    ? (isOut ? 'Alege o linie cu săgețile de pe margine și conectează-te cu Twitch ca s-o salvezi.'
+    ? (isOut ? 'Alege o linie și conectează-te ca s-o salvezi.'
       : sameAsSaved ? 'Linia ta e salvată. O poți schimba până la închidere.'
       : saved ? 'Ai schimbat linia. Salvează ca să rămână așa.'
-      : 'Alege un rând, o coloană sau o diagonală cu săgețile de pe margine, apoi salvează.')
+      : 'Alege o linie, apoi salvează.')
     : isOut ? 'Conectează-te cu Twitch ca să-ți vezi linia.'
     : !saved ? 'Nu ai ales o linie înainte de închidere. Data viitoare!'
     : isBingo ? `BINGO! Toate cele 5 s-au întâmplat: ești pe lista de tragere la sorți pentru ${prize}.`
@@ -610,7 +610,7 @@ export function derive(s: State, d: SiteData) {
     togetherNext: tNext ? `Următorul: ${tNext.title} la ${fmtInt(tNext.hours)} h` : tGoals.length ? 'Toate obiectivele comunitare sunt deblocate!' : '',
     togetherGoals: tGoals.map((g) => ({ title: g.title, hours: fmtInt(g.hours) + ' h', done: g.done, current: g === tNext })),
     mineStats, mineBadges: (L?.badges ?? []).map((b) => badgeLabels[b] ?? b),
-    mineNote: !M ? '' : M.seconds > 0 ? 'Mulțumim! Fiecare minut adăugat ține maratonul în viață.' : 'Și timpul petrecut în chat contează: seria de zile și insignele vin doar din prezență.',
+    mineNote: !M ? '' : M.seconds > 0 ? 'Mulțumim! Fiecare minut adăugat ține maratonul în viață.' : 'Și timpul în chat contează: seria și insignele.',
 
     codeLabel: s.copied ? 'Copiat ✓' : 'Copiază',
     codeStatus: s.copied ? 'Codul a fost copiat' : '',

@@ -9,7 +9,7 @@ import { views } from '../lib/views';
 <section id="program" aria-labelledby="h-program" class="sec">
   <div class="wrap">
     <SectionHead tag="05" title="Program și cronologie" id="h-program" />
-    <p class="intro only-desk" style="max-width: 720px">Ca un calendar de Advent: cele 22 de zile ale maratonului, câte o fereastră pe zi. Zilele trecute se deschid cu clipul zilei; cele care vin arată ce e programat.</p>
+    <p class="intro only-desk" style="max-width: 720px">O fereastră pe zi: clipul zilei sau ce urmează.</p>
     <p class="intro show-sm" style="font-size: 14px">Calendar de Advent: câte o fereastră pe zi, cu clipul zilei.</p>
     <div id="advent" class="advent" data-toggle="show-all:moreDays" data-region="advent" set:html={views.advent(v)} />
     <button type="button" class="btn-more" data-action="more" data-arg="days" aria-controls="advent" aria-pressed={v.moreDaysPressed} data-attr="aria-pressed:moreDaysPressed" data-text="moreDaysLabel">{v.moreDaysLabel}</button>

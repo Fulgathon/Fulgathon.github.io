@@ -26,7 +26,7 @@ const small = `font-family: ${cond}; font-weight: 800; font-size: 13px; letter-s
       <div>
         <p class="eyebrow-s">Contribuția ta</p>
         <div {...iff('isOut')}>
-          <p style="margin: 6px 0 0; color: #C9D2DF">Conectează-te cu Twitch ca să vezi cât ai adăugat la cronometru, câte zile la rând ai fost în chat și ce insigne ai.</p>
+          <p style="margin: 6px 0 0; color: #C9D2DF">Conectează-te cu Twitch: vezi timpul tău, seria și insignele.</p>
           <button type="button" class="btn-twitch" data-action="login" style={`margin-top: 12px; min-height: 48px; padding: 0 20px; font-family: ${cond}; font-weight: 800; font-size: 17px; text-transform: uppercase`}>Conectează-te cu Twitch</button>
         </div>
         <div {...iff('isIn')} style="margin-top: 6px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 16px">
@@ -79,7 +79,7 @@ const small = `font-family: ${cond}; font-weight: 800; font-size: 13px; letter-s
         <p style="margin: 2px 0 0; font-size: 14px; color: #8C97A8">O zi se numără de la 30 de minute sau un check-in.</p>
         <ol class="rows ly" data-toggle="show-all:moreLoyal" aria-label="Fidelii" data-region="loyal" set:html={views.loyal(v)} />
         <button type="button" class="btn-more" data-action="more" data-arg="loyal" aria-pressed={v.moreLoyalPressed} data-attr="aria-pressed:moreLoyalPressed" data-text="moreLoyalLabel">{v.moreLoyalLabel}</button>
-        <p style="margin: 12px 0 0; font-size: 13px; color: #AEB8C7"><strong style="color: var(--ice)">Check-in:</strong> pe Twitch, recompensa «Check-in ICEMARATON» cu puncte de canal îți ține seria chiar dacă ai stat mai puțin.</p>
+        <p style="margin: 12px 0 0; font-size: 13px; color: #AEB8C7"><strong style="color: var(--ice)">Check-in:</strong> recompensa «Check-in ICEMARATON» pe Twitch îți ține seria.</p>
       </div>
     </div>
   </div>
