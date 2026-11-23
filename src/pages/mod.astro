@@ -89,12 +89,9 @@ const favicon = await getImage({ src: emote, format: 'png', width: 64 });
       .mnav[hidden] + .mmain { grid-column: 1 / -1; max-width: 720px; }
       .ng { background: #06080C; border: 1px solid #161B26; }
       .ng.on { background: #090D14; border-color: #2A3F5A; }
-      /* Prism on dark (owner-approved): near-black bar, faint tint on the left, prism letters, 1px prism hairline. */
-      .ng-head { min-height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 12px; text-decoration: none; color: #C3B8FF; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: .14em;
-        background: linear-gradient(90deg, rgba(159,232,255,.10) 0%, rgba(169,184,255,.04) 40%, rgba(0,0,0,0) 75%), #030406;
-        border-bottom: 1px solid transparent; border-image: linear-gradient(90deg, rgba(159,232,255,.7), rgba(169,184,255,.7) 30%, rgba(226,182,255,.7) 52%, rgba(255,214,194,.7) 74%, rgba(200,255,233,.7)) 1; }
-      .ng.on .ng-head { color: #9FE8FF; background: linear-gradient(90deg, rgba(159,232,255,.16) 0%, rgba(226,182,255,.07) 45%, rgba(0,0,0,0) 80%), #030406;
-        border-image: linear-gradient(90deg, #9FE8FF 0%, #A9B8FF 30%, #E2B6FF 52%, #FFD6C2 74%, #C8FFE9 100%) 1; }
+      /* Group titles in ice blue (owner, 23 Nov: no prism here): dark bar, deeper ice on the open group. */
+      .ng-head { min-height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 12px; text-decoration: none; color: var(--ice); font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: .14em; background: #0A1018; border-bottom: 1px solid #161B26; }
+      .ng.on .ng-head { background: #10283C; border-bottom-color: #2A3F5A; }
       .prism-text { background: linear-gradient(90deg, #9FE8FF 0%, #A9B8FF 30%, #E2B6FF 52%, #FFD6C2 74%, #C8FFE9 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
       .ng-items { padding: 4px 0; }
       .ng-items a { min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 12px 0 35px; border-left: 3px solid transparent; color: #C9D2DF; text-decoration: none; font-size: 14px; }

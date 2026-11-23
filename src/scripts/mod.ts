@@ -427,7 +427,7 @@ function navHtml(): string {
   return GROUPS.map((g) => {
     const on = g.id === S.page;
     return `<div class="ng${on ? ' on' : ''}">
-      <a class="ng-head" href="#${g.items[0][0]}" ${on ? 'aria-current="true"' : ''}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICONS[g.id]}"></path></svg><span class="prism-text">${esc(g.name)}</span></a>
+      <a class="ng-head" href="#${g.items[0][0]}" ${on ? 'aria-current="true"' : ''}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICONS[g.id]}"></path></svg><span>${esc(g.name)}</span></a>
       <div class="ng-items">${g.items.map(([id, label]) => {
         const w = waiting(id);
         return `<a href="#${id}" data-nav="${id}"${id === cur ? ' class="cur" aria-current="location"' : ''}>${esc(label)}${w.n ? `<span class="nb${w.warn ? ' warn' : ''}">${w.n}</span>` : ''}</a>`;
