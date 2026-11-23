@@ -160,15 +160,23 @@ export function initBlueprint(svg: SVGSVGElement): Blueprint {
   }, 6500);
 
   // ---- Iceman talks now and then ----
-  let idle = -1;
-  const chatter = () => {
-    if (visible() && !speaking) {
-      let i = Math.floor(Math.random() * IDLE.length);
-      if (i === idle) i = (i + 1) % IDLE.length;
-      idle = i;
-      say(IDLE[i], 'talk');
+  // A shuffled deck: every line comes once before any repeats, and the deck
+  // survives reloads (sessionStorage) so a refresh doesn't restart the order.
+  const KEY = 'icemaraton:bp-lines';
+  let deck: number[] = [];
+  try { deck = JSON.parse(sessionStorage.getItem(KEY) ?? '[]').filter((n: unknown) => typeof n === 'number' && n < IDLE.length); } catch { /* no storage */ }
+  let lastLine = -1;
+  const nextLine = () => {
+    if (!deck.length) {
+      deck = IDLE.map((_, i) => i);
+      for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
+      if (deck[0] === lastLine) deck.push(deck.shift()!); // no repeat across decks
     }
+    lastLine = deck.shift()!;
+    try { sessionStorage.setItem(KEY, JSON.stringify(deck)); } catch { /* no storage */ }
+    return IDLE[lastLine];
   };
+  const chatter = () => { if (visible() && !speaking) say(nextLine(), 'talk'); };
   setTimeout(chatter, 7000);
   setInterval(chatter, 22000);
 
