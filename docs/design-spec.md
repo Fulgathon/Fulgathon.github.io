@@ -83,6 +83,19 @@ Stream states: **live** (red "ÎN DIRECT", timer counting down, live data) and *
 
 Snowfall in two layers (back: small, slow; front: bigger, faster, above content, `pointer-events: none`), ticker marquee, spotlight sweep, logo float and glow flicker, timer glints, rising "+time" chips, wheel spin.
 
+**Motion tokens, «tăietura» (the broadcast cut), 23 Nov 2026.** One motion language for the whole site, in `:root` of `src/styles/global.css`: a quick start and a long, soft landing, like an esports lower third, calm on purpose (nothing bounces or overshoots).
+
+| Token | Value | Use |
+| --- | --- | --- |
+| `--m-ease` | `cubic-bezier(.2, .8, .2, 1)` | Everything that appears or changes |
+| `--m-ease-io` | `cubic-bezier(.65, 0, .35, 1)` | Travel: the page scroll (mirrored in `src/scripts/motion.ts`) |
+| `--m-fast` | 140 ms | Hover, press, focus |
+| `--m-base` | 240 ms | State changes, the nav underline |
+| `--m-slow` | 560 ms | Reveals: the section cut-in, new feed rows |
+| `--m-skew` | −12° | The slant every moving bar shares |
+
+Behaviour (`src/scripts/motion.ts`): in-page links glide to their section in 450–900 ms (eased, stops if the visitor scrolls or presses a key) and focus it; the menu underlines the section you're in (`aria-current`); each section header plays its cut-in the first time it scrolls into view and again when a menu link lands on it (the numeral slides in, the ice bar sweeps from the left). Under reduced motion: links jump, headers are just there. New motion should use these tokens rather than new durations.
+
 ## Sponsors
 
 Sponsors appear in four places. All logos are dashed placeholders for now (`.logo-slot`).

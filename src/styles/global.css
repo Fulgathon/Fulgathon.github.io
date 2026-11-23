@@ -2,7 +2,17 @@
    Dropped: rules for elements the owner removed (Christmas light bulbs,
    chrome lettering, the reverse marquee band). */
 
-:root { --ice: #3FD0FF; }
+:root {
+  --ice: #3FD0FF;
+  /* Motion tokens, «tăietura» (the broadcast cut): a quick start and a long, soft
+     landing, like an esports lower third. Calm on purpose: nothing bounces. */
+  --m-ease: cubic-bezier(.2, .8, .2, 1);      /* standard: fast in, soft settle */
+  --m-ease-io: cubic-bezier(.65, 0, .35, 1);  /* travel: page scroll (src/scripts/motion.ts mirrors it) */
+  --m-fast: 140ms;    /* hover, press, focus */
+  --m-base: 240ms;    /* state changes: tabs, toggles, underline */
+  --m-slow: 560ms;    /* reveals: the section cut-in */
+  --m-skew: -12deg;   /* the slant every moving bar shares */
+}
 html { background: #050608; }
 body { margin: 0; background: #050608; }
 * { box-sizing: border-box; }
@@ -42,11 +52,11 @@ input, select, textarea { font: inherit; }
 .c-tr { top: -1px; right: -1px; border-top-width: 2px; border-right-width: 2px; }
 .c-bl { bottom: -1px; left: -1px; border-bottom-width: 2px; border-left-width: 2px; }
 .c-br { bottom: -1px; right: -1px; border-bottom-width: 2px; border-right-width: 2px; }
-.tick { position: absolute; transform-origin: 50% 50%; border-radius: 1px; transition: background .3s; }
+.tick { position: absolute; transform-origin: 50% 50%; border-radius: 1px; transition: background var(--m-base) var(--m-ease); }
 .is-spinning .tick { background: var(--ice) !important; }
 .wheel { transition: transform 4.6s cubic-bezier(0.12, 0.8, 0.18, 1); }
 .logo-slot { display: flex; align-items: center; justify-content: center; text-align: center; border: 1px dashed #2A3445; color: #7D8899; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
-.ptile { transition: border-color .2s, background .2s; }
+.ptile { transition: border-color var(--m-base) var(--m-ease), background var(--m-base) var(--m-ease); }
 .ptile:hover { border-color: var(--ice); background: #0D131C; }
 .bignum { position: absolute; right: 0; bottom: -8px; z-index: -1; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: clamp(120px, 17cqi, 250px); line-height: .8; color: transparent; -webkit-text-stroke: 2px rgba(92,203,255,.16); pointer-events: none; user-select: none; }
 
@@ -57,15 +67,15 @@ input, select, textarea { font: inherit; }
 }
 
 .cane { background: linear-gradient(90deg, #1E5BFF 0%, var(--ice) 100%); box-shadow: 0 0 18px rgba(63,208,255,.45); }
-.btn-primary { background: var(--ice); color: #04101A; border: 2px solid var(--ice); transition: background .15s, border-color .15s; }
+.btn-primary { background: var(--ice); color: #04101A; border: 2px solid var(--ice); transition: background var(--m-fast) var(--m-ease), border-color var(--m-fast) var(--m-ease); }
 .btn-primary:hover { background: #FFFFFF; border-color: #FFFFFF; color: #04101A; }
-.btn-ghost { background: transparent; color: #F2F5FA; border: 2px solid #2A3445; transition: border-color .15s; }
+.btn-ghost { background: transparent; color: #F2F5FA; border: 2px solid #2A3445; transition: border-color var(--m-fast) var(--m-ease); }
 .btn-ghost:hover { border-color: var(--ice); color: #F2F5FA; }
-.btn-twitch { background: #9146FF; color: #FFFFFF; border: 2px solid #9146FF; transition: filter .15s; }
+.btn-twitch { background: #9146FF; color: #FFFFFF; border: 2px solid #9146FF; transition: filter var(--m-fast) var(--m-ease); }
 .btn-twitch:hover { filter: brightness(1.12); color: #FFFFFF; }
-.btn-red { background: #F2F5FA; color: #050608; border: 2px solid #F2F5FA; transition: background .15s, border-color .15s; }
+.btn-red { background: #F2F5FA; color: #050608; border: 2px solid #F2F5FA; transition: background var(--m-fast) var(--m-ease), border-color var(--m-fast) var(--m-ease); }
 .btn-red:hover { background: var(--ice); border-color: var(--ice); color: #050608; }
-.field { background: #050608; color: #F2F5FA; border: 2px solid #2A3445; transition: border-color .15s; }
+.field { background: #050608; color: #F2F5FA; border: 2px solid #2A3445; transition: border-color var(--m-fast) var(--m-ease); }
 .field:focus { outline: none; border-color: var(--ice); }
 .navlink { white-space: nowrap; color: #AEB8C7; text-decoration: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
 .navlink:hover { color: #FFFFFF; }

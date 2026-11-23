@@ -16,6 +16,7 @@
 //             panel switches viewer and stream states and fakes Twitch events.
 //             ?demo&embed hides the panel (used inside /prezentare/).
 
+import './motion';
 import { emptyData } from '../data/sample';
 import { site } from '../data/site';
 import type { SiteData } from '../data/types';
