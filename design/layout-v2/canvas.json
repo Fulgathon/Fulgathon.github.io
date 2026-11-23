@@ -1,26 +1,175 @@
 {
   "v": 3,
-  "createdOnFiles": { "v": 1, "at": "2026-11-23T07:30:00Z" },
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-11-23T07:30:00Z"
+  },
   "title": "ICEMARATON layout",
-  "launch": { "view": "canvas" },
+  "launch": {
+    "view": "canvas"
+  },
   "pages": [],
   "boards": {
-    "Main.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 7800, "title": "Desktop · 1440 px" },
-    "Phone.dc.html": { "x": 1520, "y": 0, "w": 390, "h": 8200, "title": "Telefon · 390 px" },
-    "Festive.dc.html": { "x": 0, "y": 7920, "w": 1440, "h": 1000, "title": "Festiv, cu măsură" },
-    "Badges.dc.html": { "x": 0, "y": 9040, "w": 1440, "h": 1250, "title": "Insignele, pe niveluri" },
-    "Mod.dc.html": { "x": 0, "y": 10410, "w": 1440, "h": 1150, "title": "/mod · Replicile lui Iceman" }
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 7800,
+      "title": "Desktop · 1440 px"
+    },
+    "Phone.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 390,
+      "h": 8200,
+      "title": "Telefon · 390 px"
+    },
+    "Festive.dc.html": {
+      "x": 0,
+      "y": 7920,
+      "w": 1440,
+      "h": 1000,
+      "title": "Festiv, cu măsură"
+    },
+    "Badges.dc.html": {
+      "x": 0,
+      "y": 9040,
+      "w": 1440,
+      "h": 1250,
+      "title": "Insignele, pe niveluri"
+    },
+    "Mod.dc.html": {
+      "x": 0,
+      "y": 10410,
+      "w": 1440,
+      "h": 1150,
+      "title": "/mod · Replicile lui Iceman"
+    },
+    "ModLive.dc.html": {
+      "x": 0,
+      "y": 11960,
+      "w": 1440,
+      "h": 1180,
+      "title": "/mod nou · Live (propunere)"
+    },
+    "ModContent.dc.html": {
+      "x": 0,
+      "y": 13260,
+      "w": 1440,
+      "h": 1320,
+      "title": "/mod nou · Conținut: milestones și calendar"
+    },
+    "ModPhone.dc.html": {
+      "x": 1520,
+      "y": 11960,
+      "w": 390,
+      "h": 1500,
+      "title": "/mod nou · telefon"
+    },
+    "Overlay.dc.html": {
+      "x": 0,
+      "y": 14700,
+      "w": 1440,
+      "h": 3200,
+      "title": "Overlay OBS · momente (propunere)"
+    }
   },
-  "order": ["Main.dc.html", "Phone.dc.html", "Festive.dc.html", "Badges.dc.html", "Mod.dc.html"],
+  "order": [
+    "Main.dc.html",
+    "Phone.dc.html",
+    "Festive.dc.html",
+    "Badges.dc.html",
+    "Mod.dc.html",
+    "ModLive.dc.html",
+    "ModPhone.dc.html",
+    "ModContent.dc.html",
+    "Overlay.dc.html"
+  ],
   "notes": {
-    "row": { "x": 0, "y": -300, "text": "Noua ordine a paginii (propunere)", "kind": "title1", "maxW": 1910 },
-    "n1": { "x": 1990, "y": 0, "w": 380, "fill": "blue", "text": "Sus rămâne banda LIVE care derulează ultimele donații, gift-uri și subs, ca acum. Banda și meniul rămân lipite sus la scroll (sticky), deci cronometrul din meniu se vede oriunde ești pe pagină. 1. Hero viu: în stânga intră donațiile și subs-urile pe rând, Iceman (ilustrația) reacționează într-un balon cu replicile lui (le scrie el sau moderatorii pe /mod, pe tipuri: sub, gift, donație mică/mare, biți; cele din schiță sunt doar exemple), cronometrul sare cu +timpul adus, iar în dreapta «Cât adaugi tu?» arată unde ar ajunge timerul. Plus cronometrul + «Acum pe stream» + cât valorează fiecare lucru (fostul «Cum adaugi timp» devine un rând de chip-uri). Un singur loc pentru tot ce contează în primele 5 secunde." },
-    "n2": { "x": 1990, "y": 560, "w": 380, "fill": "teal", "text": "2. Partenerii rămân imediat după cronometru (cererea ta), pe niveluri: Partener principal · Parteneri · Susținători." },
-    "n3": { "x": 1990, "y": 1000, "w": 380, "fill": "green", "text": "3. Comunitatea, în trei rânduri citite de sus în jos: Contribuția ta + Obiectiv comunitar (o bandă), Legendele (trei panouri egale), apoi Timp adăugat azi + Fidelii (două panouri egale). Pe telefon, Legendele se dau cu degetul (una pe ecran), listele arată top 3 + «Vezi tot»." },
-    "n4": { "x": 1990, "y": 1520, "w": 380, "fill": "orange", "text": "4. «Joacă»: Votul, Roata, Bingo și Propunerile stau toate la vedere, una lângă alta (pe telefon una sub alta), fiecare cu butonul ei. Bingo ocupă toată lățimea, ca fiecare pătrat să-și încapă propoziția. Sunt mecanismele care țin oamenii activi, deci nu le ascundem în file." },
-    "n5": { "x": 1990, "y": 2000, "w": 380, "fill": "purple", "text": "5. Playerul Twitch coboară: cine e pe site are deja streamul deschis pe Twitch. Rămâne încărcat doar la cerere." },
-    "n6": { "x": 1990, "y": 2420, "w": 380, "fill": "pink", "text": "6. Nou, la final: «Program și cronologie» — zi cu zi, cu clipurile zilei și momentele partenerilor (Ora dublă, segmente). De construit după ce aprobi ordinea." },
-    "n7": { "x": 1990, "y": 2900, "w": 380, "fill": "red", "text": "Spiritul de Crăciun: ninsoare liniștită pe tot site-ul, «Stream maraton 2026–2027» deasupra titlului, 4 semne subțiri (fulg, cadou, stea, brad) și calendarul de Advent pentru cele 22 de zile. Regulile complete: planșa «Festiv, cu măsură» de dedesubt." }
+    "row": {
+      "x": 0,
+      "y": -300,
+      "text": "Noua ordine a paginii (propunere)",
+      "kind": "title1",
+      "maxW": 1910
+    },
+    "n1": {
+      "x": 1990,
+      "y": 0,
+      "w": 380,
+      "fill": "blue",
+      "text": "Sus rămâne banda LIVE care derulează ultimele donații, gift-uri și subs, ca acum. Banda și meniul rămân lipite sus la scroll (sticky), deci cronometrul din meniu se vede oriunde ești pe pagină. 1. Hero viu: în stânga intră donațiile și subs-urile pe rând, Iceman (ilustrația) reacționează într-un balon cu replicile lui (le scrie el sau moderatorii pe /mod, pe tipuri: sub, gift, donație mică/mare, biți; cele din schiță sunt doar exemple), cronometrul sare cu +timpul adus, iar în dreapta «Cât adaugi tu?» arată unde ar ajunge timerul. Plus cronometrul + «Acum pe stream» + cât valorează fiecare lucru (fostul «Cum adaugi timp» devine un rând de chip-uri). Un singur loc pentru tot ce contează în primele 5 secunde."
+    },
+    "n2": {
+      "x": 1990,
+      "y": 560,
+      "w": 380,
+      "fill": "teal",
+      "text": "2. Partenerii rămân imediat după cronometru (cererea ta), pe niveluri: Partener principal · Parteneri · Susținători."
+    },
+    "n3": {
+      "x": 1990,
+      "y": 1000,
+      "w": 380,
+      "fill": "green",
+      "text": "3. Comunitatea, în trei rânduri citite de sus în jos: Contribuția ta + Obiectiv comunitar (o bandă), Legendele (trei panouri egale), apoi Timp adăugat azi + Fidelii (două panouri egale). Pe telefon, Legendele se dau cu degetul (una pe ecran), listele arată top 3 + «Vezi tot»."
+    },
+    "n4": {
+      "x": 1990,
+      "y": 1520,
+      "w": 380,
+      "fill": "orange",
+      "text": "4. «Joacă»: Votul, Roata, Bingo și Propunerile stau toate la vedere, una lângă alta (pe telefon una sub alta), fiecare cu butonul ei. Bingo ocupă toată lățimea, ca fiecare pătrat să-și încapă propoziția. Sunt mecanismele care țin oamenii activi, deci nu le ascundem în file."
+    },
+    "n5": {
+      "x": 1990,
+      "y": 2000,
+      "w": 380,
+      "fill": "purple",
+      "text": "5. Playerul Twitch coboară: cine e pe site are deja streamul deschis pe Twitch. Rămâne încărcat doar la cerere."
+    },
+    "n6": {
+      "x": 1990,
+      "y": 2420,
+      "w": 380,
+      "fill": "pink",
+      "text": "6. Nou, la final: «Program și cronologie» — zi cu zi, cu clipurile zilei și momentele partenerilor (Ora dublă, segmente). De construit după ce aprobi ordinea."
+    },
+    "n7": {
+      "x": 1990,
+      "y": 2900,
+      "w": 380,
+      "fill": "red",
+      "text": "Spiritul de Crăciun: ninsoare liniștită pe tot site-ul, «Stream maraton 2026–2027» deasupra titlului, 4 semne subțiri (fulg, cadou, stea, brad) și calendarul de Advent pentru cele 22 de zile. Regulile complete: planșa «Festiv, cu măsură» de dedesubt."
+    },
+    "tNew": {
+      "x": 0,
+      "y": 11660,
+      "text": "/mod nou și overlay-ul (de revizuit)",
+      "kind": "title1",
+      "maxW": 1910
+    },
+    "n8": {
+      "x": 1990,
+      "y": 11960,
+      "w": 380,
+      "fill": "blue",
+      "text": "/mod pe joburi. Sus, mereu la vedere: LIVE, cronometrul, starea lui (merge / înghețat până la … / Ora dublă) și sănătatea fiecărei surse (subs și biți, timp privit, donații, joburi). În stânga, meniul grupat: Live · Conținut · Jocuri · Oameni · Sponsori · Overlay, cu numărul de lucruri care așteaptă. În dreapta, «De făcut acum»: premii de dat, milestone-uri deblocate fără clip, grupuri de replici incomplete, propuneri noi. Toate funcțiile de acum rămân, cu aceleași drepturi: doar moderatorii."
+    },
+    "n9": {
+      "x": 1990,
+      "y": 13560,
+      "w": 380,
+      "fill": "teal",
+      "text": "Conținut: fiecare milestone are acum stare (blocat / deblocat / făcut), «când se face» și linkul clipului, care apare pe site la «Ai ratat? Vezi clipurile». Calendarul de Advent se completează zi cu zi: ce e programat, sponsorul zilei și clipul. Sus se vede și starea «Înghețat până la …». Replicile lui Iceman au planșa lor, mai sus."
+    },
+    "n10": {
+      "x": 1990,
+      "y": 14700,
+      "w": 380,
+      "fill": "orange",
+      "text": "Overlay-ul: alegeți momentele pe care le vreți (un comentariu pe fiecare: da / nu / altfel). Totul vine din datele pe care site-ul le are deja. Balonul folosește aceleași replici de pe /mod; până le scrieți, apare «Mersi, {nume}!». Sponsorii rămân liniștiți, linkul cu ?key= rămâne privat, ?calm=1 dă mai puțină mișcare."
+    }
   },
   "designSystems": []
 }

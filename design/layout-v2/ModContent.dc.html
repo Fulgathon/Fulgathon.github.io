@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<title>/mod nou · Conținut</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&amp;family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#050608}
+a{color:#3FD0FF}a:hover{color:#FFFFFF}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #3FD0FF;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1440px; min-height: 1320px; box-sizing: border-box; background: #050608; color: #F2F5FA; font-family: Barlow, system-ui, sans-serif; font-size: 15px; line-height: 1.45">
+
+  <header style="height: 64px; padding: 0 24px; display: flex; align-items: center; gap: 18px; background: #0B1018; border-bottom: 1px solid #1C2230">
+    <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 22px">ICE<span style="color: #3FD0FF">MARATON</span> <span style="font-style: normal; font-weight: 800; font-size: 14px; letter-spacing: 0.1em; color: #8C97A8">/MOD</span></span>
+    <span style="width: 1px; height: 32px; background: #1C2230"></span>
+    <span style="padding: 2px 10px; transform: skewX(-12deg); background: #D5162B; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; letter-spacing: 0.08em">LIVE</span>
+    <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums">3z 14:21:05</span>
+    <span style="padding: 3px 10px; background: #0E1A28; border: 1px solid #8FE4FF; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 0.06em; color: #DFF6FF">ÎNGHEȚAT PÂNĂ LA 25 DEC, 12:00</span>
+    <span style="flex: 1 1 auto"></span>
+    <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #C9D2DF"><span style="width: 9px; height: 9px; background: #3FD0FF"></span>Subs și biți <span style="color: #8C97A8">40 s</span></span>
+    <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #C9D2DF"><span style="width: 9px; height: 9px; background: #F2C14E"></span>Timp privit <span style="color: #8C97A8">14 min</span></span>
+    <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #C9D2DF"><span style="width: 9px; height: 9px; background: #3FD0FF"></span>Donații <span style="color: #8C97A8">6 s</span></span>
+    <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #C9D2DF"><span style="width: 9px; height: 9px; background: #3FD0FF"></span>Joburi <span style="color: #8C97A8">OK</span></span>
+    <span style="width: 1px; height: 32px; background: #1C2230"></span>
+    <button type="button" style="min-height: 44px; display: inline-flex; align-items: center; gap: 10px; padding: 0 10px 0 6px; background: none; border: 1px solid #2A3445; color: #F2F5FA; font: 600 14px Barlow, sans-serif"><span style="width: 30px; height: 30px; display: grid; place-items: center; background: #9146FF; font-weight: 700">R</span>rares1337</button>
+  </header>
+
+  <div style="display: grid; grid-template-columns: 248px minmax(0, 1fr)">
+    <nav aria-label="Secțiuni" style="min-height: 1256px; padding: 18px 0; background: #080B10; border-right: 1px solid #1C2230">
+      <sc-for list="{{groups}}" as="g" hint-placeholder-count="6">
+        <p style="margin: 14px 0 4px; padding: 0 20px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 0.14em; color: #8C97A8">{{g.name}}</p>
+        <sc-for list="{{g.items}}" as="i" hint-placeholder-count="4">
+          <a href="#{{i.id}}" style="min-height: 40px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 16px 0 17px; border-left: 3px solid {{i.line}}; background: {{i.bg}}; color: {{i.fg}}; text-decoration: none; font-weight: {{i.w}}">{{i.label}}<sc-if value="{{i.badge}}" hint-placeholder-val="{{false}}"><span style="min-width: 22px; padding: 0 6px; background: {{i.badgeBg}}; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; text-align: center">{{i.badge}}</span></sc-if></a>
+        </sc-for>
+      </sc-for>
+    </nav>
+
+    <main style="padding: 26px 28px 40px">
+      <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; padding-bottom: 12px; border-bottom: 2px solid #F2F5FA">
+        <div><span style="padding: 2px 10px; transform: skewX(-12deg); background: #3FD0FF; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px">CONȚINUT</span><h1 style="margin: 8px 0 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 48px; line-height: 0.95; text-transform: uppercase">Milestone Maraton</h1></div>
+        <p style="margin: 0; text-align: right; color: #AEB8C7">Strâns acum: <strong style="font-family: 'Barlow Condensed', sans-serif; font-size: 26px; color: #F2F5FA">1.180 €</strong><br>Următorul: 06 · Karaoke cu colinde, la 1.500 €</p>
+      </div>
+
+      <!-- Milestones table -->
+      <section id="milestones" style="margin-top: 18px; background: #0B1018; border: 1px solid #1C2230">
+        <div style="display: grid; grid-template-columns: 44px 104px minmax(0, 1.6fr) minmax(0, 0.9fr) 128px minmax(0, 1fr) minmax(0, 1.3fr) 120px; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #1C2230; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 0.1em; color: #8C97A8">
+          <span>NR.</span><span>SUMA (€)</span><span>PROVOCAREA</span><span>PREZENTAT DE</span><span>STARE</span><span>CÂND SE FACE</span><span>CLIPUL (DUPĂ LIVE)</span><span></span>
+        </div>
+        <sc-for list="{{goals}}" as="g" hint-placeholder-count="12">
+          <div style="display: grid; grid-template-columns: 44px 104px minmax(0, 1.6fr) minmax(0, 0.9fr) 128px minmax(0, 1fr) minmax(0, 1.3fr) 120px; gap: 10px; align-items: center; padding: 8px 16px; border-bottom: 1px solid #1A2230; background: {{g.rowBg}}">
+            <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 22px; color: {{g.noColor}}">{{g.no}}</span>
+            <input aria-label="Suma milestone-ului {{g.no}}" value="{{g.a}}" style="width: 100%; min-height: 40px; box-sizing: border-box; padding: 0 8px; background: #050608; border: 1px solid #2A3445; color: #F2F5FA; font: inherit">
+            <input aria-label="Provocarea {{g.no}}" value="{{g.t}}" style="width: 100%; min-height: 40px; box-sizing: border-box; padding: 0 8px; background: #050608; border: 1px solid #2A3445; color: #F2F5FA; font: inherit">
+            <input aria-label="Sponsorul milestone-ului {{g.no}}" value="{{g.s}}" placeholder="opțional" style="width: 100%; min-height: 40px; box-sizing: border-box; padding: 0 8px; background: #050608; border: 1px solid #2A3445; color: #E6C46A; font: inherit">
+            <span style="justify-self: start; padding: 2px 8px; background: {{g.pillBg}}; color: {{g.pillFg}}; border: 1px solid {{g.pillBorder}}; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 0.06em">{{g.state}}</span>
+            <input aria-label="Când se face milestone-ul {{g.no}}" value="{{g.when}}" placeholder="{{g.whenPh}}" style="width: 100%; min-height: 40px; box-sizing: border-box; padding: 0 8px; background: #050608; border: 1px solid #2A3445; color: #F2F5FA; font: inherit">
+            <input aria-label="Linkul clipului pentru milestone-ul {{g.no}}" value="{{g.clip}}" placeholder="{{g.clipPh}}" style="width: 100%; min-height: 40px; box-sizing: border-box; padding: 0 8px; background: #050608; border: 1px solid {{g.clipBorder}}; color: #8FE4FF; font: inherit">
+            <button type="button" aria-pressed="{{g.pressed}}" style="min-height: 40px; background: {{g.btnBg}}; border: 2px solid {{g.btnBorder}}; color: {{g.btnFg}}; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px; text-transform: uppercase">{{g.btn}}</button>
+          </div>
+        </sc-for>
+        <div style="padding: 14px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+          <button type="button" style="min-height: 44px; padding: 0 16px; background: transparent; border: 2px solid #2A3445; color: #F2F5FA; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px; text-transform: uppercase">Adaugă milestone</button>
+          <button type="button" style="min-height: 44px; padding: 0 18px; background: #3FD0FF; border: 0; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px; text-transform: uppercase">Salvează lista</button>
+          <span style="font-size: 14px; color: #8C97A8">«Făcut» + link = apare pe site la «Ai ratat? Vezi clipurile». Lista se ordonează singură după sumă.</span>
+        </div>
+      </section>
+
+      <!-- Advent calendar -->
+      <section id="advent" style="margin-top: 22px">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px"><h2 style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 32px; text-transform: uppercase">Calendar de Advent</h2><span style="font-size: 14px; color: #8C97A8">Alege o zi, completează, salvează. Zilele fără nimic arată doar data.</span></div>
+        <div style="margin-top: 12px; display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; align-items: start">
+          <div style="display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px">
+            <sc-for list="{{days}}" as="d" hint-placeholder-count="22">
+              <button type="button" aria-pressed="{{d.on}}" style="min-height: 76px; padding: 7px 8px; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; background: {{d.bg}}; border: {{d.bw}} solid {{d.border}}; color: #F2F5FA; text-align: left">
+                <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px; letter-spacing: 0.06em; color: #8C97A8">{{d.date}}</span>
+                <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 22px; line-height: 1; color: {{d.nColor}}">{{d.n}}</span>
+                <span style="margin-top: auto; font-size: 11px; line-height: 1.2; color: #C9D2DF">{{d.note}}</span>
+              </button>
+            </sc-for>
+          </div>
+          <div style="padding: 18px 20px; background: #0B1018; border: 2px solid #3FD0FF">
+            <p style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 0.1em; color: #8FE4FF">ZIUA 02 · 21 DECEMBRIE · TRECUTĂ</p>
+            <label style="display: block; margin-top: 12px; font-size: 14px; color: #AEB8C7">Ce e programat (max. 60 de caractere)<input value="Ora dublă" style="display: block; margin-top: 4px; width: 100%; min-height: 44px; box-sizing: border-box; padding: 0 10px; background: #050608; border: 2px solid #2A3445; color: #F2F5FA; font: inherit"></label>
+            <label style="display: block; margin-top: 10px; font-size: 14px; color: #AEB8C7">Sponsorul zilei<input value="Zona IT" style="display: block; margin-top: 4px; width: 100%; min-height: 44px; box-sizing: border-box; padding: 0 10px; background: #050608; border: 2px solid #2A3445; color: #E6C46A; font: inherit"></label>
+            <label style="display: block; margin-top: 10px; font-size: 14px; color: #AEB8C7">Clipul zilei<input value="https://clips.twitch.tv/[clipul-zilei-2]" style="display: block; margin-top: 4px; width: 100%; min-height: 44px; box-sizing: border-box; padding: 0 10px; background: #050608; border: 2px solid #2A3445; color: #8FE4FF; font: inherit"></label>
+            <p style="margin: 14px 0 6px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px; letter-spacing: 0.12em; color: #8C97A8">CUM APARE PE SITE</p>
+            <div style="width: 120px; min-height: 104px; padding: 9px; box-sizing: border-box; display: flex; flex-direction: column; gap: 2px; background: #0B1018; border: 1px solid #23415E">
+              <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px; letter-spacing: 0.08em; color: #8C97A8">21 DEC</span>
+              <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 28px; line-height: 1; color: #3FD0FF">02</span>
+              <span style="margin-top: auto; display: flex; align-items: center; gap: 4px; font-size: 12px; color: #C9D2DF"><svg width="12" height="12" viewBox="0 0 24 24" fill="#3FD0FF" aria-hidden="true"><path d="M7 4v16l13-8z"></path></svg>Ora dublă · Zona IT · clip</span>
+            </div>
+            <button type="button" style="margin-top: 14px; width: 100%; min-height: 46px; background: #3FD0FF; border: 0; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 17px; text-transform: uppercase">Salvează ziua</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1320}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const item = (id, label, on, badge, warn) => ({ id, label, line: on ? '#3FD0FF' : 'transparent', bg: on ? 'rgba(63,208,255,0.08)' : 'transparent', fg: on ? '#FFFFFF' : '#C9D2DF', w: on ? 700 : 400, badge: badge || '', badgeBg: warn ? '#F2C14E' : '#3FD0FF' });
+    const names = ['Pulover urât de Crăciun tot stream-ul', 'Provocarea cu baia de gheață', 'Seară de jocuri cu viewerii', 'Concurs de turtă dulce', 'Chatul îmi pictează fața', 'Karaoke cu colinde', 'Gătesc sarmale live', 'Stream IRL prin zăpadă', 'Chatul îmi alege culoarea părului', 'Turneu cu comunitatea', 'Baie în lacul înghețat', 'Obiectiv secret'];
+    const amts = ['100', '250', '500', '750', '1000', '1500', '2000', '2500', '3000', '4000', '5000', '7500'];
+    const goals = names.map((t, i) => {
+      const no = String(i + 1).padStart(2, '0');
+      const s = i === 5 || i === 8 ? 'Zona IT' : '';
+      if (i < 4) return { no, a: amts[i], t, s, state: 'FĂCUT ✓', pillBg: '#3FD0FF', pillFg: '#04101A', pillBorder: '#3FD0FF', when: `Ziua ${i + 1}`, whenPh: '', clip: `https://clips.twitch.tv/[clip-${no}]`, clipPh: '', clipBorder: '#23415E', btn: 'Făcut ✓', pressed: 'true', btnBg: '#3FD0FF', btnBorder: '#3FD0FF', btnFg: '#04101A', rowBg: 'transparent', noColor: '#3FD0FF' };
+      if (i === 4) return { no, a: amts[i], t, s, state: 'DEBLOCAT', pillBg: '#F2F5FA', pillFg: '#04101A', pillBorder: '#F2F5FA', when: 'vineri seara', whenPh: '', clip: '', clipPh: 'link după ce se face live', clipBorder: '#F2C14E', btn: 'Marchează făcut', pressed: 'false', btnBg: 'transparent', btnBorder: '#3FD0FF', btnFg: '#F2F5FA', rowBg: 'rgba(242,193,78,0.06)', noColor: '#F2F5FA' };
+      if (i === 5) return { no, a: amts[i], t, s, state: 'URMĂTORUL', pillBg: 'transparent', pillFg: '#8FE4FF', pillBorder: '#3FD0FF', when: '', whenPh: 'opțional', clip: '', clipPh: '—', clipBorder: '#2A3445', btn: '—', pressed: 'false', btnBg: 'transparent', btnBorder: '#1C2230', btnFg: '#7D8899', rowBg: 'transparent', noColor: '#8FE4FF' };
+      return { no, a: amts[i], t, s, state: 'BLOCAT', pillBg: 'transparent', pillFg: '#AEB8C7', pillBorder: '#2A3445', when: '', whenPh: 'opțional', clip: '', clipPh: '—', clipBorder: '#2A3445', btn: '—', pressed: 'false', btnBg: 'transparent', btnBorder: '#1C2230', btnFg: '#7D8899', rowBg: 'transparent', noColor: '#7D8899' };
+    });
+    const dates = ['20 DEC', '21 DEC', '22 DEC', '23 DEC', '24 DEC', '25 DEC', '26 DEC', '27 DEC', '28 DEC', '29 DEC', '30 DEC', '31 DEC', '1 IAN', '2 IAN', '3 IAN', '4 IAN', '5 IAN', '6 IAN', '7 IAN', '8 IAN', '9 IAN', '10 IAN'];
+    const notes = { 0: 'Startul · clip', 1: 'Ora dublă · Zona IT · clip', 2: 'Înghețat', 3: 'Înghețat', 4: 'Ajunul', 5: 'Crăciun · azi', 11: 'Revelion live', 12: 'Anul Nou', 21: 'Finalul programat' };
+    const days = dates.map((date, i) => {
+      const on = i === 1, today = i === 5, past = i < 5;
+      return { date, n: String(i + 1).padStart(2, '0'), note: notes[i] || '', on: String(on),
+        bg: on ? 'rgba(63,208,255,0.14)' : today ? '#0E1A28' : past ? '#0B1018' : '#080B10',
+        border: on ? '#3FD0FF' : today ? '#3FD0FF' : past ? '#23415E' : '#1C2230', bw: on ? '2px' : '1px',
+        nColor: past || on ? '#3FD0FF' : today ? '#FFFFFF' : '#6B7689' };
+    });
+    return {
+      groups: [
+        { name: 'LIVE', items: [item('cronometru', 'Cronometru'), item('inghetare', 'Îngheață'), item('ora-dubla', 'Ora dublă'), item('acum', 'Acum pe stream'), item('momente', 'Momente pe stream')] },
+        { name: 'CONȚINUT', items: [item('replici', 'Replicile lui Iceman', false, '4', true), item('milestones', 'Milestone Maraton', true, '1'), item('comunitar', 'Obiectiv comunitar'), item('advent', 'Calendar de Advent'), item('vot', 'Vot și provocări'), item('propuneri', 'Propuneri', false, '2')] },
+        { name: 'JOCURI', items: [item('roata', 'Roata și premiile'), item('premii', 'Premii de dat', false, '1'), item('bingo', 'Bingo'), item('coduri', 'Coduri secrete')] },
+        { name: 'OAMENI', items: [item('nume', 'Nume afișate'), item('insigne', 'Insigne și Fidelii'), item('legende', 'Legende'), item('moderatori', 'Moderatori')] },
+        { name: 'SPONSORI', items: [item('parteneri', 'Parteneri și logo-uri'), item('raport', 'Raport pe sponsor')] },
+        { name: 'OVERLAY', items: [item('overlay', 'Overlay OBS'), item('scena', 'Scena de pauză')] },
+      ],
+      goals, days,
+    };
+  }
+}
+</script>
+</body>
+</html>

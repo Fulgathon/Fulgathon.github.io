@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<title>/mod nou · telefon</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&amp;family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#050608}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #3FD0FF;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 390px; min-height: 1500px; box-sizing: border-box; background: #050608; color: #F2F5FA; font-family: Barlow, system-ui, sans-serif; font-size: 15px; line-height: 1.45">
+
+  <!-- Status bar, two rows, sticky -->
+  <header style="background: #0B1018; border-bottom: 1px solid #1C2230">
+    <div style="height: 52px; padding: 0 12px 0 16px; display: flex; align-items: center; gap: 10px">
+      <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 20px">ICE<span style="color: #3FD0FF">MARATON</span> <span style="font-style: normal; font-weight: 800; font-size: 12px; letter-spacing: 0.1em; color: #8C97A8">/MOD</span></span>
+      <span style="flex: 1 1 auto"></span>
+      <span title="Toate sursele merg" style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #C9D2DF"><span style="width: 8px; height: 8px; background: #3FD0FF"></span><span style="width: 8px; height: 8px; background: #3FD0FF"></span><span style="width: 8px; height: 8px; background: #3FD0FF"></span><span style="width: 8px; height: 8px; background: #3FD0FF"></span>4/4</span>
+      <button type="button" aria-label="Contul meu" style="width: 44px; height: 44px; display: grid; place-items: center; background: none; border: 1px solid #2A3445; color: #F2F5FA"><span style="width: 26px; height: 26px; display: grid; place-items: center; background: #9146FF; font-weight: 700; font-size: 13px">I</span></button>
+    </div>
+    <div style="height: 48px; padding: 0 16px; display: flex; align-items: center; gap: 10px; border-top: 1px solid #1A2230">
+      <span style="padding: 1px 8px; transform: skewX(-12deg); background: #D5162B; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px">LIVE</span>
+      <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 26px; line-height: 1">3z 14:27:40</span>
+      <span style="flex: 1 1 auto"></span>
+      <span style="padding: 2px 8px; border: 1px solid #3FD0FF; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px; color: #8FE4FF">MERGE</span>
+    </div>
+  </header>
+
+  <!-- Groups -->
+  <nav aria-label="Secțiuni" style="display: flex; gap: 6px; padding: 10px 16px; overflow: hidden; border-bottom: 1px solid #1C2230">
+    <sc-for list="{{groups}}" as="g" hint-placeholder-count="6">
+      <a href="#{{g.id}}" style="flex: none; min-height: 40px; display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; background: {{g.bg}}; border: 1px solid {{g.border}}; color: {{g.fg}}; text-decoration: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px; letter-spacing: 0.04em">{{g.l}}<sc-if value="{{g.badge}}" hint-placeholder-val="{{false}}"><span style="padding: 0 5px; background: {{g.badgeBg}}; color: #04101A; font-size: 12px">{{g.badge}}</span></sc-if></a>
+    </sc-for>
+  </nav>
+
+  <main style="padding: 14px 16px 30px; display: grid; gap: 12px">
+    <section style="padding: 14px; background: #0B1018; border: 1px solid #1C2230">
+      <h2 style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 22px; text-transform: uppercase">Cronometru</h2>
+      <div style="margin-top: 10px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+        <sc-for list="{{quick}}" as="q" hint-placeholder-count="4">
+          <button type="button" style="min-height: 56px; background: transparent; border: 2px solid {{q.b}}; color: #F2F5FA; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 24px">{{q.l}}</button>
+        </sc-for>
+      </div>
+      <div style="margin-top: 8px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+        <button type="button" style="min-height: 48px; background: transparent; border: 2px solid #8FE4FF; color: #DFF6FF; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px; text-transform: uppercase">Îngheață 5 min</button>
+        <button type="button" style="min-height: 48px; background: #F2F5FA; border: 0; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px; text-transform: uppercase">Ora dublă acum</button>
+      </div>
+      <p style="margin: 8px 0 0; font-size: 13px; color: #8C97A8">Ora dublă programată: azi 21:00 · Zona IT</p>
+    </section>
+
+    <section style="padding: 14px; background: #0B1018; border: 2px solid #3FD0FF">
+      <h2 style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 22px; text-transform: uppercase">De făcut acum · 4</h2>
+      <sc-for list="{{todo}}" as="t" hint-placeholder-count="4">
+        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #1A2230; display: flex; align-items: center; gap: 10px">
+          <span style="flex: 1 1 auto; min-width: 0; font-size: 14px"><span style="padding: 0 5px; margin-right: 6px; background: {{t.tagBg}}; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 11px">{{t.tag}}</span><strong>{{t.t}}</strong></span>
+          <button type="button" style="flex: none; min-height: 44px; padding: 0 12px; background: {{t.btnBg}}; border: 2px solid #3FD0FF; color: {{t.btnFg}}; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px; text-transform: uppercase">{{t.btn}}</button>
+        </div>
+      </sc-for>
+    </section>
+
+    <section style="padding: 14px; background: #0B1018; border: 1px solid #23415E">
+      <h2 style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 22px; text-transform: uppercase">Momente pe stream</h2>
+      <div style="margin-top: 10px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+        <sc-for list="{{moments}}" as="m" hint-placeholder-count="6">
+          <button type="button" style="min-height: 52px; padding: 6px 10px; background: #080B10; border: 1px solid #2A3445; color: #F2F5FA; text-align: left; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px; text-transform: uppercase">{{m}}</button>
+        </sc-for>
+      </div>
+      <p style="margin: 10px 0 0; font-size: 13px; color: #8C97A8">Pe overlay acum: <strong style="color: #F2F5FA">Legendă nouă · andreiGG</strong> · urmează 2</p>
+    </section>
+
+    <section style="padding: 14px; background: #0B1018; border: 1px solid #1C2230">
+      <h2 style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 22px; text-transform: uppercase">Acum pe stream</h2>
+      <p style="margin: 6px 0 0; font-size: 14px; color: #C9D2DF">Ranked cu chatul până la Diamond · League of Legends</p>
+      <label style="display: block; margin-top: 8px; font-size: 13px; color: #AEB8C7">Notă scurtă<input placeholder="ex: Pauză de masă, revin în 15 min" style="display: block; margin-top: 4px; width: 100%; min-height: 44px; box-sizing: border-box; padding: 0 10px; background: #050608; border: 2px solid #2A3445; color: #F2F5FA; font: inherit"></label>
+      <button type="button" style="margin-top: 8px; width: 100%; min-height: 46px; background: #3FD0FF; border: 0; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px; text-transform: uppercase">Arată 30 de minute</button>
+    </section>
+
+    <section style="padding: 14px; background: #0B1018; border: 1px solid #1C2230">
+      <div style="display: flex; align-items: baseline; justify-content: space-between"><h2 style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 22px; text-transform: uppercase">Intră acum</h2><span style="font-size: 12px; color: #8C97A8">azi +8 h 10 min</span></div>
+      <sc-for list="{{feed}}" as="f" hint-placeholder-count="4">
+        <p style="margin: 0; padding: 8px 0; border-bottom: 1px solid #1A2230; font-size: 14px"><strong style="font-family: 'Barlow Condensed', sans-serif; font-size: 16px; color: #3FD0FF; margin-right: 8px">{{f.t}}</strong><strong>{{f.u}}</strong> <span style="color: #AEB8C7">{{f.w}}</span></p>
+      </sc-for>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const g = (id, l, on, badge, warn) => ({ id, l, bg: on ? '#3FD0FF' : 'transparent', fg: on ? '#04101A' : '#C9D2DF', border: on ? '#3FD0FF' : '#2A3445', badge: badge || '', badgeBg: warn ? '#F2C14E' : on ? '#04101A' : '#3FD0FF' });
+    return {
+      groups: [g('live', 'LIVE', true, '2'), g('continut', 'CONȚINUT', false, '7', true), g('jocuri', 'JOCURI', false, '1'), g('oameni', 'OAMENI'), g('sponsori', 'SPONSORI'), g('overlay', 'OVERLAY')],
+      quick: [{ l: '+1 MIN', b: '#2A3445' }, { l: '+5 MIN', b: '#2A3445' }, { l: '+10 MIN', b: '#2A3445' }, { l: '−5 MIN', b: '#5A2A33' }],
+      todo: [
+        { tag: 'PREMIU', tagBg: '#3FD0FF', t: 'vladutz97 · VIP 24h', btn: 'Dat', btnBg: '#3FD0FF', btnFg: '#04101A' },
+        { tag: 'MILESTONE', tagBg: '#F2F5FA', t: '05 · Chatul îmi pictează fața', btn: 'Făcut', btnBg: 'transparent', btnFg: '#F2F5FA' },
+        { tag: 'REPLICI', tagBg: '#F2C14E', t: '4 grupuri sub 5 replici', btn: 'Deschide', btnBg: 'transparent', btnFg: '#F2F5FA' },
+        { tag: 'PROPUNERI', tagBg: '#C9D2DF', t: '2 propuneri noi', btn: 'Vezi', btnBg: 'transparent', btnFg: '#F2F5FA' },
+      ],
+      moments: ['Sărbătorește', 'Următorul milestone', 'Legendele', 'Codul sponsorului', 'Cod secret nou', 'Scena de pauză'],
+      feed: [
+        { t: '+2:00:00', u: 'andreiGG', w: 'donație 20 €' }, { t: '+18:00', u: 'Rares1337', w: 'sub Tier 3' },
+        { t: '+1:00:00', u: 'vladutz97', w: 'a dăruit 10 subs' }, { t: '+30:00', u: 'dianaplays', w: 'donație 5 €' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
