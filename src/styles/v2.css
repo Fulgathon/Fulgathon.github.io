@@ -569,7 +569,7 @@ a.ad-past:hover { border-color: var(--ice); }
 
 @media (prefers-reduced-motion: reduce) {
   .tip, .ms-name, .bdg:hover .tip, .bdg.open .tip, .ms:hover .ms-name, [data-style^="width:"], .fill, .vo-bar > span,
-  .calc, .vo-btn, .bgrid .bl, .bt2, .btn-more, .clip, a.ad-past, .ms, [role="tab"], .bdg .hex, .clip .clip-cta { transition: none !important; }
+  .calc, .vo-btn, .bgrid .bl, .bt2, .btn-more, .clip, a.ad-past, .ms, [role="tab"], .bdg .hex, .clip .clip-cta, .nr-tile { transition: none !important; }
   .tip-panel.on, .prize-wrap.on, .toast:not([hidden]), #mobile-menu:not([hidden]), #mobile-menu:not([hidden]) > *, .rows.show-all .more-row, .advent.show-all .ad.far { animation: none !important; }
   .clip:hover .clip-cta, .bdg:hover .hex, .bdg.open .hex { transform: none; }
   .btn-primary:active, .btn-ghost:active, .btn-twitch:active, .btn-red:active, .calc:active, .vo-btn:active, .bgrid .bl:active, .btn-more:active { transform: none; }
