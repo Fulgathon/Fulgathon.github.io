@@ -116,3 +116,11 @@ input, select, textarea { font: inherit; }
 
 /* Bingo: all 5 predictions happened. */
 .bingo-note.is-bingo { padding: 12px 14px; border: 2px solid var(--ice); background: #0B1018; color: #F2F5FA; font-weight: 700; }
+/* Bingo card: tiles and the line buttons around them. */
+.bt { position: relative; min-height: 78px; padding: 8px; display: flex; align-items: flex-end; font-size: 13px; font-weight: 600; line-height: 1.2; border: 2px solid #1A2230; overflow-wrap: anywhere; hyphens: auto; }
+.bl { min-width: 44px; min-height: 44px; padding: 0; background: transparent; border: 2px solid #2A3445; color: #AEB8C7; font-size: 20px; font-weight: 700; line-height: 1; cursor: pointer; }
+.bl:hover:not(:disabled) { border-color: var(--ice); color: #F2F5FA; }
+.bl.on { background: var(--ice); border-color: var(--ice); color: #04101A; }
+.bl:disabled { cursor: default; opacity: .45; }
+.bl.on:disabled { opacity: 1; }
+@media (max-width: 640px) { .bt { min-height: 64px; padding: 5px; font-size: 10.5px; } }

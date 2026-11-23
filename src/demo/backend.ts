@@ -37,7 +37,7 @@ interface DemoSpin { id: number; user: string; prize: number; at: number; fulfil
 interface DemoSuggestion { id: number; body: string; user: string; at: number; status: 'pending' | 'approved' | 'rejected' }
 
 export interface DemoState {
-  v: 3;
+  v: 4;
   seq: number;
   timer: {
     status: Status; startsAt: number | null; endsAt: number | null; pausedUntil: number | null;
@@ -70,6 +70,17 @@ export interface DemoState {
 const RATES = { tier1: [360, 1], tier2: [720, 1], tier3: [1080, 1], gift: [360, 1], bits: [240, 400], donation: [360, 1] } as const;
 const WHEEL_MINUTES = 120;
 const today = () => new Date().toLocaleDateString('sv-SE');
+/** The 12 lines of a 5×5 bingo card (ids row by row), each sorted. */
+function bingoLines(ids: number[]): number[][] {
+  if (ids.length !== 25) return [];
+  const L = [
+    ...[0, 1, 2, 3, 4].map((r) => ids.slice(r * 5, r * 5 + 5)),
+    ...[0, 1, 2, 3, 4].map((c) => [0, 1, 2, 3, 4].map((j) => ids[c + 5 * j])),
+    [0, 1, 2, 3, 4].map((j) => ids[6 * j]),
+    [0, 1, 2, 3, 4].map((j) => ids[20 - 4 * j]),
+  ];
+  return L.map((l) => [...l].sort((a, b) => a - b));
+}
 const WIN_LABELS = ['+5 minute pe cronometru', 'VIP 24 de ore', 'un shoutout live', 'un sub cadou de la Iceman',
   'alegerea următorului joc', 'o colindă de la Iceman', 'cronometrul înghețat 5 minute', 'nimic de data asta'];
 const LOSE = 7;
@@ -108,7 +119,7 @@ function seed(now: number): DemoState {
     ({ id, kind, tier, quantity, currency, seconds_added: seconds, doubled: false, user_login: user, user_name: user, at: now - minsAgo * MIN });
 
   return {
-    v: 3,
+    v: 4,
     seq: 1000,
     timer: {
       status: 'live',
@@ -157,12 +168,11 @@ function seed(now: number): DemoState {
       prize: '[PREMIU]',
       items: bingoItems.map((label, i) => ({ id: i + 1, label, happened: false })),
       pick: null,
-      // 340 simulated players, each with 5 random events.
-      others: Array.from({ length: 340 }, (_, k) => {
-        const ids = new Set<number>();
-        while (ids.size < 5) ids.add(1 + Math.floor(Math.random() * bingoItems.length));
-        return { user: k < NAMES.length ? NAMES[k] : `viewer_${k}`, items: [...ids] };
-      }),
+      // 340 simulated players, each with a random line of the card.
+      others: Array.from({ length: 340 }, (_, k) => ({
+        user: k < NAMES.length ? NAMES[k] : `viewer_${k}`,
+        items: pick(bingoLines(bingoItems.map((_, i) => i + 1))),
+      })),
       draws: [],
     },
   };
@@ -195,7 +205,7 @@ export class DemoBackend {
     if (raw) {
       try {
         const s = JSON.parse(raw) as DemoState;
-        if (s.v === 3) { this.raw = raw; this.cached = s; return s; }
+        if (s.v === 4) { this.raw = raw; this.cached = s; return s; }
       } catch { /* corrupt: reseed */ }
     }
     // No saved demo (or storage blocked): start from the seed, keep it in memory.
@@ -321,19 +331,19 @@ export class DemoBackend {
     this.mutate((s) => {
       if (s.viewer.state === 'out') fail('not_logged_in');
       if (s.bingo.closesAt !== null && Date.now() >= s.bingo.closesAt) fail('bingo_closed');
-      const ids = [...new Set(items.map(Number))];
-      if (ids.length !== 5 || ids.some((id) => !s.bingo.items.some((it) => it.id === id))) fail('bad_pick');
-      s.bingo.pick = ids.sort((a, b) => a - b);
+      const ids = [...new Set(items.map(Number))].sort((a, b) => a - b);
+      if (!bingoLines(s.bingo.items.map((it) => it.id)).some((l) => l.join() === ids.join())) fail('not_a_line');
+      s.bingo.pick = ids;
     });
   }
   bingoTick(id: number, happened: boolean) { this.mutate((s) => { const it = s.bingo.items.find((x) => x.id === id); if (it) it.happened = happened; }); }
   bingoSettings(closesAt: number | null, prize: string) { this.mutate((s) => { s.bingo.closesAt = closesAt; if (prize.trim()) s.bingo.prize = prize.trim(); }); }
   setBingoItems(list: { id?: number | string; label: string }[]) {
     this.mutate((s) => {
-      if (!Array.isArray(list) || list.length < 5 || list.length > 60 || list.some((x) => !String(x.label ?? '').trim() || String(x.label).length > 80)) fail('bad_items');
-      const keep = new Set(list.filter((x) => x.id !== undefined && x.id !== '').map((x) => Number(x.id)));
-      const used = [...(s.bingo.pick ?? []), ...s.bingo.others.flatMap((o) => o.items)];
-      if (used.some((id) => !keep.has(id))) fail('item_in_use');
+      if (!Array.isArray(list) || list.length !== 25) fail('need_25');
+      if (list.some((x) => !String(x.label ?? '').trim() || String(x.label).length > 80)) fail('bad_items');
+      const picked = s.bingo.pick !== null || s.bingo.others.length > 0;
+      if (picked && list.map((x) => Number(x.id)).join() !== s.bingo.items.map((it) => it.id).join()) fail('card_locked');
       let next = Math.max(0, ...s.bingo.items.map((x) => x.id));
       s.bingo.items = list.map((x) => {
         const old = s.bingo.items.find((it) => it.id === Number(x.id));

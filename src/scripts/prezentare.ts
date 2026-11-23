@@ -122,7 +122,7 @@ const steps: Step[] = [
   },
   {
     title: 'Bingo și propuneri', view: 'site', scroll: 'joaca',
-    body: `<p><strong>Bingo-ul maratonului</strong> e un joc de predicții: înainte de start (până pe 25 decembrie), fiecare viewer conectat cu Twitch alege <strong>5 lucruri</strong> care crede că se vor întâmpla. Alegerea rămâne salvată pe contul lui.</p>
+    body: `<p><strong>Bingo-ul maratonului</strong> e un joc de predicții: înainte de start (până pe 25 decembrie), fiecare viewer conectat cu Twitch alege <strong>o linie</strong> de pe cartonașul 5×5 (rând, coloană sau diagonală): 5 lucruri care crede că se vor întâmpla. Alegerea rămâne salvată pe contul lui.</p>
 <p>În maraton, moderatorii bifează pe /mod ce s-a întâmplat. Cine are toate cele 5 bifate intră pe lista de tragere la sorți pentru premiul cel mare; tragerea se face din pagina moderatorilor.</p>
 <p><strong>Propune o provocare</strong>: abonații trimit idei, iar moderatorii le aprobă cu un click.</p>`,
     actions: [

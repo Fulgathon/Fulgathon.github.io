@@ -20,9 +20,9 @@ const emoteStyle = 'flex: none; width: 44px; height: 54px; object-fit: contain';
         <h3 style={h3}>Bingo-ul maratonului</h3>
         <span style="font-size: 15px; color: #8C97A8"><strong data-text="bingoCount" style="color: #F2F5FA">{v.bingoCount}</strong> · <span data-text="bingoPlayers">{v.bingoPlayers}</span></span>
       </div>
-      <p style="margin: 4px 0 0; font-size: 15px; color: #AEB8C7">Ghicește 5 lucruri care se vor întâmpla în maraton. Dacă se întâmplă toate 5, intri la tragerea la sorți pentru <strong data-text="bingoPrize" style="color: #F2F5FA">{v.bingoPrize}</strong>.</p>
+      <p style="margin: 4px 0 0; font-size: 15px; color: #AEB8C7">Alege o linie de pe cartonaș (rând, coloană sau diagonală) cu 5 lucruri care crezi că se vor întâmpla în maraton. Dacă se întâmplă toate 5, intri la tragerea la sorți pentru <strong data-text="bingoPrize" style="color: #F2F5FA">{v.bingoPrize}</strong>.</p>
       <p data-text="bingoStatus" style="margin: 6px 0 0; font-size: 14px; font-weight: 600; color: var(--ice)">{v.bingoStatus}</p>
-      <div data-region="bingo" role="group" aria-label="Evenimentele de bingo" style="margin-top: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); gap: 6px" set:html={views.bingo(v)} />
+      <div data-region="bingo" role="group" aria-label="Cartonașul de bingo: alege o linie" style="margin-top: 16px; display: grid; grid-template-columns: 44px repeat(5, minmax(0, 1fr)); gap: 5px" set:html={views.bingo(v)} />
       <div role="status" style="margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
         <p data-text="bingoNote" data-toggle="is-bingo:isBingo" class="bingo-note" style="margin: 0; flex: 1 1 260px; font-size: 15px; color: #C9D2DF">{v.bingoNote}</p>
         <button type="button" {...iff('bingoOpen')} class={v.bingoBtnClass} data-attr="class:bingoBtnClass" data-action="bingoSave" data-text="bingoBtn" style={`min-height: 50px; padding: 0 22px; font-family: ${cond}; font-weight: 800; font-size: 19px; text-transform: uppercase`}>{v.bingoBtn}</button>

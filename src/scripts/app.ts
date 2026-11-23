@@ -141,7 +141,8 @@ const errors: Record<string, string> = {
   not_enough_watch: 'Ai nevoie de 2 ore de privit azi pentru rotire.',
   already_spun: 'Ai învârtit deja azi. Revino mâine!',
   bingo_closed: 'Alegerile pentru bingo s-au închis.',
-  bad_pick: 'Alege exact 5 evenimente diferite.',
+  bad_pick: 'Alege o linie întreagă de pe cartonaș.',
+  not_a_line: 'Alege un rând, o coloană sau o diagonală întreagă.',
   too_many: 'Ai trimis deja 3 propuneri. Mai încearcă peste câteva minute.',
 };
 function info(eyebrow: string, text: string) {
@@ -329,11 +330,19 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
       .catch((err) => { set({ spinning: false }); fail(err); });
   },
 
-  bingo: (i) => {
-    const id = Number(i);
+  bingoLine: (n) => {
     if (!(data.bingo.closesAt === null || Date.now() < data.bingo.closesAt)) return;
-    const pick = state.bingoPick.includes(id) ? state.bingoPick.filter((x) => x !== id)
-      : state.bingoPick.length < 5 ? [...state.bingoPick, id] : state.bingoPick;
+    const vals = derive(state, data);
+    const line = vals.bingoLines[Number(n)];
+    if (!line) return;
+    // The line's 5 events: read them off the same 5×5 layout derive uses.
+    const ids = data.bingo.items.slice(0, 25).map((it) => it.id);
+    const k = Number(n);
+    const lineIds = k < 5 ? ids.slice(k * 5, k * 5 + 5)
+      : k < 10 ? [0, 1, 2, 3, 4].map((j) => ids[k - 5 + 5 * j])
+      : k === 10 ? [0, 1, 2, 3, 4].map((j) => ids[6 * j])
+      : [0, 1, 2, 3, 4].map((j) => ids[20 - 4 * j]);
+    const pick = line.on ? [] : lineIds;
     storePick(pick);
     set({ bingoPick: pick });
   },

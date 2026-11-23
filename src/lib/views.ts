@@ -131,15 +131,17 @@ function board(v: Vals): string {
     .join('');
 }
 
+/** 5×5 card with line buttons on the edges: ↘ and ↓×5 on top, → per row, ↗ under the rows. */
 function bingo(v: Vals): string {
-  return v.bingo
-    .map(
-      (b) => `<button type="button" class="cell" aria-pressed="${b.pressed}"${b.disabled ? ' aria-disabled="true"' : ''} data-action="bingo" data-arg="${b.id}" data-key="bingo-${b.id}" style="position: relative; min-height: 76px; padding: 10px; text-align: left; display: flex; align-items: flex-end; font-size: 14px; font-weight: 600; line-height: 1.25; background: ${b.bg}; color: ${b.color}; border: 2px solid ${b.border}${b.disabled && !b.on ? '; cursor: default' : ''}">
-${b.hit ? CHECK : ''}
-${esc(b.text)}
-</button>`,
-    )
-    .join('');
+  const L = v.bingoLines;
+  const btn = (n: number) => {
+    const l = L[n];
+    return l ? `<button type="button" class="bl${l.on ? ' on' : ''}" aria-pressed="${l.pressed}" aria-label="${esc(l.aria)}" data-action="bingoLine" data-arg="${l.n}" data-key="bl-${l.n}"${l.disabled ? ' disabled' : ''}>${l.arrow}</button>` : '<span></span>';
+  };
+  const tile = (b: Vals['bingo'][number]) => `<div class="bt" style="background: ${b.bg}; color: ${b.color}; border-color: ${b.border}">${b.hit ? CHECK : ''}${esc(b.text)}</div>`;
+  let html = btn(10) + [5, 6, 7, 8, 9].map(btn).join('');
+  for (let r = 0; r < 5; r++) html += btn(r) + v.bingo.slice(r * 5, r * 5 + 5).map(tile).join('');
+  return html + btn(11);
 }
 
 function pops(v: Vals): string {

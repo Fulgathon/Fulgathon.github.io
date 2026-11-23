@@ -226,14 +226,28 @@ export function derive(s: State, d: SiteData) {
   const saved = s.bingoSaved;
   const mine = bingoOpen ? pick : (saved ?? []);
   const sameAsSaved = saved !== null && saved.length === pick.length && pick.every((id) => saved.includes(id));
-  const bingo = B.items.map((it) => {
+  // The card is 5×5 (row by row); a pick is one line: 5 rows, 5 columns, 2 diagonals.
+  const grid = B.items.slice(0, 25);
+  const ids = grid.map((it) => it.id);
+  const lineDefs: { ids: number[]; arrow: string; name: string }[] = grid.length === 25 ? [
+    ...[0, 1, 2, 3, 4].map((r) => ({ ids: ids.slice(r * 5, r * 5 + 5), arrow: '→', name: `rândul ${r + 1}` })),
+    ...[0, 1, 2, 3, 4].map((c) => ({ ids: [0, 1, 2, 3, 4].map((j) => ids[c + 5 * j]), arrow: '↓', name: `coloana ${c + 1}` })),
+    { ids: [0, 1, 2, 3, 4].map((j) => ids[6 * j]), arrow: '↘', name: 'diagonala de sus-stânga' },
+    { ids: [0, 1, 2, 3, 4].map((j) => ids[20 - 4 * j]), arrow: '↗', name: 'diagonala de jos-stânga' },
+  ] : [];
+  const sameSet = (a: number[], b: number[]) => a.length === b.length && a.every((x) => b.includes(x));
+  const bingoLines = lineDefs.map((l, n) => {
+    const on = mine.length === 5 && sameSet(l.ids, mine);
+    const names = l.ids.map((id) => grid.find((it) => it.id === id)?.label ?? '').join(', ');
+    return { n, arrow: l.arrow, on, pressed: bool(on), disabled: !bingoOpen, aria: `Alege ${l.name}: ${names}` };
+  });
+  const bingo = grid.map((it) => {
     const on = mine.includes(it.id);
-    const full = bingoOpen && !on && pick.length >= 5;
     const hit = !bingoOpen && it.happened;
     return {
-      id: it.id, text: it.label, on, hit, pressed: bool(on), disabled: !bingoOpen || full,
+      id: it.id, text: it.label, on, hit,
       bg: on ? (bingoOpen || hit ? 'var(--ice)' : 'rgba(63,208,255,0.12)') : '#0B1018',
-      color: on && (bingoOpen || hit) ? '#04101A' : full ? '#5A6577' : '#C9D2DF',
+      color: on && (bingoOpen || hit) ? '#04101A' : '#C9D2DF',
       border: on ? 'var(--ice)' : hit ? '#4A5568' : '#1A2230',
     };
   });
@@ -245,15 +259,15 @@ export function derive(s: State, d: SiteData) {
     ? (closeText ? `Alegerile se închid pe ${closeText}.` : 'Alegerile sunt deschise.')
     : 'Alegerile s-au închis. Moderatorii bifează pe parcurs ce se întâmplă pe stream.';
   const bingoNote = bingoOpen
-    ? (isOut ? 'Alege 5 și conectează-te cu Twitch ca să-ți salvezi linia.'
+    ? (isOut ? 'Alege o linie cu săgețile de pe margine și conectează-te cu Twitch ca s-o salvezi.'
       : sameAsSaved ? 'Linia ta e salvată. O poți schimba până la închidere.'
-      : saved ? 'Ai schimbat alegerile. Salvează ca să rămână așa.'
-      : 'Alege 5 evenimente și salvează-ți linia.')
+      : saved ? 'Ai schimbat linia. Salvează ca să rămână așa.'
+      : 'Alege un rând, o coloană sau o diagonală cu săgețile de pe margine, apoi salvează.')
     : isOut ? 'Conectează-te cu Twitch ca să-ți vezi linia.'
     : !saved ? 'Nu ai ales o linie înainte de închidere. Data viitoare!'
     : isBingo ? `BINGO! Toate cele 5 s-au întâmplat: ești pe lista de tragere la sorți pentru ${prize}.`
     : `${hits} din 5 s-au întâmplat până acum.`;
-  const bingoBtn = isOut ? 'Conectează-te ca să salvezi' : pick.length < 5 ? `Mai alege ${5 - pick.length}` : sameAsSaved ? 'Linie salvată ✓' : 'Salvează linia';
+  const bingoBtn = isOut ? 'Conectează-te ca să salvezi' : pick.length < 5 ? 'Alege o linie' : sameAsSaved ? 'Linie salvată ✓' : 'Salvează linia';
   const bingoBtnClass = isOut ? 'btn-twitch' : pick.length === 5 && !sameAsSaved ? 'btn-primary' : 'btn-ghost';
 
   const sug = s.suggestion;
@@ -308,7 +322,8 @@ export function derive(s: State, d: SiteData) {
     toastOn: toastOn && !s.menu, toastEyebrow, toastText, toastColor, toastBorder,
 
     bingo, isBingo, bingoOpen, bingoClosed: !bingoOpen, bingoStatus, bingoNote,
-    bingoCount: bingoOpen ? `${pick.length} / 5 alese` : `${hits} / 5 întâmplate`,
+    bingoLines,
+    bingoCount: bingoOpen ? (pick.length === 5 ? 'Linie aleasă' : 'Alege o linie') : `${hits} / 5 întâmplate`,
     bingoPlayers: B.players === 1 ? '1 jucător' : `${fmtInt(B.players)} jucători`,
     bingoBtn, bingoBtnClass, bingoPrize: prize,
 
