@@ -43,13 +43,6 @@ export const defaultPrizes: Prize[] = [
   ['Îngheți timpul', 'Îngheți cronometrul 5 minute'], ['Mai încearcă', 'Mai încearcă'],
 ].map(([s, f], i) => [s, f, prizeColors[i]] as Prize);
 
-export const schedule = [
-  { day: '20', title: 'Ziua 1: start', desc: 'Pornește cronometrul, primele milestone-uri și primul vot.', dayColor: 'var(--ice)' },
-  { day: '24', title: 'Ajunul Crăciunului', desc: 'Colinde, jocuri cu comunitatea, atmosferă de sărbătoare.', dayColor: '#F2F5FA' },
-  { day: '25', title: 'Crăciunul', desc: 'Deschidem cadourile împreună cu chatul.', dayColor: '#FFFFFF' },
-  { day: '??', title: 'Final programat: [DATA FINALĂ]', desc: 'Ultima zi, dacă nu se mai adaugă timp.', dayColor: '#4A5568' },
-];
-
 export const bingo = [
   'Rage quit', 'Zice „ultimul joc” și mai joacă 3', 'Pică netul sau OBS-ul', 'Cântă fără să-i ceară nimeni',
   'Raid cu peste 50 de oameni', 'Mănâncă pe stream', 'Adoarme pe cameră', 'Cineva dăruiește 10+ subs',

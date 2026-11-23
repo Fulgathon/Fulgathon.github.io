@@ -1,9 +1,8 @@
 ---
-// 07 Clasament + Programul de Crăciun.
+// 07 Clasament (the Christmas programme was removed on the owner's request).
 import SectionHead from './SectionHead.astro';
 import { v } from '../lib/ssr';
 import { views } from '../lib/views';
-import { schedule } from '../data/content';
 ---
 <section style="position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: clamp(56px, 8cqi, 112px) clamp(20px, 4cqi, 40px); display: flex; flex-wrap: wrap; gap: 48px 64px">
   <div id="board" style="flex: 1 1 440px; min-width: 0">
@@ -12,19 +11,5 @@ import { schedule } from '../data/content';
     <div id="panel-board" role="tabpanel" aria-labelledby={v.boardLabelledBy} data-attr="aria-labelledby:boardLabelledBy">
       <ol data-region="board" style="list-style: none; margin: 0; padding: 0" set:html={views.board(v)} />
     </div>
-  </div>
-  <div id="schedule" style="flex: 1 1 440px; min-width: 0">
-    <SectionHead compact tag="DEC" title="Programul de Crăciun" />
-    <ul style="list-style: none; margin: 0; padding: 0">
-      {schedule.map((s) => (
-        <li style="display: flex; align-items: center; gap: 20px; padding: 16px 0; border-bottom: 1px solid #1A2230">
-          <span style={`flex: none; width: 64px; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 48px; line-height: 0.9; color: ${s.dayColor}`}>{s.day}</span>
-          <span style="flex: 1 1 auto; min-width: 0">
-            <span style="display: block; font-weight: 700; font-size: 18px">{s.title}</span>
-            <span style="display: block; font-size: 15px; color: #8C97A8">{s.desc}</span>
-          </span>
-        </li>
-      ))}
-    </ul>
   </div>
 </section>
