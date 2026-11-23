@@ -25,6 +25,19 @@ const app = document.getElementById('app')!;
 const bar = document.getElementById('bar')!;
 const nav = document.getElementById('nav')!;
 const msgBox = document.getElementById('msg')!;
+const endDlg = document.getElementById('endDlg') as HTMLDialogElement;
+const endWord = document.getElementById('endWord') as HTMLInputElement;
+const endGo = document.getElementById('endGo') as HTMLButtonElement;
+/** «ÎNCHEIE» typed (with or without diacritics, any case). */
+const endWordOk = () => ['ÎNCHEIE', 'INCHEIE'].includes(endWord.value.trim().toLocaleUpperCase('ro-RO'));
+function openEndDialog() {
+  endWord.value = '';
+  endGo.disabled = true;
+  endDlg.showModal();
+  endWord.focus();
+}
+endWord.addEventListener('input', () => { endGo.disabled = !endWordOk(); });
+endWord.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); if (endWordOk()) endGo.click(); } });
 
 const errors: Record<string, string> = {
   not_moderator: 'Contul tău nu e moderator.',
@@ -398,7 +411,7 @@ const ICONS: Record<string, string> = {
 };
 const GROUPS: { id: string; name: string; title: string; lead: string; items: [string, string][] }[] = [
   { id: 'live', name: 'LIVE', title: 'Cronometru și stream', lead: 'Tot ce schimbi aici apare pe site și pe stream în câteva secunde.',
-    items: [['cronometru', 'Cronometru'], ['inghetare', 'Îngheață'], ['ora-dubla', 'Ora dublă'], ['acum', 'Acum pe stream'], ['stare', 'Contul de streamer']] },
+    items: [['cronometru', 'Cronometru'], ['inghetare', 'Îngheață'], ['ora-dubla', 'Ora dublă'], ['acum', 'Acum pe stream'], ['stare', 'Contul de streamer'], ['zona', 'Zonă periculoasă']] },
   { id: 'continut', name: 'CONȚINUT', title: 'Conținut', lead: 'Ce scrie pe site: replicile lui Iceman, milestone-urile, calendarul, votul.',
     items: [['replici', 'Replicile lui Iceman'], ['milestones', 'Milestone Maraton'], ['comunitar', 'Obiectiv comunitar'], ['advent', 'Calendar de Advent'], ['vot', 'Vot și provocări'], ['propuneri', 'Propuneri']] },
   { id: 'jocuri', name: 'JOCURI', title: 'Jocuri', lead: 'Roata, premiile de dat, bingo și codurile secrete.',
@@ -410,7 +423,8 @@ const GROUPS: { id: string; name: string; title: string; lead: string; items: [s
   { id: 'overlay', name: 'OVERLAY', title: 'Overlay OBS', lead: 'Linkul pentru OBS și variantele lui.',
     items: [['overlay', 'Overlay OBS']] },
 ];
-const groupOf = (id: string) => GROUPS.find((g) => g.id === id || g.items.some(([i]) => i === id || (i === 'vot' && id === 'provocari')));
+const groupOf = (id: string) => (id === 'todo' || id === 'sanatate' ? GROUPS[0]
+  : GROUPS.find((g) => g.id === id || g.items.some(([i]) => i === id || (i === 'vot' && id === 'provocari'))));
 
 /** How many things wait on each menu item (badges). */
 function waiting(id: string): { n: number; warn?: boolean } {
@@ -440,6 +454,29 @@ function navHtml(): string {
   }).join('');
 }
 
+/** The menu is one Tab stop: ↑/↓ (←/→ on phones), Home and End move inside it (M5).
+    A live refresh re-draws it without taking the focus away. */
+function setNav() {
+  const had = nav.contains(document.activeElement) ? (document.activeElement as HTMLAnchorElement).getAttribute('href') : null;
+  nav.innerHTML = navHtml();
+  const links = [...nav.querySelectorAll<HTMLAnchorElement>('a')];
+  const home = links.find((a) => a.classList.contains('cur')) ?? links.find((a) => a.closest('.ng.on')) ?? links[0];
+  links.forEach((a) => { a.tabIndex = a === home ? 0 : -1; });
+  if (had) (links.find((a) => a.getAttribute('href') === had) ?? home)?.focus({ preventScroll: true });
+}
+nav.addEventListener('keydown', (e) => {
+  const links = [...nav.querySelectorAll<HTMLAnchorElement>('a')].filter((a) => a.offsetParent !== null);
+  const i = links.indexOf(document.activeElement as HTMLAnchorElement);
+  if (i < 0) return;
+  const to = e.key === 'ArrowDown' || e.key === 'ArrowRight' ? Math.min(links.length - 1, i + 1)
+    : e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? Math.max(0, i - 1)
+    : e.key === 'Home' ? 0 : e.key === 'End' ? links.length - 1 : -1;
+  if (to < 0) return;
+  e.preventDefault();
+  links.forEach((a, j) => { a.tabIndex = j === to ? 0 : -1; });
+  links[to].focus();
+});
+
 /** Health rows → short status dots for the bar. */
 function healthDots(): string {
   const h = S.health;
@@ -456,7 +493,14 @@ function healthDots(): string {
     [h.tipeee?.error || tA === null || tA > 90 ? 'bad' : 'ok', 'Donații', short(tA)],
     [failed ? 'bad' : 'ok', 'Joburi', failed ? 'eroare' : 'OK'],
   ];
-  return `<a class="hdots" href="#sanatate" aria-label="Conexiuni">${dots.map(([c, n, v]) => `<span class="hd"><span class="dot ${c}"></span><span class="hd-n">${n}</span> <span class="muted">${v}</span></span>`).join('')}</a>`;
+  // Phones show one labelled chip instead of the dots (M4).
+  const bad = dots.filter(([c]) => c === 'bad'), warn = dots.filter(([c]) => c === 'warn');
+  const issues = [...bad, ...warn];
+  const [cls, text] = !navigator.onLine ? ['bad', 'Fără conexiune']
+    : issues.length ? [bad.length ? 'bad' : 'warn', `${issues.length} ${issues.length === 1 ? 'problemă' : 'probleme'} · ${issues.map(([, n]) => n).join(', ')}`]
+    : ['ok', 'Totul merge'];
+  const label = dots.map(([c, n, v]) => `${n}: ${c === 'ok' ? 'merge' : c === 'off' ? 'oprit' : c === 'warn' ? 'de verificat' : 'problemă'}, ${v}`).join('; ');
+  return `<a class="hdots" href="#sanatate" aria-label="Conexiuni. ${esc(label)}">${dots.map(([c, n, v]) => `<span class="hd" aria-hidden="true"><span class="dot ${c}"></span><span class="hd-n">${n}</span> <span class="muted">${v}</span></span>`).join('')}<span class="hsum ${cls}" aria-hidden="true">${esc(text)}</span></a>`;
 }
 
 function barHtml(): string {
@@ -647,6 +691,33 @@ function typedValues(): Map<string, string> {
 /** Set after an action succeeded: the next render starts the forms afresh. */
 let resetTyped = false;
 
+// ---- M3: unsaved changes. A card is «NESALVAT» while it holds a list draft or a field
+// whose value differs from what was loaded; leaving the page then asks first. ----
+const draftCards = (): Record<string, unknown> => ({ replici: S.linesDraft, milestones: S.goalsDraft, advent: S.adventDraft, bingo: S.bingoDraft, 'roata-premii': S.wheelDraft });
+function fieldChanged(el: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement): boolean {
+  if ((el as HTMLInputElement).readOnly || el.disabled || el.closest('dialog')) return false;
+  if (el instanceof HTMLInputElement && (el.type === 'checkbox' || el.type === 'radio')) return false;
+  return el instanceof HTMLSelectElement ? [...el.options].some((o) => o.selected !== o.defaultSelected) : el.value !== el.defaultValue;
+}
+function markUnsaved() {
+  const drafts = draftCards();
+  app.querySelectorAll<HTMLElement>('section.card[id]').forEach((card) => {
+    const on = !!drafts[card.id] || [...card.querySelectorAll<HTMLInputElement>('input, textarea, select')].some(fieldChanged);
+    card.classList.toggle('dirty', on);
+    const h = card.querySelector('h2');
+    const tag = h?.querySelector('.unsaved');
+    if (on && h && !tag) h.insertAdjacentHTML('beforeend', ' <span class="pill unsaved">Nesalvat</span>');
+    else if (!on) tag?.remove();
+  });
+}
+app.addEventListener('input', markUnsaved);
+app.addEventListener('change', markUnsaved);
+window.addEventListener('beforeunload', (e) => {
+  if (!app.querySelector('.card.dirty') && !Object.values(draftCards()).some(Boolean)) return;
+  e.preventDefault();
+  e.returnValue = '';
+});
+
 function render() {
   const active = document.activeElement;
   if (active && app.contains(active) && /^(INPUT|SELECT|TEXTAREA)$/.test(active.tagName)) { deferred = true; return; }
@@ -676,7 +747,7 @@ function render() {
   const poolOptions = (sel: number) => S.pool.map((c) =>
     `<option value="${c.id}" ${c.id === sel ? 'selected' : ''}>${esc(c.level)} · ${esc(c.title)}</option>`).join('');
 
-  nav.innerHTML = navHtml();
+  setNav();
   const sec: Record<string, () => string> = {
     'stare': () => `
     <section class="card" id="stare">
@@ -712,7 +783,6 @@ function render() {
             <button class="btn-primary" data-act="addCustom">Adaugă</button>
           </div>
         </div>
-        <div class="row"><button class="btn-ghost" data-act="end" style="border-color:#D5162B">Încheie subathonul</button></div>
       ` : `
 
         <p class="muted" style="margin-top:0">Înainte de start: data și ora de start (pentru numărătoarea inversă) și finalul programat.</p>
@@ -726,6 +796,15 @@ function render() {
           <button class="btn-primary" data-act="start">Pornește acum</button>
         </div>
       `}
+    </section>`,
+    // M2: ending is irreversible, so it lives apart from the time buttons and asks for a typed word.
+    'zona': () => `
+    <section class="card danger" id="zona">
+      <h2>Zonă periculoasă</h2>
+      ${live
+        ? `<p style="margin:0">«Încheie subathonul» oprește cronometrul pentru totdeauna: site-ul și overlay-ul arată «Încheiat», iar subs și donațiile nu mai adaugă timp. Nu se poate anula de aici.</p>
+           <div class="row"><button class="btn-ghost btn-danger" data-act="end">Încheie subathonul…</button></div>`
+        : `<p class="muted" style="margin:0">Butonul de încheiere apare aici doar cât timp cronometrul merge.</p>`}
     </section>`,
     'inghetare': () => `
     <section class="card" id="inghetare">
@@ -961,6 +1040,7 @@ function render() {
     const el = document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
     if (el && app.contains(el)) el.value = v;
   }
+  markUnsaved();
   // Opened with #section in the address: scroll there once the page exists.
   if (scrollTo) { const el = document.getElementById(scrollTo); scrollTo = ''; el?.scrollIntoView({ block: 'start' }); }
 }
@@ -1024,7 +1104,12 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   },
   double: () => call('mod_double_hour', { p_from: fromLocal(val('dblFrom')), p_minutes: num('dblMin'), p_sponsor: val('dblSponsor') }, 'Ora dublă programată.'),
   doubleNow: () => call('mod_double_hour', { p_from: new Date().toISOString(), p_minutes: num('dblMin') || 60, p_sponsor: val('dblSponsor') }, 'Ora dublă a început.'),
-  end: () => confirm('Sigur închei subathonul? Cronometrul se oprește.') && call('mod_end_timer', {}, 'Subathonul s-a încheiat.'),
+  end: () => openEndDialog(),
+  endConfirm: () => {
+    if (!endWordOk()) return;
+    endDlg.close();
+    return call('mod_end_timer', {}, 'Subathonul s-a încheiat.');
+  },
   closeRound: (el) => call('mod_close_round', { p_round: Number(el.dataset.id) }, 'Runda s-a închis.'),
   reroll: () => { autoDraft(); render(); },
   openRound: () => {
@@ -1183,8 +1268,15 @@ function route(scroll: boolean) {
   const id = decodeURIComponent(location.hash.slice(1));
   const g = id ? groupOf(id) : null;
   if (g && g.id !== S.page) { S.page = g.id; deferred = false; if (S.me) render(); }
-  else if (S.me?.is_moderator) nav.innerHTML = navHtml();
-  if (scroll && id) requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: 'start' }));
+  else if (S.me?.is_moderator) setNav();
+  if (scroll && id) requestAnimationFrame(() => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ block: 'start' });
+    // Keyboard and screen-reader users land in the section they asked for (M5).
+    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
+    el.focus({ preventScroll: true });
+  });
   // Phone: the menu is one scrolling row; slide it so the open group is in view.
   requestAnimationFrame(() => {
     const on = nav.querySelector<HTMLElement>('.ng.on');
@@ -1194,6 +1286,10 @@ function route(scroll: boolean) {
   });
 }
 window.addEventListener('hashchange', () => route(true));
+// A skip link to the section already in the address doesn't change the hash: open it anyway.
+document.querySelectorAll<HTMLAnchorElement>('.skip').forEach((a) => a.addEventListener('click', () => {
+  if (location.hash === a.hash) requestAnimationFrame(() => route(true));
+}));
 // The phone menu sticks right under the status bar, whatever its height.
 new ResizeObserver(() => document.documentElement.style.setProperty('--bar-h', `${bar.offsetHeight}px`)).observe(bar);
 route(false);
@@ -1223,7 +1319,15 @@ if (demo) {
   for (const table of ['timer', 'stats', 'vote_rounds', 'round_challenges', 'spins']) {
     ch.on('postgres_changes', { event: '*', schema: 'public', table }, refresh);
   }
-  ch.subscribe();
+  // Realtime only sends what happens while connected: reload whenever the channel (re)joins,
+  // the tab comes back, or the network returns, so nothing stays minutes old (B-14).
+  ch.subscribe((status) => { if (status === 'SUBSCRIBED') refresh(); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    refresh();
+  });
+  window.addEventListener('online', () => { refresh(); bar.innerHTML = barHtml(); });
+  window.addEventListener('offline', () => { bar.innerHTML = barHtml(); });
   db.auth.onAuthStateChange(() => refresh());
   void load();
   // The health card refreshes on its own every minute (only that card: forms being typed stay as they are).

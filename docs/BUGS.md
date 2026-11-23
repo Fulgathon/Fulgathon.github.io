@@ -37,7 +37,7 @@ Severity: **Critical** = money, data loss, auth bypass or the site down for ever
 | B-11 | Medium | After data has loaded, a lost connection isn't shown; the clock may be minutes behind reality | Open |
 | B-12 | Medium | Parallel requests get past the «3 suggestions per 10 minutes» limit | Migration (not applied) |
 | B-13 | Medium | `mod_freeze` / `mod_freeze_until` with an empty value erase the end time (clock dead) | Migration (not applied) |
-| B-14 | Medium | /mod relies on Realtime only: after laptop sleep or a dropped socket it shows old numbers | Open |
+| B-14 | Medium | /mod relies on Realtime only: after laptop sleep or a dropped socket it shows old numbers | Fixed: reloads when the channel (re)joins, the tab comes back or the network returns |
 | B-15 | Medium | `check-sub`: no throttle (can exhaust Iceman's Twitch API quota) and no message when it fails | Open |
 | B-16 | Medium | `community_goals`: anon/authenticated hold every table privilege (RLS blocks writes, TRUNCATE isn't reachable from the API) | Migration (not applied) |
 | B-17 | Medium | Deleting all milestones or prizes on /mod leaves the placeholder list on the site | Open |

@@ -87,7 +87,7 @@ const favicon = await getImage({ src: emote, format: 'png', width: 64 });
       .chip.run { border: 1px solid var(--ice); color: #8FE4FF; }
       .chip.frost { background: #0E1A28; border: 1px solid #8FE4FF; color: #DFF6FF; }
       .chip.dbl { background: #F2F5FA; color: #04101A; }
-      .hdots { display: flex; flex-wrap: wrap; gap: 4px 14px; text-decoration: none; color: #C9D2DF; font-size: 13px; }
+      .hdots { min-height: 44px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; text-decoration: none; color: #C9D2DF; font-size: 13px; }
       .hd { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
       .dot { width: 9px; height: 9px; display: inline-block; }
       .dot.ok { background: var(--ice); } .dot.warn { background: #F2C14E; } .dot.bad { background: #D5162B; } .dot.off { background: #4A5568; }
@@ -179,16 +179,49 @@ const favicon = await getImage({ src: emote, format: 'png', width: 64 });
         .mmain { padding: 16px 12px 80px; }
         .mmain .grid > .card, .aside > .card { scroll-margin-top: calc(var(--bar-h, 104px) + 72px); }
       }
+      /* M2 danger zone + dialog */
+      .card.danger { border-color: #D5162B; }
+      .btn-danger { background: #D5162B; border: 1px solid #D5162B; color: #FFFFFF; }
+      .btn-ghost.btn-danger { background: transparent; color: #F2F5FA; }
+      .btn-danger:hover:not(:disabled) { background: #E8253A; border-color: #E8253A; }
+      .btn-danger:disabled { background: transparent; border-color: #2A3445; color: #8C97A8; cursor: not-allowed; }
+      .dlg { width: min(460px, calc(100% - 32px)); padding: 20px; background: #0B1018; color: #F2F5FA; border: 2px solid #D5162B; box-shadow: 8px 8px 0 #000; }
+      .dlg::backdrop { background: rgba(5, 6, 8, 0.8); }
+      .dlg .field { width: 100%; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: .08em; text-transform: uppercase; }
+      /* M3 unsaved changes: tag next to the title, the save row sticks to the bottom while editing */
+      .pill.unsaved { margin-left: 6px; vertical-align: 3px; background: #F2C14E; color: #1A1300; font-style: normal; }
+      .card.dirty { border-color: #6B5A26; }
+      .card.dirty .row:has(> .btn-primary) { position: sticky; bottom: 0; z-index: 2; margin: 10px -18px -18px; padding: 10px 18px; background: #0B1018; border-top: 1px solid #6B5A26; }
+      /* M4 one status chip on phones */
+      .hsum { display: none; padding: 3px 10px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: .04em; white-space: nowrap; }
+      .hsum.ok { background: transparent; border: 1px solid var(--ice); color: #8FE4FF; }
+      @media (max-width: 900px) { .hd { display: none; } .hsum { display: inline-block; } }
+      /* M5 skip links: hidden until focused */
+      .skip { position: fixed; left: 12px; top: -80px; z-index: 50; min-height: 44px; display: inline-flex; align-items: center; padding: 0 14px; background: var(--ice); color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px; text-transform: uppercase; text-decoration: none; }
+      .skip:focus { top: 12px; }
+      .card:focus { outline: none; } .card:focus-visible { outline: 2px solid var(--ice); outline-offset: 2px; }
       code { padding: 0 6px; background: #0E1622; border: 1px solid #23415E; color: #8FE4FF; font-size: 0.92em; }
 </style>
   </head>
   <body>
+    <div class="skips"><a class="skip" href="#cronometru">Sari la cronometru</a><a class="skip" href="#todo">Sari la «De făcut acum»</a></div>
     <header class="mbar" id="bar"></header>
     <div class="mshell">
       <nav class="mnav" id="nav" aria-label="Secțiuni" hidden></nav>
       <main id="app" class="mmain" aria-live="polite"><p class="muted" style="margin-top: 20px">Se încarcă…</p></main>
     </div>
     <div class="msg" id="msg" role="status" hidden></div>
+    <dialog id="endDlg" class="dlg" aria-labelledby="endDlgT">
+      <form method="dialog">
+        <h2 id="endDlgT">Închei subathonul?</h2>
+        <p style="margin:0">Cronometrul se oprește pentru totdeauna, iar site-ul și overlay-ul arată «Încheiat». Scrie <strong>ÎNCHEIE</strong> ca să confirmi.</p>
+        <label class="inline" style="display:flex;margin-top:12px">Confirmare<input class="field" id="endWord" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+        <div class="row">
+          <button class="btn-ghost" value="cancel" formnovalidate>Renunță</button>
+          <button type="button" class="btn-danger" id="endGo" data-act="endConfirm" disabled>Încheie subathonul</button>
+        </div>
+      </form>
+    </dialog>
     <script>
       import '../scripts/mod';
     </script>
