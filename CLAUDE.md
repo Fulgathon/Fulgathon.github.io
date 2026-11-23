@@ -45,11 +45,12 @@ Image URLs in the design point at canvas storage. Map them to local files:
 
 ## Hosting: Cloudflare
 
-The site is served by **Cloudflare Workers (static assets)** at https://icemaraton.icemaraton.workers.dev (account "Fulgathon"). It was on GitHub Pages until 23 Nov 2026.
+The site is served by **Cloudflare Workers (static assets)** at **https://icemanlucky.ro** (also www.icemanlucky.ro; both are Custom Domains on the `icemaraton` Worker, account "Fulgathon", since 23 Nov 2026). The original https://icemaraton.icemaraton.workers.dev still works. It was on GitHub Pages until 23 Nov 2026.
 
 - Static files only: Astro builds to `dist/`, no server code (`wrangler.jsonc`).
 - Deploy from this computer with `npm run deploy` (build + `wrangler deploy`). Pushing to GitHub does **not** deploy; the GitHub repo only keeps the code.
-- Base path is `/`. `SITE_URL` in the deploy script sets canonical/OG links; change it if a custom domain is added.
+- Base path is `/`. `SITE_URL` in the deploy script (https://icemanlucky.ro) sets canonical/OG links.
+- Supabase → Authentication → URL Configuration: Site URL https://icemanlucky.ro; Redirect URLs must list every address people log in from (`https://icemanlucky.ro/**`, `https://www.icemanlucky.ro/**`, the workers.dev one while it's used), or Twitch login falls back to the homepage.
 - Suggested stack (confirm with the owner before starting): **Astro** with static output and plain CSS, a small amount of client-side JS for the interactive parts. Vite + vanilla TypeScript is a fine alternative. Avoid anything that needs a server at runtime.
 - Phase 2 needs a backend, which can't be a static host. Plan it as a separate service (for example Supabase or Cloudflare Workers) that the static site calls. See `docs/twitch-integration.md`.
 
@@ -78,7 +79,7 @@ Build the static site so it matches the design, with every interaction working o
 ## Decided
 
 - **Name:** ICEMARATON (Iceman + maraton), renamed from FULGATHON on 22 Nov 2026; the design files in `design/` still show the old name. Snowflakes remain the visual theme (and mark each 30 minutes watched toward the daily wheel). Band line: "Fiecare sub e un fulg. Facem viscol."
-- **Hosting:** Cloudflare Workers static assets (https://icemaraton.icemaraton.workers.dev), deployed with wrangler from this computer; backend on Supabase.
+- **Hosting:** Cloudflare Workers static assets at https://icemanlucky.ro (custom domain from 23 Nov 2026; workers.dev still works), deployed with wrangler from this computer; backend on Supabase.
 - **Dates:** 20 Dec 2026 12:00 → scheduled end 10 Jan 2027 12:00 (Romania time), set in the database (moderators can change them on /mod).
 - **Time rates (23 Nov 2026):** 1 € donation +6 min, Tier 1/Prime +6, Tier 2 +12, Tier 3 +18, gift sub +6 each, 400 bits +4. Focus on donations over subs.
 - **Milestone Maraton** (was "Obiectivele de Crăciun"): challenges unlocked by the donation total in euros; Iceman and moderators edit the list on /mod.
@@ -100,4 +101,4 @@ Build the static site so it matches the design, with every interaction working o
 - **Prizes:** wheel prizes, "Ora dublă" schedule; the bingo prize (a sponsor product; set it on /mod → Bingo).
 - **Multistreaming:** whether watch time from other platforms (YouTube, Kick, TikTok) should count; see the note in `docs/go-live.md`.
 - **Sponsors:** the main sponsor in the mockup is **Zona IT** (an example the owner gave; confirm it's signed). "ZONA IT" is plain text standing in for the official logo. Still needed: names, logos (ideally SVG plus all-white versions), links, tiers (main partner / partners / supporters), what each one backs, the discount code (`ICEMAN10` is a placeholder) and the contact email for new sponsors.
-- Discord invite, social links, repo name, custom domain or not.
+- Discord invite, social links, repo name, whether www.icemanlucky.ro should redirect to icemanlucky.ro.
