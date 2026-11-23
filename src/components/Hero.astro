@@ -1,8 +1,8 @@
 ---
-// Hero (#timer): a live stage. Desktop: «INTRĂ ACUM» (left) · Iceman reacting in
-// a bubble (middle) · «Cât adaugi tu?» (right); then the line, the timer card
+// Hero (#timer): a live stage. Desktop (two columns, DESIGN.md §4): Iceman reacting
+// in a bubble with «INTRĂ ACUM» under him (left); the line, the timer card
 // (Acum pe stream, the jumping clock, Strâns · Prezentat de · Următorul
-// milestone, the rate chips) and the two buttons. Phone: the bubble sits on the
+// milestone, the rate chips), the buttons and «Cât adaugi tu?» (right). Phone: the bubble sits on the
 // illustration with one «intră acum» strip, the calculator goes under the timer.
 import { getImage } from 'astro:assets';
 import logo from '../../assets/logo-mascot.webp';
@@ -20,6 +20,8 @@ const mascotSizes = '(min-width: 3400px) 1040px, (min-width: 2400px) 694px, (max
 const mascotAvif = await getImage({ src: logo, format: 'avif', quality: 48, widths: mascotWidths, sizes: mascotSizes });
 const mascotWebp = await getImage({ src: logo, format: 'webp', quality: 72, widths: mascotWidths, sizes: mascotSizes });
 const units = [['dd', 'ZILE'], ['hh', 'ORE'], ['mm', 'MINUTE'], ['ss', 'SECUNDE']] as const;
+// No dead «Donează» links: the donate buttons appear once site.links.donate is set (V2).
+const hasDonate = !!site.links.donate && site.links.donate !== '#';
 const FLAKE = 'M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 4l3 2 3-2M9 20l3-2 3 2';
 ---
 <section id="timer" aria-label="ICEMARATON: timp rămas" class="hero">
@@ -76,7 +78,7 @@ const FLAKE = 'M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 4l3 2 3-2M9 20l3-2 3 2';
           </div>
           <p style={`margin: 4px 0 0; font-family: ${cond}; font-weight: 800; font-style: italic; font-size: 18px; color: #F2F5FA`}>≈ <span data-text="calcFun">{v.calcFun}</span></p>
           <p {...iff('calcDouble')} style="margin: 4px 0 0; font-size: 13px; font-weight: 700; color: var(--ice)">Ora dublă: acum valorează ×2.</p>
-          <a class="btn-primary" href={site.links.donate} style={`margin-top: 12px; min-height: 46px; display: flex; align-items: center; justify-content: center; text-decoration: none; font-family: ${cond}; font-weight: 800; font-size: 20px; text-transform: uppercase`}>Donează</a>
+          {hasDonate && <a class="btn-primary" href={site.links.donate} style={`margin-top: 12px; min-height: 46px; display: flex; align-items: center; justify-content: center; text-decoration: none; font-family: ${cond}; font-weight: 800; font-size: 20px; text-transform: uppercase`}>Donează</a>}
         </div>
       </div>
 
@@ -123,19 +125,24 @@ const FLAKE = 'M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 4l3 2 3-2M9 20l3-2 3 2';
           <div class="bar" style="margin-top: 16px" role="img" aria-label={`Spre următorul milestone: ${v.progressLabel}`} data-attr="aria-label:progressAria"><span data-style="width:progressPct" style={`width: ${v.progressPct}`}></span></div>
           <p {...iff('isFrozen')} style="margin: 12px 0 0; font-size: 14px; color: #C9D2DF"><strong style={`font-family: ${cond}; font-weight: 800; font-style: italic; color: var(--ice); letter-spacing: 0.04em`}>ÎNGHEȚAT</strong> <span data-text="frozenText">{v.frozenText}</span></p>
           <p {...iff('hasDouble')} style="margin: 12px 0 0; font-size: 14px; color: #C9D2DF"><strong style={`font-family: ${cond}; font-weight: 800; font-style: italic; color: #FFFFFF; letter-spacing: 0.04em`}>ORA DUBLĂ</strong> <span data-text="doubleText">{v.doubleText}</span></p>
-          <div class="rates">
-            <span class="rates-title" style={`font-family: ${cond}; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #AEB8C7; margin-right: 6px`}>Cum adaugi timp</span>
-            {rateChips.map(([a, b]) => <span class="rate"><strong style="color: #F2F5FA">{a}</strong> = {b}</span>)}
-          </div>
-          <p class="rates-hint">Cum adaugi timp: rând care se dă cu degetul →</p>
         </div>
       </div>
 
       <div class="st-cta">
         <div class="cta-row">
-          <a class="btn-primary" href={site.links.twitch} style={`font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 24px`}>Urmărește live</a>
-          <a class="btn-ghost cta-donate" href={site.links.donate} style={`font-family: ${cond}; font-weight: 800; font-size: 22px`}>Donează / dă un sub</a>
+          <a class="btn-primary" href={site.links.twitch} style={`font-family: ${cond}; font-weight: 900; font-style: italic`}>Urmărește live</a>
+          {hasDonate && <a class="btn-ghost cta-donate" href={site.links.donate} style={`font-family: ${cond}; font-weight: 800`}>Donează</a>}
+          <a class="btn-ghost" href={site.links.subscribe} style={`font-family: ${cond}; font-weight: 800`}>Dă un sub</a>
         </div>
+      </div>
+
+      <!-- How to add time: under the buttons on desktop, right under the timer card on phones -->
+      <div class="st-rates">
+        <div class="rates">
+          <span class="rates-title" style={`font-family: ${cond}; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #AEB8C7; margin-right: 6px`}>Cum adaugi timp</span>
+          {rateChips.map(([a, b]) => <span class="rate"><strong style="color: #F2F5FA">{a}</strong> = {b}</span>)}
+        </div>
+        <p class="rates-hint">Cum adaugi timp: rând care se dă cu degetul →</p>
       </div>
     </div>
   </div>

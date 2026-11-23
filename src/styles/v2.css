@@ -35,16 +35,19 @@
 /* ---- Hero ---- */
 .hero { position: relative; overflow: hidden; text-align: center; background: linear-gradient(180deg, #071224 0%, #050608 70%); padding: clamp(22px, 3cqi, 40px) 0 clamp(32px, 4cqi, 56px); }
 .hero-eyebrow { position: relative; margin: 0; display: flex; align-items: center; justify-content: center; gap: 14px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: clamp(13px, 1.2cqi, 16px); letter-spacing: 0.3em; text-transform: uppercase; color: #AEB8C7; }
-.hero h1 { margin: 8px 0 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: min(10.4cqi, 150px); line-height: 0.85; text-transform: uppercase; white-space: nowrap; }
-.stage { position: relative; margin: max(-2.1cqi, -30px) auto 0; display: grid; grid-template-columns: 300px minmax(0, 1fr) 300px; grid-template-areas: "ev mascot calc" "line line line" "timer timer timer" "cta cta cta"; gap: 0 24px; align-items: end; text-align: left; }
-.st-ev { grid-area: ev; margin-bottom: 36px; }
-.st-mascot { grid-area: mascot; position: relative; }
-.st-calc { grid-area: calc; margin-bottom: 36px; }
-.st-line { grid-area: line; text-align: center; }
+.hero h1 { margin: 8px 0 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: min(6.2cqi, 92px); line-height: 0.85; text-transform: uppercase; white-space: nowrap; }
+/* Desktop (DESIGN.md §4): mascot left, the line + timer card right, so the digits and «Prezentat de»
+   are on the first screen; the feed sits under the mascot, buttons and calculator under the card. */
+.stage { position: relative; margin: 14px auto 0; display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); grid-template-areas: "mascot line" "mascot timer" "ev cta" "ev rates" "ev calc"; gap: 0 36px; align-items: start; text-align: left; }
+.st-ev { grid-area: ev; margin-top: 14px; }
+.st-mascot { grid-area: mascot; position: relative; margin-top: -10px; }
+.st-calc { grid-area: calc; margin-top: 28px; }
+.st-line { grid-area: line; text-align: left; }
 .st-timer { grid-area: timer; justify-self: center; width: 100%; max-width: 1040px; }
 .st-cta { grid-area: cta; }
-.mascot { position: relative; display: block; width: 520px; max-width: 100%; height: auto; margin: 0 auto; filter: drop-shadow(0 20px 60px rgba(63, 208, 255, 0.25)); }
-.bubble { --acc: var(--ice); position: absolute; z-index: 3; top: 62px; right: -18px; width: 252px; padding: 11px 14px 12px 17px; background: rgba(8, 13, 20, 0.86); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border: 1px solid color-mix(in srgb, var(--acc) 45%, #1C2230); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55), 0 0 28px color-mix(in srgb, var(--acc) 16%, transparent); color: #F2F5FA; text-align: left; transform-origin: 12% 100%; transition: border-color var(--m-base) var(--m-ease), box-shadow var(--m-base) var(--m-ease), translate var(--m-base) var(--m-ease); }
+.st-rates { grid-area: rates; }
+.mascot { position: relative; display: block; width: 100%; max-width: 460px; height: auto; margin: 0 auto; filter: drop-shadow(0 20px 60px rgba(63, 208, 255, 0.25)); }
+.bubble { --acc: var(--ice); position: absolute; z-index: 3; top: 4%; right: -6%; width: 252px; padding: 11px 14px 12px 17px; background: rgba(8, 13, 20, 0.86); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border: 1px solid color-mix(in srgb, var(--acc) 45%, #1C2230); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55), 0 0 28px color-mix(in srgb, var(--acc) 16%, transparent); color: #F2F5FA; text-align: left; transform-origin: 12% 100%; transition: border-color var(--m-base) var(--m-ease), box-shadow var(--m-base) var(--m-ease), translate var(--m-base) var(--m-ease); }
 .bubble::before { content: ''; position: absolute; left: -1px; top: -1px; bottom: -1px; width: 3px; background: var(--acc); }
 .bubble:hover, .bubble:focus-within { border-color: var(--acc); box-shadow: 0 22px 48px rgba(0, 0, 0, 0.6), 0 0 36px color-mix(in srgb, var(--acc) 28%, transparent); translate: 0 -2px; }
 .bub-corner { position: absolute; top: -1px; right: -1px; width: 16px; height: 16px; border-top: 2px solid var(--acc); border-right: 2px solid var(--acc); pointer-events: none; }
@@ -72,20 +75,20 @@
 .hero-empty { margin: 6px 0 0; padding: 12px; border: 1px dashed #2A3445; font-size: 14px; color: #8C97A8; }
 .chip-ev { display: none; position: absolute; left: 0; right: 0; bottom: 6px; align-items: center; gap: 8px; padding: 8px 10px; background: rgba(14, 26, 40, 0.95); border: 1px solid var(--ice); text-align: left; }
 .calc-card { padding: 18px; background: rgba(9, 12, 17, 0.92); border: 1px solid #23415E; }
-.calc-grid { margin-top: 12px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.calc-grid { margin-top: 12px; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
 .calc { min-height: 44px; padding: 0 4px; background: transparent; color: #F2F5FA; border: 1px solid #2A3445; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px; line-height: 1.05; }
 .calc:hover { border-color: var(--ice); }
 .calc.on { background: var(--ice); color: #04101A; border-color: var(--ice); }
 .calc-add { margin: 14px 0 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 46px; line-height: 1; color: var(--ice); }
-.calc-row { display: block; }
-.display { position: relative; margin: 8px auto 0; display: flex; align-items: center; justify-content: center; gap: 22px; }
-.display p { margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: clamp(30px, 2.8cqi, 40px); line-height: 1; text-transform: uppercase; letter-spacing: 0.01em; }
-.display .rule { width: 90px; height: 2px; }
-.sub-line { position: relative; margin: 12px auto 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: clamp(13px, 1.2cqi, 17px); letter-spacing: 0.32em; text-transform: uppercase; color: #8C97A8; }
+.calc-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.display { position: relative; margin: 0; display: flex; align-items: center; justify-content: flex-start; gap: 22px; }
+.display p { margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: clamp(26px, 2.2cqi, 32px); line-height: 1; text-transform: uppercase; letter-spacing: 0.01em; }
+.display .rule { display: none; width: 90px; height: 2px; }
+.sub-line { position: relative; margin: 8px 0 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 0.22em; text-transform: uppercase; color: #8C97A8; }
 .sub-line .sl-short { display: none; }
-.timer-card { position: relative; margin: 36px auto 0; padding: clamp(16px, 2.2cqi, 28px) clamp(16px, 2.4cqi, 32px); background: #090C11; border: 1px solid #1C2230; text-align: left; }
+.timer-card { position: relative; margin: 14px auto 0; padding: 20px 26px; background: #090C11; border: 1px solid #1C2230; text-align: left; }
 .units { position: relative; margin-top: 16px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(6px, 1.1cqi, 16px); }
-.unit-box { position: relative; overflow: hidden; padding: clamp(6px, 0.8cqi, 11px) 0; background: linear-gradient(180deg, #16304A, #0B1A2A); border: 1px solid #23415E; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: clamp(48px, 7.6cqi, 110px); line-height: 0.9; color: #DFF6FF; text-align: center; font-variant-numeric: tabular-nums; }
+.unit-box { position: relative; overflow: hidden; padding: clamp(6px, 0.8cqi, 11px) 0; background: linear-gradient(180deg, #16304A, #0B1A2A); border: 1px solid #23415E; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: clamp(48px, 5.2cqi, 88px); line-height: 0.9; color: #DFF6FF; text-align: center; font-variant-numeric: tabular-nums; }
 /* Barlow Condensed leaves ~0.09em more room above the digits than below them, and the italic
    digits lean ~0.03em right of their box; nudge them back so they sit in the middle. */
 .unit-num { display: block; transform: translate(-0.028em, -0.044em); }
@@ -97,11 +100,14 @@
 .score .lbl { margin: 0; font-size: 14px; color: #8C97A8; }
 .score .val { margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: clamp(26px, 2.4cqi, 34px); }
 .logo-box { flex: none; width: 64px; height: 44px; display: grid; place-items: center; border: 1px dashed var(--ice); background: rgba(63, 208, 255, 0.06); font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 11px; letter-spacing: 0.1em; color: #AEB8C7; }
-.rates { margin-top: 20px; padding-top: 16px; border-top: 1px dashed #2A3445; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.rates { margin-top: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .rate { padding: 4px 10px; border: 1px solid #2A3445; font-size: 14px; color: #C9D2DF; white-space: nowrap; }
 .rates-hint { display: none; margin: 4px 0 0; font-size: 12px; color: #7D8899; }
-.cta-row { margin-top: 26px; display: flex; justify-content: center; gap: 12px; }
-.cta-row a { min-height: 58px; min-width: 260px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; text-transform: uppercase; }
+.cta-row { margin-top: 14px; display: flex; justify-content: flex-start; gap: 12px; }
+.cta-row a { flex: 1 1 0; min-width: 0; min-height: 52px; padding: 0 12px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; text-transform: uppercase; }
+.cta-row .btn-primary { font-size: 24px; }
+.cta-row .btn-ghost { font-size: 22px; }
+.cta-row a { white-space: nowrap; }
 
 @keyframes evIn { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: none; } }
 @keyframes popA { 0% { opacity: 0; transform: translateY(18px) scale(.9); } 18% { opacity: 1; transform: none; } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-22px); } }
@@ -297,24 +303,33 @@ a.ad-past:hover { border-color: var(--ice); }
 
 /* ---- Tablet / small desktop ---- */
 @container page (max-width: 1180px) {
-  .stage { grid-template-columns: 250px minmax(0, 1fr) 270px; gap: 0 16px; }
-  .bubble { width: 220px; top: 40px; right: -10px; }
+  .stage { gap: 0 24px; }
+  .bubble { width: 220px; }
   .bub-line { font-size: 21px; }
   .advent { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 }
 @container page (max-width: 1000px) {
-  .stage { grid-template-columns: minmax(0, 1fr); grid-template-areas: "mascot" "line" "timer" "calc" "cta"; margin-top: -14px; }
+  .hero h1 { font-size: min(10.4cqi, 150px); }
+  .stage { grid-template-columns: minmax(0, 1fr); grid-template-areas: "mascot" "line" "timer" "rates" "calc" "cta"; margin-top: -14px; align-items: end; }
+  .st-rates { justify-self: center; width: 100%; max-width: 1040px; }
+  .st-mascot { margin-top: 0; }
+  .st-line { text-align: center; }
+  .display { margin: 8px auto 0; justify-content: center; }
+  .display .rule { display: block; }
+  .display p { font-size: clamp(30px, 2.8cqi, 40px); }
+  .sub-line { margin: 12px auto 0; font-size: clamp(13px, 1.2cqi, 17px); letter-spacing: 0.32em; }
+  .timer-card { padding: clamp(16px, 2.2cqi, 28px) clamp(16px, 2.4cqi, 32px); }
+  .unit-box { font-size: clamp(48px, 7.6cqi, 110px); }
   .st-ev { display: none; }
   .st-calc { margin: 12px auto 0; width: 100%; max-width: 1040px; }
   .chip-ev { display: flex; }
   .mascot { width: min(74%, 420px); margin: 0 auto; }
   .bubble { top: 6%; right: -8px; width: 210px; max-width: 46%; }
   .timer-card { margin-top: 14px; }
-  .calc-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .calc-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .calc-row .calc-add { margin-top: 12px; }
   .cta-row .cta-donate { display: none; }
-  .cta-row { margin-top: 14px; }
-  .cta-row a { flex: 1 1 auto; }
+  .cta-row a { min-height: 58px; }
   .g-wheel { grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 24px; padding: 20px; }
   .g-bingo { grid-template-columns: minmax(0, 1fr); padding: 20px; }
   .main-partner { grid-template-columns: minmax(0, 1fr); }
@@ -372,6 +387,8 @@ a.ad-past:hover { border-color: var(--ice); }
   .rate { flex: none; font-size: 13px; padding: 3px 8px; }
   .rates-hint { display: block; }
   .calc-card { padding: 16px; }
+  .cta-row { gap: 8px; }
+  .cta-row .btn-primary, .cta-row .btn-ghost { font-size: 20px; padding: 0 8px; }
   .calc-add { font-size: 38px; }
   .band { grid-template-columns: minmax(0, 1fr); }
   .band > div { padding: 14px; }
