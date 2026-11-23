@@ -1,11 +1,16 @@
 ---
 // OBS overlay: add as a Browser Source, 1920×1080, transparent background.
 //
-//   https://icemaraton.icemaraton.workers.dev/overlay/          slim strip, top-right (default)
-//   ?pos=tr | tl | br | bl                        corner: top-right, top-left, bottom-right, bottom-left
+//   https://icemaraton.icemaraton.workers.dev/overlay/          the full scene (layout v2, default):
+//       timer bottom left, next milestone bottom right, hours together top left,
+//       Iceman's bubble top right, moments in the middle, a quiet partner line
+//   ?show=timer,goal,together,bubble,moments,vote,promo,code   which parts (default: all)
+//   ?calm=1                                       less motion: no snow, no jumps, moments just appear
+//   ?scene=brb                                    the pause scene (separate OBS scene)
+//   ?style=strip                                  the old slim strip in a corner (?pos, ?show=timer,goal,events)
+//   ?style=box                                    the old large box
+//   ?pos=tr | tl | br | bl                        corner for ?style=strip
 //   ?scale=1.2                                    bigger or smaller (0.6–2)
-//   ?show=timer,goal,events                       which parts (default: all three)
-//   ?style=box                                    the large box instead of the strip
 //   ?demo                                         sample data, for placing it in OBS
 //   ?key=…                                        shows the secret codes (private key; copy the link from /mod → Cod secret)
 //   ?promo=10                                     partner mention every N minutes for 10 s (0 = off)
@@ -13,6 +18,11 @@
 //
 // Parameters combine: …/overlay/?pos=tl&scale=0.9&show=timer,events
 import '../styles/fonts.css';
+import { getImage } from 'astro:assets';
+import emote from '../../assets/emote.png';
+import logo from '../../assets/logo-mascot.webp';
+const emoteImg = await getImage({ src: emote, format: 'png', width: 96 });
+const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
 ---
 <!doctype html>
 <html lang="ro">
@@ -76,6 +86,126 @@ import '../styles/fonts.css';
       .box-event b { color: var(--ice); }
 
       @media (prefers-reduced-motion: reduce) { .fill, .chip, .box-event, .code-chip { transition: none; } }
+
+      /* ---- Scene (layout v2, default) ---- */
+      .ov-scene { position: fixed; inset: 0; transform: scale(var(--scale)); transform-origin: 0 0; }
+      #ov-snow { position: fixed; inset: 0; pointer-events: none; }
+      .cond { font-family: 'Barlow Condensed', sans-serif; }
+      .panel { background: rgba(5, 6, 8, 0.9); border: 1px solid #23415E; }
+      .ov-timer { position: absolute; left: 24px; bottom: 24px; padding: 12px 16px 14px; }
+      .ov-timer .t-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 300px; }
+      .t-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 14px; letter-spacing: .1em; color: #AEB8C7; }
+      .t-pop { padding: 0 8px; background: var(--ice); color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 20px; opacity: 0; }
+      .t-pop.go { animation: tpop 2.4s ease-out both; }
+      @keyframes tpop { 0% { opacity: 0; transform: translateY(14px) scale(.9); } 18% { opacity: 1; transform: none; } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-16px); } }
+      .t-digits { position: relative; margin-top: 6px; display: flex; gap: 6px; }
+      .ov-digit { width: 64px; padding: 4px 0 2px; background: linear-gradient(180deg, #16304A, #0B1A2A); border: 1px solid #23415E; text-align: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 44px; line-height: .95; color: #DFF6FF; font-variant-numeric: tabular-nums; }
+      .ov-digit.flash { animation: dflash 1.2s ease-out; }
+      @keyframes dflash { 0% { box-shadow: 0 0 0 rgba(63,208,255,0); } 30% { box-shadow: 0 0 22px rgba(63,208,255,.7); border-color: var(--ice); } 100% { box-shadow: 0 0 0 rgba(63,208,255,0); } }
+      .t-state { margin-top: 8px; display: inline-block; padding: 2px 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px; letter-spacing: .04em; }
+      .ov-timer.frost .ov-digit { background: #1B2C3C; color: #B9C7D4; border-color: #8FE4FF; }
+      .ov-timer.frost .t-digits::after { content: ''; position: absolute; inset: -2px; pointer-events: none; background: linear-gradient(135deg, rgba(223,246,255,.34), rgba(223,246,255,0) 38%, rgba(223,246,255,0) 66%, rgba(223,246,255,.26)); border: 1px solid rgba(223,246,255,.6); }
+      .ov-timer.frost .t-state { border: 1px solid #8FE4FF; color: #DFF6FF; }
+      .ov-timer.dbl { box-shadow: 0 0 26px rgba(223,246,255,.35); border-color: #F2F5FA; }
+      .ov-timer.dbl .t-state { background: #F2F5FA; color: #04101A; }
+      .ov-mile { position: absolute; right: 24px; bottom: 24px; width: 380px; padding: 12px 16px; }
+      .ov-mile .m-head { display: flex; justify-content: space-between; gap: 10px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: .1em; color: #8C97A8; }
+      .ov-mile .m-head b { color: var(--ice); font-weight: 800; }
+      .ov-mile .m-title { margin: 2px 0 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 24px; line-height: 1.05; text-transform: uppercase; }
+      .ov-mile .bar { margin-top: 8px; height: 8px; background: #1A2230; }
+      .ov-mile .bar span { display: block; height: 100%; background: linear-gradient(90deg, #1E6BFF, var(--ice)); transition: width .8s ease; }
+      .ov-mile .m-of { margin: 4px 0 0; font-size: 13px; color: #AEB8C7; }
+      .ov-together { position: absolute; left: 24px; top: 22px; display: flex; }
+      .ov-together > div { padding: 8px 14px; }
+      .ov-together > div + div { border-left: 1px solid #23415E; }
+      .tg-k { margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px; letter-spacing: .12em; color: #8C97A8; }
+      .tg-v { margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 26px; line-height: 1; color: #DFF6FF; }
+      .tg-v small { font-size: 16px; color: #8C97A8; }
+      .ov-bubble { position: absolute; right: 24px; top: 18px; width: 330px; height: 250px; opacity: 0; transition: opacity .4s; }
+      .ov-bubble.show { opacity: 1; }
+      .ov-bubble img { position: absolute; right: 0; top: 34px; width: 200px; height: auto; filter: drop-shadow(0 8px 24px rgba(63,208,255,.3)); }
+      .ov-bubble .bub { position: absolute; left: 0; top: 10px; max-width: 190px; padding: 8px 12px; background: #F2F5FA; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 20px; line-height: 1.02; text-transform: uppercase; transform: rotate(-3deg); overflow-wrap: anywhere; }
+      .ov-bubble .bub small { display: block; margin-bottom: 3px; font-size: 11px; font-style: normal; letter-spacing: .1em; color: #245A78; }
+      .ov-bubble .bub::after { content: ''; position: absolute; right: -12px; bottom: 14px; border-left: 14px solid #F2F5FA; border-bottom: 12px solid transparent; }
+      .ov-bubble.pop .bub { animation: bpop .45s ease-out both; }
+      @keyframes bpop { 0% { opacity: 0; transform: scale(.6) rotate(-8deg); } 60% { opacity: 1; transform: scale(1.06) rotate(-3deg); } 100% { opacity: 1; transform: rotate(-3deg); } }
+      .ov-promo { position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%); padding: 4px 12px; background: rgba(5,6,8,.8); font-size: 14px; color: #AEB8C7; opacity: 0; transition: opacity .8s; }
+      .ov-promo.show { opacity: 1; }
+      .ov-promo strong { color: #F2F5FA; letter-spacing: .06em; }
+      .ov-code { position: absolute; left: 24px; bottom: 170px; width: 400px; padding: 14px 18px; background: rgba(5,6,8,.94); border: 1px solid #2A3445; opacity: 0; transition: opacity .6s; }
+      .ov-code.show { opacity: 1; }
+      .cd-head { margin: 0; display: flex; justify-content: space-between; gap: 10px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: .12em; color: #8C97A8; }
+      .cd-code { margin: 4px 0 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 54px; line-height: 1; letter-spacing: .06em; }
+      .cd-sub { margin: 4px 0 0; font-size: 15px; color: #C9D2DF; }
+      .ov-vote { position: absolute; right: 24px; top: 300px; width: 340px; padding: 14px 18px; opacity: 0; transition: opacity .5s; }
+      .ov-vote.show { opacity: 1; }
+      .ov-vote .v-head { margin: 0; display: flex; justify-content: space-between; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: .1em; color: #8C97A8; }
+      .ov-vote .v-head b { color: var(--ice); }
+      .vo { margin-top: 10px; } .vo-top { display: flex; justify-content: space-between; gap: 10px; font-weight: 700; font-size: 15px; }
+      .vo-top span:last-child { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; }
+      .vo-bar { margin-top: 4px; height: 6px; background: #1A2230; } .vo-bar span { display: block; height: 100%; transition: width .8s ease; }
+      .ov-vote .v-foot { margin: 10px 0 0; font-size: 13px; color: #AEB8C7; }
+      /* Moments: one at a time, across the middle. */
+      .ov-moment { position: absolute; left: 0; right: 0; top: 330px; display: flex; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .45s, transform .45s; transform: translateY(12px); }
+      .ov-moment.show { opacity: 1; transform: none; }
+      .ov-moment .mk { display: block; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 18px; letter-spacing: .14em; }
+      .ov-moment .mt { display: block; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 64px; line-height: .95; text-transform: uppercase; }
+      .ov-moment .mn { display: block; margin-top: 8px; font-size: 20px; color: #C9D2DF; }
+      .m-mile { left: 0; right: 0; } .m-mile.show { display: block; padding: 22px 60px; background: var(--ice); color: #04101A; }
+      .m-mile .mn { color: #04101A; opacity: .8; }
+      .m-storm { padding: 16px 60px; background: rgba(5,6,8,.9); border-top: 2px solid var(--ice); border-bottom: 2px solid var(--ice); justify-content: flex-start; align-items: baseline; gap: 24px; }
+      .storm-word { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 96px; line-height: .9; background: linear-gradient(180deg, #FFFFFF 18%, #CDF2FF 58%, var(--ice) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: .06em; }
+      .storm-who { font-size: 26px; } .storm-who b { font-family: 'Barlow Condensed', sans-serif; color: var(--ice); font-size: 30px; }
+      .m-big > * , .m-tier > *, .m-bingo > *, .m-vote > * { }
+      .m-big, .m-tier, .m-bingo, .m-vote { flex-direction: column; align-items: flex-start; left: 50%; right: auto; transform: translate(-50%, 12px); width: 900px; padding: 18px 26px; background: rgba(5,6,8,.94); border-left: 4px solid var(--ice); }
+      .m-big.show, .m-tier.show, .m-bingo.show, .m-vote.show { transform: translate(-50%, 0); }
+      .m-big .mk, .m-bingo .mk, .m-vote .mk { color: #8FE4FF; }
+      .m-big .mt b { color: var(--ice); }
+      .m-tier .mt { font-size: 52px; }
+      .tier-tag { align-self: flex-start; padding: 1px 10px; transform: skewX(-12deg); color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px; letter-spacing: .06em; }
+      .m-legend { flex-direction: column; left: 50%; right: auto; transform: translate(-50%, 12px); width: 940px; padding: 24px 30px; background: linear-gradient(160deg, rgba(159,232,255,.16), rgba(226,182,255,.10) 45%, rgba(200,255,233,.02) 80%), #080B10; border: 2px solid; border-image: linear-gradient(135deg, #9FE8FF 0%, #A9B8FF 30%, #E2B6FF 52%, #FFD6C2 74%, #C8FFE9 100%) 1; box-shadow: 0 0 40px rgba(169,184,255,.25); }
+      .m-legend.show { transform: translate(-50%, 0); }
+      .prism-tag { align-self: flex-start; padding: 1px 10px; transform: skewX(-12deg); background: linear-gradient(135deg, #9FE8FF 0%, #A9B8FF 30%, #E2B6FF 52%, #FFD6C2 74%, #C8FFE9 100%); color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px; }
+      .prism-text { background: linear-gradient(135deg, #9FE8FF 0%, #A9B8FF 30%, #E2B6FF 52%, #FFD6C2 74%, #C8FFE9 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .lg-row { margin-top: 14px; display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+      .lg-name, .lg-total { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 60px; line-height: .95; text-transform: uppercase; }
+      .lg-total { text-transform: none; }
+      .m-legend:not(.calmed).show { animation: sweep 1.2s ease-out; }
+      @keyframes sweep { from { box-shadow: 0 0 0 rgba(169,184,255,0); } 40% { box-shadow: 0 0 70px rgba(169,184,255,.45); } to { box-shadow: 0 0 40px rgba(169,184,255,.25); } }
+      .m-badge { left: 50%; right: auto; transform: translate(-50%, 12px); width: 900px; padding: 22px 30px; align-items: center; gap: 28px; justify-content: flex-start; background: rgba(5,6,8,.94); border: 1px solid #23415E; }
+      .m-badge.show { transform: translate(-50%, 0); }
+      .m-badge .mk { color: #C3B8FF; } .m-badge.plat .mk { color: #A6F0DD; }
+      .m-badge.prism .hex { filter: drop-shadow(0 0 10px rgba(159,232,255,.45)) drop-shadow(0 0 18px rgba(226,182,255,.35)); }
+      .m-badge.show .hex { animation: reveal .8s ease-out both; }
+      @keyframes reveal { from { opacity: 0; transform: scale(.6) rotate(-20deg); } to { opacity: 1; transform: none; } }
+      .m-wheel { left: 50%; right: auto; transform: translate(-50%, 12px); width: 1000px; padding: 20px 30px; align-items: center; gap: 30px; justify-content: flex-start; background: rgba(5,6,8,.94); border: 1px solid #23415E; top: 260px; }
+      .m-wheel.show { transform: translate(-50%, 0); }
+      .wh { position: relative; flex: none; width: 320px; height: 320px; }
+      .wh-rot { position: absolute; inset: 0; transition: transform 4.2s cubic-bezier(0.12, 0.8, 0.18, 1); }
+      .wh-rot svg { width: 100%; height: 100%; display: block; }
+      .wh-emote { position: absolute; left: 50%; top: 50%; width: 54px; transform: translate(-50%, -50%); }
+      .wh-pin { position: absolute; left: 50%; top: -8px; transform: translateX(-50%); border-left: 14px solid transparent; border-right: 14px solid transparent; border-top: 26px solid var(--ice); }
+      .m-wheel .mk { color: #8FE4FF; } .m-wheel .mt { font-size: 52px; }
+      .wh-res { display: block; margin-top: 14px; padding: 8px 14px; border: 1px solid #E6C46A; background: rgba(5,6,8,.9); font-size: 22px; opacity: 0; transition: opacity .4s; }
+      .m-wheel.done .wh-res { opacity: 1; }
+      .wh-res .spon { color: #E6C46A; }
+      /* Pause scene (?scene=brb) */
+      .ov-brb { position: fixed; inset: 0; background: #050608; }
+      .brb-title { position: absolute; left: 80px; top: 80px; margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 140px; line-height: .9; text-transform: uppercase; }
+      .brb-title span { color: var(--ice); }
+      .brb-clock { position: absolute; left: 80px; top: 230px; margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 80px; color: #DFF6FF; font-variant-numeric: tabular-nums; }
+      .brb-mascot { position: absolute; right: 80px; top: 60px; width: 520px; height: auto; filter: drop-shadow(0 20px 60px rgba(63,208,255,.25)); }
+      .brb-panels { position: absolute; left: 80px; right: 80px; bottom: 80px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+      .brb-p { padding: 22px 26px; background: #0B1018; border: 1px solid #1C2230; }
+      .brb-p.today { border: 2px solid var(--ice); }
+      .brb-p .mk { margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: .12em; color: #8C97A8; }
+      .brb-p.today .mk { color: #8FE4FF; }
+      .brb-p p:last-child { margin: 8px 0 0; font-size: 28px; line-height: 1.35; }
+      /* ?calm=1 and reduced motion: values just change, moments simply appear and go. */
+      body.calm *, body.calm *::before, body.calm *::after { animation: none !important; transition: none !important; }
+      body.calm .t-pop.go { opacity: 1; }
+      @media (prefers-reduced-motion: reduce) { .ov-scene *, .ov-brb * { animation: none !important; transition: none !important; } }
+
     </style>
   </head>
   <body class="pos-tr">
@@ -114,8 +244,53 @@ import '../styles/fonts.css';
         <div class="bar"><div class="fill" data-fill></div></div>
       </div>
     </div>
+    <canvas id="ov-snow" aria-hidden="true"></canvas>
+    <span id="ov-assets" hidden data-emote={emoteImg.src}></span>
+    <svg width="0" height="0" aria-hidden="true" style="position:absolute"><defs><linearGradient id="ovPrism" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9FE8FF"></stop><stop offset="0.3" stop-color="#A9B8FF"></stop><stop offset="0.52" stop-color="#E2B6FF"></stop><stop offset="0.74" stop-color="#FFD6C2"></stop><stop offset="1" stop-color="#C8FFE9"></stop></linearGradient></defs></svg>
+
+    <!-- Scene (layout v2, default) -->
+    <div class="ov-scene" id="scene" hidden>
+      <div class="ov-together panel" data-part="together">
+        <div><p class="tg-k">ORE ÎMPREUNĂ</p><p class="tg-v"><span data-hours>0</span> <small data-hof></small></p></div>
+        <div><p class="tg-k">ADĂUGAT AZI</p><p class="tg-v" data-today>+0 min</p></div>
+      </div>
+      <div class="ov-bubble" data-part="bubble" aria-live="polite">
+        <img src={mascot.src} alt="" width="200" height="194" />
+        <div class="bub"><small data-bwho></small><span data-btext></span></div>
+      </div>
+      <div class="ov-vote panel" data-part="vote">
+        <p class="v-head"><span data-vround></span><b data-vleft></b></p>
+        <div data-vlist></div>
+        <p class="v-foot">Votează pe site · doar abonații</p>
+      </div>
+      <div class="ov-moment" aria-live="polite"></div>
+      <div class="ov-code" aria-live="polite"></div>
+      <div class="ov-timer panel" data-part="timer">
+        <div class="t-head"><span class="t-label" data-tlabel>TIMP RĂMAS</span><span class="t-pop" data-pop></span></div>
+        <div class="t-digits"><span class="ov-digit" data-u="dd">--</span><span class="ov-digit" data-u="hh">--</span><span class="ov-digit" data-u="mm">--</span><span class="ov-digit" data-u="ss">--</span></div>
+        <span class="t-state" data-tstate hidden></span>
+      </div>
+      <div class="ov-mile panel" data-part="goal">
+        <p class="m-head"><span data-mtag>URMĂTORUL MILESTONE</span><b data-mleft></b></p>
+        <p class="m-title" data-mtitle></p>
+        <div class="bar"><span data-mbar style="width:0"></span></div>
+        <p class="m-of" data-mof></p>
+      </div>
+      <p class="ov-promo" data-part="promo">Cu sprijinul <strong></strong></p>
+    </div>
+
+    <!-- Pause scene (?scene=brb) -->
+    <div class="ov-brb" id="brb" hidden>
+      <p class="brb-title">Revin <span>imediat</span></p>
+      <p class="brb-clock" data-bclock>--:--:--:--</p>
+      <img class="brb-mascot" src={mascot.src} alt="" width="520" height="505" />
+      <div class="brb-panels" data-bpanels></div>
+    </div>
     <script>
-      import '../scripts/overlay';
+      // The old strip and box (?style=strip, ?style=box) keep their own script; the scene is the default.
+      const style = new URLSearchParams(location.search).get('style');
+      if (style === 'box' || style === 'strip') void import('../scripts/overlay-classic');
+      else void import('../scripts/overlay-scene');
     </script>
   </body>
 </html>

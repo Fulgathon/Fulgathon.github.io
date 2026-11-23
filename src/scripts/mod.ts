@@ -613,17 +613,18 @@ function overlayHtml(): string {
   const key = S.overlayKey;
   const v = (q: string) => base + '?' + [key ? `key=${key}` : '', q].filter(Boolean).join('&');
   const rows: [string, string][] = [
-    ['Bandă subțire în colțul din dreapta sus (de bază)', v('')],
-    ['Bandă în stânga jos', v('pos=bl')],
-    ['Cutia mare (cronometru + milestone)', v('style=box')],
-    ['Doar cronometrul, de 1,5 ori mai mare', v('show=timer&scale=1.5')],
-    ['Fără mențiunea partenerilor', v('promo=0')],
+    ['Scena întreagă (de bază): cronometrul, milestone-ul, orele împreună, balonul lui Iceman și momentele', v('')],
+    ['La fel, cu mai puțină mișcare (fără ninsoare și sărituri)', v('calm=1')],
+    ['Scena de pauză «Revin imediat» (o scenă separată în OBS)', v('scene=brb')],
+    ['Doar cronometrul și momentele (fără balon și fără ore împreună)', v('show=timer,moments,code')],
+    ['Banda subțire veche, în colțul din dreapta sus', v('style=strip')],
+    ['Cutia mare veche', v('style=box')],
   ];
   return `<section class="card wide" id="overlay">
     <h2>Overlay OBS</h2>
     <p class="muted" style="margin-top:0">În OBS: Browser Source, 1920×1080, cu unul din linkurile de mai jos. ${key ? '<strong style="color:#FF8A95">Linkurile au cheia privată: nu le da nimănui.</strong>' : 'Fără cheie, codurile secrete nu apar pe stream.'}</p>
     <ul class="list">${rows.map(([label, url], i) => `<li><span class="grow"><strong>${esc(label)}</strong><br><input class="field" readonly value="${esc(url)}" id="ov${i}" aria-label="${esc(label)}" style="width:100%;margin-top:6px"></span><button class="btn-ghost" data-act="copyOv" data-i="${i}">Copiază</button></li>`).join('')}</ul>
-    <p class="muted">Momentele noi pentru overlay (viscol, legendă nouă, bingo live, roata pe stream) vin după ce le alegeți pe planșa «Overlay OBS».</p>
+    <p class="muted">Momentele apar pe rând, în mijloc: viscol la valuri de subs cadou, milestone deblocat, legendă nouă, insignă de 50 sau 100 de ore, bingo, câștigătoarea votului, roata când cineva învârte pe site, momente mari (50 €+, 5.000 de biți). Codul secret apare calm, în stânga jos, doar cu linkul cu cheie.</p>
   </section>`;
 }
 
