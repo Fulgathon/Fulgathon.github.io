@@ -379,7 +379,7 @@ function segs(v: Vals): string {
 const PLAY = '<svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z" fill="#3FD0FF"></path></svg>';
 function clips(v: Vals): string {
   if (!v.hasClips) return `<p class="clip-empty">Când o provocare se face live, clipul ei apare aici.</p>`;
-  return v.clips.map((c) => `<a class="clip" href="${esc(safeUrl(c.clip) ?? '#')}" aria-label="Vezi clipul: ${esc(c.no)} ${esc(c.title)}">
+  return v.clips.map((c) => `<a class="clip${c.more ? ' clip-more' : ''}" href="${esc(safeUrl(c.clip) ?? '#')}" aria-label="Vezi clipul: ${esc(c.no)} ${esc(c.title)}">
 <span class="thumb"><span class="thumb-no">✓ ${esc(c.no)}</span><span class="play">${PLAY}</span></span>
 <span class="clip-text"><span class="clip-title"><span class="clip-no">${esc(c.no)}</span>${esc(c.title)}</span><span class="clip-when">${esc([c.when, `deblocat la ${c.amount}`].filter(Boolean).join(' · '))}</span></span>
 <span class="clip-cta">Vezi clipul →</span></a>`).join('');

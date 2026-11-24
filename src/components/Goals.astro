@@ -40,7 +40,8 @@ const cond = "'Barlow Condensed', sans-serif";
       <!-- 3. Clips you missed -->
       <div class="clips panel">
         <h3 class="h3">Ai ratat? Vezi clipurile</h3>
-        <div class="clip-list" data-region="clips" set:html={views.clips(v)} />
+        <div class="clip-list" data-toggle="show-all:moreClips" data-region="clips" set:html={views.clips(v)} />
+        <button type="button" class="btn-more btn-clips" {...iff('hasMoreClips')} data-action="more" data-arg="clips" aria-pressed={v.moreClipsPressed} data-attr="aria-pressed:moreClipsPressed" data-text="moreClipsLabel">{v.moreClipsLabel}</button>
         <button type="button" class="btn-more" data-action="more" data-arg="goals" aria-pressed={v.moreGoalsPressed} data-attr="aria-pressed:moreGoalsPressed" aria-controls="all-goals" data-text="moreGoalsLabel">{v.moreGoalsLabel}</button>
         <ol id="all-goals" class="all-goals" {...iff('moreGoals')} data-region="allGoals" set:html={views.allGoals(v)} />
       </div>

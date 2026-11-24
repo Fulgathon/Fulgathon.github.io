@@ -61,7 +61,7 @@ export interface State {
   /** The badge whose explanation is open (tap on phones). */
   badgeTip: string | null;
   /** "Vezi tot" toggles on phones. */
-  more: { feed: boolean; loyal: boolean; goals: boolean; days: boolean; prizes: boolean };
+  more: { feed: boolean; loyal: boolean; goals: boolean; days: boolean; prizes: boolean; clips: boolean };
   /** Failed polls in a row (live data); 2+ before the first answer shows «Reîncercăm». */
   connFailures: number;
 }
@@ -100,7 +100,7 @@ export function initialState(): State {
     bubbleQueue: 0,
     fx: 0,
     badgeTip: null,
-    more: { feed: false, loyal: false, goals: false, days: false, prizes: false },
+    more: { feed: false, loyal: false, goals: false, days: false, prizes: false, clips: false },
     connFailures: 0,
   };
 }
@@ -445,7 +445,7 @@ export function derive(s: State, d: SiteData) {
   const clips = d.goals.map((g, i) => ({ g, i })).filter(({ g }) => g.doneAt && g.clip).map(({ g, i }) => ({
     no: pad(i + 1), title: g.title, clip: g.clip!, amount: fmtInt(g.threshold) + ' €',
     when: g.doneAt && start0 ? `Ziua ${Math.max(1, roDay(g.doneAt) - roDay(start0) + 1)}` : '',
-  }));
+  })).reverse().map((c, k) => ({ ...c, more: k >= 3 }));  // newest first; on wide screens the first 3
   const segs = track.map((t) => ({
     bg: t.state === 'done' ? 'var(--ice)' : t.state === 'unlocked' ? '#F2F5FA'
       : t.state === 'next' ? `linear-gradient(90deg, var(--ice) ${progress.toFixed(0)}%, #1A2230 ${progress.toFixed(0)}%)` : '#1A2230',
@@ -669,7 +669,8 @@ export function derive(s: State, d: SiteData) {
     hasPending: pending !== null, pendingTitle: pending ? `${pending.no} · ${pending.title}` : '',
     pendingRest: pendingWhen ? ` e deblocat și se face live ${pendingWhen}.` : ' e deblocat și urmează live.',
     pendingShort: pending ? ` · ${pending.no} e deblocat și urmează live` : '',
-    clips, hasClips: clips.length > 0, noClips: clips.length === 0,
+    clips, hasClips: clips.length > 0, noClips: clips.length === 0, hasMoreClips: clips.length > 3,
+    moreClips: s.more.clips, moreClipsPressed: bool(s.more.clips), moreClipsLabel: s.more.clips ? 'Arată mai puțin' : `Toate clipurile (${clips.length})`,
     slices, prizeGroups, prizeTotal: d.prizes.length,
     advent, adventFrom: dayFrom,
 
