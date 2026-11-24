@@ -285,8 +285,27 @@
 .duo { margin-top: var(--gap-group); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .duo > div { padding: 22px; }
 .duo-one { grid-template-columns: minmax(0, 1fr); }
-/* Fidelii alone on its row: two columns of regulars on wide screens. */
-@container page (min-width: 1001px) { .duo-one .rows.ly { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 40px; } }
+/* Fidelii: one aligned line per regular (rank · name + streak · badge icons · hours);
+   the top 10 in two columns of 5 on wide screens. */
+.rows.ly > li.ly-item { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto 76px; align-items: center; column-gap: 12px; padding: 8px 0; }
+.ly-who { min-width: 0; display: flex; flex-direction: column; }
+.ly-streak { font-size: 13px; font-weight: 700; color: var(--ice); }
+.ly-bdgs { display: flex; align-items: center; }
+.ly-item .tt { text-align: right; white-space: nowrap; }
+.bdg-mini { width: 44px; min-height: 44px; padding: 0; display: inline-grid; place-items: center; }
+@container page (max-width: 600px) {
+  .rows.ly > li.ly-item { grid-template-columns: 28px minmax(0, 1fr) auto; row-gap: 0; }
+  .ly-item .ly-bdgs { grid-column: 2 / -1; grid-row: 2; margin-left: -4px; gap: 8px; }
+  .ly-who { flex-direction: row; align-items: baseline; gap: 8px; }
+  .ly-who .nm { flex: 0 1 auto; }
+  .ly-streak { flex: none; }
+  .bdg-mini { width: 36px; min-height: 36px; }
+  .bdg-mini::after { left: -4px; right: -4px; }
+}
+.bdg-mini .tag-icon { width: 22px; height: 22px; transform: skewX(-12deg); }
+@container page (min-width: 1001px) {
+  .duo-one .rows.ly { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(5, auto); grid-auto-flow: column; column-gap: 40px; }
+}
 .rows { margin-top: 12px; border-top: 1px solid #1A2230; }
 .rows > li { padding: 10px 0; border-bottom: 1px solid #1A2230; }
 .feed > li { display: flex; align-items: baseline; gap: 12px; }

@@ -68,8 +68,7 @@ const small = `font-family: ${cond}; font-weight: 800; font-size: 13px; letter-s
           <span style={`font-family: ${cond}; font-weight: 800; font-size: 16px; letter-spacing: 0.08em; color: #8C97A8`}>ORE ÎN CHAT</span>
         </div>
         <p style="margin: 2px 0 0; font-size: 14px; color: #8C97A8">O zi se numără de la 30 de minute sau un check-in.</p>
-        <ol class="rows ly" data-toggle="show-all:moreLoyal" aria-label="Fidelii" data-region="loyal" set:html={views.loyal(v)} />
-        <button type="button" class="btn-more" data-action="more" data-arg="loyal" aria-pressed={v.moreLoyalPressed} data-attr="aria-pressed:moreLoyalPressed" data-text="moreLoyalLabel">{v.moreLoyalLabel}</button>
+        <ol class="rows ly" aria-label="Fidelii" data-region="loyal" set:html={views.loyal(v)} />
         <p style="margin: 12px 0 0; font-size: 13px; color: #AEB8C7"><strong style="color: var(--ice)">Check-in:</strong> recompensa «Check-in ICEMARATON» pe Twitch îți ține seria.</p>
       </div>
     </div>

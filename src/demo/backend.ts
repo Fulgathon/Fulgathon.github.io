@@ -839,6 +839,11 @@ export class DemoBackend {
         { name: 'kxtrin', hours: 74, streak: 6, badges: ['night', 'h50'] },
         { name: 'cristi_lol', hours: 71, streak: 8, badges: ['og', 'h50', 'streak7'] },
         { name: 'Rares1337', hours: 66, streak: 3, badges: ['h50'] },
+        { name: 'andreiGG', hours: 58, streak: 5, badges: ['og', 'h50'] },
+        { name: 'vladutz97', hours: 52, streak: 7, badges: ['h50', 'streak7'] },
+        { name: 'mihai_tsr', hours: 47, streak: 2, badges: ['night', 'h10'] },
+        { name: 'stefan_ro', hours: 41, streak: 4, badges: ['h10'] },
+        { name: 'ioana.gg', hours: 36, streak: 1, badges: ['og', 'h10'] },
       ],
       together: { hours: 1_840, goals: s.communityGoals ?? [
         { title: 'Chatul alege jocul pentru o oră', hours: 250 }, { title: 'Karaoke cu chatul', hours: 750 },

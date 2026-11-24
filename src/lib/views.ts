@@ -284,6 +284,15 @@ function badgeTag(id: string, key: string, who = ''): string {
   return `<button type="button" class="bdg-tag" aria-describedby="${tid}" data-key="${key}"><span class="tag" style="border-color: ${accent}; background: ${tint}"><span class="tag-icon" style="background: ${block}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#04101A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${badgeIcons[b.icon]}"></path></svg></span><span class="tag-label" style="color: ${fg}">${label}</span></span>${tooltip(b, tid, '', who)}</button>`;
 }
 
+/** A badge as its icon only (Fidelii rows), with the same tooltip; 44 px to tap. */
+function badgeMini(id: string, key: string, who = ''): string {
+  const b = badgeDefs.find((x) => x.id === id);
+  if (!b) return '';
+  const block = isPrism(b) ? PRISM : tierColors[b.tier][0];
+  const tid = `tip-${key}`;
+  return `<button type="button" class="bdg-tag bdg-mini" aria-label="${esc(b.label)}" aria-describedby="${tid}" data-key="${key}"><span class="tag-icon" style="background: ${block}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#04101A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${badgeIcons[b.icon]}"></path></svg></span>${tooltip(b, tid, '', who)}</button>`;
+}
+
 /** «Insignele tale»: six hexagons, earned or grey with progress. */
 function myBadges(v: Vals): string {
   return v.myBadges.map((b) => {
@@ -335,9 +344,11 @@ function todayFeed(v: Vals): string {
 
 function loyal(v: Vals): string {
   if (!v.hasLoyal) return emptyRow('Primii fideli apar după prima oră în chat.');
-  return v.loyalRows.map((r, i) => `<li class="${i >= 3 ? 'more-row' : ''}">
-<div class="ly-row"><span class="rk" style="${rankStyle(i)}">${r.rank}</span><span class="nm">${esc(r.name)}</span><span class="tt">${esc(r.hours)}</span></div>
-${r.streakText || r.badgeIds.length ? `<div class="ly-badges">${r.streakText ? `<span class="streak">${esc(r.streakText)}</span>` : ''}${r.badgeIds.map((b) => badgeTag(b, `ly-${i}-${b}`, r.who[b] ?? '')).join('')}</div>` : ''}
+  return v.loyalRows.map((r, i) => `<li class="ly-item">
+<span class="rk" style="${rankStyle(i)}">${r.rank}</span>
+<span class="ly-who"><span class="nm">${esc(r.name)}</span>${r.streakText ? `<span class="ly-streak">${esc(r.streakText)}</span>` : ''}</span>
+<span class="ly-bdgs">${r.badgeIds.map((b) => badgeMini(b, `ly-${i}-${b}`, r.who[b] ?? '')).join('')}</span>
+<span class="tt">${esc(r.hours)}</span>
 </li>`).join('');
 }
 
