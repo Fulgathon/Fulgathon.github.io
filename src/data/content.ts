@@ -133,8 +133,8 @@ export const adventTree = ['12-24', '12-25'];
     w × h = the Browser Source size that fits the piece at ?scale=1 (measured in ?demo). */
 export const overlayPieces: { id: string; label: string; what: string; w: number; h: number; key?: boolean }[] = [
   { id: 'timer', label: 'Cronometrul', what: 'Timpul rămas și «+timp».', w: 360, h: 180 },
-  { id: 'goal', label: 'Următorul milestone', what: 'Ce urmează și cât mai e.', w: 430, h: 150 },
-  { id: 'together', label: 'Ore împreună', what: 'Ore privite și timp adăugat azi.', w: 300, h: 80 },
+  { id: 'goal', label: 'Următorul milestone', what: 'Ce urmează și cât mai e.', w: 430, h: 180 },
+  { id: 'together', label: 'Ore împreună', what: 'Ore privite și timp adăugat azi.', w: 340, h: 80 },
   { id: 'bubble', label: 'Balonul lui Iceman', what: 'Replica lui la fiecare sub sau donație.', w: 350, h: 270 },
   { id: 'vote', label: 'Votul live', what: 'Doar cât e deschis votul.', w: 400, h: 330 },
   { id: 'moments', label: 'Momentele', what: 'Viscol, milestone, legende, roata etc.', w: 1100, h: 460 },
