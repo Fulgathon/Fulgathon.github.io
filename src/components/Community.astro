@@ -2,7 +2,7 @@
 // 02 Comunitatea, three rows read top to bottom:
 //   1. one band: Contribuția ta (time added, stats, badges with tooltips) + Obiectiv comunitar
 //   2. Legende: three equal panels (place 1 prism, 2/3/4 gold/silver/bronze, 5 grey)
-//   3. Timp adăugat azi + Fidelii
+//   3. Fidelii
 // Names come through public_name() (moderation + opt-out, toggle at the bottom).
 import SectionHead from './SectionHead.astro';
 import { v, iff } from '../lib/ssr';
@@ -18,7 +18,7 @@ const small = `font-family: ${cond}; font-weight: 800; font-size: 13px; letter-s
   </defs></svg>
   <div class="wrap">
     <SectionHead tag="01" title="Comunitatea" id="h-comunitate">
-      <p class="side">Ce ai adăugat tu, cine conduce, ce se întâmplă azi.</p>
+      <p class="side">Ce ai adăugat tu și cine conduce.</p>
     </SectionHead>
 
     <!-- Row 1: you + the shared goal -->
@@ -60,17 +60,8 @@ const small = `font-family: ${cond}; font-weight: 800; font-size: 13px; letter-s
     <div class="legends" data-region="legends" set:html={views.legends(v)} />
     <p class="lg-dots">Se dau cu degetul: Donatori · Subs dăruite · Biți</p>
 
-    <!-- Row 3: today + the regulars -->
-    <div class="duo">
-      <div class="panel">
-        <div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px">
-          <h3 class="h3">Timp adăugat azi</h3>
-          <span data-text="todayBig" style={`font-family: ${cond}; font-weight: 900; font-style: italic; font-size: clamp(30px, 2.4cqi, 34px); line-height: 1; color: #DFF6FF`}>{v.todayBig}</span>
-        </div>
-        <p data-text="todayLine" style="margin: 2px 0 0; font-size: 14px; color: #8C97A8">{v.todayLine}</p>
-        <ol class="rows feed" data-toggle="show-all:moreFeed" aria-label="Cele mai noi adăugări" data-region="todayFeed" set:html={views.todayFeed(v)} />
-        <button type="button" class="btn-more" data-action="more" data-arg="feed" aria-pressed={v.moreFeedPressed} data-attr="aria-pressed:moreFeedPressed" data-text="moreFeedLabel">{v.moreFeedLabel}</button>
-      </div>
+    <!-- Row 3: the regulars -->
+    <div>
       <div class="panel">
         <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px">
           <h3 class="h3">Fidelii</h3>

@@ -548,7 +548,6 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
     const k = key as keyof State['more'];
     set({ more: { ...state.more, [k]: !state.more[k] } });
   },
-  player: () => { set({ playerOn: true }); loadEmbeds(); },
 
   bubbleNext: () => showNextHero(),
   toggleMenu: () => set({ menu: !state.menu }),
@@ -655,10 +654,6 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
     copyTimer = window.setTimeout(() => set({ copied: false }), 2000);
   },
 
-  popout: () => {
-    const url = `https://player.twitch.tv/?channel=${encodeURIComponent(site.channel)}&parent=${encodeURIComponent(location.hostname)}`;
-    window.open(url, 'icemaraton-player', 'popup,width=960,height=540');
-  },
 
   // Demo panel (?demo): viewer and stream state, fake Twitch events.
   setViewer: (id) => { demoApi?.setViewer(id as State['viewer']); set({ menu: false }); },
@@ -671,29 +666,6 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
   simHour: () => { demoApi?.watchHalfHour(); },
   demoReset: () => { if (confirm('Resetezi demo-ul la starea de început?')) { setAutoSim(false); demoApi?.reset(); } },
 };
-
-// ---- Twitch player and chat: loaded when the Live section comes into view. ----
-function loadEmbeds() {
-  const host = location.hostname;
-  const player = document.getElementById('player-slot');
-  const chat = document.getElementById('chat-slot');
-  const frame = (src: string, title: string) => {
-    const f = document.createElement('iframe');
-    f.src = src;
-    f.title = title;
-    f.allowFullscreen = true;
-    f.setAttribute('allow', 'autoplay; fullscreen');
-    f.style.cssText = 'position: absolute; inset: 0; width: 100%; height: 100%; border: 0';
-    return f;
-  };
-  if (player) player.replaceChildren(frame(`https://player.twitch.tv/?channel=${site.channel}&parent=${host}&muted=true&autoplay=true`, 'Playerul Twitch'));
-  if (chat) {
-    chat.style.cssText = 'flex: 1 1 auto; position: relative; min-height: 420px';
-    chat.replaceChildren(frame(`https://www.twitch.tv/embed/${site.channel}/chat?parent=${host}&darkpopout`, 'Chatul Twitch'));
-  }
-}
-// The player loads only when asked («Pornește playerul»): whoever is on the site
-// usually has the stream open on Twitch already.
 
 document.addEventListener('click', (e) => {
   const el = (e.target as Element).closest<HTMLElement>('[data-action]');

@@ -62,8 +62,6 @@ export interface State {
   badgeTip: string | null;
   /** "Vezi tot" toggles on phones. */
   more: { feed: boolean; loyal: boolean; goals: boolean; days: boolean; prizes: boolean };
-  /** The Twitch player loads only on request. */
-  playerOn: boolean;
   /** Failed polls in a row (live data); 2+ before the first answer shows «Reîncercăm». */
   connFailures: number;
 }
@@ -103,7 +101,6 @@ export function initialState(): State {
     fx: 0,
     badgeTip: null,
     more: { feed: false, loyal: false, goals: false, days: false, prizes: false },
-    playerOn: false,
     connFailures: 0,
   };
 }
@@ -675,7 +672,6 @@ export function derive(s: State, d: SiteData) {
     clips, hasClips: clips.length > 0, noClips: clips.length === 0,
     slices, prizeGroups, prizeTotal: d.prizes.length,
     advent, adventFrom: dayFrom,
-    playerOn: s.playerOn, playerOff: !s.playerOn,
 
     // Demo panel (?demo)
     demo: s.demo,
