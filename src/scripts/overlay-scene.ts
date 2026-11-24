@@ -28,8 +28,11 @@ const brb = params.get('scene') === 'brb';
 // ?frame=1 outlines the piece and keeps it visible, for placing it in OBS.
 const partParam = params.get('part') ?? '';
 const piece = overlayPieces.some((p) => p.id === partParam) ? partParam : null;
-const show = new Set(piece ? [piece] : (params.get('show') ?? 'timer,goal,together,bubble,moments,vote,promo,code').split(','));
+// 'speech' is the same bubble without the drawn Iceman, to sit beside his head on the camera
+// (&tail=right points the tail to the right).
+const show = new Set(piece ? [piece === 'speech' ? 'bubble' : piece] : (params.get('show') ?? 'timer,goal,together,bubble,moments,vote,promo,code').split(','));
 if (piece) document.body.classList.add('piece', `piece-${piece}`);
+if (piece === 'speech' && params.get('tail') === 'right') document.body.classList.add('tail-right');
 if (params.has('frame')) document.body.classList.add('frame');
 const scale = Math.min(2, Math.max(0.5, Number(params.get('scale')) || 1));
 const overlayKey = params.get('key');

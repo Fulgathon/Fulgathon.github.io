@@ -213,6 +213,15 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
       body.piece-promo .ov-promo { transform: none; margin: 0; }
       body.piece-moments .ov-moment { top: 8px; }
       body.piece-snow .ov-scene { display: none; }
+      /* ?part=speech: only the speech bubble, bigger, its tail pointing down to his head on the camera. */
+      body.piece-speech .ov-bubble { width: 324px; height: auto; }
+      body.piece-speech .ov-bubble img { display: none; }
+      body.piece-speech .ov-bubble .bub { position: relative; left: 0; top: 0; width: fit-content; max-width: 300px; margin: 6px 8px 22px; padding: 10px 14px; font-size: 26px; }
+      body.piece-speech .ov-bubble .bub small { font-size: 13px; }
+      body.piece-speech .ov-bubble .bub::after { right: auto; left: 26px; bottom: -16px; border-left: 0; border-bottom: 0; border-top: 18px solid #F2F5FA; border-right: 18px solid transparent; }
+      body.piece-speech.tail-right .ov-bubble .bub { margin-left: auto; }
+      body.piece-speech.tail-right .ov-bubble .bub::after { left: auto; right: 26px; border-right: 0; border-left: 18px solid transparent; }
+      body.frame.piece-speech .ov-bubble { min-height: 90px; }
       /* ?frame=1: see where a piece sits while arranging the scene in OBS. */
       body.frame .ov-scene > [data-part] { outline: 2px dashed rgba(63, 208, 255, .85); outline-offset: 2px; opacity: 1 !important; }
       body.frame .ov-scene > [data-part]:empty::before { content: attr(data-part); display: block; padding: 10px 14px; font: 800 18px/1 'Barlow Condensed', sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #8FE4FF; }
