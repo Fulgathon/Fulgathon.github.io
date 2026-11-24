@@ -17,6 +17,7 @@
 //             ?demo&embed hides the panel (used inside /prezentare/).
 
 import './motion';
+import { bingoLineDefs } from '../lib/bingo';
 import { morph } from '../lib/morph';
 import { emptyData } from '../data/sample';
 import { site } from '../data/site';
@@ -645,13 +646,8 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
     const vals = derive(state, data);
     const line = vals.bingoLines[Number(n)];
     if (!line) return;
-    // The line's 5 events: read them off the same 5×5 layout derive uses.
-    const ids = data.bingo.items.slice(0, 25).map((it) => it.id);
-    const k = Number(n);
-    const lineIds = k < 5 ? ids.slice(k * 5, k * 5 + 5)
-      : k < 10 ? [0, 1, 2, 3, 4].map((j) => ids[k - 5 + 5 * j])
-      : k === 10 ? [0, 1, 2, 3, 4].map((j) => ids[6 * j])
-      : [0, 1, 2, 3, 4].map((j) => ids[20 - 4 * j]);
+    // The line's events: read them off the same n×n layout derive uses.
+    const lineIds = bingoLineDefs(data.bingo.items.map((it) => it.id))[Number(n)]?.ids ?? [];
     const pick = line.on ? [] : lineIds;
     storePick(pick);
     set({ bingoPick: pick });

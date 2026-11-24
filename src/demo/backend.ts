@@ -8,7 +8,8 @@
 // in separate tabs or side by side. Nothing here touches the real database.
 
 import challengesJson from '../../data/challenges.json';
-import { bingoItems, defaultGoals, defaultPrizes, popSlots, prizeColors } from '../data/content';
+import { defaultGoals, defaultPrizes, popSlots, prizeColors } from '../data/content';
+import { bingoLines } from '../lib/bingo';
 import type { AdventDay, LineGroup, BoardTab, Goal, Prize, SiteData } from '../data/types';
 import { amount, tickerItem } from '../lib/events';
 import { ago, fmtInt } from '../lib/format';
@@ -121,17 +122,15 @@ function bingoPhase(s: DemoState): 'soon' | 'open' | 'closed' {
 }
 const bingoFinal = (s: DemoState) => s.bingo.items.some((it) => it.happened) || s.bingo.draws.length > 0;
 
-/** The 12 lines of a 5×5 bingo card (ids row by row), each sorted. */
-function bingoLines(ids: number[]): number[][] {
-  if (ids.length !== 25) return [];
-  const L = [
-    ...[0, 1, 2, 3, 4].map((r) => ids.slice(r * 5, r * 5 + 5)),
-    ...[0, 1, 2, 3, 4].map((c) => [0, 1, 2, 3, 4].map((j) => ids[c + 5 * j])),
-    [0, 1, 2, 3, 4].map((j) => ids[6 * j]),
-    [0, 1, 2, 3, 4].map((j) => ids[20 - 4 * j]),
-  ];
-  return L.map((l) => [...l].sort((a, b) => a - b));
-}
+// Example card for the demo only (the real card is written on /mod; nothing in code defines it).
+const demoBingoItems = [
+  'Rage quit', 'Râde un minut fără oprire', 'Cântă fără să-i ceară nimeni', 'Raid cu peste 50 de oameni',
+  'Cineva dăruiește 10+ subs', 'Cineva donează 100+ €', 'Moare în primul minut', 'Vorbește cu microfonul pe mute',
+  'Mănâncă pe stream', 'Pică netul sau OBS-ul', 'Se ia curentul', 'Zice „ultimul joc” și mai joacă 3',
+  'Chatul spamează același emote', 'A treia cafea a zilei', 'Începe Ora dublă', 'Apare cineva neanunțat pe cameră',
+  'Adoarme pe cameră', 'Plânge de râs', 'Cântă o colindă', 'Un moderator dă timeout din greșeală',
+  'Uită că e live', 'Schimbă jocul de 3 ori într-o oră', 'Mulțumește în 3 limbi', 'Câștigă din prima', 'Pierde din prima',
+];
 const WIN_LABELS = ['+5 minute pe cronometru', 'VIP 24 de ore', 'un shoutout live', 'un sub cadou de la Iceman',
   'alegerea următorului joc', 'o colindă de la Iceman', 'cronometrul înghețat 5 minute', 'nimic de data asta'];
 const LOSE = 7;
@@ -241,12 +240,12 @@ function seedBase(now: number): DemoState {
       prize: 'un espressor',
       prizeSponsor: 'Fulg Coffee',
       // Nothing is ticked while picks are open (ticks start after the close).
-      items: bingoItems.map((label, i) => ({ id: i + 1, label, happened: false })),
+      items: demoBingoItems.map((label, i) => ({ id: i + 1, label, happened: false })),
       pick: null,
       // 340 simulated players, each with a random line of the card.
       others: Array.from({ length: 340 }, (_, k) => ({
         user: k < NAMES.length ? NAMES[k] : `viewer_${k}`,
-        items: pick(bingoLines(bingoItems.map((_, i) => i + 1))),
+        items: pick(bingoLines(demoBingoItems.map((_, i) => i + 1))),
       })),
       draws: [],
     },
@@ -568,7 +567,7 @@ export class DemoBackend {
   }
   setBingoItems(list: { id?: number | string; label: string }[]) {
     this.mutate((s) => {
-      if (!Array.isArray(list) || list.length !== 25) fail('need_25');
+      if (!Array.isArray(list) || ![9, 16, 25].includes(list.length)) fail('bad_card_size');
       if (list.some((x) => !String(x.label ?? '').trim() || String(x.label).length > 80)) fail('bad_items');
       const picked = s.bingo.pick !== null || s.bingo.others.length > 0;
       if (picked && list.map((x) => Number(x.id)).join() !== s.bingo.items.map((it) => it.id).join()) fail('card_locked');

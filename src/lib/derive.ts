@@ -5,6 +5,7 @@
 import { ADVENT_DAYS, adventDates, adventTree, badgeDefs, boardTabs as boardTabDefs, boardUnits, calcOptions, placeholderTicker } from '../data/content';
 import { site } from '../data/site';
 import type { BoardTab, Loyalty, Mine, SiteData } from '../data/types';
+import { bingoLineDefs, bingoSide } from './bingo';
 import { ago, cleanTitle, count, dateRo, dayRo, duration, fmtInt, pad, timeRo } from './format';
 
 /** Badges from chat presence (private.loyalty in the database). */
@@ -341,18 +342,15 @@ export function derive(s: State, d: SiteData) {
   const saved = s.bingoSaved;
   const mine = bingoOpen ? pick : (saved ?? []);
   const sameAsSaved = saved !== null && saved.length === pick.length && pick.every((id) => saved.includes(id));
-  // The card is 5×5 (row by row); a pick is one line: 5 rows, 5 columns, 2 diagonals.
-  const grid = B.items.slice(0, 25);
+  // The card is n×n, n = 3, 4 or 5 (row by row, set on /mod); a pick is one line: a row, a column or a diagonal.
+  const side = bingoSide(B.items.length);
+  const grid = side ? B.items : [];
   const ids = grid.map((it) => it.id);
-  const lineDefs: { ids: number[]; arrow: string; name: string }[] = grid.length === 25 ? [
-    ...[0, 1, 2, 3, 4].map((r) => ({ ids: ids.slice(r * 5, r * 5 + 5), arrow: '→', name: `rândul ${r + 1}` })),
-    ...[0, 1, 2, 3, 4].map((c) => ({ ids: [0, 1, 2, 3, 4].map((j) => ids[c + 5 * j]), arrow: '↓', name: `coloana ${c + 1}` })),
-    { ids: [0, 1, 2, 3, 4].map((j) => ids[6 * j]), arrow: '↘', name: 'diagonala de sus-stânga' },
-    { ids: [0, 1, 2, 3, 4].map((j) => ids[20 - 4 * j]), arrow: '↗', name: 'diagonala de jos-stânga' },
-  ] : [];
+  const lineDefs = bingoLineDefs(ids);
+  const lineLen = side ?? 5;
   const sameSet = (a: number[], b: number[]) => a.length === b.length && a.every((x) => b.includes(x));
   const bingoLines = lineDefs.map((l, n) => {
-    const on = mine.length === 5 && sameSet(l.ids, mine);
+    const on = mine.length === lineLen && sameSet(l.ids, mine);
     const names = l.ids.map((id) => grid.find((it) => it.id === id)?.label ?? '').join(', ');
     return { n, arrow: l.arrow, on, pressed: bool(on), disabled: !bingoOpen, aria: `Alege ${l.name}: ${names}` };
   });
@@ -378,7 +376,7 @@ export function derive(s: State, d: SiteData) {
   }) : [];
   const lineHits = myLine.filter((l) => l.hit).length;
   const hits = bingoDone && saved ? saved.filter((id) => B.items.find((it) => it.id === id)?.happened).length : 0;
-  const isBingo = bingoDone && saved !== null && hits === 5;
+  const isBingo = bingoDone && saved !== null && saved.length > 0 && hits === saved.length;
   const closeText = B.closesAt !== null ? `${dateRo(B.closesAt)}, la ${timeRo(B.closesAt)}` : '';
   const openText = B.opensAt !== null ? `${dateRo(B.opensAt)}, la ${timeRo(B.opensAt)}` : '';
   const prize = (B.prize && !B.prize.startsWith('[') ? B.prize : 'premiul cel mare') + (B.prizeSponsor ? ` de la ${B.prizeSponsor}` : '');
@@ -397,10 +395,10 @@ export function derive(s: State, d: SiteData) {
     : s.bingoWon && !isOut ? `Ai câștigat la tragerea la sorți: ${prize}!`
     : isOut ? 'Conectează-te cu Twitch ca să-ți vezi linia.'
     : !saved ? 'Nu ai ales o linie înainte de închidere. Data viitoare!'
-    : isBingo ? `BINGO! Toate cele 5 s-au întâmplat: ești pe lista de tragere la sorți pentru ${prize}.`
-    : `${hits} din 5 s-au întâmplat până acum.`;
-  const bingoBtn = isOut ? 'Conectează-te ca să salvezi' : pick.length < 5 ? 'Alege o linie' : sameAsSaved ? 'Linie salvată ✓' : 'Salvează linia';
-  const bingoBtnClass = isOut ? 'btn-twitch' : pick.length === 5 && !sameAsSaved ? 'btn-primary' : 'btn-ghost';
+    : isBingo ? `BINGO! Toate cele ${saved!.length} s-au întâmplat: ești pe lista de tragere la sorți pentru ${prize}.`
+    : `${hits} din ${saved.length} s-au întâmplat până acum.`;
+  const bingoBtn = isOut ? 'Conectează-te ca să salvezi' : pick.length < lineLen ? 'Alege o linie' : sameAsSaved ? 'Linie salvată ✓' : 'Salvează linia';
+  const bingoBtnClass = isOut ? 'btn-twitch' : pick.length === lineLen && !sameAsSaved ? 'btn-primary' : 'btn-ghost';
 
 
   // ---- Layout v2: hero stage ----
@@ -596,12 +594,12 @@ export function derive(s: State, d: SiteData) {
 
     bingo, isBingo, bingoOpen, bingoClosed: bingoDone, bingoStatus, bingoNote,
     bingoLines,
-    bingoCount: bingoSoon ? 'În curând' : bingoOpen ? (pick.length === 5 ? 'Linie aleasă' : 'Alege o linie') : `${hits} / 5 întâmplate`,
+    bingoCount: bingoSoon ? 'În curând' : bingoOpen ? (pick.length === lineLen ? 'Linie aleasă' : 'Alege o linie') : `${hits} / ${saved?.length || lineLen} întâmplate`,
     bingoPlayers: B.players === 1 ? '1 jucător' : `${fmtInt(B.players)} jucători`,
     bingoBtn, bingoBtnClass, bingoPrize: prize,
     bingo2, myLine, hasLine: myLine.length > 0, noLine: myLine.length === 0,
     lineName: lineIdx >= 0 ? `Linia ta · ${lineDefs[lineIdx].name}` : 'Linia ta',
-    lineHits: `${lineHits} din 5`,
+    lineHits: `${lineHits} din ${myLine.length || lineLen}`, bingoSide: lineLen,
     bingoPrizeName: B.prize && !B.prize.startsWith('[') ? B.prize.charAt(0).toUpperCase() + B.prize.slice(1) : 'Se anunță în curând',
     bingoPrizeBy: B.prizeSponsor ? `· de la ${B.prizeSponsor}` : '',
     hasBingoWinner: !!B.winners?.length,

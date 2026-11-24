@@ -5,6 +5,7 @@
 // /?demo, /overlay/?demo and /prezentare/).
 
 import { createClient } from '@supabase/supabase-js';
+import { BINGO_SIZES, bingoSide } from '../lib/bingo';
 import { site } from '../data/site';
 import type { DemoBackend } from '../demo/backend';
 import { esc } from '../lib/views';
@@ -46,14 +47,15 @@ const errors: Record<string, string> = {
   bad_goals: 'Fiecare milestone are nevoie de text și de o sumă în euro (număr întreg, peste 0).',
   bad_items: 'Bingo: între 5 și 60 de evenimente, fiecare cu un text de cel mult 80 de caractere.',
   item_in_use: 'Un eveniment ales deja de jucători nu poate fi șters. Îl poți redenumi.',
-  need_25: 'Cartonașul are exact 25 de evenimente (5×5). Adaugă sau șterge până ajungi la 25.',
+  need_25: 'Cartonașul trebuie să aibă 9, 16 sau 25 de evenimente (3 × 3, 4 × 4 sau 5 × 5).',
+  bad_card_size: 'Cartonașul trebuie să aibă 9, 16 sau 25 de evenimente (3 × 3, 4 × 4 sau 5 × 5).',
   card_locked: 'Jucătorii și-au ales deja linii: poți doar redenumi evenimentele, nu le poți muta, adăuga sau șterge.',
   bingo_open: 'Bifele de bingo se deschid după ce se închid alegerile: până atunci spectatorii încă își aleg linia.',
   bingo_ticked: 'Sunt deja bife (sau tragerea) la bingo: orele de deschidere și închidere nu se mai pot schimba.',
   bingo_not_open: 'Bingo nu e deschis acum.',
   no_bingo_draw: 'Nu s-a făcut încă nicio tragere.',
   bingo_bad_dates: 'Închiderea are nevoie de o oră de deschidere și trebuie să fie după ea.',
-  no_bingo_winners: 'Nu e nimeni (nou) pe lista de bingo: încă nu s-au întâmplat toate cele 5 evenimente la cineva.',
+  no_bingo_winners: 'Nu e nimeni (nou) pe lista de bingo: încă nu s-a întâmplat toată linia la nimeni.',
   freeze_in_past: 'Alege o dată din viitor (după înghețarea de acum, dacă e una).',
   bad_minutes: 'Scrie un număr de minute mai mare decât 0.',
   bad_clip: 'Linkul clipului trebuie să înceapă cu https://',
@@ -241,6 +243,8 @@ let S: {
   } | null;
   /** Bingo event list being edited (null = showing the saved list). */
   bingoDraft: { id?: number; label: string }[] | null;
+  /** The card size picked on /mod (3, 4 or 5); null = what the saved card has. */
+  bingoSize: number | null;
   /** mod_health(): is everything still arriving? */
   health: any;
   /** "Acum pe stream" (Twitch title/game + note) and the community goal list. */
@@ -270,7 +274,7 @@ let S: {
   spEdit: number | 'new' | null;
   /** «Runda de vot»: the entry being swapped in the open round. */
   rSwap: number | null;
-} = { rSwap: null, test: null, tasks: null, tasksDraft: null, sceneBg: null, sponsors: [], spEdit: null, auto: null, view: 'rapid', liveTab: 'timp', page: 'azi', chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
+} = { rSwap: null, test: null, tasks: null, tasksDraft: null, sceneBg: null, sponsors: [], spEdit: null, auto: null, view: 'rapid', liveTab: 'timp', page: 'azi', chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, bingoSize: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
 /** Bingo phase (as private.bingo_phase): moderators open and close it; no ticks until the close (owner, 24 Nov). */
 const bingoPhase = (): 'soon' | 'open' | 'closed' => {
   const B = S.bingo;
@@ -293,6 +297,19 @@ const tickBtn = (id: number, on: boolean) => bingoPicksOpen()
   : `<button class="${on ? 'btn-primary' : 'btn-ghost'}" data-act="bingoTick" data-id="${id}" data-on="${on ? '0' : '1'}" aria-pressed="${on}">${on ? '✓ S-a întâmplat' : 'Bifează'}</button>`;
 const bingoRows = () => S.bingoDraft ?? (S.bingo?.items ?? []).map((i) => ({ id: i.id, label: i.label }));
 const editBingo = () => { if (!S.bingoDraft) S.bingoDraft = bingoRows(); return S.bingoDraft; };
+/** The card's side on /mod: the size picked, else the saved card's, else 5. */
+const bingoN = () => S.bingoSize ?? bingoSide(S.bingo?.items.length ?? 0) ?? 5;
+/** Grow or shrink the draft to n×n (new squares empty). */
+function resizeBingo(n: number): boolean {
+  const rows = editBingo();
+  const want = n * n;
+  const lost = rows.slice(want).filter((r) => r.label.trim()).length;
+  if (lost && !confirm(`Cartonașul ${n} × ${n} are ${want} de pătrate: ultimele ${lost} evenimente completate se scot. Continui?`)) return false;
+  rows.length = Math.min(rows.length, want);
+  while (rows.length < want) rows.push({ label: '' });
+  S.bingoSize = n;
+  return true;
+}
 const goalRows = () => S.goalsDraft ?? S.goals.map((g) => ({ title: g.title, threshold: String(g.threshold), sponsor: g.sponsor ?? '', done: !!g.done_at, clip: g.clip_url ?? '', when: g.scheduled_for ?? '' }));
 const wheelRows = () => S.wheelDraft ?? S.wheel.map((p) => ({ short_label: p.short_label, full_label: p.full_label, sponsor: p.sponsor ?? '', is_win: p.is_win, weight: String(p.weight) }));
 const editWheel = () => { if (!S.wheelDraft) S.wheelDraft = wheelRows(); return S.wheelDraft; };
@@ -562,7 +579,7 @@ const CHECK: { key: string; label: string; card?: string; auto?: () => boolean }
   { key: 'lines', label: 'Replicile lui Iceman: minim 5 pe grup', card: 'replici', auto: () => lineGroups.every((g) => lineInfo(g.id).ok) },
   { key: 'chatline', label: 'Replicile în chat: da sau nu', card: 'replici' },
   { key: 'milestones', label: 'Milestone-urile finale', card: 'milestones' },
-  { key: 'bingo', label: 'Bingo: 25 de evenimente și premiul', card: 'bingo', auto: () => (S.bingo?.items.length ?? 0) === 25 && !!S.bingo?.prize && !S.bingo.prize.startsWith('[') },
+  { key: 'bingo', label: 'Bingo: cartonașul complet și premiul', card: 'bingo', auto: () => [9, 16, 25].includes(S.bingo?.items.length ?? 0) && !!S.bingo?.prize && !S.bingo.prize.startsWith('[') },
   { key: 'wheel', label: 'Roata: cele 8 premii', card: 'roata-premii' },
   { key: 'vote', label: 'Votul: lista verificată cu Iceman', card: 'pilot' },
   { key: 'plan', label: 'Program: înghețul 20–25 dec', card: 'plan', auto: () => (S.auto?.plan ?? []).some((x: any) => x.kind === 'freeze') },
@@ -1288,6 +1305,13 @@ const sideways = (e: WheelEvent) => {
 nav.addEventListener('wheel', sideways, { passive: false });
 app.addEventListener('wheel', sideways, { passive: false });
 app.addEventListener('change', markUnsaved);
+app.addEventListener('change', (e) => {
+  const t = e.target as HTMLSelectElement;
+  if (t.id !== 'bingoSizeSel') return;
+  if (!resizeBingo(Number(t.value))) { t.value = String(bingoN()); return; }
+  t.blur();   // the page waits for a focused field; the new card should show at once
+  render();
+});
 app.addEventListener('change', (e) => { const t = e.target as HTMLInputElement; if (t.id === 'sp_file' && t.files?.[0]) void spUpload(t.files[0]).finally(() => { t.value = ''; }); });
 app.addEventListener('change', (e) => { const t = e.target as HTMLInputElement; if (t.id === 'scene_file' && t.files?.[0]) void sceneUpload(t.files[0]).catch(() => {}).finally(() => { t.value = ''; }); });
 window.addEventListener('beforeunload', (e) => {
@@ -1477,12 +1501,22 @@ function render() {
         <label class="inline" style="flex:1 1 180px">Premiul e de la<input class="field" id="bingoPrizeSponsor" list="sponsorNames" value="${esc(B.prize_sponsor ?? '')}" maxlength="60" placeholder="sponsor (opțional)"></label>
         <button class="btn-ghost" data-act="bingoSettings">Salvează</button>
       </div>
-      <h3 class="h3s">Cartonașul · ${open ? 'bifele vin după închidere' : 'bifează când se întâmplă'} ${tip('Cartonașul are 25 de evenimente (5 × 5), în ordine, rând cu rând.')}</h3>
-      ${bingoRows().length !== 25 ? `<p class="callout bad">Acum sunt ${bingoRows().length}; trebuie exact 25.</p>` : ''}
-      <ul class="list">${bingoRows().map((r, i) => `<li>
+      <h3 class="h3s">Cartonașul · ${open ? 'bifele vin după închidere' : 'bifează când se întâmplă'} ${tip('Scrieți voi evenimentele, în ordine, rând cu rând. Alegeți mărimea: 3 × 3 (9 evenimente), 4 × 4 (16) sau 5 × 5 (25). Spectatorii aleg o linie: un rând, o coloană sau o diagonală.\nDupă ce a ales cineva o linie, evenimentele se mai pot doar redenumi: nu se mai mută, nu se scot și mărimea rămâne.')}</h3>
+      ${(() => {
+        const n = bingoN(), rows = bingoRows(), locked = (B.status.players ?? 0) > 0;
+        const empty = rows.filter((r) => !r.label.trim()).length;
+        return `<div class="fgrid bingo-size">
+          <label class="inline">Mărimea cartonașului<select class="field" id="bingoSizeSel"${locked ? ' disabled' : ''}>${BINGO_SIZES.map((k) => `<option value="${k}"${k === n ? ' selected' : ''}>${k} × ${k} · ${k * k} evenimente</option>`).join('')}</select></label>
+          ${locked ? '' : '<button class="btn-ghost" data-act="bingoClear">Golește cartonașul</button>'}
+        </div>
+        ${locked ? '<p class="hint">Cineva a ales deja o linie: mărimea și ordinea rămân, evenimentele se pot doar redenumi.</p>' : ''}
+        ${rows.length !== n * n ? `<p class="callout bad">Acum sunt ${rows.length} evenimente; cartonașul ${n} × ${n} are nevoie de exact ${n * n}.</p>` : empty ? `<p class="callout bad">Mai sunt ${empty} ${empty === 1 ? 'pătrat gol' : 'pătrate goale'}: completați-le înainte să salvați.</p>` : ''}`;
+      })()}
+      <ul class="list bingo-list">${bingoRows().map((r, i) => `<li>
+        <span class="d-no" title="Rândul ${Math.floor(i / bingoN()) + 1}, coloana ${(i % bingoN()) + 1}">${i + 1}</span>
         ${r.id !== undefined ? tickBtn(r.id, happened(r.id)) : '<span class="pill off">nou</span>'}
-        <input class="field grow" data-bingo-label="${i}" value="${esc(r.label)}" maxlength="80" aria-label="Evenimentul ${i + 1}" style="flex:1 1 200px;min-width:0">
-        <button class="btn-ghost" data-act="bingoDel" data-i="${i}">Șterge</button>
+        <input class="field grow" data-bingo-label="${i}" value="${esc(r.label)}" maxlength="80" placeholder="Scrie evenimentul" aria-label="Evenimentul ${i + 1}, rândul ${Math.floor(i / bingoN()) + 1}, coloana ${(i % bingoN()) + 1}" style="flex:1 1 200px;min-width:0">
+        <button class="btn-ghost" data-act="bingoDel" data-i="${i}"${r.label.trim() ? '' : ' disabled'}>Golește</button>
         ${r.id !== undefined && !S.bingoDraft ? (() => {
           const cur = B.items.find((x) => x.id === r.id)?.auto_rule ?? null;
           const v = cur ? (cur.n ?? cur.eur ?? cur.h ?? '') : '';
@@ -1491,12 +1525,11 @@ function render() {
             <button class="btn-ghost" data-act="ruleSave" data-id="${r.id}">Salvează regula</button></span>`;
         })() : ''}</li>`).join('')}</ul>
       <div class="row">
-        <button class="btn-ghost" data-act="bingoAdd">Adaugă eveniment</button>
-        <button class="btn-primary" data-act="bingoSaveList">Salvează lista</button>
+        <button class="btn-primary" data-act="bingoSaveList">Salvează cartonașul</button>
         ${S.bingoDraft ? '<button class="btn-ghost" data-act="bingoCancel">Renunță</button><span class="muted">Modificări nesalvate</span>' : ''}
       </div>
       <h3 class="h3s">Tragerea la sorți ${tip('Pe stream se vede în sursa OBS «Tragerea la bingo»: o ruletă cu toți cei cu bingo, care se oprește pe câștigător.\nCâștigătorul e ales de server înainte de animație.')}</h3>
-      <p class="muted" style="margin:0">${B.status.winners.length ? `${B.status.winners.length} cu bingo: ${B.status.winners.map((w) => esc(w.login)).join(', ')}` : 'Nimeni nu are încă toate cele 5 evenimente bifate.'}</p>
+      <p class="muted" style="margin:0">${B.status.winners.length ? `${B.status.winners.length} cu bingo: ${B.status.winners.map((w) => esc(w.login)).join(', ')}` : 'Nimeni nu are încă toată linia bifată.'}</p>
       <div class="row"><button class="btn-primary" data-act="bingoDraw" ${B.status.winners.length && !bingoPicksOpen() ? '' : 'disabled'}>Trage la sorți</button>${B.status.draws.length ? '<button class="btn-ghost" data-act="bingoReplay">Arată din nou pe stream</button>' : ''}</div>
       ${B.status.draws.length ? `<p style="margin:10px 0 0">Extrași: ${B.status.draws.map((d) => `<strong>${esc(d.login)}</strong>${d.drawn_at ? ` <span class="muted">(${when(d.drawn_at)})</span>` : ''}`).join(' · ')}</p>` : ''}
     </section>`;
@@ -1740,13 +1773,24 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     void navigator.clipboard?.writeText(text).then(() => say('Raportul a fost copiat.'));
   },
   bingoTick: (el) => call('mod_bingo_tick', { p_id: Number(el.dataset.id), p_happened: el.dataset.on === '1' }, el.dataset.on === '1' ? 'Bifat: s-a întâmplat.' : 'Debifat.'),
-  bingoAdd: () => { editBingo().push({ label: '' }); render(); },
-  bingoDel: (el) => { editBingo().splice(Number(el.dataset.i), 1); render(); },
-  bingoCancel: () => { S.bingoDraft = null; render(); },
+  // A square keeps its place: «Golește» empties it (to write another event there).
+  bingoDel: (el) => { const r = editBingo()[Number(el.dataset.i)]; if (r) r.label = ''; render(); },
+  bingoCancel: () => { S.bingoDraft = null; S.bingoSize = null; render(); },
   bingoSaveList: async () => {
-    const list = bingoRows().filter((r) => r.label.trim()).map((r) => (r.id !== undefined ? { id: r.id, label: r.label.trim() } : { label: r.label.trim() }));
-    await call('mod_bingo_set_items', { p_items: list }, 'Lista de bingo a fost salvată.');
-    S.bingoDraft = null;
+    const rows = bingoRows(), n = bingoN();
+    if (rows.length !== n * n) { say(`Cartonașul ${n} × ${n} are nevoie de exact ${n * n} evenimente (acum sunt ${rows.length}).`, true); return; }
+    const empty = rows.filter((r) => !r.label.trim()).length;
+    if (empty) { say(`Completați toate cele ${n * n} pătrate: ${empty} ${empty === 1 ? 'e gol' : 'sunt goale'}.`, true); return; }
+    const list = rows.map((r) => (r.id !== undefined ? { id: r.id, label: r.label.trim() } : { label: r.label.trim() }));
+    await call('mod_bingo_set_items', { p_items: list }, 'Cartonașul de bingo a fost salvat.');
+    S.bingoDraft = null; S.bingoSize = null;
+  },
+  bingoClear: () => {
+    const n = bingoN();
+    if (!confirm(`Golești cartonașul? Rămân ${n * n} pătrate goale, pe care le scrieți voi. Se salvează abia când apăsați «Salvează cartonașul».`)) return;
+    S.bingoDraft = Array.from({ length: n * n }, () => ({ label: '' }));
+    S.bingoSize = n;
+    render();
   },
   bingoDraw: async () => {
     if (!confirm('Tragi la sorți un câștigător dintre cei cu bingo?')) return;

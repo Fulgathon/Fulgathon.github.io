@@ -125,12 +125,12 @@ const emoteStyle = 'flex: none; width: 44px; height: 54px; object-fit: contain';
       <div id="bingo" class="g-bingo panel">
         <div class="show-sm" style="padding: 0 6px">
           <h3 style={h3big}>Bingo</h3>
-          <p style="margin: 4px 0 0; font-size: 13px; color: #C9D2DF">Alege o linie. Toate 5 se întâmplă = intri la tragere.</p>
+          <p style="margin: 4px 0 0; font-size: 13px; color: #C9D2DF">Alege o linie. Dacă se întâmplă toată, intri la tragere.</p>
         </div>
         <div class="bgrid" role="group" aria-label="Cartonașul de bingo: alege o linie" data-region="bingo2" set:html={views.bingo2(v)} />
         <div>
           <h3 class="only-desk" style={h3big}>Bingo</h3>
-          <p class="only-desk" style="margin: 8px 0 0; color: #C9D2DF">Alege o linie de 5. Toate se întâmplă = intri la tragere.</p>
+          <p class="only-desk" style="margin: 8px 0 0; color: #C9D2DF">Alege o linie: un rând, o coloană sau o diagonală. Dacă se întâmplă toată, intri la tragere.</p>
           <div class="line-box">
             <p style={`margin: 0; display: flex; justify-content: space-between; gap: 8px; font-family: ${cond}; font-weight: 800; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; color: #8FE4FF`}><span data-text="lineName">{v.lineName}</span></p>
             <p {...iff('hasLine')} style={`margin: 4px 0 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: 34px; line-height: 1`}><span data-text="lineHits">{v.lineHits}</span> <span style="font-size: 18px; font-weight: 800; color: #AEB8C7">s-au întâmplat</span></p>

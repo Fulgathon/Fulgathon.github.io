@@ -1,7 +1,7 @@
 // The empty first-paint state. The design's sample subathon itself now seeds the demo backend
 // (src/demo/backend.ts); live visitors get Supabase data (src/scripts/live.ts).
 
-import { bingoItems, defaultGoals, defaultPrizes } from './content';
+import { defaultGoals, defaultPrizes } from './content';
 import type { SiteData } from './types';
 
 
@@ -30,7 +30,7 @@ export function emptyData(): SiteData {
     losePrize: 7,
     recentWins: [],
     boards: { donations: [], gifts: [], bits: [], hours: [] },
-    bingo: { opensAt: null, closesAt: null, prize: '', players: 0, items: bingoItems.map((label, i) => ({ id: i + 1, label, happened: false })) },
+    bingo: { opensAt: null, closesAt: null, prize: '', players: 0, items: [] },
     today: null,
     loyal: [],
     together: null,

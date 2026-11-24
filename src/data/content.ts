@@ -43,16 +43,7 @@ export const defaultPrizes: Prize[] = [
   ['Îngheți timpul', 'Îngheți cronometrul 5 minute'], ['Mai încearcă', 'Mai încearcă'],
 ].map(([s, f], i) => [s, f, prizeColors[i]] as Prize);
 
-/** Bingo card: 25 events on a 5×5 grid, row by row (same as the database; moderators edit it on /mod). */
-export const bingoItems = [
-  'Rage bait', 'Țipă la iKLD', 'Cântă fără să-i ceară nimeni', 'Raid cu peste 50 de oameni',
-  'Cineva dăruiește 10+ subs', 'Cineva donează 100+ €', 'Moare în primul minut', 'Vorbește cu microfonul pe mute',
-  'Un moderator își ia unmod', 'Mai prinde un accident pe live', 'Se ia curentul', 'Face pană la mașină',
-  'Sforăie în somn', 'Rage quit', 'Zice „ultimul joc” și mai joacă 3', 'Pică netul sau OBS-ul',
-  'Mănâncă pe stream', 'Adoarme pe cameră', 'Chatul spamează același emote', 'A treia cafea a zilei',
-  'Râde un minut fără oprire', 'Cântă o colindă', 'Începe Ora dublă', 'Plânge de râs',
-  'Apare cineva neanunțat pe cameră',
-];
+// The bingo card is written by moderators on /mod (3×3, 4×4 or 5×5); nothing in code defines it.
 
 // Partners and supporters now live in src/data/site.ts (site.partners, site.supporters).
 

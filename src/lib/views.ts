@@ -133,7 +133,7 @@ function board(v: Vals): string {
     .join('');
 }
 
-/** 5×5 card with line buttons on the edges: ↘ and ↓×5 on top, → per row, ↗ under the rows. */
+/** n×n card (n = 3, 4 or 5) with line buttons on the edges: ↘ and ↓×n on top, → per row, ↗ under the rows. */
 function bingo(v: Vals): string {
   const L = v.bingoLines;
   const btn = (n: number) => {
@@ -141,9 +141,11 @@ function bingo(v: Vals): string {
     return l ? `<button type="button" class="bl${l.on ? ' on' : ''}" aria-pressed="${l.pressed}" aria-label="${esc(l.aria)}" data-action="bingoLine" data-arg="${l.n}" data-key="bl-${l.n}"${l.disabled ? ' disabled' : ''}>${l.arrow}</button>` : '<span></span>';
   };
   const tile = (b: Vals['bingo'][number]) => `<div class="bt" style="background: ${b.bg}; color: ${b.color}; border-color: ${b.border}">${b.hit ? CHECK : ''}${esc(b.text)}</div>`;
-  let html = btn(10) + [5, 6, 7, 8, 9].map(btn).join('');
-  for (let r = 0; r < 5; r++) html += btn(r) + v.bingo.slice(r * 5, r * 5 + 5).map(tile).join('');
-  return html + btn(11);
+  const n = v.bingoSide;
+  let html = btn(2 * n);
+  for (let c = 0; c < n; c++) html += btn(n + c);
+  for (let r = 0; r < n; r++) html += btn(r) + v.bingo.slice(r * n, r * n + n).map(tile).join('');
+  return html + btn(2 * n + 1);
 }
 
 function pops(v: Vals): string {
@@ -430,9 +432,11 @@ function bingo2(v: Vals): string {
     return l ? `<button type="button" class="bl${l.on ? ' on' : ''}" aria-pressed="${l.pressed}" aria-label="${esc(l.aria)}" data-action="bingoLine" data-arg="${l.n}" data-key="bl-${l.n}"${l.disabled ? ' disabled' : ''}>${l.arrow}</button>` : '<span></span>';
   };
   const tile = (b: Vals['bingo2'][number]) => `<div class="bt2 ${b.cls}">${b.hit ? `<span class="hit">✓<span class="hit-l"> S-A ÎNTÂMPLAT</span></span>` : ''}${esc(b.text)}</div>`;
-  let html = btn(10) + [5, 6, 7, 8, 9].map(btn).join('');
-  for (let r = 0; r < 5; r++) html += btn(r) + v.bingo2.slice(r * 5, r * 5 + 5).map(tile).join('');
-  return html + btn(11);
+  const n = v.bingoSide;
+  let html = btn(2 * n);
+  for (let c = 0; c < n; c++) html += btn(n + c);
+  for (let r = 0; r < n; r++) html += btn(r) + v.bingo2.slice(r * n, r * n + n).map(tile).join('');
+  return html + btn(2 * n + 1);
 }
 function myLine(v: Vals): string {
   return v.myLine.map((l) => `<li><span class="${l.hit ? 'ml-hit' : 'ml-miss'}" aria-hidden="true">${l.hit ? '✓' : '·'}</span>${esc(l.text)}${l.hit ? '<span class="sr-only"> (s-a întâmplat)</span>' : ''}</li>`).join('');
