@@ -1148,11 +1148,11 @@ function overlayHtml(): string {
   const bg = S.sceneBg;
   return pieces + `<section class="card wide" id="overlay">
     <h2>Overlay OBS: scena întreagă</h2>
-    <p class="muted" style="margin-top:0">«Camera de control»: un singur Browser Source 1920×1080, deasupra jocului și a camerei.</p>
-    <ul class="list"><li><span class="grow"><strong>Camera de control</strong><br><span class="muted">În OBS, sub acest source: jocul 1152×648 la x 58, y 54 și camera 518×291 la x 1325, y 54. Cu «&amp;frame=1» la final se văd locurile.</span>
+    <p class="muted" style="margin-top:0">«Camera de control»: un singur Browser Source 2560×1440 (2K), deasupra jocului și a camerei. Merge și la 1920×1080: se potrivește singură.</p>
+    <ul class="list"><li><span class="grow"><strong>Camera de control</strong><br><span class="muted">În OBS (2K), sub acest source: jocul 1536×864 la x 77, y 72 și camera 691×388 la x 1767, y 72. La 1920×1080: jocul 1152×648 la x 58, y 54, camera 518×291 la x 1325, y 54. Cu «&amp;frame=1» la final se văd locurile, cu mărimile.</span>
       <input class="field" readonly value="${esc(control)}" id="ov0" aria-label="Linkul scenei Camera de control" style="width:100%;margin-top:6px"></span><button class="btn-ghost" data-act="copyOv" data-i="0">Copiază</button></li></ul>
     <h3 class="h3s" style="margin-top:18px">Fotografia de fundal</h3>
-    <p class="muted" style="margin:4px 0 0">Overlay-ul o desenează singur, cu locurile jocului și camerei decupate, iar banda sponsorilor devine sticlă înghețată peste ea. Nu o mai pune separat în OBS. JPG, PNG sau WEBP, cel mult 10 MB, ideal 1920×1080 sau 3840×2160.</p>
+    <p class="muted" style="margin:4px 0 0">Overlay-ul o desenează singur, cu locurile jocului și camerei decupate, iar banda sponsorilor devine sticlă înghețată peste ea. Nu o mai pune separat în OBS. JPG, PNG sau WEBP, cel mult 10 MB, ideal 2560×1440 sau 3840×2160.</p>
     ${bg ? `<p style="margin:10px 0 0"><img src="${esc(bg)}" alt="Fotografia de fundal" style="display:block;width:100%;max-width:480px;aspect-ratio:16/9;object-fit:cover;border:1px solid #1E4560"></p>` : '<p class="muted">Nicio fotografie: scena rămâne transparentă.</p>'}
     <div class="row"><label class="btn btn-primary">${bg ? 'Schimbă fotografia' : 'Încarcă fotografia'}<input type="file" id="scene_file" accept="image/jpeg,image/png,image/webp" hidden></label>${bg ? '<button class="btn-ghost" data-act="sceneClear">Scoate fotografia</button>' : ''}</div>
   </section>`;

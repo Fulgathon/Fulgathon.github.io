@@ -11,7 +11,7 @@
 //   ?frame=1                                      outline + always visible, for placing a piece
 //   ?calm=1                                       less motion: no snow, no jumps, moments just appear
 //   ?scene=brb                                    the pause scene (separate OBS scene)
-//   ?scene=control                                «Camera de control»: holes for the game and the webcam, the timer,
+//   ?scene=control                                «Camera de control» (any size, 2560×1440 = 2K): holes for the game and the webcam, the timer,
 //       «Donează și alegi», the sponsor strip and reactive snow (src/scripts/scene-control.ts)
 //   ?style=strip                                  the old slim strip in a corner (?pos, ?show=timer,goal,events)
 //   ?style=box                                    the old large box
@@ -429,7 +429,8 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
 
 
       /* ---- «Camera de control» (?scene=control, src/scripts/scene-control.ts) ---------------- */
-      body.scene-control { width: 1920px; height: 1080px; }
+      body.scene-control { width: 100vw; height: 100vh; }
+      .scc-snow { width: 1920px; height: 1080px; }
       .scc { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; font-family: Barlow, sans-serif; color: #F2F5FA; }
       .scc[hidden] { display: none; }
       .scc-bg { position: absolute; inset: 0; }

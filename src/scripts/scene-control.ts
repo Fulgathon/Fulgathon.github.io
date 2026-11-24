@@ -1,4 +1,5 @@
-// «Camera de control» (/overlay/?scene=control): one OBS Browser Source, 1920×1080, transparent.
+// «Camera de control» (/overlay/?scene=control): one OBS Browser Source, transparent. Drawn on a
+// 1920×1080 grid and scaled to the source: 2560×1440 (2K, the owner's canvas) = ×4/3, sharp.
 // Iceman's background photo sits under it in OBS; the game capture and the webcam go in the two
 // framed holes (positions in HOLES below and on /mod → SETĂRI → Overlay OBS). On top it draws:
 //   the timer (status, clock, Strâns towards the next milestone) · «Donează și alegi» (the price
@@ -44,8 +45,8 @@ const CLIP = `path(evenodd, 'M0 0H1920V1080H0Z ${cut(HOLES.game)} ${cut(HOLES.ca
 
 root.innerHTML = `
   <div class="scc-bg" data-bg style="clip-path:${CLIP}"></div>
-  <div class="scc-hole" id="scc-game" style="${pos(HOLES.game)}"><span>GAME · ${HOLES.game.w}×${HOLES.game.h} la ${HOLES.game.x},${HOLES.game.y}</span></div>
-  <div class="scc-hole" id="scc-cam" style="${pos(HOLES.cam)}"><span>WEBCAM · ${HOLES.cam.w}×${HOLES.cam.h} la ${HOLES.cam.x},${HOLES.cam.y}</span></div>
+  <div class="scc-hole" id="scc-game" style="${pos(HOLES.game)}"><span data-hole="game"></span></div>
+  <div class="scc-hole" id="scc-cam" style="${pos(HOLES.cam)}"><span data-hole="cam"></span></div>
   <section class="scc-panel scc-timer" id="scc-timer" style="${pos(BOX.timer)}">
     <p class="scc-tline"><span class="scc-tag" data-tag>LIVE</span><span class="scc-by" data-by></span></p>
     <div class="scc-clock" data-clock>${['ZILE', 'ORE', 'MIN', 'SEC'].map((u, i) => `${i ? '<i class="scc-colon">:</i>' : ''}<div class="scc-cg"><b data-cg="${i}">00</b><span>${u}</span></div>`).join('')}</div>
@@ -70,11 +71,19 @@ root.innerHTML = `
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => root.querySelector<T>(sel)!;
 const setText = (el: HTMLElement, t: string) => { if (el.textContent !== t) el.textContent = t; };
 
-// Previews in a browser window smaller than 1920×1080: scale the whole scene down (OBS is exactly 1920×1080).
+// The scene fills the Browser Source: 2560×1440 → ×4/3, 1920×1080 → ×1, a smaller preview window → smaller.
+// With ?frame=1 the holes show the sizes and positions to use in OBS at the source's real size.
+let K = 1;
 function fit() {
-  const k = Math.min(innerWidth / 1920, innerHeight / 1080);
-  root.style.transform = k < 0.999 ? `scale(${k})` : '';
+  K = Math.min(innerWidth / 1920, innerHeight / 1080) || 1;
+  root.style.transform = Math.abs(K - 1) > 0.001 ? `scale(${K})` : '';
+  const r = (n: number) => Math.round(n * K);
+  for (const [id, b, label] of [['game', HOLES.game, 'GAME'], ['cam', HOLES.cam, 'WEBCAM']] as const) {
+    setText($(`[data-hole="${id}"]`), `${label} · ${r(b.w)}×${r(b.h)} la x ${r(b.x)}, y ${r(b.y)}`);
+  }
+  sizeSnow?.();
 }
+let sizeSnow: (() => void) | null = null;
 addEventListener('resize', fit);
 fit();
 
@@ -222,6 +231,13 @@ async function nextToast() {
 type Flake = { k: 'f' | 'b' | 'g'; x: number; y: number; r: number; v?: number; vx?: number; vy?: number; a?: number; ph: number; life: number; col?: string; amb?: boolean };
 const cv = $<HTMLCanvasElement>('[data-snow]');
 const cx = cv.getContext('2d')!;
+// Drawn at the source's real resolution (2K = 2560×1440 pixels) in 1920×1080 units, so flakes stay sharp.
+sizeSnow = () => {
+  const k = K * (window.devicePixelRatio || 1);
+  cv.width = Math.round(1920 * k); cv.height = Math.round(1080 * k);
+  cx.setTransform(k, 0, 0, k, 0, 0);
+};
+sizeSnow();
 let P: Flake[] = [];
 let wind = 0;
 const W = 1920, H = 1080;
