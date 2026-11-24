@@ -124,6 +124,7 @@ function drawSponsors() {
 function render() {
   // Until the first live data: the ice loader (CSS .is-loading), never «Se încarcă» text on screen.
   document.documentElement.classList.toggle('is-loading', data.loaded === false);
+  if (data.loaded !== false) document.documentElement.classList.remove('booting');
   drawSponsors();
   const v = derive(state, data);
   const vals = v as unknown as AnyVals;

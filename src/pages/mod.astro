@@ -298,21 +298,13 @@ const favicon = await getImage({ src: emote, format: 'png', width: 64 });
       /* --z: viewport heights (vh) don't shrink with zoom, so anything sized to the window divides by it. */
       @media (min-width: 2400px) { html { zoom: 1.3333; --z: 1.3333; } }
       @media (min-width: 3400px) { html { zoom: 2; --z: 2; } }
-      /* Loader (owner, 24 Nov): an ice snowflake that turns and shimmers, never «Se încarcă» text. */
-      .m-loader { display: grid; justify-items: center; gap: 12px; padding: 18vh 0 40px; }
-      .m-loader.small { justify-items: start; padding: 12px 0; }
-      .ml-flake { width: 46px; height: 46px; background: linear-gradient(120deg, #1E6BFF 0%, #3FD0FF 35%, #FFFFFF 50%, #3FD0FF 65%, #1E6BFF 100%) 0 0 / 300% 300%;
-        -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 4l3 2 3-2M9 20l3-2 3 2M4.6 9.6l3.4.8-.9-3.4M19.4 14.4l-3.4-.8.9 3.4M4.6 14.4l3.4-.8-.9 3.4M19.4 9.6l-3.4.8.9-3.4'/%3E%3C/svg%3E") center / contain no-repeat;
-        mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 4l3 2 3-2M9 20l3-2 3 2M4.6 9.6l3.4.8-.9-3.4M19.4 14.4l-3.4-.8.9 3.4M4.6 14.4l3.4-.8-.9 3.4M19.4 9.6l-3.4.8.9-3.4'/%3E%3C/svg%3E") center / contain no-repeat;
-        animation: mlSpin 2.2s cubic-bezier(.6, 0, .4, 1) infinite, mlShine 1.6s linear infinite; }
-      .m-loader.small .ml-flake { width: 26px; height: 26px; }
-      @keyframes mlSpin { 0% { transform: rotate(0deg) scale(.9); } 50% { transform: rotate(30deg) scale(1); } 100% { transform: rotate(60deg) scale(.9); } }
-      @keyframes mlShine { from { background-position: 100% 0; } to { background-position: -50% 0; } }
-      .ml-word { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 20px; letter-spacing: .02em; color: #F2F5FA; }
-      .ml-word b { font-weight: 900; color: var(--ice); }
-      .ml-word small { font-style: normal; font-weight: 800; font-size: 13px; letter-spacing: .12em; color: #8C97A8; }
-      .ml-line { width: 120px; height: 2px; background: linear-gradient(90deg, transparent, var(--ice), #FFFFFF, var(--ice), transparent) no-repeat; background-size: 50% 100%; animation: mlLine 1.2s cubic-bezier(.6, 0, .4, 1) infinite; }
-      @keyframes mlLine { from { background-position: -60% 0; } to { background-position: 160% 0; } }
+      /* Loader (owner, 24 Nov): one minimal snowflake, always in the middle of the window
+         (it covers the console until the first render replaces it); a small inline one in cards. */
+      .m-loader { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: #050608; }
+      .m-loader.small { position: static; display: block; padding: 12px 0; background: none; }
+      .ml-flake { display: block; width: 34px; height: 34px; background: #8FE4FF; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 4l3 2 3-2M9 20l3-2 3 2M4.6 9.6l3.4.8-.9-3.4M19.4 14.4l-3.4-.8.9 3.4M4.6 14.4l3.4-.8-.9 3.4M19.4 9.6l-3.4.8.9-3.4'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 4l3 2 3-2M9 20l3-2 3 2M4.6 9.6l3.4.8-.9-3.4M19.4 14.4l-3.4-.8.9 3.4M4.6 14.4l3.4-.8-.9 3.4M19.4 9.6l-3.4.8.9-3.4'/%3E%3C/svg%3E") center / contain no-repeat; animation: mlSpin 2.4s ease-in-out infinite; }
+      .m-loader.small .ml-flake { width: 22px; height: 22px; }
+      @keyframes mlSpin { 0% { transform: rotate(0deg); opacity: .55; } 50% { opacity: 1; } 100% { transform: rotate(60deg); opacity: .55; } }
       /* «Control live»: the ice underline slides between tabs (mod.ts afterRender). */
       .tabs { position: relative; }
       .tabs:has(.tab-ink) .tab.on { border-bottom-color: transparent; }
@@ -346,7 +338,7 @@ const favicon = await getImage({ src: emote, format: 'png', width: 64 });
         .kpi { transition: border-color .25s ease, transform .25s ease; }
         .kpi:hover { border-color: #23415E; transform: translateY(-1px); }
       }
-      @media (prefers-reduced-motion: reduce) { .ml-flake, .ml-line, .msg.in, .msg.in::after { animation: none; } .tab-ink { transition: none; } }
+      @media (prefers-reduced-motion: reduce) { .ml-flake, .msg.in, .msg.in::after { animation: none; } .tab-ink { transition: none; } }
       /* Runda de vot: edit entries */
       .r-list > li { flex-wrap: wrap; }
       .r-pct { min-width: 40px; text-align: right; }
@@ -385,7 +377,7 @@ const favicon = await getImage({ src: emote, format: 'png', width: 64 });
     <header class="mbar" id="bar"></header>
     <div class="mshell">
       <nav class="mnav" id="nav" aria-label="Secțiuni" hidden></nav>
-      <main id="app" class="mmain" aria-live="polite"><div class="m-loader" role="status"><span class="ml-flake" aria-hidden="true"></span><span class="ml-word" aria-hidden="true"><b>ICE</b>MARATON <small>/MOD</small></span><span class="ml-line" aria-hidden="true"></span><span class="sr-only">Se încarcă</span></div></main>
+      <main id="app" class="mmain" aria-live="polite"><div class="m-loader" role="status"><span class="ml-flake" aria-hidden="true"></span><span class="sr-only">Se încarcă</span></div></main>
     </div>
     <div class="msg" id="msg" role="status" hidden></div>
     <dialog id="endDlg" class="dlg" aria-labelledby="endDlgT">
