@@ -132,7 +132,7 @@ export const adventTree = ['12-24', '12-25'];
 /** OBS overlay pieces (?part=…): one Browser Source each, placed per scene by Iceman.
     w × h = the Browser Source size that fits the piece at ?scale=1 (measured in ?demo). */
 export const overlayPieces: { id: string; label: string; what: string; w: number; h: number; key?: boolean }[] = [
-  { id: 'timer', label: 'Cronometrul', what: 'Timpul rămas și «+timp».', w: 360, h: 180 },
+  { id: 'timer', label: 'Cronometrul', what: 'Timpul rămas, «+timp», înghețat, Ora dublă și icemanlucky.ro.', w: 340, h: 130 },
   { id: 'goal', label: 'Următorul milestone', what: 'Ce urmează și cât mai e.', w: 430, h: 180 },
   { id: 'together', label: 'Ore împreună', what: 'Ore privite și timp adăugat azi.', w: 340, h: 80 },
   { id: 'bubble', label: 'Balonul lui Iceman', what: 'Doar balonul cu replica, lângă capul lui pe cameră. Coada în dreapta: &tail=right.', w: 340, h: 200 },

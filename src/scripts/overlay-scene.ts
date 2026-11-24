@@ -59,18 +59,10 @@ const announced = new Set<number>();
 
 // ---- Base layout, every second -------------------------------------------------
 function draw() {
+  data = forcedData(data);
   const v = derive({ ...initialState(), now: Date.now() }, data);
   if (brb) return drawBrb(v);
-  for (const k of ['dd', 'hh', 'mm', 'ss'] as const) setText(sceneEl.querySelector(`[data-u="${k}"]`), v[k]);
-  setText($('[data-tlabel]'), v.timerLabelUp);
-  const timer = $('.ov-timer');
-  timer.classList.toggle('frost', v.isFrozen);
-  timer.classList.toggle('dbl', v.doubleNow && !v.isFrozen);
-  const state = $('[data-tstate]');
-  const st = v.isFrozen ? `ÎNGHEȚAT ${v.frozenText.split('.')[0].replace('până pe', 'PÂNĂ PE').toUpperCase()}`
-    : v.doubleNow ? `ORA DUBLĂ ×2${v.doubleSponsor ? ` · ${v.doubleSponsor.toUpperCase()}` : ''}` : '';
-  state.hidden = !st;
-  setText(state, st);
+  drawTimer(v);
   // Next milestone
   setText($('[data-mtag]'), v.allGoalsDone ? 'TOATE MILESTONE-URILE' : 'URMĂTORUL MILESTONE');
   setText($('[data-mleft]'), v.nextLeft.toUpperCase());
@@ -87,6 +79,154 @@ function draw() {
   if (r && r.closesAt <= Date.now() && r.closesAt > Date.now() - 30_000 && !announced.has(r.id)) announceWinner(data);
 }
 
+// ---- Cronometrul: state, tag, the bottom line ------------------------------------
+const TZ = 'Europe/Bucharest';
+const hmBuc = (ms: number) => new Date(ms).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit', timeZone: TZ });
+const dayBuc = (ms: number) => new Date(ms).toLocaleDateString('ro-RO', { day: 'numeric', month: 'short', timeZone: TZ }).replace('.', '');
+let lastSec = -1;
+// Demo only: &state=live|frozen|double|upcoming|ended shows that look with sample times (previews, OBS tests).
+const forced = params.has('demo') ? params.get('state') : null;
+const FORCED_STATES = ['live', 'frozen', 'double', 'upcoming', 'ended'];
+// Fixed sample times for those previews, so a frozen clock really stands still.
+const T0 = Date.now();
+const SAMPLE = { freezeEnd: T0 + 2 * 86_400_000, doubleEnd: T0 + 42 * 60_000, start: T0 + 26 * 3_600_000 };
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+// Odometer: a changed digit rolls out downwards while the new one drops in.
+// `big` (time added): a longer roll, staggered left to right from `delay` on.
+let slotIndex = 0;
+function setGroup(el: HTMLElement, val: string, roll: boolean, big = false) {
+  const slots = el.querySelectorAll<HTMLElement>('.sl');
+  if (slots.length !== val.length) { el.innerHTML = [...val].map((c) => `<span class="sl"><b>${c}</b></span>`).join(''); return; }
+  [...val].forEach((c, i) => {
+    const sl = slots[i];
+    const n = slotIndex++;
+    sl.querySelectorAll('b.out').forEach((x) => x.remove());
+    const cur = sl.lastElementChild as HTMLElement;
+    if (cur.textContent === c) return;
+    if (!roll || calm) { cur.textContent = c; cur.className = ''; cur.style.removeProperty('--d'); return; }
+    const nb = document.createElement('b');
+    const d = '0s'; void n;
+    nb.textContent = c; nb.className = big ? 'in big' : 'in'; nb.style.setProperty('--d', d);
+    cur.className = big ? 'out big' : 'out'; cur.style.setProperty('--d', d);
+    sl.append(nb);
+    setTimeout(() => { cur.remove(); if (nb.classList.contains('in')) { nb.className = ''; nb.style.removeProperty('--d'); } }, big ? 1200 : 400);
+  });
+}
+function showClock(total: number, roll: boolean, big = false) {
+  const t = Math.max(0, Math.round(total));
+  const parts = { dd: pad2(Math.floor(t / 86400)), hh: pad2(Math.floor((t % 86400) / 3600)), mm: pad2(Math.floor((t % 3600) / 60)), ss: pad2(t % 60) };
+  slotIndex = 0;
+  for (const k of ['dd', 'hh', 'mm', 'ss'] as const) setGroup(sceneEl.querySelector<HTMLElement>(`[data-u="${k}"]`)!, parts[k], roll, big);
+}
+// Time added (subs, donations, a moderator), as one clear moment: the clock dims, «TIMP ADĂUGAT
+// +1:15:00» grows in and holds, then the changed digits roll to the new time together. More time
+// arriving meanwhile adds up in the same moment instead of starting a new one.
+let shown = -1;
+let gain: { delta: number; last: number } | null = null;
+const fmtGain = (sec: number) => {
+  const s = Math.round(sec), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
+  return `+${h ? `${h}:${pad2(m)}:${pad2(x)}` : `${m}:${pad2(x)}`}`;
+};
+function drawClock(target: number, state: string) {
+  // Until the first real data arrives, no «time added»: the first value is just the clock.
+  if (data.loaded === false) { showClock(target, false); shown = -1; return; }
+  if (gain) {
+    if (target - gain.last > 5) { gain.delta += target - gain.last; setText($('[data-gainv]'), fmtGain(gain.delta)); }
+    gain.last = target;
+    return;
+  }
+  const canGain = state === 'live' || state === 'frozen' || state === 'double';
+  if (shown >= 0 && canGain && !calm && target - shown > 5) {
+    const el = $('.ov-timer');
+    gain = { delta: target - shown, last: target };
+    setText($('[data-gainl]'), state === 'double' ? 'TIMP ADĂUGAT · ×2' : 'TIMP ADĂUGAT');
+    setText($('[data-gainv]'), fmtGain(gain.delta));
+    el.classList.add('gaining');
+    restart($('[data-gain]'), 'go');
+    setTimeout(() => {
+      el.classList.remove('gaining');
+      restart(el, 'gain');
+      const now = gain!.last;
+      gain = null;
+      showClock(now, true, true);
+      shown = now;
+    }, 1450);
+    return;
+  }
+  showClock(target, shown >= 0);
+  shown = target;
+}
+
+// The band's rotating line: what matters in this state, then where to go.
+const GOODS = 'VOT · ROATĂ · BINGO';
+let tickState = '';
+let tickI = 0;
+let tickLines: () => string[] = () => [GOODS];
+function showTick(text: string) {
+  const box = $('[data-tick]');
+  const cur = box.querySelector('span:not(.out)');
+  if (cur?.textContent === text) return;
+  box.querySelectorAll('span.out').forEach((x) => x.remove());
+  if (cur) { cur.className = 'out'; setTimeout(() => cur.remove(), 420); }
+  const sp = document.createElement('span');
+  sp.textContent = text; sp.className = calm || !cur ? '' : 'in';
+  box.append(sp);
+}
+setInterval(() => { const l = tickLines(); if (l.length > 1) { tickI = (tickI + 1) % l.length; showTick(l[tickI]); } }, 8000);
+
+let prevState = '';
+/** Demo &state=…: the sample times, applied before derive() so every frame agrees. */
+function forcedData(d: SiteData): SiteData {
+  if (!forced || !FORCED_STATES.includes(forced)) return d;
+  return { ...d, pausedUntil: forced === 'frozen' ? SAMPLE.freezeEnd : null,
+    doubleFrom: forced === 'double' ? T0 : null, doubleUntil: forced === 'double' ? SAMPLE.doubleEnd : null,
+    doubleSponsor: forced === 'double' ? (d.doubleSponsor || site.sponsor.logoText) : null,
+    startsAt: forced === 'upcoming' ? SAMPLE.start : d.startsAt };
+}
+function drawTimer(v: ReturnType<typeof derive>) {
+  const timer = $('.ov-timer');
+  let state = v.isFrozen ? 'frozen' : v.isLive && v.doubleNow ? 'double' : v.isLive ? 'live' : v.isEnded ? 'ended' : 'upcoming';
+  if (forced && FORCED_STATES.includes(forced)) {
+    state = forced;
+    const now = Date.now();
+    v = { ...v, statusText: state === 'upcoming' ? 'ÎNCEPE CURÂND' : 'ÎNCHEIAT', ...(state === 'ended' ? { dd: '00', hh: '00', mm: '00', ss: '00' } : {}) };
+    void now;
+  }
+  if (timer.dataset.state !== state) {
+    timer.dataset.state = state;
+    if (prevState && !calm) {
+      timer.classList.remove('enter-frozen', 'enter-double');
+      if (state === 'frozen' || state === 'double') { void timer.offsetWidth; timer.classList.add(`enter-${state}`); setTimeout(() => timer.classList.remove(`enter-${state}`), 2000); }
+      restart($('[data-ttag]'), 'slam');
+    }
+    prevState = state;
+  }
+  setText($('[data-ttext]'), state === 'frozen' ? 'ÎNGHEȚAT' : state === 'double' ? '×2 ORA DUBLĂ' : state === 'live' ? 'LIVE' : state === 'ended' ? 'TIMPUL A EXPIRAT' : v.statusText);
+  drawClock(Number(v.dd) * 86400 + Number(v.hh) * 3600 + Number(v.mm) * 60 + Number(v.ss), state);
+  // Band lines for this state (read fresh at every rotation, so «ÎNCĂ 41 MIN» stays current).
+  const t = data;
+  const when = (ms: number) => (dayBuc(ms) === dayBuc(Date.now()) ? `LA ${hmBuc(ms)}` : `PE ${dayBuc(ms).toUpperCase()} · ${hmBuc(ms)}`);
+  tickLines = () => {
+    if (state === 'frozen' && t.pausedUntil) return [`PÂNĂ ${when(t.pausedUntil)}`, 'SUBS ȘI DONAȚIILE ADAUGĂ TIMP', GOODS];
+    if (state === 'double' && t.doubleUntil) {
+      const m = Math.max(1, Math.ceil((t.doubleUntil - Date.now()) / 60_000));
+      return [`×2 · ÎNCĂ ${m} MIN`, ...(t.doubleSponsor ? [`DE LA ${t.doubleSponsor.toUpperCase()}`] : []), GOODS];
+    }
+    if (state === 'upcoming' && t.startsAt) return [`START ${when(t.startsAt).replace(/^(LA|PE) /, '')}`, GOODS];
+    if (state === 'ended') return ['MULȚUMIM TUTUROR!'];
+    return [GOODS];
+  };
+  if (tickState !== state) { tickState = state; tickI = 0; showTick(tickLines()[0]); }
+  else if (tickI === 0) showTick(tickLines()[0]);
+  // The minute bar drains with the seconds; it refills without a slide.
+  const sec = Number(v.ss) || 0;
+  const bar = $('[data-sweep]');
+  bar.style.transition = sec > lastSec ? 'none' : '';
+  bar.style.width = `${state === 'live' ? (sec / 59) * 100 : 100}%`;
+  lastSec = sec;
+}
+
 // ---- Iceman's bubble + the timer jump, one event at a time ---------------------
 const bag = new LineBag();
 const bubbleQ: TickerItem[] = [];
@@ -96,12 +236,6 @@ async function bubbleLoop() {
   bubbleBusy = true;
   while (bubbleQ.length) {
     const t = bubbleQ.shift()!;
-    // Timer: +time tag and an ice flash on the digits.
-    if (show.has('timer') && t.seconds) {
-      setText($('[data-pop]'), t.time);
-      restart($('[data-pop]'), 'go');
-      if (!calm) sceneEl.querySelectorAll<HTMLElement>('.ov-digit').forEach((d) => restart(d, 'flash'));
-    }
     const group = groupFor(t, data.smallDonation);
     if (show.has('bubble') && group) {
       const vars = varsFor(t);

@@ -96,23 +96,171 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
       #ov-snow { position: fixed; inset: 0; pointer-events: none; }
       .cond { font-family: 'Barlow Condensed', sans-serif; }
       .panel { background: rgba(5, 6, 8, 0.9); border: 1px solid #23415E; }
-      .ov-timer { position: absolute; left: 24px; bottom: 24px; padding: 12px 16px 14px; }
-      .ov-timer .t-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 300px; }
-      .t-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 14px; letter-spacing: .1em; color: #AEB8C7; }
-      .t-pop { padding: 0 8px; background: var(--ice); color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 20px; opacity: 0; }
-      .t-pop.go { animation: tpop 2.4s ease-out both; }
-      @keyframes tpop { 0% { opacity: 0; transform: translateY(14px) scale(.9); } 18% { opacity: 1; transform: none; } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-16px); } }
-      .t-digits { position: relative; margin-top: 6px; display: flex; gap: 6px; }
-      .t-digits .ov-digit { flex: 1 1 0; }
-      .ov-digit { width: 64px; padding: 4px 0 2px; background: linear-gradient(180deg, #16304A, #0B1A2A); border: 1px solid #23415E; text-align: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 44px; line-height: .95; color: #DFF6FF; font-variant-numeric: tabular-nums; }
-      .ov-digit.flash { animation: dflash 1.2s ease-out; }
-      @keyframes dflash { 0% { box-shadow: 0 0 0 rgba(63,208,255,0); } 30% { box-shadow: 0 0 22px rgba(63,208,255,.7); border-color: var(--ice); } 100% { box-shadow: 0 0 0 rgba(63,208,255,0); } }
-      .t-state { margin-top: 8px; display: inline-block; padding: 2px 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px; letter-spacing: .04em; }
-      .ov-timer.frost .ov-digit { background: #1B2C3C; color: #B9C7D4; border-color: #8FE4FF; }
-      .ov-timer.frost .t-digits::after { content: ''; position: absolute; inset: -2px; pointer-events: none; background: linear-gradient(135deg, rgba(223,246,255,.34), rgba(223,246,255,0) 38%, rgba(223,246,255,0) 66%, rgba(223,246,255,.26)); border: 1px solid rgba(223,246,255,.6); }
-      .ov-timer.frost .t-state { border: 1px solid #8FE4FF; color: #DFF6FF; }
-      .ov-timer.dbl { box-shadow: 0 0 26px rgba(223,246,255,.35); border-color: #F2F5FA; }
-      .ov-timer.dbl .t-state { background: #F2F5FA; color: #04101A; }
+      /* ---- Cronometrul (24 Nov 2026, v2 compact): on stream all marathon, so small (340×130)
+         and alive. Odometer digits; time added = the clock spins up with a shockwave and ice
+         shards; frozen = frost creeps in and icicles drop; Ora dublă = ignition, then flames;
+         the icemanlucky.ro band rotates short lines. ?calm / reduced motion: no motion at all. */
+      .ov-timer { box-sizing: border-box; position: absolute; left: 24px; bottom: 24px; width: 324px; padding: 6px 12px 0 16px; overflow: hidden;
+        background: linear-gradient(180deg, rgba(12, 20, 30, .95), rgba(5, 6, 8, .95) 75%); border: 1px solid #23415E;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, .45); transition: border-color .6s; }
+      .ov-timer::before { content: ''; position: absolute; z-index: 3; left: 0; top: 0; bottom: 0; width: 4px; background: linear-gradient(180deg, #FFFFFF, #CDF2FF 40%, var(--ice)); transition: background .6s; }
+      .tm-top { position: relative; z-index: 2; display: flex; align-items: center; gap: 8px; height: 17px; }
+      .tm-brand { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 14px; line-height: 1; color: #F2F5FA; }
+      .tm-brand b { font-weight: 900; background: linear-gradient(180deg, #FFFFFF 18%, #CDF2FF 58%, var(--ice) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: .04em; }
+      .tm-tag { margin-left: auto; position: relative; display: inline-flex; align-items: center; gap: 5px; padding: 1px 7px; transform: skewX(-12deg); font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 12px; letter-spacing: .08em; white-space: nowrap; background: #D5162B; color: #FFFFFF; }
+      .tm-tag > * { transform: skewX(12deg); }
+      .tm-dot { position: relative; width: 6px; height: 6px; background: #FFFFFF; }
+      .tm-dot { animation: tmbreathe 3.2s ease-in-out infinite; }
+      @keyframes tmbreathe { 50% { opacity: .55; } }
+      .tm-tag.slam { animation: tmslam .55s cubic-bezier(.2, 1.6, .4, 1); }
+      @keyframes tmslam { 0% { transform: skewX(-12deg) scale(1.9); opacity: 0; } 100% { transform: skewX(-12deg) scale(1); opacity: 1; } }
+
+      /* odometer digits */
+      .tm-digits { position: relative; z-index: 2; display: flex; align-items: flex-start; justify-content: space-between; margin-top: 1px; }
+      .tm-u { display: flex; flex-direction: column; align-items: flex-start; }
+      .tm-n { display: flex; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 52px; line-height: 1; font-variant-numeric: tabular-nums; }
+      /* the slot clips only up and down, so the italic digits never lose their edges */
+      .sl { position: relative; display: block; height: 1em; padding: 0 .1em; margin: 0 -.07em 0 -.05em; overflow: hidden; }
+      .sl b { display: block; font-weight: 900; line-height: 1; padding-right: .04em; background: linear-gradient(180deg, #FFFFFF 22%, #CDF2FF 60%, var(--ice) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .sl b.out { position: absolute; left: .1em; top: 0; animation: tmout .28s ease-in forwards; animation-delay: var(--d, 0s); }
+      .sl b.in { position: relative; top: 0; animation: tmin .28s ease-out both; animation-delay: var(--d, 0s); }
+      /* position (not transform/opacity) so the digits stay inside the slot's clip on every GPU */
+      @keyframes tmout { to { top: 1em; } }
+      @keyframes tmin { from { top: -1em; } }
+      /* time added: one smooth roll, left to right, and a soft glow that fades */
+      .sl b.out.big { animation-name: tmoutbig; animation-duration: .5s; }
+      .sl b.in.big { animation-name: tminbig; animation-duration: .55s; animation-timing-function: cubic-bezier(.2, .8, .3, 1); }
+      @keyframes tmoutbig { to { top: 1em; } }
+      @keyframes tminbig { from { top: -1em; } }
+      /* glows sit behind the digits (a filter on rolling digits would ignore the slot clip) */
+      .tm-digits::before { content: ''; position: absolute; z-index: -1; left: -6px; right: -6px; top: 2px; bottom: 12px; background: radial-gradient(ellipse at 50% 55%, var(--glow, transparent), transparent 72%); transition: background .8s; }
+      .ov-timer.gain .tm-digits::before { animation: tmgain 1.6s ease-out; }
+      @keyframes tmgain { 0%, 30% { background: radial-gradient(ellipse at 50% 55%, rgba(63, 208, 255, .32), transparent 72%); } }
+      .tm-l { margin-top: 1px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 9px; letter-spacing: .26em; color: #6F7B8D; }
+      .tm-sep { margin-top: 13px; display: flex; flex-direction: column; gap: 10px; transform: skewX(-12deg); }
+      .tm-sep::before, .tm-sep::after { content: ''; width: 5px; height: 5px; background: var(--ice); opacity: .75; }
+      /* the minute bar */
+      .tm-sweep { position: relative; z-index: 2; height: 2px; margin: 2px 0 0; background: #1A2230; }
+      .tm-sweep i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #1E6BFF, var(--ice) 70%, #FFFFFF); transition: width 1s linear; }
+
+      /* icemanlucky.ro band, always on, with a rotating line on the right */
+      .tm-url { position: relative; z-index: 4; margin: 4px -12px 0 -16px; padding: 0 12px 0 16px; height: 22px; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        background: rgba(63, 208, 255, .09); border-top: 1px solid #23415E; transition: background .6s, border-color .6s; }
+      .tm-site { flex: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 16px; line-height: 1; color: #FFFFFF; }
+      .tm-site b { font-weight: 900; color: var(--ice); }
+      .tm-tick { position: relative; flex: 1 1 auto; height: 22px; overflow: hidden; text-align: right; }
+      .tm-tick span { position: absolute; right: 0; top: 0; line-height: 22px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 11px; letter-spacing: .14em; color: #AEB8C7; white-space: nowrap; }
+      .tm-tick span.in { animation: tkin .5s cubic-bezier(.2, .9, .3, 1.1) both; }
+      .tm-tick span.out { animation: tkout .4s ease-in forwards; }
+      @keyframes tkin { from { transform: translateY(100%); opacity: 0; } }
+      @keyframes tkout { to { transform: translateY(-100%); opacity: 0; } }
+
+      /* Time added, as one clear moment (~2.2 s): the clock dims, «TIMP ADĂUGAT +1:15:00» grows in
+         over it and holds, then drops into the clock while the changed digits roll to the new time. */
+      .tm-digits { transition: opacity .3s ease; }
+      .ov-timer.gaining .tm-digits { opacity: .12; }
+      .tm-gain { position: absolute; z-index: 5; left: 16px; right: 12px; top: 21px; height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; pointer-events: none; opacity: 0;
+        background: radial-gradient(ellipse at 50% 55%, rgba(5, 6, 8, .7), transparent 75%); }
+      .tg-l { display: flex; align-items: center; gap: 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 11px; letter-spacing: .3em; color: #8FE4FF; white-space: nowrap; }
+      .tg-l::before, .tg-l::after { content: ''; width: 34px; height: 1px; background: currentColor; opacity: .7; transform: scaleX(0); }
+      .tg-l::before { transform-origin: 100% 50%; } .tg-l::after { transform-origin: 0 50%; }
+      .tg-v { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 44px; line-height: 1; padding-right: .06em; font-variant-numeric: tabular-nums;
+        background: linear-gradient(180deg, #FFFFFF 25%, #CDF2FF 60%, var(--ice) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .tm-gain.go { animation: tggo 2.2s cubic-bezier(.25, .8, .3, 1) both; }
+      .tm-gain.go .tg-l::before, .tm-gain.go .tg-l::after { animation: tgline .5s .15s cubic-bezier(.2, .8, .3, 1) both; }
+      @keyframes tggo { 0% { opacity: 0; transform: scale(.72); } 14% { opacity: 1; transform: scale(1.04); } 22% { transform: scale(1); } 66% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: translateY(6px) scale(.55); } }
+      @keyframes tgline { to { transform: scaleX(1); } }
+      .ov-timer.gaining { border-color: var(--ice); transition: border-color .3s; }
+      .ov-timer[data-state="frozen"] .tg-l { color: #DFF6FF; }
+      .ov-timer[data-state="frozen"] .tg-v { background-image: linear-gradient(180deg, #FFFFFF 25%, #E6F7FF 60%, #9FC4DA 100%); }
+      .ov-timer[data-state="double"] .tg-l { color: #FFC98A; }
+      .ov-timer[data-state="double"] .tg-v { background-image: linear-gradient(180deg, #FFFFFF 22%, #FFE3B0 55%, #FF9A3C 100%); }
+      .ov-timer[data-state="double"].gaining { border-color: #FFB547; }
+
+      /* frost (frozen) */
+      .tm-frost { position: absolute; inset: 0; z-index: 1; pointer-events: none; opacity: 0; }
+      .tm-crystals { position: absolute; inset: 0; opacity: .45;
+        background:
+          radial-gradient(90px 50px at 0% 0%, rgba(223, 246, 255, .34), transparent 70%),
+          radial-gradient(110px 60px at 100% 100%, rgba(223, 246, 255, .26), transparent 70%),
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23DFF6FF' stroke-width='1.2' stroke-linecap='square' opacity='.3'%3E%3Cpath d='M20 8v24M8 20h24M11 11l18 18M29 11L11 29M20 12l-4-4M20 12l4-4M20 28l-4 4M20 28l4 4'/%3E%3Cpath d='M86 70v16M78 78h16M80 72l12 12M92 72L80 84'/%3E%3Cpath d='M104 18l-8 6M96 24l-6 10M90 34l-10 4M60 100l8-10M68 90l12-4M80 86l6-10M40 60l-10 6M30 66l-4 10'/%3E%3C/g%3E%3C/svg%3E"); }
+      .tm-shine { position: absolute; top: 0; bottom: 0; left: -40%; width: 30%; background: linear-gradient(105deg, transparent, rgba(223, 246, 255, .14), transparent); transform: skewX(-18deg); animation: tmshine 16s ease-in-out infinite; }
+      @keyframes tmshine { 0%, 70% { left: -40%; } 100% { left: 120%; } }
+      .tm-ice { position: absolute; left: 4px; top: -1px; width: calc(100% - 4px); height: 12px; }
+      .tm-frost i { position: absolute; width: 3px; height: 3px; background: #FFFFFF; opacity: 0; box-shadow: 0 0 4px #DFF6FF; animation: tmsnow 9s linear infinite; }
+      .tm-frost i:nth-of-type(1) { left: 14%; animation-delay: 0s; } .tm-frost i:nth-of-type(2) { left: 52%; animation-delay: 3s; } .tm-frost i:nth-of-type(3) { left: 86%; animation-delay: 6s; }
+      .tm-frost i:nth-of-type(n+4) { display: none; }
+      @keyframes tmsnow { 0% { top: 6px; opacity: 0; } 15% { opacity: .9; } 100% { top: 100px; opacity: 0; transform: translateX(10px); } }
+      .ov-timer[data-state="frozen"] { border-color: #BFE9FF; box-shadow: 0 8px 24px rgba(0, 0, 0, .45), inset 0 0 22px rgba(191, 233, 255, .18), 0 0 18px rgba(191, 233, 255, .2); }
+      .ov-timer[data-state="frozen"]::before { background: linear-gradient(180deg, #FFFFFF, #DFF6FF); }
+      .ov-timer[data-state="frozen"] .tm-frost { opacity: 1; }
+      .ov-timer[data-state="frozen"] .sl b { background-image: linear-gradient(180deg, #FFFFFF 15%, #DDF3FF 55%, #8FB7CF 100%); }
+      .ov-timer[data-state="frozen"] { --glow: rgba(191, 233, 255, .12); }
+      .ov-timer[data-state="frozen"] .tm-sep { animation: none; }
+      .ov-timer[data-state="frozen"] .tm-sep::before, .ov-timer[data-state="frozen"] .tm-sep::after { background: #DFF6FF; }
+      .ov-timer[data-state="frozen"] .tm-tag { background: #DFF6FF; color: #04101A; }
+            .ov-timer[data-state="frozen"] .tm-url { background: rgba(223, 246, 255, .11); border-top-color: rgba(191, 233, 255, .45); }
+      .ov-timer[data-state="frozen"] .tm-site b, .ov-timer[data-state="frozen"] .tm-tick span { color: #DFF6FF; }
+      /* freezing: frost creeps in from both sides, icicles drop, the digits flash white */
+      .ov-timer.enter-frozen .tm-frost { animation: tmfrostin 1.4s cubic-bezier(.3, .7, .3, 1) both; }
+      @keyframes tmfrostin { 0% { opacity: 0; clip-path: inset(0 50% 0 50%); } 30% { opacity: 1; } 100% { opacity: 1; clip-path: inset(0 0 0 0); } }
+      .ov-timer.enter-frozen .tm-ice { animation: tmicedrop .9s .6s cubic-bezier(.3, 1.5, .5, 1) both; }
+      @keyframes tmicedrop { from { transform: translateY(-100%); } }
+      .ov-timer.enter-frozen .tm-digits::before { animation: tmfreezeflash 1.4s ease-out; }
+      @keyframes tmfreezeflash { 0% { background: radial-gradient(ellipse at 50% 55%, rgba(255, 255, 255, .35), transparent 72%); } }
+
+      /* Ora dublă: hot and limited, but calm enough for gameplay. A glowing ember bed under the
+         digits, soft flame tongues with hot cores that sway slowly, a few sparks, warm digits.
+         Entering it, the flames grow in once; nothing pulses or flashes after that. */
+      .tm-fire { position: absolute; inset: 0 0 23px 0; z-index: 1; pointer-events: none; opacity: 0; overflow: hidden; }
+      .tm-heat { position: absolute; inset: 0; background: radial-gradient(240px 60px at 50% 112%, rgba(255, 106, 26, .38), transparent 72%), radial-gradient(120px 46px at 0% 105%, rgba(255, 61, 0, .2), transparent 70%), radial-gradient(120px 46px at 100% 105%, rgba(255, 61, 0, .2), transparent 70%); }
+      .tm-bed { position: absolute; left: 4px; right: 0; bottom: 0; height: 4px; background: linear-gradient(90deg, transparent, #B32000 8%, #FF5A0A 30%, #FFB547 50%, #FF5A0A 70%, #B32000 92%, transparent); filter: blur(1.5px); animation: tmbed 5s ease-in-out infinite; }
+      @keyframes tmbed { 50% { opacity: .7; } }
+      .fl { position: absolute; bottom: -10px; width: 30px; height: 46px; border-radius: 50% 50% 45% 45% / 75% 75% 25% 25%; transform-origin: 50% 100%; mix-blend-mode: screen; filter: blur(1.6px);
+        background: radial-gradient(ellipse at 50% 88%, rgba(255, 214, 140, .85) 0%, rgba(255, 140, 30, .7) 28%, rgba(255, 70, 0, .45) 55%, transparent 74%); animation: tmflame 3.2s ease-in-out infinite; }
+      .fl.c { width: 14px; height: 28px; bottom: -6px; filter: blur(1px); background: radial-gradient(ellipse at 50% 85%, rgba(255, 250, 225, .9) 0%, rgba(255, 200, 90, .7) 35%, transparent 72%); }
+      @keyframes tmflame { 0%, 100% { transform: translateX(0) scale(1, .72); opacity: .6; } 30% { transform: translateX(2px) scale(.9, 1); opacity: .85; } 60% { transform: translateX(-2px) scale(1.06, .84); opacity: .7; } }
+      .fl:nth-of-type(1) { left: 2%; animation-duration: 3.4s; animation-delay: -.3s; } .fl:nth-of-type(2) { left: 13%; width: 28px; height: 32px; animation-duration: 2.9s; animation-delay: -1.2s; }
+      .fl:nth-of-type(3) { left: 24%; height: 56px; animation-duration: 3.7s; animation-delay: -2s; } .fl:nth-of-type(4) { left: 36%; width: 30px; animation-duration: 3.1s; animation-delay: -.8s; }
+      .fl:nth-of-type(5) { left: 47%; height: 58px; animation-duration: 3.9s; animation-delay: -2.6s; } .fl:nth-of-type(6) { left: 58%; width: 28px; height: 34px; animation-duration: 3s; animation-delay: -1.6s; }
+      .fl:nth-of-type(7) { left: 69%; height: 54px; animation-duration: 3.6s; animation-delay: -.4s; } .fl:nth-of-type(8) { left: 80%; width: 30px; animation-duration: 3.3s; animation-delay: -2.2s; }
+      .fl:nth-of-type(9) { left: 91%; width: 26px; height: 30px; animation-duration: 2.8s; animation-delay: -1s; }
+      .fl.c:nth-of-type(10) { left: 9%; animation-duration: 2.4s; } .fl.c:nth-of-type(11) { left: 31%; animation-duration: 2.7s; animation-delay: -1s; }
+      .fl.c:nth-of-type(12) { left: 52%; animation-duration: 2.5s; animation-delay: -.5s; } .fl.c:nth-of-type(13) { left: 74%; animation-duration: 2.8s; animation-delay: -1.7s; }
+      .fl.c:nth-of-type(14) { left: 93%; animation-duration: 2.6s; animation-delay: -.9s; }
+      .tm-fire i { position: absolute; bottom: 4px; width: 2px; height: 2px; background: #FFD08A; box-shadow: 0 0 4px #FF8A1F; opacity: 0; animation: tmember 5s ease-out infinite; }
+      .tm-fire i:nth-of-type(1) { left: 18%; } .tm-fire i:nth-of-type(2) { left: 44%; animation-delay: 1.7s; animation-duration: 5.6s; }
+      .tm-fire i:nth-of-type(3) { left: 66%; animation-delay: 3.1s; } .tm-fire i:nth-of-type(4) { left: 88%; animation-delay: 4.2s; animation-duration: 6s; }
+      .tm-fire i:nth-of-type(n+5) { display: none; }
+      @keyframes tmember { 0% { opacity: 0; transform: translate(0, 0); } 15% { opacity: .9; } 100% { opacity: 0; transform: translate(8px, -70px); } }
+      .ov-timer[data-state="double"] { border-color: #E07A2A; box-shadow: 0 8px 24px rgba(0, 0, 0, .45), 0 0 14px rgba(255, 106, 26, .28); }
+      .ov-timer[data-state="double"] .tm-fire { opacity: 1; }
+      .ov-timer[data-state="double"]::before { background: linear-gradient(180deg, #FFE0A3, #FF8A1F 55%, #FF3D00); }
+      .ov-timer[data-state="double"] .tm-brand b { background-image: linear-gradient(180deg, #FFFFFF 18%, #FFE0A3 58%, #FF8A1F 100%); }
+      .ov-timer[data-state="double"] .sl b { background-image: linear-gradient(180deg, #FFFFFF 20%, #FFE3B0 55%, #FF9A3C 100%); }
+      .ov-timer[data-state="double"] { --glow: rgba(255, 140, 40, .14); }
+      .ov-timer[data-state="double"] .tm-sep::before, .ov-timer[data-state="double"] .tm-sep::after { background: #FFB547; }
+      .ov-timer[data-state="double"] .tm-l { color: #F0D2B4; text-shadow: 0 1px 2px rgba(0, 0, 0, .9); }
+      .ov-timer[data-state="double"] .tm-tag { background: linear-gradient(90deg, #FF6A1A, #FFB547); color: #1A0800; }
+      .ov-timer[data-state="double"] .tm-sweep { display: none; }
+      .ov-timer[data-state="double"] .tm-url { background: rgba(255, 106, 26, .14); border-top-color: rgba(255, 138, 31, .5); }
+      .ov-timer[data-state="double"] .tm-site b { color: #FFB547; }
+      .ov-timer[data-state="double"] .tm-tick span { color: #FFE0C2; }
+      /* entering Ora dublă: the fire grows in from below, once */
+      .ov-timer.enter-double .tm-fire { animation: tmignite 1.6s cubic-bezier(.3, .7, .3, 1) both; }
+      @keyframes tmignite { 0% { opacity: 0; transform: translateY(18px) scaleY(.4); } 100% { opacity: 1; transform: none; } }
+      .ov-timer.enter-double .tm-digits::before { animation: tmheatin 1.6s ease-out; }
+      @keyframes tmheatin { 0% { background: radial-gradient(ellipse at 50% 55%, rgba(255, 181, 71, .35), transparent 72%); } }
+
+      .ov-timer[data-state="upcoming"] .tm-tag { background: transparent; box-shadow: inset 0 0 0 1px var(--ice); color: #8FE4FF; }
+      .ov-timer[data-state="upcoming"] .tm-sweep i { width: 100% !important; opacity: .35; }
+      .ov-timer[data-state="ended"] .tm-tag { background: #2A3445; color: #C9D2DF; }
+      .ov-timer[data-state="ended"] .sl b { background-image: linear-gradient(180deg, #C9D2DF, #6F7B8D); }
+      .ov-timer[data-state="ended"] .tm-sep { animation: none; }
+      .ov-timer[data-state="ended"] .tm-sweep, .ov-timer[data-state="frozen"] .tm-sweep i { opacity: 0; }
+      .ov-timer[data-state="ended"]::before { background: #4A5568; }
+      .ov-timer:not([data-state="live"]) .tm-dot { display: none; }
+      .tm-fi, .tm-fl { display: none; } .ov-timer[data-state="double"] .tm-fi, .ov-timer[data-state="frozen"] .tm-fl { display: inline-flex; } .tm-flake { display: block; }
       .ov-mile { position: absolute; right: 24px; bottom: 24px; width: 380px; padding: 12px 16px; }
       .ov-mile .m-head { display: flex; justify-content: space-between; gap: 10px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: .1em; color: #8C97A8; }
       .ov-mile .m-head b { color: var(--ice); font-weight: 800; }
@@ -230,7 +378,6 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
       body.frame.piece-snow #ov-snow { outline: 2px dashed rgba(63, 208, 255, .85); outline-offset: -2px; }
       /* ?calm=1 and reduced motion: values just change, moments simply appear and go. */
       body.calm *, body.calm *::before, body.calm *::after { animation: none !important; transition: none !important; }
-      body.calm .t-pop.go { opacity: 1; }
       @media (prefers-reduced-motion: reduce) { .ov-scene *, .ov-brb * { animation: none !important; transition: none !important; } }
 
     </style>
@@ -292,10 +439,22 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
       </div>
       <div class="ov-moment" data-part="moments" aria-live="polite"></div>
       <div class="ov-code" data-part="code" aria-live="polite"></div>
-      <div class="ov-timer panel" data-part="timer">
-        <div class="t-head"><span class="t-label" data-tlabel>TIMP RĂMAS</span><span class="t-pop" data-pop></span></div>
-        <div class="t-digits"><span class="ov-digit" data-u="dd">--</span><span class="ov-digit" data-u="hh">--</span><span class="ov-digit" data-u="mm">--</span><span class="ov-digit" data-u="ss">--</span></div>
-        <span class="t-state" data-tstate hidden></span>
+      <div class="ov-timer" data-part="timer" data-state="live">
+        <div class="tm-frost" aria-hidden="true"><div class="tm-crystals"></div><div class="tm-shine"></div><svg class="tm-ice" viewBox="0 0 400 18" preserveAspectRatio="none"><defs><linearGradient id="tmIce" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".95"/><stop offset="1" stop-color="#BFE9FF" stop-opacity=".15"/></linearGradient></defs><path fill="url(#tmIce)" d="M0 0H400V2L392 2 388 9 384 2 370 2 367 14 363 2 344 2 341 7 338 2 318 2 314 16 310 2 292 2 289 8 286 2 262 2 258 12 254 2 236 2 233 6 230 2 206 2 202 15 198 2 178 2 175 8 172 2 150 2 146 11 142 2 120 2 117 6 114 2 94 2 90 17 86 2 66 2 63 9 60 2 40 2 37 13 33 2 16 2 13 7 10 2 0 2Z"/></svg><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="tm-fire" aria-hidden="true"><div class="tm-heat"></div><span class="fl"></span><span class="fl"></span><span class="fl"></span><span class="fl"></span><span class="fl"></span><span class="fl"></span><span class="fl"></span><span class="fl"></span><span class="fl"></span><span class="fl c"></span><span class="fl c"></span><span class="fl c"></span><span class="fl c"></span><span class="fl c"></span><div class="tm-bed"></div><i></i><i></i><i></i><i></i></div>
+        <div class="tm-top">
+          <span class="tm-brand"><b>ICE</b>MARATON</span>
+          <span class="tm-tag" data-ttag><span class="tm-dot"></span><span class="tm-fi"><svg class="tm-fire-ic" width="12" height="14" viewBox="0 0 24 28" fill="currentColor" aria-hidden="true"><path d="M12 0c1 6 8 9 8 17a8 8 0 0 1-16 0c0-4 2-6 4-8 0 3 1 5 3 6-1-6 1-11 1-15z"/></svg></span><span class="tm-fl"><svg class="tm-flake" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" aria-hidden="true"><path d="M12 2v20M3.3 7l17.4 10M3.3 17L20.7 7M9 4l3 3 3-3M9 20l3-3 3 3"/></svg></span><span data-ttext>LIVE</span></span>
+        </div>
+        <div class="tm-digits" role="timer" aria-live="off">
+          <div class="tm-u"><span class="tm-n" data-u="dd"></span><span class="tm-l">ZILE</span></div><span class="tm-sep"></span>
+          <div class="tm-u"><span class="tm-n" data-u="hh"></span><span class="tm-l">ORE</span></div><span class="tm-sep"></span>
+          <div class="tm-u"><span class="tm-n" data-u="mm"></span><span class="tm-l">MIN</span></div><span class="tm-sep"></span>
+          <div class="tm-u"><span class="tm-n" data-u="ss"></span><span class="tm-l">SEC</span></div>
+        </div>
+        <div class="tm-sweep"><i data-sweep></i></div>
+        <div class="tm-url"><span class="tm-site">icemanlucky<b>.ro</b></span><span class="tm-tick" data-tick></span></div>
+        <div class="tm-gain" data-gain aria-hidden="true"><span class="tg-l" data-gainl>TIMP ADĂUGAT</span><span class="tg-v" data-gainv></span></div>
       </div>
       <div class="ov-mile panel" data-part="goal">
         <p class="m-head"><span data-mtag>URMĂTORUL MILESTONE</span><b data-mleft></b></p>
