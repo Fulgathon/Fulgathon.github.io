@@ -139,6 +139,7 @@ const emoteStyle = 'flex: none; width: 44px; height: 54px; object-fit: contain';
             <ul class="my-line" {...iff('hasLine')} data-region="myLine" set:html={views.myLine(v)} />
           </div>
           <p class="kv"><span>Premiul</span><span><span data-text="bingoPrizeName">{v.bingoPrizeName}</span> <span data-text="bingoPrizeBy" style="color: #E6C46A">{v.bingoPrizeBy}</span></span></p>
+          <p class="kv" {...iff('hasBingoWinner')}><span data-text="bingoWinnerLabel">{v.bingoWinnerLabel}</span><span data-text="bingoWinners" style="color: var(--ice); font-weight: 700; text-align: right">{v.bingoWinners}</span></p>
           <p class="kv"><span data-text="bingoCloseLabel">{v.bingoCloseLabel}</span><span data-text="bingoClose">{v.bingoClose}</span></p>
           <p class="kv" style="border-bottom: 0"><span>Au ales o linie</span><span data-text="bingoPlayersLong">{v.bingoPlayersLong}</span></p>
           <p role="status" data-text="bingoNote" data-toggle="is-bingo:isBingo" class="bingo-note" style="margin: 10px 0 0; font-size: 14px; color: #C9D2DF">{v.bingoNote}</p>

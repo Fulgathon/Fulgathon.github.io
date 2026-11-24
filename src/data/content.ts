@@ -140,5 +140,6 @@ export const overlayPieces: { id: string; label: string; what: string; w: number
   { id: 'moments', label: 'Momentele', what: 'Viscol, milestone, legende, roata etc.', w: 1100, h: 460 },
   { id: 'code', label: 'Codul secret', what: 'Doar când arătați un cod. Link privat.', w: 460, h: 170, key: true },
   { id: 'promo', label: 'Linia partenerului', what: 'Partenerul, la 10 minute.', w: 520, h: 60 },
+  { id: 'draw', label: 'Tragerea la bingo', what: 'Invizibil până trageți la sorți câștigătorul de bingo pe /mod.', w: 960, h: 540 },
   { id: 'snow', label: 'Ninsoarea', what: 'La valuri de subs cadou. Tot ecranul.', w: 1920, h: 1080 },
 ];

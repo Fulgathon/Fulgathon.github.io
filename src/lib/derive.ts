@@ -42,6 +42,8 @@ export interface State {
   /** Bingo: the 5 events being chosen, and what's saved on the server (null = nothing yet). */
   bingoPick: number[];
   bingoSaved: number[] | null;
+  /** This viewer was drawn as a bingo winner. */
+  bingoWon: boolean;
   suggestion: string;
   suggestDone: boolean;
   copied: boolean;
@@ -92,6 +94,7 @@ export function initialState(): State {
     result: null,
     bingoPick: [],
     bingoSaved: null,
+    bingoWon: false,
     suggestion: '',
     suggestDone: false,
     copied: false,
@@ -391,6 +394,7 @@ export function derive(s: State, d: SiteData) {
       : sameAsSaved ? 'Linia ta e salvată. O poți schimba până la închidere.'
       : saved ? 'Ai schimbat linia. Salvează ca să rămână așa.'
       : 'Alege o linie, apoi salvează.')
+    : s.bingoWon && !isOut ? `Ai câștigat la tragerea la sorți: ${prize}!`
     : isOut ? 'Conectează-te cu Twitch ca să-ți vezi linia.'
     : !saved ? 'Nu ai ales o linie înainte de închidere. Data viitoare!'
     : isBingo ? `BINGO! Toate cele 5 s-au întâmplat: ești pe lista de tragere la sorți pentru ${prize}.`
@@ -598,6 +602,9 @@ export function derive(s: State, d: SiteData) {
     lineHits: `${lineHits} din 5`,
     bingoPrizeName: B.prize && !B.prize.startsWith('[') ? B.prize.charAt(0).toUpperCase() + B.prize.slice(1) : 'Se anunță în curând',
     bingoPrizeBy: B.prizeSponsor ? `· de la ${B.prizeSponsor}` : '',
+    hasBingoWinner: !!B.winners?.length,
+    bingoWinnerLabel: (B.winners?.length ?? 0) > 1 ? 'Câștigători' : 'Câștigător',
+    bingoWinners: (B.winners ?? []).map((w) => w.name).join(', '),
     bingoClose: bingoSoon ? (openText || 'în curând') : bingoOpen ? (closeText || 'se anunță pe stream') : closeText,
     bingoCloseLabel: bingoSoon ? 'Se deschide' : bingoOpen ? (closeText ? 'Poți schimba linia până pe' : 'Alegerile se închid') : 'Alegerile s-au închis pe',
     bingoPlayersLong: B.players === 1 ? '1 jucător' : count(B.players, 'jucător', 'jucători'),

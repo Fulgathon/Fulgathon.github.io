@@ -30,7 +30,7 @@ const brb = params.get('scene') === 'brb';
 // 'speech' is the old name of the bubble piece; links already in OBS keep working.
 const partParam = params.get('part') === 'speech' ? 'bubble' : params.get('part') ?? '';
 const piece = overlayPieces.some((p) => p.id === partParam) ? partParam : null;
-const show = new Set(piece ? [piece] : (params.get('show') ?? 'timer,goal,together,bubble,moments,vote,promo,code').split(','));
+const show = new Set(piece ? [piece] : (params.get('show') ?? 'timer,goal,together,bubble,moments,vote,promo,code,draw').split(','));
 if (piece) document.body.classList.add('piece', `piece-${piece}`);
 // Owner, 24 Nov: «Balonul lui Iceman» is only the speech bubble (it sits over his real camera),
 // never the drawn Iceman. &tail=right points the tail to the right.
@@ -62,6 +62,8 @@ const restart = (el: HTMLElement, cls: string) => { el.classList.remove(cls); vo
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 let data: SiteData = emptyData();
+// Sample names for the demo draw (?demo&part=draw).
+const DEMO_DRAW = ['kxtrin', 'vladutz97', 'andreiGG', 'Rares1337', 'stefan_ro', 'ioana_plays', 'mihai_tm', 'Cristi.R', 'alexdinbuzau', 'snowyRO', 'deliaa', 'tudor_04'];
 const announced = new Set<number>();
 
 // ---- Base layout, every second -------------------------------------------------
@@ -580,7 +582,60 @@ function runTest(kind: string) {
 }
 
 // ---- Data -------------------------------------------------------------------------------
+// ---- Bingo draw (?part=draw) ---------------------------------------------------------------
+// Owner, 24 Nov: Iceman (or a moderator) presses «Trage la sorți» on /mod; the server picks the
+// winner first, the reel is only the show. It plays when the draw's shownAt is new and recent, so
+// «Arată din nou» replays it and an OBS source loaded later doesn't replay an old draw.
+const DRAW_ROW = 64;
+const DRAW_SPIN = 7200;
+let drawSeen = 0;
+let drawShowTimer = 0;
+const shuffle = <T>(a: T[]) => { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
+function checkDraw() {
+  const dr = data.bingo.draw;
+  if (!dr || !show.has('draw') || brb || !(dr.shownAt > drawSeen)) return;
+  drawSeen = dr.shownAt;
+  if (Date.now() - dr.shownAt > 90_000) return;
+  playDraw(dr.name, dr.entrants, data.bingo.prize, data.bingo.prizeSponsor ?? null, dr.total);
+}
+function playDraw(winner: string, entrants: string[], prize: string, sponsor: string | null, total = entrants.length) {
+  const el = $('.ov-draw');
+  window.clearTimeout(drawShowTimer);
+  const names = entrants.length ? entrants : [winner];
+  // The reel: every entry, shuffled, over and over (at least 44 rows), then the winner and two more.
+  const seq: string[] = [];
+  while (seq.length < 44) {
+    const block = shuffle(names);
+    if (names.length > 1 && block[0] === seq[seq.length - 1]) block.push(block.shift()!);
+    seq.push(...block);
+  }
+  const at = seq.length;
+  const rest = names.filter((n) => n !== winner);
+  const after = rest.length ? rest : names;
+  seq.push(winner, after[0], after[1 % after.length]);
+  const prizeTxt = prize && !prize.startsWith('[') ? prize : 'premiul cel mare';
+  el.innerHTML = `<div class="dr-head"><span class="dr-tag">BINGO · TRAGEREA LA SORȚI</span><span class="dr-meta"><b>${esc(count(Math.max(total, names.length), 'jucător', 'jucători'))}</b> cu toate cele 5</span></div>
+    <div class="dr-reel"><ul class="dr-list">${seq.map((n, i) => `<li${i === at ? ' class="win"' : ''}>${esc(n)}</li>`).join('')}</ul><div class="dr-frame"></div><div class="dr-burst"></div><div class="dr-shards">${Array.from({ length: 12 }, (_, i) => `<i style="--a:${i * 30}deg"></i>`).join('')}</div></div>
+    <div class="dr-foot"><span class="dr-won">CÂȘTIGĂTOR</span><span class="dr-prize">${esc(prizeTxt)}${sponsor ? ` <span class="spon">· de la ${esc(sponsor)}</span>` : ''}</span></div>`;
+  const list = el.querySelector<HTMLElement>('.dr-list')!;
+  const end = `translateY(${-(at - 2) * DRAW_ROW}px)`;
+  el.classList.remove('won');
+  void el.offsetWidth;
+  el.classList.add('show');
+  if (calm) { list.style.transform = end; el.classList.add('won'); }
+  else {
+    list.style.transition = 'none';
+    list.style.transform = 'translateY(0)';
+    void list.offsetWidth;
+    // Fast at first, then a long, even slow-down onto the winner.
+    window.setTimeout(() => { list.style.transition = `transform ${DRAW_SPIN}ms cubic-bezier(.1,.62,.1,1)`; list.style.transform = end; }, 600);
+    window.setTimeout(() => el.classList.add('won'), 600 + DRAW_SPIN);
+  }
+  drawShowTimer = window.setTimeout(() => el.classList.remove('show', 'won'), (calm ? 0 : 600 + DRAW_SPIN) + 22_000);
+}
+
 function onData(first: boolean) {
+  checkDraw();
   compare(data);
   rehearsalEvents(data);
   if (first) prev = data;
@@ -604,6 +659,12 @@ if (params.has('demo')) {
     };
     api.subscribe(sync);
     sync();
+    // ?demo&part=draw: a sample draw on load and every 40 s, to place and preview it in OBS.
+    if (piece === 'draw') {
+      const sample = () => { if (!data.bingo.draw || Date.now() - data.bingo.draw.shownAt > 60_000) playDraw(DEMO_DRAW[2], demoEntrants(40), data.bingo.prize, data.bingo.prizeSponsor ?? null); };
+      window.setTimeout(sample, 800);
+      window.setInterval(sample, 40_000);
+    }
     window.setInterval(sync, 2000);
     // Show the bubble once on load, so its place on the stream is visible.
     const t = data.ticker[0];
@@ -643,6 +704,8 @@ if (params.has('demo')) (window as unknown as { __ov: unknown }).__ov = {
     return { queued: bubbleQ.length };
   },
   state: () => ({ bubbleQueue: bubbleQ.length, moments: momentQ.length, lastId }),
+  /** Play the bingo draw with sample names (demo). */
+  draw(n = 40) { playDraw(DEMO_DRAW[2], demoEntrants(n), data.bingo.prize, data.bingo.prizeSponsor ?? null); },
   /** Play every moment once (demo): milestone, legends, badge, bingo, VISCOL, vote winner, wheel, big moment. */
   sample() {
     const fake: SiteData = JSON.parse(JSON.stringify(data));
@@ -663,6 +726,10 @@ if (params.has('demo')) (window as unknown as { __ov: unknown }).__ov = {
     return { moments: momentQ.length };
   },
 };
+
+function demoEntrants(n: number) {
+  return shuffle(Array.from({ length: n }, (_, i) => DEMO_DRAW[i] ?? `viewer_${100 + i * 7}`));
+}
 
 snow();
 setInterval(draw, 1000);

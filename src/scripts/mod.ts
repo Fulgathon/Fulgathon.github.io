@@ -51,6 +51,7 @@ const errors: Record<string, string> = {
   bingo_open: 'Bifele de bingo se deschid după ce se închid alegerile: până atunci spectatorii încă își aleg linia.',
   bingo_ticked: 'Sunt deja bife (sau tragerea) la bingo: orele de deschidere și închidere nu se mai pot schimba.',
   bingo_not_open: 'Bingo nu e deschis acum.',
+  no_bingo_draw: 'Nu s-a făcut încă nicio tragere.',
   bingo_bad_dates: 'Închiderea are nevoie de o oră de deschidere și trebuie să fie după ea.',
   no_bingo_winners: 'Nu e nimeni (nou) pe lista de bingo: încă nu s-au întâmplat toate cele 5 evenimente la cineva.',
   freeze_in_past: 'Alege o dată din viitor (după înghețarea de acum, dacă e una).',
@@ -1292,7 +1293,8 @@ function render() {
       </div>
       <h3 style="margin:24px 0 0;font-family:'Barlow Condensed',sans-serif;font-size:18px;text-transform:uppercase">Tragerea la sorți</h3>
       <p class="muted" style="margin-top:4px">${B.status.winners.length ? `${B.status.winners.length} cu bingo: ${B.status.winners.map((w) => esc(w.login)).join(', ')}` : 'Nimeni nu are încă toate cele 5 evenimente bifate.'}</p>
-      <div class="row"><button class="btn-primary" data-act="bingoDraw" ${B.status.winners.length ? '' : 'disabled'}>Trage la sorți</button></div>
+      <p class="muted" style="margin:4px 0 0">Pe stream se vede în sursa OBS «Tragerea la bingo»: o ruletă cu toți cei cu bingo, care se oprește pe câștigător. Câștigătorul e ales de server înainte de animație.</p>
+      <div class="row"><button class="btn-primary" data-act="bingoDraw" ${B.status.winners.length && !bingoPicksOpen() ? '' : 'disabled'}>Trage la sorți</button>${B.status.draws.length ? '<button class="btn-ghost" data-act="bingoReplay">Arată din nou pe stream</button>' : ''}</div>
       ${B.status.draws.length ? `<p style="margin:10px 0 0">Extrași: ${B.status.draws.map((d) => `<strong>${esc(d.login)}</strong>${d.drawn_at ? ` <span class="muted">(${when(d.drawn_at)})</span>` : ''}`).join(' · ')}</p>` : ''}
     </section>`;
     })() : ''}`,
@@ -1521,8 +1523,9 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   bingoDraw: async () => {
     if (!confirm('Tragi la sorți un câștigător dintre cei cu bingo?')) return;
     const won = await call('mod_bingo_draw', {}, 'Tragere făcută.');
-    if (won) alert(`Câștigătorul: ${won}`);
+    if (won) alert(`Câștigătorul: ${won}. Pe stream, ruleta se oprește pe el în câteva secunde.`);
   },
+  bingoReplay: () => call('mod_bingo_replay', {}, 'Tragerea se vede din nou pe stream.'),
   double: () => call('mod_double_hour', { p_from: fromLocal(val('dblFrom')), p_minutes: num('dblMin'), p_sponsor: val('dblSponsor') }, 'Ora dublă programată.'),
   doubleNow: () => call('mod_double_hour', { p_from: new Date().toISOString(), p_minutes: num('dblMin') || 60, p_sponsor: val('dblSponsor') }, 'Ora dublă a început.'),
   end: () => openEndDialog(),

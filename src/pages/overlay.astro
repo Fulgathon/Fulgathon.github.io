@@ -355,6 +355,39 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
       .wh-res { display: block; margin-top: 14px; padding: 8px 14px; border: 1px solid #E6C46A; background: rgba(5,6,8,.9); font-size: 22px; opacity: 0; transition: opacity .4s; }
       .m-wheel.done .wh-res { opacity: 1; }
       .wh-res .spon { color: #E6C46A; }
+      /* Bingo draw (?part=draw, 960×540): a reel of every entry slows down and stops on the winner the
+         server already picked; then a frost burst and the prize. Invisible the rest of the time. */
+      .ov-draw { position: fixed; left: 50%; top: 50%; width: 944px; box-sizing: border-box; padding: 22px 28px 24px; background: rgba(5,6,8,.96); border: 1px solid #23415E; border-left: 4px solid var(--ice); opacity: 0; transform: translate(-50%, -50%) translateY(14px); transition: opacity .5s, transform .5s; overflow: hidden; }
+      .ov-draw.show { opacity: 1; transform: translate(-50%, -50%); }
+      body.piece-draw .ov-draw, body.piece-draw .ov-draw.show { transform: none; }
+      body.piece-draw .ov-draw:not(.show) { transform: translateY(14px); }
+      .dr-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+      .dr-tag { padding: 2px 10px; transform: skewX(-12deg); background: var(--ice); color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 18px; letter-spacing: .08em; white-space: nowrap; }
+      .dr-meta { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 17px; letter-spacing: .08em; color: #8C97A8; text-transform: uppercase; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .dr-meta b { color: #F2F5FA; } .dr-meta .spon { color: #E6C46A; }
+      .dr-reel { position: relative; height: 320px; margin-top: 18px; overflow: hidden; -webkit-mask-image: linear-gradient(180deg, transparent, #000 26%, #000 74%, transparent); mask-image: linear-gradient(180deg, transparent, #000 26%, #000 74%, transparent); }
+      .dr-list { margin: 0; padding: 0; list-style: none; will-change: transform; }
+      .dr-list li { height: 64px; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 46px; line-height: 1; text-transform: uppercase; color: #5D6878; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 30px; }
+      .dr-frame { position: absolute; left: 0; right: 0; top: 128px; height: 64px; border-top: 2px solid var(--ice); border-bottom: 2px solid var(--ice); background: rgba(63,208,255,.06); pointer-events: none; }
+      .dr-frame::before, .dr-frame::after { content: ''; position: absolute; top: 50%; width: 0; height: 0; border-top: 10px solid transparent; border-bottom: 10px solid transparent; transform: translateY(-50%); }
+      .dr-frame::before { left: 0; border-left: 14px solid var(--ice); }
+      .dr-frame::after { right: 0; border-right: 14px solid var(--ice); }
+      .dr-burst { position: absolute; left: 50%; top: 160px; width: 10px; height: 10px; transform: translate(-50%, -50%) rotate(45deg); border: 2px solid #8FE4FF; pointer-events: none; opacity: 0; }
+      .dr-shards { position: absolute; left: 50%; top: 160px; width: 0; height: 0; pointer-events: none; }
+      .dr-shards i { position: absolute; left: 0; top: 0; width: 3px; height: 26px; margin: -13px 0 0 -1.5px; background: linear-gradient(180deg, #FFFFFF, var(--ice)); opacity: 0; transform: rotate(var(--a)) translateY(0); }
+      .dr-foot { margin-top: 16px; display: flex; align-items: center; justify-content: center; gap: 16px; min-height: 40px; opacity: 0; transform: translateY(8px); transition: opacity .5s .3s, transform .5s .3s; }
+      .dr-won { padding: 2px 10px; transform: skewX(-12deg); background: #FFFFFF; color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 18px; letter-spacing: .1em; }
+      .dr-prize { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 26px; color: #F2F5FA; text-transform: uppercase; letter-spacing: .03em; }
+      .dr-prize .spon { color: #E6C46A; }
+      .ov-draw.won .dr-foot { opacity: 1; transform: none; }
+      .ov-draw.won .dr-list li.win { color: transparent; background: linear-gradient(180deg, #FFFFFF 20%, #CDF2FF 60%, var(--ice) 100%); -webkit-background-clip: text; background-clip: text; animation: drWin .9s ease-out both; }
+      .ov-draw.won .dr-frame { border-color: #FFFFFF; box-shadow: 0 0 0 1px var(--ice), 0 0 34px rgba(63,208,255,.35); transition: border-color .3s, box-shadow .3s; }
+      .ov-draw.won .dr-burst { animation: drBurst 1.3s ease-out both; }
+      .ov-draw.won .dr-shards i { animation: drShard 1s ease-out both; }
+      @keyframes drWin { 0% { transform: scale(1); } 35% { transform: scale(1.16); } 100% { transform: scale(1.1); } }
+      @keyframes drBurst { 0% { opacity: .95; width: 10px; height: 10px; box-shadow: 0 0 30px 8px rgba(255,255,255,.45), inset 0 0 20px rgba(63,208,255,.5); } 100% { opacity: 0; width: 560px; height: 560px; box-shadow: 0 0 60px 20px rgba(255,255,255,0), inset 0 0 60px rgba(63,208,255,0); } }
+      @keyframes drShard { 0% { opacity: 1; transform: rotate(var(--a)) translateY(-20px) scaleY(.4); } 100% { opacity: 0; transform: rotate(var(--a)) translateY(-210px) scaleY(1); } }
+      body.frame .ov-draw { opacity: 1; min-height: 480px; }
       /* Pause scene (?scene=brb) */
       .ov-brb { position: fixed; inset: 0; background: #050608; }
       .brb-title { position: absolute; left: 80px; top: 80px; margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 140px; line-height: .9; text-transform: uppercase; }
@@ -450,6 +483,7 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
       </div>
       <div class="ov-moment" data-part="moments" aria-live="polite"></div>
       <div class="ov-code" data-part="code" aria-live="polite"></div>
+      <div class="ov-draw" data-part="draw" aria-live="polite"></div>
       <div class="ov-timer" data-part="timer" data-state="live">
         <div class="tm-frost" aria-hidden="true"><div class="tm-crystals"></div><div class="tm-shine"></div><svg class="tm-ice" viewBox="0 0 400 18" preserveAspectRatio="none"><defs><linearGradient id="tmIce" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".95"/><stop offset="1" stop-color="#BFE9FF" stop-opacity=".15"/></linearGradient></defs><path fill="url(#tmIce)" d="M0 0H400V2L392 2 388 9 384 2 370 2 367 14 363 2 344 2 341 7 338 2 318 2 314 16 310 2 292 2 289 8 286 2 262 2 258 12 254 2 236 2 233 6 230 2 206 2 202 15 198 2 178 2 175 8 172 2 150 2 146 11 142 2 120 2 117 6 114 2 94 2 90 17 86 2 66 2 63 9 60 2 40 2 37 13 33 2 16 2 13 7 10 2 0 2Z"/></svg><i></i><i></i><i></i><i></i><i></i></div>
         <div class="tm-fire" aria-hidden="true"><div class="tm-heat"></div><span class="fl"></span><span class="fl"></span><span class="fl"></span><span class="fl"></span><span class="fl"></span><span class="fl"></span><span class="fl"></span><span class="fl"></span><span class="fl"></span><span class="fl c"></span><span class="fl c"></span><span class="fl c"></span><span class="fl c"></span><span class="fl c"></span><div class="tm-bed"></div><i></i><i></i><i></i><i></i></div>

@@ -400,12 +400,12 @@ function checkLegends(d: SiteData) {
 
 function applyMe(me: Me | null) {
   if (!me) {
-    set({ viewer: 'out', viewerName: '', isPublic: true, mine: null, loyalty: null, spins: 0, watchedToday: 0, spunToday: false, bonusSpins: 0, myVote: null, result: null, suggestDone: false, bingoSaved: null });
+    set({ viewer: 'out', viewerName: '', isPublic: true, mine: null, loyalty: null, spins: 0, watchedToday: 0, spunToday: false, bonusSpins: 0, myVote: null, result: null, suggestDone: false, bingoSaved: null, bingoWon: false });
     return;
   }
   set({
     ...withSaved(me.bingoSaved),
-    viewer: me.isSub ? 'sub' : 'nonsub', viewerName: me.name, myVote: me.myVote, isPublic: me.isPublic,
+    viewer: me.isSub ? 'sub' : 'nonsub', viewerName: me.name, myVote: me.myVote, isPublic: me.isPublic, bingoWon: me.bingoWon,
     mine: me.mine, loyalty: me.loyalty,
     // Don't let a refresh jump the counter while the wheel is still turning.
     ...(state.spinning ? {} : { spins: me.spins, spunToday: me.spunToday }),
@@ -444,7 +444,7 @@ function demoSync(first = false) {
   const me = demoApi.viewerInfo();
   const patch: Partial<State> = {
     ...(state.bingoSaved?.join() === me.bingoSaved?.join() ? {} : withSaved(me.bingoSaved)),
-    viewer: me.state, viewerName: me.name, myVote: me.myVote,
+    viewer: me.state, viewerName: me.name, myVote: me.myVote, bingoWon: me.bingoWon,
     mine: me.state === 'out' ? null : me.mine, loyalty: me.state === 'out' ? null : me.loyalty,
     watchedToday: me.watchedToday, bonusSpins: me.bonusSpins,
     ...(state.spinning ? {} : { spins: me.spins, spunToday: me.spunToday }),

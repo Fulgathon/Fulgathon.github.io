@@ -25,6 +25,8 @@ export interface Me {
   myVote: string | null;
   /** This viewer's saved bingo pick (5 event ids), or null. */
   bingoSaved: number[] | null;
+  /** Drawn as a bingo winner. */
+  bingoWon: boolean;
   /** Bonus spins from secret codes (included in `spins`). */
   bonusSpins: number;
   /** false when the viewer chose not to appear by name in public. */
@@ -238,7 +240,11 @@ export class Live {
     if (has('bingo') && P.bingo) {
       const g = P.bingo;
       patch.bingo = {
-        opensAt: ms(g.opensAt), closesAt: ms(g.closesAt), prize: g.prize ?? '', prizeSponsor: g.prizeSponsor ?? null, players: g.players ?? 0,
+        opensAt: ms(g.opensAt), closesAt: ms(g.closesAt),
+        winners: Array.isArray(g.winners) ? g.winners.map((w: Json) => ({ id: Number(w.id), name: String(w.name ?? ''), at: Date.parse(w.at) })) : [],
+        draw: g.draw ? { id: Number(g.draw.id), name: String(g.draw.name ?? ''), at: Date.parse(g.draw.at), shownAt: Date.parse(g.draw.shownAt),
+          entrants: Array.isArray(g.draw.entrants) ? g.draw.entrants.map(String) : [], total: Number(g.draw.total) || 0 } : null,
+        prize: g.prize ?? '', prizeSponsor: g.prizeSponsor ?? null, players: g.players ?? 0,
         items: (g.items ?? []).map((i: Json) => ({ id: i.id, label: i.label, happened: !!i.happened })),
       };
     }
@@ -316,6 +322,7 @@ export class Live {
       spunToday: !!m.spunToday,
       myVote: m.myVote != null ? String(m.myVote) : null,
       bingoSaved: Array.isArray(m.bingo) ? m.bingo.map(Number) : null,
+      bingoWon: !!m.bingoWon,
       bonusSpins: m.bonusSpins ?? 0,
       isPublic: m.public !== false,
       mine: {

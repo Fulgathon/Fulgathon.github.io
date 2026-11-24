@@ -33,7 +33,13 @@ export interface AdventDay { day: number; note: string; clip: string | null; spo
 export interface Round { id: number; number: number; closesAt: number }
 export interface BingoItem { id: number; label: string; happened: boolean }
 /** Prediction bingo: open from opensAt (null = not yet) to closesAt (null = until a moderator closes it); all 5 happen → raffle. */
-export interface Bingo { opensAt: number | null; closesAt: number | null; prize: string; prizeSponsor?: string | null; players: number; items: BingoItem[] }
+export interface Bingo {
+  opensAt: number | null; closesAt: number | null; prize: string; prizeSponsor?: string | null; players: number; items: BingoItem[];
+  /** Everyone drawn so far (public names), oldest first. */
+  winners?: { id: number; name: string; at: number }[];
+  /** The latest draw for the overlay reel: entries at the time, the winner, when to play it. */
+  draw?: { id: number; name: string; at: number; shownAt: number; entrants: string[]; total: number } | null;
+}
 
 /** What one viewer added in total (my_state). */
 export interface Mine { seconds: number; subs: number; gifts: number; bits: number; donated: number }

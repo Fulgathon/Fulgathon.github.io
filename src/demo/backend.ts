@@ -98,6 +98,8 @@ export interface DemoState {
     pick: number[] | null;
     others: { user: string; items: number[] }[];
     draws: string[];
+    /** The latest draw as the overlay plays it. */
+    drawShow?: { id: number; name: string; at: number; shownAt: number; entrants: string[]; total: number } | null;
   };
 }
 
@@ -533,9 +535,13 @@ export class DemoBackend {
     this.mutate((s) => {
       s.bingo.items.forEach((it) => { it.happened = false; });
       s.bingo.draws = [];
+      s.bingo.drawShow = null;
       s.bingo.opensAt = Date.now() - 1000;
       s.bingo.closesAt = Date.now() + 2 * DAY;
     });
+  }
+  bingoReplay() {
+    this.mutate((s) => { const d = s.bingo.drawShow; if (!d) return fail('no_bingo_draw'); d.shownAt = Date.now(); });
   }
   bingoCloseNow() {
     this.mutate((s) => { if (bingoPhase(s) !== 'open') fail('bingo_not_open'); s.bingo.closesAt = Date.now(); });
@@ -563,8 +569,12 @@ export class DemoBackend {
     return this.mutate((s) => {
       const pool = this.bingoWinners(s).filter((u) => !s.bingo.draws.includes(u));
       if (!pool.length) fail('no_bingo_winners');
+      if (bingoPhase(s) !== 'closed') fail('bingo_open');
       const won = pick(pool);
+      const all = this.bingoWinners(s);
+      const others = all.filter((u) => u !== won).sort(() => Math.random() - 0.5).slice(0, 299);
       s.bingo.draws.unshift(won);
+      s.bingo.drawShow = { id: Date.now(), name: won, at: Date.now(), shownAt: Date.now(), entrants: [...others, won].sort(() => Math.random() - 0.5), total: all.length };
       return won;
     });
   }
@@ -849,6 +859,7 @@ export class DemoBackend {
         return { spins: (ok ? 1 : 0) + (s.timer.status === 'live' ? bonus : 0), watchedToday: watched, spunToday, bonusSpins: bonus };
       })(),
       bingoSaved: s.viewer.state === 'out' ? null : s.bingo.pick,
+      bingoWon: s.viewer.state !== 'out' && s.bingo.draws.includes(s.viewer.name),
       myVote: r && s.myVotes[r.id] !== undefined ? String(s.myVotes[r.id]) : null,
       // Sample contribution and loyalty for the demo viewer.
       mine: { seconds: 5400, subs: 1, gifts: 5, bits: 0, donated: 20 },
@@ -960,6 +971,8 @@ export class DemoBackend {
       badgeCounts: { og: 1240, h10: 2150, night: 386, streak7: 509, h50: 214, h100: 37 },
       bingo: {
         opensAt: bingoOpensAt(s), closesAt: s.bingo.closesAt, prize: s.bingo.prize, prizeSponsor: s.bingo.prizeSponsor ?? null,
+        winners: [...s.bingo.draws].reverse().map((name, i) => ({ id: i + 1, name, at: Date.now() })),
+        draw: s.bingo.drawShow ? { ...s.bingo.drawShow, entrants: [...s.bingo.drawShow.entrants] } : null,
         players: s.bingo.others.length + (s.bingo.pick ? 1 : 0),
         items: s.bingo.items.map((it) => ({ ...it })),
       },
@@ -1141,6 +1154,7 @@ export class DemoBackend {
       case 'mod_bingo_settings': return this.bingoSettings(ms(a.p_opens_at), ms(a.p_closes_at), String(a.p_prize ?? ''), a.p_prize_sponsor ?? null);
       case 'mod_bingo_open': return this.bingoOpenNow();
       case 'mod_bingo_close': return this.bingoCloseNow();
+      case 'mod_bingo_replay': return this.bingoReplay();
       case 'mod_bingo_draw': return this.bingoDraw();
       case 'mod_autopilot': return this.autopilot();
       case 'mod_round_edit': return this.mutate((s) => {
