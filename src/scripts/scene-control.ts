@@ -22,7 +22,7 @@ const demo = params.has('demo');
 
 /** Where the OBS sources go (px in the 1920×1080 scene). */
 export const HOLES = { game: { x: 58, y: 54, w: 1152, h: 648 }, cam: { x: 1325, y: 54, w: 518, h: 291 } };
-const BOX = { timer: { x: 1325, y: 378, w: 518, h: 118 }, tasks: { x: 1325, y: 529, w: 518, h: 443 }, spon: { x: 58, y: 745, w: 1152, h: 227 } };
+const BOX = { timer: { x: 1325, y: 360, w: 518, h: 208 }, tasks: { x: 1325, y: 584, w: 518, h: 388 }, spon: { x: 58, y: 745, w: 1152, h: 227 } };
 
 document.getElementById('compact')!.hidden = true;
 const root = document.getElementById('control')!;
@@ -40,9 +40,8 @@ root.innerHTML = `
   <div class="scc-hole" id="scc-cam" style="${pos(HOLES.cam)}"><span>WEBCAM · ${HOLES.cam.w}×${HOLES.cam.h} la ${HOLES.cam.x},${HOLES.cam.y}</span></div>
   <section class="scc-panel scc-timer" id="scc-timer" style="${pos(BOX.timer)}">
     <p class="scc-tline"><span class="scc-tag" data-tag>LIVE</span><span class="scc-by" data-by></span></p>
-    <p class="scc-clock" data-clock>00:00:00:00</p>
-    <div class="scc-bar"><i data-bar></i></div>
-    <p class="scc-raised"><span data-rlabel>Strâns</span><span data-raised></span></p>
+    <div class="scc-clock" data-clock>${['ZILE', 'ORE', 'MIN', 'SEC'].map((u, i) => `${i ? '<i class="scc-colon">:</i>' : ''}<div class="scc-cg"><b data-cg="${i}">00</b><span>${u}</span></div>`).join('')}</div>
+    <p class="scc-raised"><span>Strâns</span><b data-raised>0 €</b></p>
   </section>
   <section class="scc-panel scc-tasks" id="scc-tasks" style="${pos(BOX.tasks)}">
     <p class="scc-lbl">Donează și alegi</p>
@@ -58,7 +57,7 @@ root.innerHTML = `
     <div class="scc-car s" data-supp></div>
   </section>
   <canvas class="scc-snow" data-snow width="1920" height="1080"></canvas>
-  <div class="scc-toast" data-toast style="left:${HOLES.cam.x}px;top:${HOLES.cam.y + HOLES.cam.h + 1}px;max-width:${HOLES.cam.w}px"></div>
+  <div class="scc-toast" data-toast style="left:${HOLES.cam.x + 16}px;top:${HOLES.cam.y + HOLES.cam.h - 46}px;max-width:${HOLES.cam.w - 32}px"></div>
   <div class="scc-warm" data-warm></div>
   <div class="scc-frost" data-frost></div>`;
 
@@ -84,11 +83,10 @@ function drawTimer() {
   setText(tag, st === 'double' ? '×2 ORA DUBLĂ' : st === 'frozen' ? 'ÎNGHEȚAT' : st === 'ended' ? 'TIMPUL A EXPIRAT' : st === 'upcoming' ? 'ÎNCEPE ÎN' : test ? 'TEST' : 'LIVE');
   tag.dataset.state = test && st === 'live' ? 'test' : st;
   setText($('[data-by]'), st === 'double' && data.doubleSponsor ? `de la ${data.doubleSponsor}` : '');
-  setText($('[data-clock]'), `${v.dd}:${v.hh}:${v.mm}:${v.ss}`);
+  [v.dd, v.hh, v.mm, v.ss].forEach((x, i) => setText($(`[data-cg="${i}"]`), x));
   root.dataset.state = st;
-  $('[data-bar]').style.width = v.progressPct;
-  setText($('[data-rlabel]'), 'Strâns');
-  setText($('[data-raised]'), v.progressLabel);
+  // The whole sum raised so far (not the step to the next milestone).
+  setText($('[data-raised]'), data.raised || '0 €');
 }
 
 // ---- Sponsors: main fixed, partners + supporters two at a time -----------------------
@@ -256,8 +254,7 @@ let lastId: number | null = null;
 function react(t: TickerItem) {
   const qty = t.qty ?? 0;
   toast(`${t.user} · ${t.what}${t.time !== '—' ? ` · ${t.time}` : ''}`);
-  const clock = $('[data-clock]');
-  if (!calm && t.time !== '—') clock.animate([{ color: '#3FD0FF' }, { color: '' }], { duration: 900 });
+  if (!calm && t.time !== '—') root.querySelectorAll<HTMLElement>('[data-cg]').forEach((b) => b.animate([{ color: '#3FD0FF' }, { color: '' }], { duration: 900 }));
   if (calm) return;
   if (t.kind === 'sub' || t.kind === 'resub') { burst(HOLES.cam, 22, 3.6, 'rgba(223,246,255,A)'); fall(30); }
   else if (t.kind === 'bits') glints(Math.min(120, 20 + Math.round(qty / 16)));

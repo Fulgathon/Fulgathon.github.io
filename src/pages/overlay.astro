@@ -442,18 +442,24 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
       .scc-panel { position: absolute; box-sizing: border-box; background: rgba(8, 18, 28, .84); border: 2px solid #1E4560; overflow: hidden; }
       .scc-lbl { margin: 0; font: italic 800 22px 'Barlow Condensed', sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--ice); white-space: nowrap; }
       .scc-lbl.dim { color: #8FA3BC; }
-      .scc-timer { display: flex; flex-direction: column; justify-content: center; padding: 0 24px; }
+      .scc-timer { display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 10px 24px 12px; }
       .scc-tline { display: flex; align-items: center; gap: 12px; margin: 0; }
-      .scc-tag { padding: 1px 12px; background: #D5162B; color: #FFFFFF; font: italic 800 20px 'Barlow Condensed', sans-serif; letter-spacing: .06em; }
+      .scc-tag { padding: 2px 14px; background: #D5162B; color: #FFFFFF; font: italic 800 22px 'Barlow Condensed', sans-serif; letter-spacing: .08em; }
       .scc-tag[data-state="frozen"] { background: #9DB4C8; color: #06121C; }
       .scc-tag[data-state="double"] { background: #FF7A1A; color: #1A0A00; }
       .scc-tag[data-state="upcoming"], .scc-tag[data-state="ended"] { background: #2A3445; }
       .scc-tag[data-state="test"] { background: #F2C14E; color: #1A1300; }
-      .scc-by { font: italic 800 20px 'Barlow Condensed', sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #E6C46A; }
-      .scc-clock { margin: 2px 0 0; font: italic 900 52px/1.02 'Barlow Condensed', sans-serif; letter-spacing: .02em; color: #DFF6FF; font-variant-numeric: tabular-nums; }
-      .scc[data-state="frozen"] .scc-clock { color: #9DB4C8; }
-      .scc-bar { height: 6px; background: #13202C; margin-top: 6px; } .scc-bar i { display: block; height: 100%; width: 0; background: var(--ice); transition: width .8s; }
-      .scc-raised { display: flex; justify-content: space-between; margin: 4px 0 0; font-size: 18px; color: #8FA3BC; }
+      .scc-by { font: italic 800 22px 'Barlow Condensed', sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #E6C46A; }
+      .scc-clock { display: flex; align-items: flex-start; justify-content: space-between; }
+      .scc-cg { display: flex; flex-direction: column; align-items: center; min-width: 96px; }
+      .scc-cg b { font: italic 900 76px/0.95 'Barlow Condensed', sans-serif; color: #FFFFFF; font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+      .scc-cg span { margin-top: 2px; font: 700 15px Barlow, sans-serif; letter-spacing: .22em; color: #9DB0C6; }
+      .scc-colon { font: italic 900 60px/1 'Barlow Condensed', sans-serif; color: var(--ice); opacity: .8; }
+      .scc[data-state="frozen"] .scc-cg b { color: #B9CDDD; }
+      .scc[data-state="double"] .scc-colon { color: #FF7A1A; }
+      .scc-raised { display: flex; justify-content: space-between; align-items: baseline; margin: 0; padding-top: 8px; border-top: 1px solid #1E4560; }
+      .scc-raised span { font: italic 800 22px 'Barlow Condensed', sans-serif; letter-spacing: .14em; text-transform: uppercase; color: #9DB0C6; }
+      .scc-raised b { font: italic 800 32px 'Barlow Condensed', sans-serif; color: var(--ice); }
       .scc-tasks { display: flex; flex-direction: column; padding: 14px 22px; }
       .scc-menu { margin-top: 2px; }
       .scc-row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 5px 0; border-bottom: 1px solid #13202C; font-size: 24px; }
@@ -483,7 +489,7 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
       .scc-toast.show { opacity: 1; transform: none; }
       .scc-warm { position: absolute; inset: 0; pointer-events: none; background: #FF7A1A; opacity: 0; transition: opacity 1s; mix-blend-mode: screen; } .scc-warm.on { opacity: .1; }
       .scc-frost { position: absolute; inset: 0; pointer-events: none; transition: box-shadow 1.2s; } .scc-frost.on { box-shadow: inset 0 0 140px 40px rgba(200, 240, 255, .4); }
-      body.calm .scc-toast, body.calm .scc-warm, body.calm .scc-frost, body.calm .scc-bar i { transition: none; }
+      body.calm .scc-toast, body.calm .scc-warm, body.calm .scc-frost { transition: none; }
       body.calm .scc-q.new { animation: none; }
       @media (prefers-reduced-motion: reduce) { .scc-q.new { animation: none; } .scc-toast { transition: none; } }
     </style>
