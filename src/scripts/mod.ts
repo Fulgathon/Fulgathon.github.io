@@ -808,11 +808,20 @@ function testStripHtml(): string {
   if (!T) return '';
   const online = !!S.timer?.stream_online;
   const sub = !!S.me?.is_subscriber;
+  // The site says LIVE and time is added only while the (test) marathon runs, exactly like the real one.
+  const st = S.timer?.status ?? 'upcoming';
+  const hrs = Number(S.auto?.startHours) || 24;
+  const marathon = st === 'live'
+    ? `<span class="pill-s">LIVE PE SITE · SE TERMINĂ LA ${hmRo(S.timer?.ends_at ?? null)}</span><button class="btn-ghost" data-act="testEnd">Încheie maratonul de test</button>`
+    : st === 'ended'
+      ? '<span class="pill-s">ÎNCHEIAT</span><span class="ts-note">«De la capăt» îl aduce înapoi la start.</span>'
+      : `<button class="btn-primary" data-act="testGoLive" data-h="${hrs}">Pornește maratonul de test (${hrs} h)</button><span class="ts-note">Până atunci site-ul arată «Începe curând», iar donațiile umplu doar «Strâns», fără timp (ca în realitate).</span>`;
   return `<section class="test-strip" aria-label="Mod test">
     <p class="ts-head"><span class="ts-tag">TEST</span><strong>Mod test</strong><span>pornit de ${esc(T.by ?? 'un moderator')} · se oprește singur la ${hmRo(T.until)}</span></p>
     <p class="ts-warn">Tot ce se schimbă acum, și pe /mod, se șterge la oprire. Pregătirea reală (sponsori, premii, provocări) o faci după test.</p>
     <div class="ts-rows">
-      <div class="ts-row"><span>Twitch</span>${testBtn('sub', 'Sub', {}, 'Sub de test.')}${testBtn('sub', 'Sub Tier 3', { tier: '3000' }, 'Sub Tier 3 de test.')}${testBtn('gift', '10 subs cadou', { n: 10 }, '10 subs cadou de test.')}${testBtn('bits', '400 biți', { n: 400 }, '400 de biți de test.')}${testBtn('stream', online ? 'Stream offline' : 'Stream LIVE', { on: !online }, online ? 'Stream-ul apare offline.' : 'Stream-ul apare LIVE.')}</div>
+      <div class="ts-row"><span>Maraton</span>${marathon}</div>
+      <div class="ts-row"><span>Twitch</span>${testBtn('sub', 'Sub', {}, 'Sub de test.')}${testBtn('sub', 'Sub Tier 3', { tier: '3000' }, 'Sub Tier 3 de test.')}${testBtn('gift', '10 subs cadou', { n: 10 }, '10 subs cadou de test.')}${testBtn('bits', '400 biți', { n: 400 }, '400 de biți de test.')}${testBtn('stream', online ? 'Iceman iese de pe Twitch' : 'Iceman intră pe Twitch', { on: !online }, online ? 'Iceman apare offline pe Twitch: timpul privit nu se mai numără.' : 'Iceman apare live pe Twitch: se numără timpul privit, votul automat merge.')}</div>
       <div class="ts-row"><span>Donații</span>${testBtn('donation', '5 €', { n: 5 }, 'Donație de test, 5 €.')}${testBtn('donation', '50 €', { n: 50 }, 'Donație de test, 50 €.')}${testBtn('donation', '250 €', { n: 250 }, 'Donație de test, 250 €.')}</div>
       <div class="ts-row"><span>Spectatori</span>${testBtn('crowd', '+25 de test', { n: 25 }, '25 de spectatori de test: privesc, votează, aleg bingo.')}${testBtn('me_sub', sub ? 'Eu: neabonat' : 'Eu: abonat', { on: !sub }, sub ? 'Pe site apari neabonat.' : 'Pe site apari abonat.')}${testBtn('me_watch', 'Eu: +2 h privit', { minutes: 120 }, 'Ai 2 ore privite azi: roata e deblocată.')}</div>
       <div class="ts-row"><span>Testul</span>${testBtn('extend', '+1 oră', {}, 'Testul merge încă o oră.')}<button class="btn-ghost" data-act="testRedo">De la capăt</button><button class="btn-primary" data-act="testStop">Oprește testul</button></div>
@@ -1680,6 +1689,13 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     call('mod_test', { p_action: 'stop' }, 'Testul s-a oprit. Site-ul e din nou cel real.'),
   testRedo: () => confirm('Iei testul de la capăt? Datele de test se șterg, testul merge în continuare.') &&
     call('mod_test', { p_action: 'redo' }, 'De la capăt: totul e ca la pornirea testului.'),
+  // Starts the test marathon (any moderator may during a test) and puts Iceman «on Twitch».
+  testGoLive: async (el) => {
+    await call('mod_start_timer', { p_hours: Number(el.dataset.h) || 24, p_scheduled_end: S.timer?.scheduled_end ?? null }, 'Maratonul de test a pornit: site-ul arată LIVE, donațiile adaugă timp.');
+    if (!S.timer?.stream_online) await call('mod_test', { p_action: 'stream', p: { on: true } }, 'Maratonul de test a pornit: site-ul arată LIVE, donațiile adaugă timp.');
+  },
+  testEnd: () => confirm('Închei maratonul de test? Vezi ecranul de final; «De la capăt» îl aduce înapoi.') &&
+    call('mod_end_timer', {}, 'Maratonul de test s-a încheiat.'),
   testDo: (el) => call('mod_test', { p_action: el.dataset.a, p: JSON.parse(el.dataset.p || '{}') }, el.dataset.ok || 'Gata.'),
   rehearsal: (el) => call('mod_rehearsal', { p_action: el.dataset.a, p_minutes: Number(el.dataset.m) || null },
     ({ start: 'Repetiția a pornit. Overlay-ul arată ceasul de test în câteva secunde.', stop: 'Repetiția s-a oprit.' } as Record<string, string>)[el.dataset.a ?? ''] ?? 'Trimis. Apare în overlay în câteva secunde.'),
