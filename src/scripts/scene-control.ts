@@ -6,6 +6,8 @@
 //   partners and supporters two at a time in a slow carousel) · notices for each event ·
 //   snow that stays faint and reacts: a sub puffs out of the webcam, bits twinkle, a donation
 //   bursts from the timer (bigger for bigger amounts), a gift wave blows a blizzard across.
+// Tests from /mod: «Testează pe stream» (part 'otest') plays the reactions with «TEST» names and a
+// sample request in «Urmează»; «Repetiție» drives the clock (yellow TEST tag) and its test donations react.
 // ?calm=1 (or reduced motion): no snow, no slides. ?frame=1: outlines the holes, for placing the
 // sources. ?demo: sample data (window.__sc.sub() / bits() / gift(n) / donate(n) to try reactions).
 
@@ -57,9 +59,7 @@ root.innerHTML = `
   </section>
   <section class="scc-panel scc-spon" id="scc-spon" style="${pos(BOX.spon)}">
     <div class="scc-logo main" data-main></div>
-    <i class="scc-sep"></i>
     <div class="scc-car p" data-partners></div>
-    <i class="scc-sep"></i>
     <div class="scc-car s" data-supp></div>
   </section>
   <canvas class="scc-snow" data-snow width="1920" height="1080"></canvas>
@@ -81,14 +81,22 @@ fit();
 let data: SiteData = emptyData();
 
 // ---- Timer ------------------------------------------------------------------------
+// «Repetiție» on /mod: before the marathon the practice clock takes over (the real one is untouched).
+const rehearsing = (d: SiteData) => !!d.rehearsal && d.rehearsal.until > Date.now() && (d.status !== 'live' || demo);
+function view(d: SiteData): SiteData {
+  if (!rehearsing(d)) return d;
+  const r = d.rehearsal!;
+  return { ...d, loaded: true, status: 'live', endsAt: r.endsAt, pausedUntil: r.pausedUntil, doubleFrom: r.doubleFrom, doubleUntil: r.doubleUntil, doubleSponsor: r.doubleUntil ? d.doubleSponsor ?? null : null };
+}
 function drawTimer() {
-  const v = derive({ ...initialState(), now: Date.now() }, data);
-  const st = !data.status || data.status === 'upcoming' ? 'upcoming' : data.status === 'ended' ? 'ended' : v.isFrozen ? 'frozen' : v.doubleNow ? 'double' : 'live';
-  const test = !!data.testMode;
+  const d = view(data);
+  const v = derive({ ...initialState(), now: Date.now() }, d);
+  const st = !d.status || d.status === 'upcoming' ? 'upcoming' : d.status === 'ended' ? 'ended' : v.isFrozen ? 'frozen' : v.doubleNow ? 'double' : 'live';
+  const test = !!data.testMode || rehearsing(data);
   const tag = $('[data-tag]');
   setText(tag, st === 'double' ? '×2 ORA DUBLĂ' : st === 'frozen' ? 'ÎNGHEȚAT' : st === 'ended' ? 'TIMPUL A EXPIRAT' : st === 'upcoming' ? 'ÎNCEPE ÎN' : test ? 'TEST' : 'LIVE');
   tag.dataset.state = test && st === 'live' ? 'test' : st;
-  setText($('[data-by]'), st === 'double' && data.doubleSponsor ? `de la ${data.doubleSponsor}` : '');
+  setText($('[data-by]'), st === 'double' && d.doubleSponsor ? `de la ${d.doubleSponsor}` : '');
   [v.dd, v.hh, v.mm, v.ss].forEach((x, i) => setText($(`[data-cg="${i}"]`), x));
   root.dataset.state = st;
   // The whole sum raised so far (not the step to the next milestone).
@@ -142,13 +150,14 @@ function drawSponsors() {
   if (key !== mainKey) { mainKey = key; $('[data-main]').outerHTML = logoHtml(s.main, 'main').replace('class="scc-logo main"', 'class="scc-logo main" data-main'); }
   partners.set(s.partners);
   supp.set(s.supp);
-  $('[data-main]').classList.toggle('lit', root.dataset.state === 'double' && !!data.doubleSponsor);
+  $('[data-main]').classList.toggle('lit', root.dataset.state === 'double' && !!view(data).doubleSponsor);
 }
 window.setInterval(() => partners.next(), 8000);
 window.setTimeout(() => window.setInterval(() => supp.next(), 8000), 1500);
 
 // ---- «Donează și alegi» -------------------------------------------------------------
 const knownTasks = new Set<number>();
+let testReq: { item: { id: number; price: number; title: string; name: string; at: number }; until: number } | null = null;
 let tasksFirst = true;
 let menuKey = '';
 function drawTasks() {
@@ -161,8 +170,9 @@ function drawTasks() {
       ? menu.map((m) => `<div class="scc-row" data-price="${m.price}"><span>${esc(m.title)}</span><b>${euro(m.price)}</b></div>`).join('')
       : '<p class="scc-more">Lista se completează pe /mod.</p>';
   }
-  const queue = t?.queue ?? [];
-  const pending = t?.pending ?? queue.length;
+  // «Testează pe stream»: a sample request on top for a few seconds (never stored).
+  const queue = [...(testReq && testReq.until > Date.now() ? [testReq.item] : []), ...(t?.queue ?? [])];
+  const pending = (t?.pending ?? (t?.queue ?? []).length) + (queue.length > (t?.queue ?? []).length ? 1 : 0);
   const fresh = queue.filter((q) => !knownTasks.has(q.id));
   queue.forEach((q) => knownTasks.add(q.id));
   const box = $('[data-queue]');
@@ -275,6 +285,47 @@ function queueEvents(items: TickerItem[], first: boolean) {
   }
 }
 
+// ---- Tests from /mod ------------------------------------------------------------------------
+let testSeq = 0;
+const testItem = (kind: string, qty: number, secs: number) =>
+  tickerItem({ id: -(++testSeq), kind, tier: '1000', quantity: qty, currency: 'EUR', seconds_added: secs, user_name: 'TEST', user_login: null });
+const later = (ms: number, f: () => void) => window.setTimeout(f, ms);
+function testRequest() {
+  const menu = data.tasks?.menu ?? [];
+  const m = menu.find((x) => x.price === 10) ?? menu[0];
+  if (!m) return;
+  testReq = { item: { id: -1, price: m.price, title: m.title, name: 'TEST', at: Date.now() }, until: Date.now() + 12_000 };
+  drawTasks();
+  later(12_100, () => { testReq = null; drawTasks(); });
+}
+function runTest(kind: string) {
+  if (kind === 'event') {
+    react(testItem('sub', 1, 360));
+    later(1400, () => react(testItem('bits', 400, 240)));
+    later(2800, () => { react(testItem('donation', 10, 3600)); testRequest(); });
+  } else if (kind === 'gift') {
+    react(testItem('gift', 20, 7200));
+  } else if (kind === 'moments') {
+    react(testItem('donation', 50, 18000));
+    later(1600, () => react(testItem('gift', 20, 7200)));
+    later(3200, () => testRequest());
+  } else if (kind === 'promo') {
+    $('#scc-spon').animate([{ borderColor: 'rgba(230,196,106,.8)' }, { borderColor: '' }], { duration: 2400 });
+    toast('TEST · banda sponsorilor');
+  } else if (kind === 'code') {
+    toast('TEST · codul secret apare doar pe scena întreagă veche, cu cheie');
+  }
+}
+let lastRehearsalN = -1;
+function rehearsalEvents() {
+  const last = data.rehearsal?.last;
+  if (!rehearsing(data) || !last) { if (!data.rehearsal) lastRehearsalN = -1; return; }
+  if (lastRehearsalN === -1) { lastRehearsalN = last.n; return; }
+  if (last.n <= lastRehearsalN) return;
+  lastRehearsalN = last.n;
+  react(tickerItem({ id: -(100000 + last.n), kind: last.kind, tier: '1000', quantity: last.amount, currency: 'EUR', seconds_added: last.seconds, user_name: last.user, user_login: null }));
+}
+
 // ---- Data ---------------------------------------------------------------------------------
 let bgUrl: string | null = null;
 function drawBackground() {
@@ -289,6 +340,7 @@ function drawBackground() {
   img.src = url;
 }
 function drawAll() {
+  rehearsalEvents();
   drawBackground();
   drawTimer();
   drawSponsors();
@@ -302,7 +354,10 @@ if (demo) {
   void import('../demo/backend').then(({ DemoBackend }) => {
     const api = new DemoBackend();
     let first = true;
+    let lastTest = api.state.overlayTest?.n ?? 0;
     const sync = () => {
+      const ot = api.state.overlayTest;
+      if (ot && ot.n > lastTest) { lastTest = ot.n; if (Date.now() - ot.at < 60_000) runTest(ot.kind); }
       data = api.toSiteData();
       queueEvents(api.state.events.filter((e) => lastId === null || e.id > lastId).reverse().map(tickerItem), first);
       drawAll();
@@ -319,6 +374,9 @@ if (demo) {
       gift: (n = 20) => api.recordEvent('gift', who(), '1000', n),
       donate: (n = 10) => api.recordEvent('donation', who(), null, n, 'EUR'),
       done: () => { const q = api.toSiteData().tasks?.queue[0]; if (q) api.rpc('mod_task_done', { p_id: q.id, p_done: true }); },
+      /** The /mod buttons, on the demo backend: test('event' | 'gift' | 'moments' | 'promo' | 'code'), rehearsal('start' | 'donation' | 'stop' …). */
+      test: (kind = 'event') => api.rpc('mod_overlay_test', { p_kind: kind }),
+      rehearsal: (action = 'start', minutes?: number) => api.rpc('mod_rehearsal', { p_action: action, p_minutes: minutes ?? null }),
     };
   });
 } else {
@@ -334,6 +392,7 @@ if (demo) {
         drawAll();
       },
       onMe() {},
+      onTest(t) { if (Date.now() - Date.parse(t.at) < 60_000) runTest(t.kind); },
     }, { intervalMs: 3000, pollHidden: true });
     void live.start();
   });
