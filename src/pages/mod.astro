@@ -554,6 +554,7 @@ const favicon = await getImage({ src: emote, format: 'png', width: 64 });
       /* (i) explanations: a 22 px square with a 44 px hit area; one floating box for all. */
       .tip { position: relative; flex: none; width: 22px; height: 22px; min-height: 0; padding: 0; display: inline-grid; place-items: center; vertical-align: middle; background: transparent; border: 1px solid var(--ln3); color: var(--tx3); cursor: help; transform: none; font-style: normal; transition: color .15s ease, border-color .15s ease, background-color .15s ease; }
       .tip::after { content: ''; position: absolute; inset: -11px; }
+      .row:has(> label.inline) > .tip, .fgrid > .tip { margin-bottom: 11px; }   /* level with the 44 px controls */
       .tip:hover, .tip[aria-expanded="true"] { color: var(--ice); border-color: var(--ice); background: rgba(63, 208, 255, .08); }
       .tip:focus-visible { outline: none; box-shadow: var(--ring); }
       button.tip:active:not(:disabled) { transform: none; }

@@ -835,7 +835,7 @@ function dashHtml(t: Record<string, any>, live: boolean, remaining: number, now:
     timp: !live ? needsLive : `<div class="quick">
         <button class="btn-ghost" data-act="add" data-min="1">+1 min</button><button class="btn-ghost" data-act="add" data-min="5">+5 min</button>
         <button class="btn-ghost" data-act="add" data-min="10">+10 min</button><button class="btn-ghost" data-act="add" data-min="-5">−5 min</button></div>
-      <div class="row"><label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="addMin" placeholder="ex: 15"></label><button class="btn-primary" data-act="addCustom">Adaugă</button></div>`,
+      <div class="row"><label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="addMin" placeholder="ex: 15"></label><button class="btn-primary" data-act="addCustom">Adaugă</button>${tip(TIME_BY_HAND)}</div>`,
     freeze: !live ? needsLive : `<div class="row"><label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="freezeMin" value="10"></label>
         <button class="btn-primary" data-act="freeze">Îngheață</button>${frozen ? '<button class="btn-ghost" data-act="unfreeze">Dezgheață</button>' : ''}${tip('Subs și donațiile adaugă timp și cât e înghețat.\nPentru 20–25 decembrie: PROGRAM → Program.')}</div>
       `,
@@ -928,6 +928,8 @@ function testCardHtml(): string {
 
 // «Prelungește» (owner, 25 Nov): while LIVE, Iceman moves the planned end later as often as he wants;
 // the clock gets the same extra time (mod_extend, migration 20261214100000). Nothing ends or restarts.
+/** Shown next to «Prelungește» and the manual «+ min» (owner, 25 Nov). */
+const TIME_BY_HAND = 'Fiecare apăsare în /mod e o acțiune separată: dacă doi moderatori apasă «+5 min» pentru același lucru, ceasul primește +10. La fel și la «Prelungește». Stabiliți cine adaugă timp de mână.';
 const durRo = (ms: number) => {
   const m = Math.max(0, Math.round(ms / 60000)), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60;
   return d ? `${d} ${d === 1 ? 'zi' : 'zile'}${h ? ` ${h} h` : ''}` : h ? `${h} h${mm ? ` ${mm} min` : ''}` : `${mm} min`;
@@ -950,7 +952,7 @@ function extendHtml(t: Record<string, any>): string {
   const base = extendBase(t);
   const def = toLocal(new Date(base + 86_400_000).toISOString());
   const ice = isIceman();
-  return `<h3 class="h3s">Prelungește ${tip('Muți finalul programat mai târziu, de câte ori vrei, fără să oprești subathonul.\nCronometrul primește exact diferența: de la 17 la 25 ianuarie = +8 zile pe ceas, chiar dacă subs l-au împins deja mai departe.\nSe poate doar înainte să ajungă ceasul la zero.')}</h3>
+  return `<h3 class="h3s">Prelungește ${tip('Muți finalul programat mai târziu, de câte ori vrei, fără să oprești subathonul.\nCronometrul primește exact diferența: de la 17 la 25 ianuarie = +8 zile pe ceas, chiar dacă subs l-au împins deja mai departe.\nSe poate doar înainte să ajungă ceasul la zero.\n\n' + TIME_BY_HAND)}</h3>
       <div class="ext">
         <div class="ext-now"><span>Final programat</span><strong>${esc(when(t.scheduled_end))}</strong></div>
         <div class="quick ext-quick">${[1, 3, 7, 14].map((d) => `<button class="btn-ghost" data-act="extendBy" data-days="${d}"${ice ? '' : ' disabled'}>+${d} ${d === 1 ? 'zi' : 'zile'}</button>`).join('')}</div>
