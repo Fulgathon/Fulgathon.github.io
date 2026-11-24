@@ -69,7 +69,7 @@ Build the static site so it matches the design, with every interaction working o
 ## Rules
 
 - Romanian copy everywhere visitors see it. Code, comments and docs can be English.
-- Owner's choice: the English words **subs** (not "suburi") and **LIVE** (not "În direct") are used on the site.
+- Owner's choice: the English words **subs** (not "suburi"), **LIVE** (not "În direct") and **SUBSCRIBE** (the hero button, not "Dă un sub") are used on the site.
 - Keep the look: near-black, electric ice blue (`#3FD0FF`), white; Barlow Condensed italic display type; square corners; snowfall. The owner rejected softer, playful versions as "girly", "AI-looking" and "not professional". Don't drift back to rounded cards, pastels, red-and-white candy-cane stripes, Christmas light strings, chrome lettering or gradient-wash backgrounds.
 - The owner explicitly asked for: the snowfall, the white-to-ice gradient on "ICE" (not chrome), the emote in the middle of the spin wheel, and a **navbar that always stays on one row**.
 - Sponsors stay calm and professional: logos on dark panels, no flashing.
@@ -88,7 +88,7 @@ Build the static site so it matches the design, with every interaction working o
 - **Freeze 20–25 Dec:** the marathon starts 20 Dec, then Iceman freezes it (working week) with "Îngheață până la" on /mod; subs and donations still add time during the freeze.
 - **Sponsor promotion (23 Nov 2026):** sponsored Ora dublă, sponsors on prizes/milestones/bingo («de la …»), secret codes on stream for bonus spins, a quiet partner mention in the overlay every 10 min, and a per-sponsor report on /mod. Later: sponsor matching donations, sponsor segments, community goal with a sponsor prize pool. Never let donations buy raffle chances (gambling rules); keep draws free to enter.
 - **Sponsor placement:** main sponsor in the middle of the row under the timer (Strâns · Prezentat de · Următorul milestone).
-- **Donations:** TipeeeStream (account icemanlucky), in euros. Twitch never sees them; the `tipeee-donations` Edge Function polls TipeeeStream every 15 seconds.
+- **Donations:** TipeeeStream (account icemanlucky, page https://www.tipeeestream.com/icemanlucky/donation, behind the «Donează» buttons), in euros. Twitch never sees them; the `tipeee-donations` Edge Function polls TipeeeStream every 15 seconds.
 - **Length (24 Nov 2026):** 22 days planned, 20 Dec 2026 → 10 Jan 2027, but it must stay flexible: the timer decides, and Iceman or the mods freeze it on demand from /mod.
 - **Scale:** at the last subathon Iceman had about 46,800 unique viewers and around 500 concurrent on Twitch alone. Multistreaming would make it bigger.
 - **Plans:** Supabase stays on Free for testing. Iceman agreed to **Supabase Pro** for the event, so upgrade before 20 Dec. Cloudflare stays on Free: static assets are free and unlimited.

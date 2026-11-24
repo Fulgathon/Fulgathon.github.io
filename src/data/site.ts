@@ -8,7 +8,8 @@ export const site = {
     twitch: 'https://twitch.tv/icemanlucky',
     subscribe: 'https://twitch.tv/subs/icemanlucky',
     discord: '#',
-    donate: '#',
+    /** TipeeeStream donation page (account icemanlucky; euros only, see CLAUDE.md). */
+    donate: 'https://www.tipeeestream.com/icemanlucky/donation',
     youtube: '#',
     tiktok: '#',
     instagram: '#',

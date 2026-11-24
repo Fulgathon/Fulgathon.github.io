@@ -109,6 +109,9 @@
 .cta-row .btn-primary { font-size: 24px; }
 .cta-row .btn-ghost { font-size: 22px; }
 .cta-row a { white-space: nowrap; }
+/* With «Donează» there are three: «Urmărește live» on top, Donează + Subscribe side by side under it. */
+.cta-row:has(.cta-donate) { flex-wrap: wrap; }
+.cta-row:has(.cta-donate) .btn-primary { flex-basis: 100%; }
 /* «Ce poți face acum» (V5) */
 .next-row { margin-top: 20px; }
 .nr-t { margin: 0 0 6px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: #8C97A8; }
@@ -453,7 +456,6 @@ a.ad-past:hover { border-color: var(--ice); }
   .timer-card { margin-top: 14px; }
   .calc-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .calc-row .calc-add { margin-top: 12px; }
-  .cta-row .cta-donate { display: none; }
   .cta-row a { min-height: 58px; }
   .g-wheel { grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 24px; padding: 20px; }
   .g-bingo { grid-template-columns: minmax(0, 1fr); padding: 20px; }
