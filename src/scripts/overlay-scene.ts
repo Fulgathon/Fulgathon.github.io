@@ -587,9 +587,14 @@ function runTest(kind: string) {
 // winner first, the reel is only the show. It plays when the draw's shownAt is new and recent, so
 // «Arată din nou» replays it and an OBS source loaded later doesn't replay an old draw.
 const DRAW_ROW = 64;
-const DRAW_SPIN = 7200;
+// Owner, 24 Nov: «much longer, to keep the suspense». ~18 s: fast at first, then a long slow-down,
+// and the last few names creep through the middle row one by one before it stops on the winner.
+const DRAW_SPIN = 18_000;
+const DRAW_ROWS = 150;      // rows the reel travels
+const DRAW_EASE = 2.4;      // 1-(1-t)^2.4: ~20 rows/s at the start, the last 4 names over the last ~4 s
 let drawSeen = 0;
 let drawShowTimer = 0;
+let drawRun = 0;
 const shuffle = <T>(a: T[]) => { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
 function checkDraw() {
   const dr = data.bingo.draw;
@@ -602,14 +607,20 @@ function playDraw(winner: string, entrants: string[], prize: string, sponsor: st
   const el = $('.ov-draw');
   window.clearTimeout(drawShowTimer);
   const names = entrants.length ? entrants : [winner];
-  // The reel: every entry, shuffled, over and over (at least 44 rows), then the winner and two more.
+  // The reel: every entry, shuffled, over and over (DRAW_ROWS + 2 rows), then the winner and two more.
   const seq: string[] = [];
-  while (seq.length < 44) {
+  while (seq.length < DRAW_ROWS + 2) {
     const block = shuffle(names);
     if (names.length > 1 && block[0] === seq[seq.length - 1]) block.push(block.shift()!);
     seq.push(...block);
   }
   const at = seq.length;
+  // The winner's name doesn't pass through the slow last stretch before it stops there.
+  for (let i = Math.max(0, at - 10); i < at; i++) {
+    if (seq[i] !== winner) continue;
+    const j = seq.findIndex((n, k) => k < at - 10 && n !== winner);
+    if (j >= 0) [seq[i], seq[j]] = [seq[j], seq[i]];
+  }
   const rest = names.filter((n) => n !== winner);
   const after = rest.length ? rest : names;
   seq.push(winner, after[0], after[1 % after.length]);
@@ -618,20 +629,37 @@ function playDraw(winner: string, entrants: string[], prize: string, sponsor: st
     <div class="dr-reel"><ul class="dr-list">${seq.map((n, i) => `<li${i === at ? ' class="win"' : ''}>${esc(n)}</li>`).join('')}</ul><div class="dr-frame"></div><div class="dr-burst"></div><div class="dr-shards">${Array.from({ length: 12 }, (_, i) => `<i style="--a:${i * 30}deg"></i>`).join('')}</div></div>
     <div class="dr-foot"><span class="dr-won">CÂȘTIGĂTOR</span><span class="dr-prize">${esc(prizeTxt)}${sponsor ? ` <span class="spon">· de la ${esc(sponsor)}</span>` : ''}</span></div>`;
   const list = el.querySelector<HTMLElement>('.dr-list')!;
-  const end = `translateY(${-(at - 2) * DRAW_ROW}px)`;
+  const rows = [...list.children] as HTMLElement[];
+  const endPx = (at - 2) * DRAW_ROW;
+  const run = ++drawRun;
   el.classList.remove('won');
   void el.offsetWidth;
   el.classList.add('show');
-  if (calm) { list.style.transform = end; el.classList.add('won'); }
+  const finish = () => { if (run !== drawRun) return; list.style.transform = `translateY(${-endPx}px)`; rows.forEach((r) => r.classList.remove('at')); el.classList.add('won'); };
+  if (calm) finish();
   else {
+    // Driven frame by frame (not a CSS transition) for the long tail; the name in the middle row
+    // brightens as it passes, so the slow end reads name by name.
     list.style.transition = 'none';
     list.style.transform = 'translateY(0)';
-    void list.offsetWidth;
-    // Fast at first, then a long, even slow-down onto the winner.
-    window.setTimeout(() => { list.style.transition = `transform ${DRAW_SPIN}ms cubic-bezier(.1,.62,.1,1)`; list.style.transform = end; }, 600);
-    window.setTimeout(() => el.classList.add('won'), 600 + DRAW_SPIN);
+    const startAt = performance.now() + 1200;
+    const start = at - 2 - DRAW_ROWS;   // top row at t=0 (the middle row is always top + 2); ends at at - 2
+    let lit = -1;
+    const step = (now: number) => {
+      if (run !== drawRun) return;
+      const t = Math.min(1, Math.max(0, (now - startAt) / DRAW_SPIN));
+      const y = (start + (1 - Math.pow(1 - t, DRAW_EASE)) * DRAW_ROWS) * DRAW_ROW;
+      list.style.transform = `translateY(${-y}px)`;
+      const mid = Math.round(y / DRAW_ROW) + 2;
+      if (mid !== lit) { rows[lit]?.classList.remove('at'); rows[mid]?.classList.add('at'); lit = mid; }
+      if (t < 1) requestAnimationFrame(step); else finish();
+    };
+    list.style.transform = `translateY(${-start * DRAW_ROW}px)`;
+    requestAnimationFrame(step);
+    // If frames stop (a hidden source), still land on the winner on time.
+    window.setTimeout(finish, 1200 + DRAW_SPIN + 400);
   }
-  drawShowTimer = window.setTimeout(() => el.classList.remove('show', 'won'), (calm ? 0 : 600 + DRAW_SPIN) + 22_000);
+  drawShowTimer = window.setTimeout(() => { if (run === drawRun) el.classList.remove('show', 'won'); }, (calm ? 0 : 1200 + DRAW_SPIN) + 22_000);
 }
 
 function onData(first: boolean) {

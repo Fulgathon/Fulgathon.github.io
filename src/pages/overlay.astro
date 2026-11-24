@@ -368,6 +368,7 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
       .dr-reel { position: relative; height: 320px; margin-top: 18px; overflow: hidden; -webkit-mask-image: linear-gradient(180deg, transparent, #000 26%, #000 74%, transparent); mask-image: linear-gradient(180deg, transparent, #000 26%, #000 74%, transparent); }
       .dr-list { margin: 0; padding: 0; list-style: none; will-change: transform; }
       .dr-list li { height: 64px; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 46px; line-height: 1; text-transform: uppercase; color: #5D6878; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 30px; }
+      .dr-list li.at { color: #DFF6FF; transition: color .12s; }
       .dr-frame { position: absolute; left: 0; right: 0; top: 128px; height: 64px; border-top: 2px solid var(--ice); border-bottom: 2px solid var(--ice); background: rgba(63,208,255,.06); pointer-events: none; }
       .dr-frame::before, .dr-frame::after { content: ''; position: absolute; top: 50%; width: 0; height: 0; border-top: 10px solid transparent; border-bottom: 10px solid transparent; transform: translateY(-50%); }
       .dr-frame::before { left: 0; border-left: 14px solid var(--ice); }
