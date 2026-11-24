@@ -223,6 +223,7 @@ const errors: Record<string, string> = {
   not_enough_watch: 'Ai nevoie de 2 ore de privit azi pentru rotire.',
   already_spun: 'Ai învârtit deja azi. Revino mâine!',
   bingo_closed: 'Alegerile pentru bingo s-au închis.',
+  bingo_not_open: 'Bingo nu s-a deschis încă.',
   bad_code: 'Codul nu e bun sau a expirat. Verifică literele de pe stream.',
   already_claimed: 'Ai folosit deja codul ăsta.',
   too_many_attempts: 'Prea multe încercări. Mai încearcă peste un minut.',
@@ -635,7 +636,7 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
   },
 
   bingoLine: (n) => {
-    if (!(data.bingo.closesAt === null || Date.now() < data.bingo.closesAt)) return;
+    if (!derive(state, data).bingoOpen) return;
     const vals = derive(state, data);
     const line = vals.bingoLines[Number(n)];
     if (!line) return;

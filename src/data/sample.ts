@@ -30,7 +30,7 @@ export function emptyData(): SiteData {
     losePrize: 7,
     recentWins: [],
     boards: { donations: [], gifts: [], bits: [], hours: [] },
-    bingo: { closesAt: null, prize: '', players: 0, items: bingoItems.map((label, i) => ({ id: i + 1, label, happened: false })) },
+    bingo: { opensAt: null, closesAt: null, prize: '', players: 0, items: bingoItems.map((label, i) => ({ id: i + 1, label, happened: false })) },
     today: null,
     loyal: [],
     together: null,

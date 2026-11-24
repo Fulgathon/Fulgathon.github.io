@@ -92,7 +92,8 @@ export interface DemoState {
   streamerConnected: boolean;
   /** Prediction bingo: the viewer's pick plus simulated players' picks. */
   bingo: {
-    closesAt: number | null; prize: string; prizeSponsor?: string | null;
+    /** undefined = a demo saved before opening existed: open. */
+    opensAt?: number | null; closesAt: number | null; prize: string; prizeSponsor?: string | null;
     items: { id: number; label: string; happened: boolean; rule?: Record<string, unknown> | null }[];
     pick: number[] | null;
     others: { user: string; items: number[] }[];
@@ -104,6 +105,15 @@ export interface DemoState {
 const RATES = { tier1: [360, 1], tier2: [720, 1], tier3: [1080, 1], gift: [360, 1], bits: [240, 400], donation: [360, 1] } as const;
 const WHEEL_MINUTES = 120;
 const today = () => new Date().toLocaleDateString('sv-SE');
+/** Bingo phase, as private.bingo_phase() in the database. */
+const bingoOpensAt = (s: DemoState) => (s.bingo.opensAt === undefined ? 0 : s.bingo.opensAt);
+function bingoPhase(s: DemoState): 'soon' | 'open' | 'closed' {
+  const o = bingoOpensAt(s);
+  if (o === null || Date.now() < o) return 'soon';
+  return s.bingo.closesAt !== null && Date.now() >= s.bingo.closesAt ? 'closed' : 'open';
+}
+const bingoFinal = (s: DemoState) => s.bingo.items.some((it) => it.happened) || s.bingo.draws.length > 0;
+
 /** The 12 lines of a 5×5 bingo card (ids row by row), each sorted. */
 function bingoLines(ids: number[]): number[][] {
   if (ids.length !== 25) return [];
@@ -219,6 +229,7 @@ function seedBase(now: number): DemoState {
     mods: ['icemanlucky', 'Rares1337'],
     streamerConnected: true,
     bingo: {
+      opensAt: now - DAY,
       closesAt: now + 2 * DAY + 5 * HOUR,
       prize: 'un espressor',
       prizeSponsor: 'Fulg Coffee',
@@ -474,7 +485,9 @@ export class DemoBackend {
   saveBingo(items: number[]) {
     this.mutate((s) => {
       if (s.viewer.state === 'out') fail('not_logged_in');
-      if (s.bingo.closesAt !== null && Date.now() >= s.bingo.closesAt) fail('bingo_closed');
+      const ph = bingoPhase(s);
+      if (ph === 'soon') fail('bingo_not_open');
+      if (ph === 'closed') fail('bingo_closed');
       const ids = [...new Set(items.map(Number))].sort((a, b) => a - b);
       if (!bingoLines(s.bingo.items.map((it) => it.id)).some((l) => l.join() === ids.join())) fail('not_a_line');
       s.bingo.pick = ids;
@@ -496,15 +509,36 @@ export class DemoBackend {
   }
   bingoTick(id: number, happened: boolean) {
     this.mutate((s) => {
-      if (s.bingo.closesAt === null || Date.now() < s.bingo.closesAt) fail('bingo_open');
+      if (bingoPhase(s) !== 'closed') fail('bingo_open');
       const it = s.bingo.items.find((x) => x.id === id); if (it) it.happened = happened;
     });
   }
-  bingoSettings(closesAt: number | null, prize: string, prizeSponsor: string | null = null) {
+  bingoSettings(opensAt: number | null, closesAt: number | null, prize: string, prizeSponsor: string | null = null) {
     this.mutate((s) => {
-      if ((closesAt === null || closesAt > Date.now()) && closesAt !== s.bingo.closesAt
-        && (s.bingo.items.some((it) => it.happened) || s.bingo.draws.length)) fail('bingo_ticked');
-      s.bingo.closesAt = closesAt; if (prize.trim()) s.bingo.prize = prize.trim(); s.bingo.prizeSponsor = prizeSponsor?.trim() || null; });
+      if ((opensAt !== bingoOpensAt(s) || closesAt !== s.bingo.closesAt) && bingoFinal(s)) fail('bingo_ticked');
+      if (closesAt !== null && (opensAt === null || closesAt <= opensAt)) fail('bingo_bad_dates');
+      s.bingo.opensAt = opensAt; s.bingo.closesAt = closesAt;
+      if (prize.trim()) s.bingo.prize = prize.trim(); s.bingo.prizeSponsor = prizeSponsor?.trim() || null; });
+  }
+  bingoOpenNow() {
+    this.mutate((s) => {
+      if (bingoPhase(s) === 'open') return;
+      if (bingoFinal(s)) fail('bingo_ticked');
+      s.bingo.opensAt = Date.now();
+      if (s.bingo.closesAt !== null && s.bingo.closesAt <= Date.now()) s.bingo.closesAt = null;
+    });
+  }
+  /** Presentation page only: clear ticks and draws, then open again. */
+  bingoReopenDemo() {
+    this.mutate((s) => {
+      s.bingo.items.forEach((it) => { it.happened = false; });
+      s.bingo.draws = [];
+      s.bingo.opensAt = Date.now() - 1000;
+      s.bingo.closesAt = Date.now() + 2 * DAY;
+    });
+  }
+  bingoCloseNow() {
+    this.mutate((s) => { if (bingoPhase(s) !== 'open') fail('bingo_not_open'); s.bingo.closesAt = Date.now(); });
   }
   setBingoItems(list: { id?: number | string; label: string }[]) {
     this.mutate((s) => {
@@ -925,7 +959,7 @@ export class DemoBackend {
       // Sample counts (the real ones come from the badges part).
       badgeCounts: { og: 1240, h10: 2150, night: 386, streak7: 509, h50: 214, h100: 37 },
       bingo: {
-        closesAt: s.bingo.closesAt, prize: s.bingo.prize, prizeSponsor: s.bingo.prizeSponsor ?? null,
+        opensAt: bingoOpensAt(s), closesAt: s.bingo.closesAt, prize: s.bingo.prize, prizeSponsor: s.bingo.prizeSponsor ?? null,
         players: s.bingo.others.length + (s.bingo.pick ? 1 : 0),
         items: s.bingo.items.map((it) => ({ ...it })),
       },
@@ -1060,7 +1094,7 @@ export class DemoBackend {
       report: this.sponsorReport(),
       mods: s.mods.map((login) => ({ login, display_name: login === 'icemanlucky' ? 'Icemanlucky' : null })),
       bingo: {
-        closes_at: iso(s.bingo.closesAt), prize: s.bingo.prize, prize_sponsor: s.bingo.prizeSponsor ?? null,
+        opens_at: iso(bingoOpensAt(s)), closes_at: iso(s.bingo.closesAt), prize: s.bingo.prize, prize_sponsor: s.bingo.prizeSponsor ?? null,
         items: s.bingo.items.map((it) => ({ id: it.id, label: it.label, happened_at: it.happened ? 'yes' : null, auto_rule: it.rule ?? null })),
         status: {
           players: s.bingo.others.length + (s.bingo.pick ? 1 : 0),
@@ -1104,7 +1138,9 @@ export class DemoBackend {
       case 'mod_unfreeze': return this.unfreeze();
       case 'mod_bingo_set_items': return this.setBingoItems(a.p_items);
       case 'mod_bingo_tick': return this.bingoTick(Number(a.p_id), !!a.p_happened);
-      case 'mod_bingo_settings': return this.bingoSettings(ms(a.p_closes_at), String(a.p_prize ?? ''), a.p_prize_sponsor ?? null);
+      case 'mod_bingo_settings': return this.bingoSettings(ms(a.p_opens_at), ms(a.p_closes_at), String(a.p_prize ?? ''), a.p_prize_sponsor ?? null);
+      case 'mod_bingo_open': return this.bingoOpenNow();
+      case 'mod_bingo_close': return this.bingoCloseNow();
       case 'mod_bingo_draw': return this.bingoDraw();
       case 'mod_autopilot': return this.autopilot();
       case 'mod_round_edit': return this.mutate((s) => {

@@ -238,7 +238,7 @@ export class Live {
     if (has('bingo') && P.bingo) {
       const g = P.bingo;
       patch.bingo = {
-        closesAt: ms(g.closesAt), prize: g.prize ?? '', prizeSponsor: g.prizeSponsor ?? null, players: g.players ?? 0,
+        opensAt: ms(g.opensAt), closesAt: ms(g.closesAt), prize: g.prize ?? '', prizeSponsor: g.prizeSponsor ?? null, players: g.players ?? 0,
         items: (g.items ?? []).map((i: Json) => ({ id: i.id, label: i.label, happened: !!i.happened })),
       };
     }

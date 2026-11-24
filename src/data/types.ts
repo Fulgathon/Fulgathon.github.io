@@ -32,8 +32,8 @@ export type LineGroup = 'sub' | 'sub23' | 'gift' | 'donSmall' | 'donBig' | 'bits
 export interface AdventDay { day: number; note: string; clip: string | null; sponsor: string | null }
 export interface Round { id: number; number: number; closesAt: number }
 export interface BingoItem { id: number; label: string; happened: boolean }
-/** Prediction bingo: pick 5 events before closesAt; all 5 happen → raffle. */
-export interface Bingo { closesAt: number | null; prize: string; prizeSponsor?: string | null; players: number; items: BingoItem[] }
+/** Prediction bingo: open from opensAt (null = not yet) to closesAt (null = until a moderator closes it); all 5 happen → raffle. */
+export interface Bingo { opensAt: number | null; closesAt: number | null; prize: string; prizeSponsor?: string | null; players: number; items: BingoItem[] }
 
 /** What one viewer added in total (my_state). */
 export interface Mine { seconds: number; subs: number; gifts: number; bits: number; donated: number }

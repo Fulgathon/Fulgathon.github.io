@@ -326,9 +326,14 @@ export function derive(s: State, d: SiteData) {
     { value: L?.streak ? count(L.streak, 'zi', 'zile') : '0 zile', label: 'la rând' },
   ] : [];
 
-  // Bingo: pick 5 events before the close; moderators tick what happens; all 5 → raffle.
+  // Bingo: moderators open it, viewers pick a line until they close it; then moderators tick
+  // what happens; all 5 → raffle. Not open yet = «soon» (the card shows, no picks).
   const B = d.bingo;
-  const bingoOpen = B.closesAt === null || s.now < B.closesAt;
+  const bingoPhase: 'soon' | 'open' | 'closed' = B.opensAt === null || s.now < B.opensAt ? 'soon'
+    : B.closesAt !== null && s.now >= B.closesAt ? 'closed' : 'open';
+  const bingoOpen = bingoPhase === 'open';
+  const bingoSoon = bingoPhase === 'soon';
+  const bingoDone = bingoPhase === 'closed';
   const pick = s.bingoPick;
   const saved = s.bingoSaved;
   const mine = bingoOpen ? pick : (saved ?? []);
@@ -350,7 +355,7 @@ export function derive(s: State, d: SiteData) {
   });
   const bingo = grid.map((it) => {
     const on = mine.includes(it.id);
-    const hit = !bingoOpen && it.happened;
+    const hit = bingoDone && it.happened;
     return {
       id: it.id, text: it.label, on, hit,
       bg: on ? (bingoOpen || hit ? 'var(--ice)' : 'rgba(63,208,255,0.12)') : '#0B1018',
@@ -361,22 +366,27 @@ export function derive(s: State, d: SiteData) {
   const lineIdx = bingoLines.findIndex((l) => l.on);
   const bingo2 = grid.map((it) => {
     const on = mine.includes(it.id);
-    const hit = !bingoOpen && it.happened;
+    const hit = bingoDone && it.happened;
     return { id: it.id, text: it.label, on, hit, cls: on && hit ? 'mine hit' : on ? 'mine' : hit ? 'hit' : '' };
   });
   const myLine = lineIdx >= 0 ? lineDefs[lineIdx].ids.map((id) => {
     const it = grid.find((x) => x.id === id);
-    return { text: it?.label ?? '', hit: !bingoOpen && !!it?.happened };
+    return { text: it?.label ?? '', hit: bingoDone && !!it?.happened };
   }) : [];
   const lineHits = myLine.filter((l) => l.hit).length;
-  const hits = !bingoOpen && saved ? saved.filter((id) => B.items.find((it) => it.id === id)?.happened).length : 0;
-  const isBingo = !bingoOpen && saved !== null && hits === 5;
+  const hits = bingoDone && saved ? saved.filter((id) => B.items.find((it) => it.id === id)?.happened).length : 0;
+  const isBingo = bingoDone && saved !== null && hits === 5;
   const closeText = B.closesAt !== null ? `${dateRo(B.closesAt)}, la ${timeRo(B.closesAt)}` : '';
+  const openText = B.opensAt !== null ? `${dateRo(B.opensAt)}, la ${timeRo(B.opensAt)}` : '';
   const prize = (B.prize && !B.prize.startsWith('[') ? B.prize : 'premiul cel mare') + (B.prizeSponsor ? ` de la ${B.prizeSponsor}` : '');
-  const bingoStatus = bingoOpen
+  const bingoStatus = bingoSoon
+    ? (openText ? `Bingo se deschide pe ${openText}.` : 'Bingo se deschide în curând.')
+    : bingoOpen
     ? (closeText ? `Alegerile se închid pe ${closeText}.` : 'Alegerile sunt deschise.')
     : 'Alegerile s-au închis.';
-  const bingoNote = bingoOpen
+  const bingoNote = bingoSoon
+    ? (openText ? `Alegerile se deschid pe ${openText}. Până atunci, uită-te pe cartonaș.` : 'Alegerile se deschid în curând, pe stream. Până atunci, uită-te pe cartonaș.')
+    : bingoOpen
     ? (isOut ? 'Alege o linie și conectează-te ca s-o salvezi.'
       : sameAsSaved ? 'Linia ta e salvată. O poți schimba până la închidere.'
       : saved ? 'Ai schimbat linia. Salvează ca să rămână așa.'
@@ -483,9 +493,11 @@ export function derive(s: State, d: SiteData) {
   // built only from what the page already knows. Only while live; nothing invented, no urgency.
   type NextTile = { key: string; title: string; text: string; href?: string; action?: string };
   const bingoDate = B.closesAt !== null ? dateRo(B.closesAt) : '';
+  const bingoOpenDate = B.opensAt !== null ? dateRo(B.opensAt) : '';
   const bingoTile: NextTile = {
     key: 'bingo', href: '#bingo', title: 'Bingo',
-    text: bingoOpen
+    text: bingoSoon ? (bingoOpenDate ? `Se deschide pe ${bingoOpenDate}` : 'Se deschide în curând')
+      : bingoOpen
       ? (isSub || isNonsub) && saved !== null
         ? (bingoDate ? `Linia ta e salvată · o poți schimba până pe ${bingoDate}` : 'Linia ta e salvată')
         : (bingoDate ? `Alege-ți linia până pe ${bingoDate}` : 'Alege-ți linia')
@@ -576,9 +588,9 @@ export function derive(s: State, d: SiteData) {
     // The open mobile menu sits under the toast, so the toast waits.
     toastOn: toastOn && !s.menu, toastEyebrow, toastText, toastColor, toastBorder,
 
-    bingo, isBingo, bingoOpen, bingoClosed: !bingoOpen, bingoStatus, bingoNote,
+    bingo, isBingo, bingoOpen, bingoClosed: bingoDone, bingoStatus, bingoNote,
     bingoLines,
-    bingoCount: bingoOpen ? (pick.length === 5 ? 'Linie aleasă' : 'Alege o linie') : `${hits} / 5 întâmplate`,
+    bingoCount: bingoSoon ? 'În curând' : bingoOpen ? (pick.length === 5 ? 'Linie aleasă' : 'Alege o linie') : `${hits} / 5 întâmplate`,
     bingoPlayers: B.players === 1 ? '1 jucător' : `${fmtInt(B.players)} jucători`,
     bingoBtn, bingoBtnClass, bingoPrize: prize,
     bingo2, myLine, hasLine: myLine.length > 0, noLine: myLine.length === 0,
@@ -586,8 +598,8 @@ export function derive(s: State, d: SiteData) {
     lineHits: `${lineHits} din 5`,
     bingoPrizeName: B.prize && !B.prize.startsWith('[') ? B.prize.charAt(0).toUpperCase() + B.prize.slice(1) : 'Se anunță în curând',
     bingoPrizeBy: B.prizeSponsor ? `· de la ${B.prizeSponsor}` : '',
-    bingoClose: closeText || 'se anunță',
-    bingoCloseLabel: bingoOpen ? 'Poți schimba linia până pe' : 'Alegerile s-au închis pe',
+    bingoClose: bingoSoon ? (openText || 'în curând') : bingoOpen ? (closeText || 'se anunță pe stream') : closeText,
+    bingoCloseLabel: bingoSoon ? 'Se deschide' : bingoOpen ? (closeText ? 'Poți schimba linia până pe' : 'Alegerile se închid') : 'Alegerile s-au închis pe',
     bingoPlayersLong: B.players === 1 ? '1 jucător' : count(B.players, 'jucător', 'jucători'),
 
     suggestForm: isSub && !s.suggestDone,
