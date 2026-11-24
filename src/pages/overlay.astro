@@ -492,6 +492,7 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
       .scc-car.s .scc-logo span { font-size: 20px; }
       .scc-pg { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
       .scc-snow { position: absolute; inset: 0; pointer-events: none; }
+      .scc-ice { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; pointer-events: none; transition: opacity .3s; }
       .scc-toast { position: absolute; padding: 2px 14px; background: #0B1018; border: 2px solid var(--ice); font-size: 18px; line-height: 1.25; white-space: nowrap; opacity: 0; transform: translateY(10px); transition: opacity .4s, transform .4s; pointer-events: none; }
       .scc-toast.show { opacity: 1; transform: none; }
       .scc-warm { position: absolute; inset: 0; pointer-events: none; background: #FF7A1A; opacity: 0; transition: opacity 1s; mix-blend-mode: screen; } .scc-warm.on { opacity: .1; }

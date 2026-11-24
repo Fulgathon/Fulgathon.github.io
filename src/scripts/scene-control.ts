@@ -66,7 +66,8 @@ root.innerHTML = `
   <canvas class="scc-snow" data-snow width="1920" height="1080"></canvas>
   <div class="scc-toast" data-toast style="left:${HOLES.cam.x + 16}px;top:${HOLES.cam.y + HOLES.cam.h - 46}px;max-width:${HOLES.cam.w - 32}px"></div>
   <div class="scc-warm" data-warm></div>
-  <div class="scc-frost" data-frost></div>`;
+  <div class="scc-frost" data-frost></div>
+  <canvas class="scc-ice" data-ice width="1920" height="1080"></canvas>`;
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => root.querySelector<T>(sel)!;
 const setText = (el: HTMLElement, t: string) => { if (el.textContent !== t) el.textContent = t; };
@@ -82,7 +83,9 @@ function fit() {
     setText($(`[data-hole="${id}"]`), `${label} · ${r(b.w)}×${r(b.h)} la x ${r(b.x)}, y ${r(b.y)}`);
   }
   sizeSnow?.();
+  sizeIce?.();
 }
+let sizeIce: (() => void) | null = null;
 let sizeSnow: (() => void) | null = null;
 addEventListener('resize', fit);
 fit();
@@ -107,6 +110,7 @@ function drawTimer() {
   tag.dataset.state = test && st === 'live' ? 'test' : st;
   setText($('[data-by]'), st === 'double' && d.doubleSponsor ? `de la ${d.doubleSponsor}` : '');
   [v.dd, v.hh, v.mm, v.ss].forEach((x, i) => setText($(`[data-cg="${i}"]`), x));
+  if (root.dataset.state !== st) { if (st === 'frozen') freezeIce(true); else if (root.dataset.state === 'frozen') freezeIce(false); }
   root.dataset.state = st;
   // The whole sum raised so far (not the step to the next milestone).
   setText($('[data-raised]'), data.raised || '0 €');
@@ -300,6 +304,109 @@ function queueEvents(items: TickerItem[], first: boolean) {
     lastId = Math.max(lastId ?? 0, t.id);
   }
 }
+
+// ---- Freeze: ice on the extreme margins ------------------------------------------------------
+// Frost crystals grow in from the four edges (bigger in the corners), icicles hang from the top edge,
+// and a faint haze frames the screen; on unfreeze it all melts away. Only in the margins (≤ ~50 px):
+// the game and webcam holes start 54 px in. Precomputed once, drawn by growth.
+type Seg = { x1: number; y1: number; x2: number; y2: number; w: number; t0: number };
+type Icicle = { x: number; w: number; len: number; t0: number };
+const iceCv = $<HTMLCanvasElement>('[data-ice]');
+const ice = iceCv.getContext('2d')!;
+let rnd = 7;
+const rand = () => { rnd = (rnd * 16807) % 2147483647; return (rnd - 1) / 2147483646; };
+const SEGS: Seg[] = [];
+const ICICLES: Icicle[] = [];
+function crystal(x: number, y: number, ang: number, len: number, depth: number, t0: number) {
+  const x2 = x + Math.cos(ang) * len, y2 = y + Math.sin(ang) * len;
+  SEGS.push({ x1: x, y1: y, x2, y2, w: Math.max(0.7, depth * 0.6), t0 });
+  if (depth <= 0 || len < 5) return;
+  // Side needles every third of the way, ±60° like real frost, shorter each generation.
+  for (let i = 1; i <= 2; i++) {
+    const f = i / 3, bx = x + (x2 - x) * f, by = y + (y2 - y) * f, bl = len * (0.42 - i * 0.08) * (0.8 + rand() * 0.4);
+    crystal(bx, by, ang - Math.PI / 3, bl, depth - 1, t0 + f * 0.25);
+    crystal(bx, by, ang + Math.PI / 3, bl, depth - 1, t0 + f * 0.25);
+  }
+  crystal(x2, y2, ang + (rand() - 0.5) * 0.5, len * 0.45, depth - 1, t0 + 0.25);
+}
+(function build() {
+  const edge = (n: number, at: (i: number) => [number, number, number], corner: (i: number) => number) => {
+    for (let i = 0; i < n; i++) {
+      const [x, y, inward] = at(i);
+      const c = corner(i);   // 0 = middle of an edge … 1 = right at a corner
+      // At most ~50 px deep: the game and webcam holes start 54 px in, so the ice never covers them.
+      const len = 9 + rand() * 18 + c * c * 22;
+      if (rand() < 0.3 + c * 0.7) crystal(x, y, inward + (rand() - 0.5) * 0.9, len, len > 26 ? 3 : 2, 0.1 + rand() * 0.35 + (1 - c) * 0.25);
+    }
+  };
+  const nearC = (p: number, L: number) => Math.max(0, 1 - Math.min(p, L - p) / 260);
+  edge(130, (i) => [i * 15 + rand() * 8, 0, Math.PI / 2], (i) => nearC(i * 15, 1920));
+  edge(130, (i) => [i * 15 + rand() * 8, 1080, -Math.PI / 2], (i) => nearC(i * 15, 1920));
+  edge(74, (i) => [0, i * 15 + rand() * 8, 0], (i) => nearC(i * 15, 1080));
+  edge(74, (i) => [1920, i * 15 + rand() * 8, Math.PI], (i) => nearC(i * 15, 1080));
+  for (let x = 4; x < 1920; x += 10 + rand() * 26) {
+    const c = Math.max(0, 1 - Math.min(x, 1920 - x) / 500);
+    if (rand() < 0.55 + c * 0.3) ICICLES.push({ x, w: 3 + rand() * 6, len: 8 + rand() * 20 + c * 14, t0: 0.15 + rand() * 0.5 });
+  }
+})();
+let iceT = 0;          // 0 = gone … 1 = fully grown
+let iceTarget = 0;
+let iceAnim = 0;
+function drawIce() {
+  const k = iceT;
+  ice.clearRect(0, 0, 1920, 1080);
+  if (k <= 0) return;
+  // Haze along the margins.
+  const haze = (x0: number, y0: number, x1: number, y1: number, rx: number, ry: number, rw: number, rh: number) => {
+    const g = ice.createLinearGradient(x0, y0, x1, y1);
+    g.addColorStop(0, `rgba(220,242,255,${0.32 * k})`); g.addColorStop(1, 'rgba(220,242,255,0)');
+    ice.fillStyle = g; ice.fillRect(rx, ry, rw, rh);
+  };
+  haze(0, 0, 0, 56, 0, 0, 1920, 56); haze(0, 1080, 0, 1024, 0, 1024, 1920, 56);
+  haze(0, 0, 56, 0, 0, 0, 56, 1080); haze(1920, 0, 1864, 0, 1864, 0, 56, 1080);
+  // Crystals, growing from their root outward.
+  ice.lineCap = 'round';
+  for (const s of SEGS) {
+    const p = Math.min(1, Math.max(0, (k - s.t0) / 0.35));
+    if (p <= 0) continue;
+    ice.strokeStyle = `rgba(232,247,255,${0.55 + 0.35 * (s.w > 1.4 ? 1 : 0)})`;
+    ice.lineWidth = s.w;
+    ice.beginPath(); ice.moveTo(s.x1, s.y1); ice.lineTo(s.x1 + (s.x2 - s.x1) * p, s.y1 + (s.y2 - s.y1) * p); ice.stroke();
+  }
+  // Icicles along the top edge.
+  for (const c of ICICLES) {
+    const p = Math.min(1, Math.max(0, (k - c.t0) / 0.4));
+    if (p <= 0) continue;
+    const L = c.len * p;
+    const g = ice.createLinearGradient(0, 0, 0, L);
+    g.addColorStop(0, 'rgba(240,250,255,0.9)'); g.addColorStop(0.6, 'rgba(200,236,255,0.55)'); g.addColorStop(1, 'rgba(160,220,255,0.15)');
+    ice.fillStyle = g;
+    ice.beginPath(); ice.moveTo(c.x - c.w / 2, 0); ice.lineTo(c.x + c.w / 2, 0); ice.lineTo(c.x + c.w * 0.08, L); ice.closePath(); ice.fill();
+    ice.fillStyle = 'rgba(255,255,255,0.55)'; ice.fillRect(c.x - c.w * 0.25, 0, Math.max(1, c.w * 0.18), L * 0.6);
+  }
+}
+function freezeIce(on: boolean) {
+  iceTarget = on ? 1 : 0;
+  if (calm) { iceT = iceTarget; drawIce(); return; }
+  cancelAnimationFrame(iceAnim);
+  const from = iceT, start = performance.now(), dur = on ? 2600 : 1400;
+  const step = (now: number) => {
+    const t = Math.min(1, (now - start) / dur);
+    iceT = from + (iceTarget - from) * (on ? 1 - Math.pow(1 - t, 2) : t);
+    iceCv.style.opacity = on ? '1' : String(1 - t * 0.6);
+    drawIce();
+    if (t < 1) iceAnim = requestAnimationFrame(step);
+    else if (!on) { iceT = 0; iceCv.style.opacity = '1'; drawIce(); }
+  };
+  iceAnim = requestAnimationFrame(step);
+}
+sizeIce = () => {
+  const k = K * (window.devicePixelRatio || 1);
+  iceCv.width = Math.round(1920 * k); iceCv.height = Math.round(1080 * k);
+  ice.setTransform(k, 0, 0, k, 0, 0);
+  drawIce();
+};
+sizeIce();
 
 // ---- Tests from /mod ------------------------------------------------------------------------
 let testSeq = 0;
