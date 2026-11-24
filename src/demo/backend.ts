@@ -59,6 +59,9 @@ export interface DemoState {
   sponsors?: DemoSponsor[];
   /** «Repetiție»: the practice clock (same rules as mod_rehearsal). */
   rehearsal?: import('../data/types').Rehearsal | null;
+  /** «Donează și alegi»: the price list and the requests (same rules as public.donation_tasks / _queue). */
+  tasksMenu?: { price: number; title: string }[];
+  taskQueue?: { id: number; price: number; title: string; name: string; at: number; done: boolean }[];
   /** /mod autopilot settings, the plan, Discord alerts and the shared checklist (demo: nothing runs or is sent). */
   autopilot?: {
     autoStart: boolean; startHours: number; voteOn: boolean; voteAt: string; voteMinutes: number; hasWebhook: boolean;
@@ -414,6 +417,9 @@ export class DemoBackend {
       s.stats.raised += kind === 'donation' ? quantity : 0;
       const e: DemoEvent = { id: ++s.seq, kind, tier, quantity, currency, seconds_added: seconds, doubled, user_login: user, user_name: user ?? 'Anonim', at: now };
       s.events = [e, ...s.events].slice(0, 60);
+      // «Donează și alegi»: a donation of exactly a listed amount, while live, becomes a request.
+      const task = kind === 'donation' && t.status === 'live' ? demoTasksMenu(s).find((m) => m.price === quantity) : undefined;
+      if (task) s.taskQueue = [...(s.taskQueue ?? []), { id: e.id, price: task.price, title: task.title, name: user ?? 'Anonim', at: now, done: false }];
       return e;
     });
   }
@@ -963,6 +969,7 @@ export class DemoBackend {
       lines: s.lines ?? {},
       smallDonation: s.smallDonation ?? 10,
       rehearsal: s.rehearsal ?? null,
+      tasks: { menu: demoTasksMenu(s), queue: (s.taskQueue ?? []).filter((q) => !q.done).slice(0, 40).map(({ done: _d, ...q }) => q), pending: (s.taskQueue ?? []).filter((q) => !q.done).length },
       sponsors: this.publicSponsors(s),
       advent: s.advent ?? [],
       // The showcase runs on today's clock but labels the calendar with the real dates (20 Dec, 12:00 RO).
@@ -1193,6 +1200,17 @@ export class DemoBackend {
       case 'mod_sponsor_move': return this.sponsorMove(Number(a.p_id), Number(a.p_dir));
       // «Mod test» needs the real database; the demo is all sample data already.
       case 'mod_test': return fail('demo_test');
+      case 'mod_tasks_set': return this.mutate((s) => {
+        const items = (a.p_items as { price: number | string; title: string }[]).map((x) => ({ price: Number(String(x.price).replace(',', '.')), title: String(x.title ?? '').trim() }));
+        if (items.length > 8 || items.some((x) => !(x.price > 0 && x.price <= 10000) || !x.title || x.title.length > 60)) fail('bad_tasks');
+        if (new Set(items.map((x) => x.price)).size !== items.length) fail('duplicate_price');
+        s.tasksMenu = items;
+      });
+      case 'mod_task_done': return this.mutate((s) => {
+        const q = (s.taskQueue ?? []).find((x) => x.id === Number(a.p_id));
+        if (!q) fail('no_task');
+        q!.done = a.p_done !== false;
+      });
       case 'mod_rehearsal': return this.mutate((s) => {
         const now = Date.now();
         const act = String(a.p_action);
@@ -1271,4 +1289,9 @@ export class DemoBackend {
       default: return fail(`unknown_${fn}`);
     }
   }
+}
+
+/** The owner's first list (24 Nov 2026); /mod can change it. */
+function demoTasksMenu(s: DemoState) {
+  return s.tasksMenu ?? [{ price: 5, title: 'Alege linia' }, { price: 10, title: 'Alege un campion' }, { price: 25, title: 'Alege 3 campioni' }, { price: 50, title: 'Joacă cu o mână' }];
 }

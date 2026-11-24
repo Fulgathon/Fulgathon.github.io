@@ -279,6 +279,14 @@ export class Live {
         last: r.last ? { n: Number(r.last.n) || 0, kind: r.last.kind === 'gift' ? 'gift' : 'donation', user: String(r.last.user ?? 'TEST'), amount: Number(r.last.amount) || 0, seconds: Number(r.last.seconds) || 0, doubled: !!r.last.doubled } : null,
       } : null;
     }
+    if (has('tasks')) {
+      const t = P.tasks;
+      patch.tasks = t && Array.isArray(t.menu) ? {
+        menu: t.menu.map((m: Json) => ({ price: Number(m.price) || 0, title: String(m.title ?? '') })),
+        queue: (t.queue ?? []).map((x: Json) => ({ id: Number(x.id), price: Number(x.price) || 0, title: String(x.title ?? ''), name: String(x.name ?? 'Anonim'), at: Date.parse(x.at) })),
+        pending: Number(t.pending) || 0,
+      } : null;
+    }
     if (has('test')) {
       patch.testMode = P.test?.on && P.test.until ? { until: ms(P.test.until)!, by: P.test.by ?? null } : null;
     }

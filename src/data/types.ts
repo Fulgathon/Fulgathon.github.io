@@ -124,6 +124,8 @@ export interface SiteData {
   rehearsal?: Rehearsal | null;
   /** «Mod test» on /mod: the whole site runs on fake data until `until` (then everything goes back). */
   testMode?: { until: number; by: string | null } | null;
+  /** «Donează și alegi» (scene «Camera de control»): the price list and the requests waiting. */
+  tasks?: DonationTasks | null;
   /** null = not set up on /mod yet: the site keeps the list from src/data/site.ts. */
   sponsors?: Sponsor[] | null;
   /** Iceman's lines for the hero bubble, per group (fewer than 5 → «Mersi, {nume}!»). */
@@ -136,4 +138,11 @@ export interface SiteData {
   calendarStart?: number | null;
   /** How many people hold each badge (for the tooltips); null = not known yet. */
   badgeCounts: Record<string, number> | null;
+}
+
+/** A fixed-price request: one donation of exactly `price` € = this task, with the donor's name. */
+export interface DonationTasks {
+  menu: { price: number; title: string }[];
+  queue: { id: number; price: number; title: string; name: string; at: number }[];
+  pending: number;
 }

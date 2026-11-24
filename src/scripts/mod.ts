@@ -75,6 +75,9 @@ const errors: Record<string, string> = {
   rehearsal_while_live: 'Maratonul e LIVE: repetiția merge doar înainte de start.',
   test_running: 'Un test merge deja.',
   demo_test: 'În demo totul e deja de probă: modul test e pentru site-ul real.',
+  bad_tasks: 'Lista nu e bună: suma între 0 și 10.000 €, sarcina între 1 și 60 de litere, cel mult 8.',
+  duplicate_price: 'Două sarcini au aceeași sumă. Fiecare sumă trebuie să fie diferită.',
+  no_task: 'Cererea nu mai există (poate a bifat-o alt moderator).',
   test_while_live: 'Testul merge doar înainte de start (maratonul real a pornit sau s-a încheiat).',
   test_too_close: 'E prea aproape de start: testul trebuie să se termine cu 30 de minute înainte.',
   test_off: 'Testul nu mai merge (s-a oprit sau a expirat).',
@@ -209,12 +212,15 @@ let S: {
   rehearsal: any;
   /** «Mod test»: the whole site on fake data (public_state part 'test'). */
   test: { on: boolean; until: string; startedAt: string; hardUntil: string | null; by: string | null; streamForced: boolean } | null;
+  /** «Donează și alegi» (public_state part 'tasks'). */
+  tasks: import('../data/types').DonationTasks | null;
+  tasksDraft: string | null;
   /** /mod → Sponsori: every field (mod_sponsors), and the one open in the editor. */
   sponsors: any[];
   spEdit: number | 'new' | null;
   /** «Runda de vot»: the entry being swapped in the open round. */
   rSwap: number | null;
-} = { rSwap: null, rehearsal: null, test: null, sponsors: [], spEdit: null, auto: null, view: 'rapid', liveTab: 'timp', page: 'azi', chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, together: null, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
+} = { rSwap: null, rehearsal: null, test: null, tasks: null, tasksDraft: null, sponsors: [], spEdit: null, auto: null, view: 'rapid', liveTab: 'timp', page: 'azi', chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, together: null, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
 /** Bingo phase (as private.bingo_phase): moderators open and close it; no ticks until the close (owner, 24 Nov). */
 const bingoPhase = (): 'soon' | 'open' | 'closed' => {
   const B = S.bingo;
@@ -272,7 +278,7 @@ async function load() {
     S.auto = demoApi.rpc('mod_autopilot', {});
     S.sponsors = (demoApi.rpc('mod_sponsors', {}) as any[]) ?? [];
     const site = demoApi.toSiteData();
-    S.now = site.now; S.together = site.together; S.rehearsal = site.rehearsal ?? null; S.test = null;
+    S.now = site.now; S.together = site.together; S.rehearsal = site.rehearsal ?? null; S.test = null; S.tasks = site.tasks ?? null;
     S.lines = site.lines; S.smallDonation = site.smallDonation;
     S.chat = demoApi.rpc('mod_chat_status', {}) as typeof S.chat;
     if (!S.draft.length || S.draft.some((id) => !S.pool.find((p) => p.id === id))) autoDraft();
@@ -305,6 +311,7 @@ async function load() {
   S.sponsors = ((await (db as any).rpc('mod_sponsors')).data as any[]) ?? [];
   const ps = (await (db as any).rpc('public_state', { p_have: {} })).data?.parts ?? {};
   S.now = ps.now ?? null; S.together = ps.together ?? null; S.rehearsal = ps.rehearsal ?? null; S.test = ps.test?.on ? ps.test : null;
+  S.tasks = ps.tasks ? { menu: (ps.tasks.menu ?? []).map((m: any) => ({ price: Number(m.price), title: String(m.title) })), queue: (ps.tasks.queue ?? []).map((q: any) => ({ id: Number(q.id), price: Number(q.price), title: String(q.title), name: String(q.name), at: Date.parse(q.at) })), pending: Number(ps.tasks.pending) || 0 } : null;
   S.lines = ps.lines?.groups ?? {}; S.smallDonation = Number(ps.lines?.smallDonation) || 10;
   S.chat = ((await (db as any).rpc('mod_chat_status')).data as typeof S.chat) ?? null;
   S.wheel = (wheel.data ?? []) as typeof S.wheel;
@@ -540,7 +547,7 @@ async function clipNow(): Promise<string | null> {
 
 const GROUPS: { id: string; name: string; title: string; lead: string; items: [string, string][] }[] = [
   { id: 'azi', name: 'AZI', title: 'Azi', lead: 'Ce cere un om acum.',
-    items: [['rapid', 'Stream acum'], ['vot', 'Vot'], ['bingo-bife', 'Bingo'], ['propuneri', 'Propuneri și premii']] },
+    items: [['rapid', 'Stream acum'], ['vot', 'Vot'], ['sarcini', 'Donează și alegi'], ['bingo-bife', 'Bingo'], ['propuneri', 'Propuneri și premii']] },
   { id: 'program', name: 'PROGRAM', title: 'Program automat', lead: 'Se setează o dată, merg singure.',
     items: [['pilot', 'Automat'], ['plan', 'Program']] },
   { id: 'pregatire', name: 'PREGĂTIRE', title: 'Pregătire', lead: 'O singură dată, înainte de 20 decembrie.',
@@ -575,6 +582,7 @@ function waiting(id: string): { n: number; warn?: boolean } {
     case 'replici': return { n: lineGroups.filter((g) => !lineInfo(g.id).ok).length, warn: true };
     case 'milestones': return { n: S.goals.filter((g) => raised >= g.threshold && !g.done_at).length };
     case 'propuneri': return { n: S.suggestions.length + S.prizes.length };
+    case 'sarcini': return { n: S.tasks?.pending ?? 0 };
     case 'bingo': return { n: S.bingo?.status.winners.length && !S.bingo.status.draws.length ? S.bingo.status.winners.length : 0 };
     case 'cronometru': return { n: S.status && !S.status.broadcaster_connected ? 1 : 0, warn: true };
     case 'checklist': return { n: CHECK.filter((c) => !checkState(c).done).length };
@@ -851,6 +859,27 @@ function testCardHtml(): string {
   </section>`;
 }
 
+// «Donează și alegi»: one donation of exactly a listed amount = that task, with the donor's name.
+// The requests wait here until a moderator ticks «Făcută»; the list is edited below them.
+const euroTxt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(2).replace('.', ',')) + ' €';
+function tasksHtml(): string {
+  const T = S.tasks;
+  const queue = T?.queue ?? [];
+  const list = T?.menu ?? [];
+  const draft = S.tasksDraft ?? list.map((m) => `${String(m.price).replace('.', ',')} | ${m.title}`).join('\n');
+  const rows = queue.map((q) => `<li><span class="grow"><strong>${euroTxt(q.price)} · ${esc(q.title)}</strong><br><span class="muted">${esc(q.name)} · ${hmRo(new Date(q.at).toISOString())}</span></span>
+      <button class="btn-primary" data-act="taskDone" data-id="${q.id}">Făcută</button></li>`).join('');
+  return `<section class="card wide" id="sarcini">
+    <h2>Donează și alegi ${T?.pending ? `<span class="h2-note">${T.pending} de făcut</span>` : ''}</h2>
+    <p class="muted" style="margin-top:0">O donație de exact suma din listă (în euro, cât maratonul e LIVE) pune sarcina în coadă, cu numele donatorului. Alte sume adaugă doar timp. Bifați «Făcută» când Iceman a făcut-o.</p>
+    ${queue.length ? `<ul class="list">${rows}</ul>${T && T.pending > queue.length ? `<p class="muted">+${T.pending - queue.length} mai vechi după acestea.</p>` : ''}` : '<p class="muted">Nimic de făcut acum.</p>'}
+    <h3 class="h3s" style="margin-top:18px">Lista de pe overlay</h3>
+    <textarea class="field" id="tasksList" rows="6" aria-label="Lista: câte una pe rând, suma | sarcina" style="width:100%;padding:10px;font:inherit">${esc(draft)}</textarea>
+    <div class="row"><button class="btn-primary" data-act="tasksSave">Salvează lista</button></div>
+    <p class="muted">Câte una pe rând: <strong>suma | sarcina</strong>, de exemplu «10 | Alege un campion». Cel mult 8, fiecare cu altă sumă.</p>
+  </section>`;
+}
+
 // «Repetiție»: Iceman tests the overlay in OBS before the marathon, without going live.
 function rehearsalHtml(): string {
   const r = S.rehearsal;
@@ -1074,6 +1103,7 @@ function overlayHtml(): string {
     ['Scena întreagă', v('')],
     ['La fel, cu mai puțină mișcare (fără ninsoare și sărituri)', v('calm=1')],
     ['Scena de pauză «Revin imediat» (o scenă separată în OBS)', v('scene=brb')],
+    ['«Camera de control»: o scenă întreagă (fundalul tău dedesubt; jocul 1152×648 la x 58, y 54; camera 518×291 la x 1325, y 54)', v('scene=control')],
     ['Doar cronometrul și momentele (fără balon și fără ore împreună)', v('show=timer,moments,code')],
     ['Banda subțire veche, în colțul din dreapta sus', v('style=strip')],
     ['Cutia mare veche', v('style=box')],
@@ -1304,6 +1334,7 @@ function render() {
     // M2: ending is irreversible, so it lives apart from the time buttons and asks for a typed word.
     'sponsori': () => sponsorsHtml(),
     'test': () => testCardHtml(),
+    'sarcini': () => tasksHtml(),
     'zona': () => `
     <section class="card danger" id="zona">
       <h2>Încheiere</h2>
@@ -1730,6 +1761,14 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   },
   noteSet: () => val('nowNote').trim() && call('mod_set_note', { p_note: val('nowNote'), p_minutes: Number(val('nowMin')) || 30 }, 'Nota apare pe site.'),
   noteClear: () => call('mod_set_note', { p_note: '', p_minutes: 1 }, 'Nota a fost scoasă.'),
+  taskDone: (el) => call('mod_task_done', { p_id: Number(el.dataset.id), p_done: true }, 'Bifat: Iceman a făcut-o.'),
+  tasksSave: () => {
+    const lines = val('tasksList').split('\n').map((l) => l.trim()).filter(Boolean);
+    const items = lines.map((l) => { const [p, ...t] = l.split('|'); return { price: (p ?? '').replace('€', '').trim(), title: t.join('|').trim() }; });
+    if (items.some((x) => !x.price || !x.title)) { say('Câte una pe rând: suma | sarcina (de exemplu «10 | Alege un campion»).', true); return; }
+    S.tasksDraft = null;
+    return call('mod_tasks_set', { p_items: items }, 'Lista a fost salvată. Overlay-ul o arată în câteva secunde.');
+  },
   togetherSave: () => {
     const list = val('togetherList').split('\n').map((l) => l.split('|')).filter((p) => p.length >= 2)
       .map(([h, ...t]) => ({ hours: Math.round(Number(h.trim())), title: t.join('|').trim() })).filter((g) => g.hours > 0 && g.title);
