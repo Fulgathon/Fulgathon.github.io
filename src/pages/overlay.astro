@@ -495,9 +495,17 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
       .scc-ice { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; pointer-events: none; transition: opacity .3s; }
       .scc-toast { position: absolute; padding: 2px 14px; background: #0B1018; border: 2px solid var(--ice); font-size: 18px; line-height: 1.25; white-space: nowrap; opacity: 0; transform: translateY(10px); transition: opacity .4s, transform .4s; pointer-events: none; }
       .scc-toast.show { opacity: 1; transform: none; }
-      .scc-warm { position: absolute; inset: 0; pointer-events: none; background: #FF7A1A; opacity: 0; transition: opacity 1s; mix-blend-mode: screen; } .scc-warm.on { opacity: .1; }
-      .scc-frost { position: absolute; inset: 0; pointer-events: none; transition: box-shadow 1.2s; } .scc-frost.on { box-shadow: inset 0 0 140px 40px rgba(200, 240, 255, .4); }
-      body.calm .scc-toast, body.calm .scc-warm, body.calm .scc-frost { transition: none; }
+      /* Ora dublă: warmth only on the timer and «Donează și alegi» (owner, 24 Nov), never the whole screen. */
+      .scc-timer, .scc-tasks { transition: border-color .8s, box-shadow .8s; }
+      .scc[data-state="double"] .scc-timer, .scc[data-state="double"] .scc-tasks { border-color: #FF7A1A; box-shadow: 0 0 22px rgba(255, 122, 26, .4), inset 0 0 26px rgba(255, 122, 26, .16); animation: sccWarm 3.2s ease-in-out infinite; }
+      @keyframes sccWarm { 0%, 100% { box-shadow: 0 0 16px rgba(255, 122, 26, .3), inset 0 0 20px rgba(255, 122, 26, .12); } 50% { box-shadow: 0 0 30px rgba(255, 122, 26, .55), inset 0 0 32px rgba(255, 122, 26, .22); } }
+      .scc-thead { display: flex; justify-content: space-between; align-items: baseline; }
+      .scc-x2 { display: none; color: #FF9A4A; }
+      .scc[data-state="double"] .scc-x2 { display: inline; }
+      .scc-frost { position: absolute; inset: 0; pointer-events: none; transition: box-shadow 1.2s; } .scc[data-state="frozen"] .scc-frost { box-shadow: inset 0 0 60px 6px rgba(200, 240, 255, .22); }
+      body.calm .scc-toast, body.calm .scc-frost { transition: none; }
+      body.calm .scc[data-state="double"] .scc-timer, body.calm .scc[data-state="double"] .scc-tasks { animation: none; }
+      @media (prefers-reduced-motion: reduce) { .scc[data-state="double"] .scc-timer, .scc[data-state="double"] .scc-tasks { animation: none; } }
       body.calm .scc-q.new { animation: none; }
       @media (prefers-reduced-motion: reduce) { .scc-q.new { animation: none; } .scc-toast { transition: none; } }
     </style>

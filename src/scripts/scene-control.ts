@@ -53,7 +53,7 @@ root.innerHTML = `
     <p class="scc-raised"><span>Strâns</span><b data-raised>0 €</b></p>
   </section>
   <section class="scc-panel scc-tasks" id="scc-tasks" style="${pos(BOX.tasks)}">
-    <p class="scc-lbl">Donează și alegi</p>
+    <p class="scc-lbl scc-thead"><span>Donează și alegi</span><span class="scc-x2">Timp ×2</span></p>
     <div class="scc-menu" data-menu></div>
     <p class="scc-qhead"><span class="scc-lbl dim">Urmează</span><span class="scc-lbl" data-pending>0</span></p>
     <div class="scc-queue" data-queue></div>
@@ -65,7 +65,6 @@ root.innerHTML = `
   </section>
   <canvas class="scc-snow" data-snow width="1920" height="1080"></canvas>
   <div class="scc-toast" data-toast style="left:${HOLES.cam.x + 16}px;top:${HOLES.cam.y + HOLES.cam.h - 46}px;max-width:${HOLES.cam.w - 32}px"></div>
-  <div class="scc-warm" data-warm></div>
   <div class="scc-frost" data-frost></div>
   <canvas class="scc-ice" data-ice width="1920" height="1080"></canvas>`;
 
@@ -163,7 +162,9 @@ function drawSponsors() {
   if (key !== mainKey) { mainKey = key; $('[data-main]').outerHTML = logoHtml(s.main, 'main').replace('class="scc-logo main"', 'class="scc-logo main" data-main'); }
   partners.set(s.partners);
   supp.set(s.supp);
-  $('[data-main]').classList.toggle('lit', root.dataset.state === 'double' && !!view(data).doubleSponsor);
+  // Gold outline only when the main partner is the one sponsoring this Ora dublă.
+  const by = (view(data).doubleSponsor ?? '').trim().toLowerCase();
+  $('[data-main]').classList.toggle('lit', root.dataset.state === 'double' && !!by && by === (s.main?.name ?? '').trim().toLowerCase());
 }
 window.setInterval(() => partners.next(), 8000);
 window.setTimeout(() => window.setInterval(() => supp.next(), 8000), 1500);
@@ -359,11 +360,11 @@ function drawIce() {
   // Haze along the margins.
   const haze = (x0: number, y0: number, x1: number, y1: number, rx: number, ry: number, rw: number, rh: number) => {
     const g = ice.createLinearGradient(x0, y0, x1, y1);
-    g.addColorStop(0, `rgba(220,242,255,${0.32 * k})`); g.addColorStop(1, 'rgba(220,242,255,0)');
+    g.addColorStop(0, `rgba(220,242,255,${0.2 * k})`); g.addColorStop(1, 'rgba(220,242,255,0)');
     ice.fillStyle = g; ice.fillRect(rx, ry, rw, rh);
   };
-  haze(0, 0, 0, 56, 0, 0, 1920, 56); haze(0, 1080, 0, 1024, 0, 1024, 1920, 56);
-  haze(0, 0, 56, 0, 0, 0, 56, 1080); haze(1920, 0, 1864, 0, 1864, 0, 56, 1080);
+  haze(0, 0, 0, 38, 0, 0, 1920, 38); haze(0, 1080, 0, 1042, 0, 1042, 1920, 38);
+  haze(0, 0, 38, 0, 0, 0, 38, 1080); haze(1920, 0, 1882, 0, 1882, 0, 38, 1080);
   // Crystals, growing from their root outward.
   ice.lineCap = 'round';
   for (const s of SEGS) {
@@ -468,8 +469,6 @@ function drawAll() {
   drawTimer();
   drawSponsors();
   drawTasks();
-  $('[data-warm]').classList.toggle('on', root.dataset.state === 'double');
-  $('[data-frost]').classList.toggle('on', root.dataset.state === 'frozen');
 }
 window.setInterval(drawTimer, 1000);
 
