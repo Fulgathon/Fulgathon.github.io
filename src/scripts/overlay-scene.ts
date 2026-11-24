@@ -14,6 +14,7 @@ import { emptyData } from '../data/sample';
 import { site } from '../data/site';
 import type { SiteData, TickerItem } from '../data/types';
 import { badgeDefs, badgeIcons, overlayPieces, PRISM } from '../data/content';
+import { visibleSponsors } from '../lib/sponsorViews';
 import { tickerItem } from '../lib/events';
 import { derive, initialState } from '../lib/derive';
 import { LineBag, fillLine, groupFor, varsFor } from '../lib/lines';
@@ -518,11 +519,19 @@ function showCode(c: { code: string; sponsor: string | null; expires_at: string 
 }
 
 // ---- Quiet partner line every few minutes -------------------------------------------
-const promoName = (params.has('demo') && params.get('brand')) || site.sponsor.logoText;
+// The sponsors marked «pe overlay» on /mod take turns, each with its own line; before they are
+// set up on /mod, the main partner from site.ts.
+const brandName = params.has('demo') ? params.get('brand') : null;
+let promoTurn = 0;
 function promo() {
-  if (!show.has('promo') || !promoName) return;
+  if (!show.has('promo')) return;
+  const list = brandName ? [] : visibleSponsors(data.sponsors, Date.now(), 'overlay');
+  const s = list.length ? list[promoTurn++ % list.length] : null;
+  const name = brandName || s?.name || (Array.isArray(data.sponsors) ? '' : site.sponsor.logoText);
+  if (!name) return;
   const el = $('.ov-promo');
-  setText(el.querySelector('strong'), promoName.toUpperCase());
+  setText(el.querySelector('strong'), name.toUpperCase());
+  setText(el.querySelector('[data-pline]'), s?.overlayLine ? ` · ${s.overlayLine}` : '');
   el.classList.add('show');
   window.setTimeout(() => el.classList.remove('show'), 10_000);
 }

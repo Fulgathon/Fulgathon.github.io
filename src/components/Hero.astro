@@ -112,15 +112,19 @@ const FLAKE = 'M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 4l3 2 3-2M9 20l3-2 3 2';
         </div>
         <!-- The main partner's offer, attached to the timer card: code to copy and the link. -->
         <div id="oferta" class="sponsor-bar">
-          <p class="sb-t">Oferta <span data-sponsor="name">{site.sponsor.name}</span> pentru comunitate</p>
+          <div class="sb-txt">
+            <p class="sb-t">Oferta <span data-sponsor="name">{site.sponsor.name}</span> pentru comunitate</p>
+            <p class="sb-d" data-sponsor-desc hidden></p>
+            <p class="sb-soc" data-sponsor-soc hidden></p>
+          </div>
           <div class="sb-actions">
-            <button type="button" class="sb-code" data-action="copyCode" data-track={`${site.sponsor.name}|code_copy`}>
+            <button type="button" class="sb-code" data-action="copyCode" data-sponsor-code-btn data-track={`${site.sponsor.name}|code_copy`}>
               <span class="sb-code-l">Cod de reducere</span>
               <span class="sb-code-v" data-sponsor="code">{site.sponsor.code}</span>
               <span class="sb-copy" data-text="codeLabel">{v.codeLabel}</span>
             </button>
             <span class="sr-only" role="status" data-text="codeStatus"></span>
-            {hasOffer && <a class="btn-primary sb-offer" href={site.sponsor.offerUrl} data-track={`${site.sponsor.name}|click`}>Vezi oferta →</a>}
+            <a class="btn-primary sb-offer" data-sponsor-cta href={hasOffer ? site.sponsor.offerUrl : '#'} data-track={`${site.sponsor.name}|click`} hidden={!hasOffer}>Vezi oferta →</a>
           </div>
         </div>
       </div>

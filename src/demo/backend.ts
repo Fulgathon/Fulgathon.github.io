@@ -13,6 +13,7 @@ import type { AdventDay, LineGroup, BoardTab, Goal, Prize, SiteData } from '../d
 import { amount, tickerItem } from '../lib/events';
 import { ago, fmtInt } from '../lib/format';
 import { site } from '../data/site';
+import { demoSponsors } from '../data/demoSponsors';
 
 // ?demo=pitch (the sponsor presentation) keeps its own copy, apart from ?demo.
 const VARIANT = typeof location !== 'undefined' ? (new URLSearchParams(location.search).get('demo') ?? '').replace(/[^a-z0-9-]/gi, '') : '';
@@ -54,6 +55,8 @@ export interface DemoState {
   nameRules?: { name: string; rule: 'hide' | 'allow'; at: number }[];
   /** The last «Testează» pressed on /mod → Overlay OBS (the overlay plays it once). */
   overlayTest?: { kind: string; at: number; n: number };
+  /** /mod → Sponsori (same fields as public.sponsors). */
+  sponsors?: DemoSponsor[];
   /** «Repetiție»: the practice clock (same rules as mod_rehearsal). */
   rehearsal?: import('../data/types').Rehearsal | null;
   /** /mod autopilot settings, the plan, Discord alerts and the shared checklist (demo: nothing runs or is sent). */
@@ -294,6 +297,16 @@ function enrich(s: DemoState, now: number): DemoState {
 
 export class DemoError extends Error {}
 const fail = (code: string): never => { throw new DemoError(code); };
+
+/** A row of public.sponsors as /mod sees it (demo). */
+export interface DemoSponsor {
+  id: number; tier: 'main' | 'partner' | 'supporter'; position: number; name: string; logo_url: string | null; role: string | null;
+  description: string | null; url: string | null; cta: string | null; utm: boolean; code: string | null; code_note: string | null;
+  offer_until: string | null; overlay_line: string | null; talking_points: string | null; socials: Record<string, string>;
+  show_site: boolean; show_overlay: boolean; visible_from: string | null; visible_until: string | null;
+  contact_name: string | null; contact_email: string | null; contact_phone: string | null; notes: string | null;
+  updated_at: string; updated_by: string;
+}
 
 export class DemoBackend {
   private raw = '';
@@ -897,6 +910,7 @@ export class DemoBackend {
       lines: s.lines ?? {},
       smallDonation: s.smallDonation ?? 10,
       rehearsal: s.rehearsal ?? null,
+      sponsors: this.publicSponsors(s),
       advent: s.advent ?? [],
       // The showcase runs on today's clock but labels the calendar with the real dates (20 Dec, 12:00 RO).
       calendarStart: this.rich ? Date.parse('2026-12-20T10:00:00Z') : null,
@@ -912,6 +926,84 @@ export class DemoBackend {
   }
 
   /** What the moderator page shows, in the same shape it reads from the database. */
+  // ---- Sponsors (/mod → Sponsori), same rules as mod_sponsor_save -------------------------
+  private sponsorsOf(s: DemoState): DemoSponsor[] {
+    if (!s.sponsors) {
+      let id = 0;
+      const mk = (tier: DemoSponsor['tier'], name: string, extra: Partial<DemoSponsor> = {}): DemoSponsor => ({
+        id: ++id, tier, position: id, name, logo_url: null, role: null, description: null, url: null, cta: null, utm: true, code: null, code_note: null,
+        offer_until: null, overlay_line: null, talking_points: null, socials: {}, show_site: true, show_overlay: true, visible_from: null, visible_until: null,
+        contact_name: null, contact_email: null, contact_phone: null, notes: null, updated_at: new Date().toISOString(), updated_by: 'icemanlucky', ...extra,
+      });
+      s.sponsors = [
+        mk('main', site.sponsor.name, { code: site.sponsor.code, cta: 'Vezi oferta' }),
+        ...demoSponsors.partners.map((p) => mk('partner', p.name, { role: p.role, logo_url: p.logo })),
+        ...demoSponsors.supporters.map((p) => mk('supporter', p.name, { logo_url: p.logo })),
+      ];
+    }
+    return s.sponsors;
+  }
+  private static order = (t: string) => (t === 'main' ? 0 : t === 'partner' ? 1 : 2);
+  private sortedSponsors(s: DemoState) {
+    return [...this.sponsorsOf(s)].sort((a, b) => DemoBackend.order(a.tier) - DemoBackend.order(b.tier) || a.position - b.position || a.id - b.id);
+  }
+  private sponsorSave(p: Record<string, any>) {
+    let saved = 0;
+    this.mutate((s) => {
+      const list = this.sponsorsOf(s);
+      const clip = (v: unknown, n: number) => { const t = String(v ?? '').trim().slice(0, n); return t || null; };
+      // Like the real backend, plus data: images (demo uploads stay in the browser).
+      const url = (v: unknown) => { const u = clip(v, 500_000); if (!u) return null; if (!/^https?:\/\/\S+$/i.test(u) && !u.startsWith('/') && !u.startsWith('data:image/')) fail('bad_url'); return u; };
+      const tier = (p.tier ?? 'partner') as DemoSponsor['tier'];
+      if (!['main', 'partner', 'supporter'].includes(tier)) fail('bad_tier');
+      if (!clip(p.name, 60)) fail('sponsor_name');
+      const id = p.id ? Number(p.id) : null;
+      if (tier === 'main' && list.some((x) => x.tier === 'main' && x.id !== id)) fail('main_exists');
+      let row = id ? list.find((x) => x.id === id) : undefined;
+      if (id && !row) fail('sponsor_gone');
+      if (!row) {
+        row = { ...list[0], id: Math.max(0, ...list.map((x) => x.id)) + 1, position: Math.max(0, ...list.filter((x) => x.tier === tier).map((x) => x.position)) + 1 } as DemoSponsor;
+        list.push(row);
+      }
+      const socials: Record<string, string> = {};
+      for (const k of ['website', 'instagram', 'tiktok', 'youtube', 'facebook', 'discord']) { const u = url(p.socials?.[k]); if (u) socials[k] = u; }
+      const when = (v: unknown) => (v ? new Date(String(v)).toISOString() : null);
+      Object.assign(row, {
+        tier, name: clip(p.name, 60), logo_url: url(p.logo), role: clip(p.role, 40), description: clip(p.description, 280), url: url(p.url),
+        cta: clip(p.cta, 30), utm: p.utm !== false, code: clip(p.code, 30)?.toUpperCase() ?? null, code_note: clip(p.codeNote, 80),
+        offer_until: when(p.offerUntil), overlay_line: clip(p.overlayLine, 90), talking_points: clip(p.talkingPoints, 600), socials,
+        show_site: p.site !== false, show_overlay: p.overlay !== false, visible_from: when(p.from), visible_until: when(p.until),
+        contact_name: clip(p.contactName, 80), contact_email: clip(p.contactEmail, 120), contact_phone: clip(p.contactPhone, 40), notes: clip(p.notes, 1000),
+        updated_at: new Date().toISOString(), updated_by: 'icemanlucky',
+      });
+      saved = row.id;
+    });
+    return saved;
+  }
+  private sponsorMove(id: number, dir: number) {
+    this.mutate((s) => {
+      const list = this.sortedSponsors(s);
+      const me = list.find((x) => x.id === id);
+      if (!me) fail('sponsor_gone');
+      const same = list.filter((x) => x.tier === me!.tier);
+      same.forEach((x, i) => { x.position = i; });
+      const i = same.indexOf(me!), j = i + (dir < 0 ? -1 : 1);
+      if (j < 0 || j >= same.length) return;
+      [same[i].position, same[j].position] = [same[j].position, same[i].position];
+      s.sponsors = this.sponsorsOf(s).map((x) => same.find((y) => y.id === x.id) ?? x);
+    });
+  }
+  /** Public fields, as the sponsors part sends them. */
+  publicSponsors(s: DemoState): import('../data/types').Sponsor[] {
+    const link = (u: string | null, utm: boolean) => (!u || !utm || /[?&]utm_source=/i.test(u) || u.startsWith('/') ? u : `${u}${u.includes('?') ? '&' : '?'}utm_source=icemanlucky.ro&utm_medium=subathon&utm_campaign=icemaraton`);
+    const t = (v: string | null) => (v ? Date.parse(v) : null);
+    return this.sortedSponsors(s).map((x) => ({
+      id: x.id, tier: x.tier, name: x.name, logo: x.logo_url, role: x.role, description: x.description, url: link(x.url, x.utm), cta: x.cta,
+      code: x.code, codeNote: x.code_note, offerUntil: t(x.offer_until), overlayLine: x.overlay_line, socials: x.socials,
+      site: x.show_site, overlay: x.show_overlay, from: t(x.visible_from), until: t(x.visible_until),
+    }));
+  }
+
   private autopilotOf(s: DemoState) {
     s.autopilot ??= { autoStart: false, startHours: 24, voteOn: false, voteAt: '20:00', voteMinutes: 60, hasWebhook: false, plan: [], checklist: {} };
     return s.autopilot;
@@ -1007,6 +1099,10 @@ export class DemoBackend {
       case 'mod_bingo_settings': return this.bingoSettings(ms(a.p_closes_at), String(a.p_prize ?? ''), a.p_prize_sponsor ?? null);
       case 'mod_bingo_draw': return this.bingoDraw();
       case 'mod_autopilot': return this.autopilot();
+      case 'mod_sponsors': return this.sortedSponsors(this.load());
+      case 'mod_sponsor_save': return this.sponsorSave(a.p ?? {});
+      case 'mod_sponsor_delete': return this.mutate((s) => { s.sponsors = this.sponsorsOf(s).filter((x) => x.id !== Number(a.p_id)); });
+      case 'mod_sponsor_move': return this.sponsorMove(Number(a.p_id), Number(a.p_dir));
       case 'mod_rehearsal': return this.mutate((s) => {
         const now = Date.now();
         const act = String(a.p_action);

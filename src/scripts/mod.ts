@@ -55,6 +55,12 @@ const errors: Record<string, string> = {
   timer_ended: 'Cronometrul a ajuns la zero: maratonul s-a încheiat și nu se mai poate adăuga sau îngheța timp.',
   protected_broadcaster: 'Contul lui Iceman nu poate fi scos dintre moderatori.',
   only_broadcaster: 'Doar Iceman poate porni sau încheia subathonul.',
+  main_exists: 'Există deja un partener principal. Schimbă-l întâi la «Partener».',
+  sponsor_name: 'Sponsorul are nevoie de un nume.',
+  sponsor_gone: 'Sponsorul nu mai există (l-a șters altcineva).',
+  bad_url: 'Un link nu e valid: trebuie să înceapă cu https://.',
+  bad_tier: 'Nivel necunoscut.',
+  bad_sponsor: 'O dată nu e validă.',
   rehearsal_off: 'Repetiția nu e pornită (sau s-a terminat). Apasă «Pornește repetiția».',
   rehearsal_while_live: 'Maratonul e LIVE: repetiția merge doar înainte de start.',
   not_eur: 'Se adună doar donațiile în euro.',
@@ -174,14 +180,17 @@ let S: {
   liveTab: 'timp' | 'freeze' | 'double' | 'code' | 'note';
   /** «Repetiție»: the practice clock for testing the overlay in OBS (public_state part). */
   rehearsal: any;
-} = { rehearsal: null, auto: null, view: 'rapid', liveTab: 'timp', page: 'azi', chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, together: null, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
+  /** /mod → Sponsori: every field (mod_sponsors), and the one open in the editor. */
+  sponsors: any[];
+  spEdit: number | 'new' | null;
+} = { rehearsal: null, sponsors: [], spEdit: null, auto: null, view: 'rapid', liveTab: 'timp', page: 'azi', chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, together: null, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
 const bingoRows = () => S.bingoDraft ?? (S.bingo?.items ?? []).map((i) => ({ id: i.id, label: i.label }));
 const editBingo = () => { if (!S.bingoDraft) S.bingoDraft = bingoRows(); return S.bingoDraft; };
 const goalRows = () => S.goalsDraft ?? S.goals.map((g) => ({ title: g.title, threshold: String(g.threshold), sponsor: g.sponsor ?? '', done: !!g.done_at, clip: g.clip_url ?? '', when: g.scheduled_for ?? '' }));
 const wheelRows = () => S.wheelDraft ?? S.wheel.map((p) => ({ short_label: p.short_label, full_label: p.full_label, sponsor: p.sponsor ?? '', is_win: p.is_win, weight: String(p.weight) }));
 const editWheel = () => { if (!S.wheelDraft) S.wheelDraft = wheelRows(); return S.wheelDraft; };
 /** Sponsor names for the suggestions list: the site's partners plus any already used. */
-const sponsorNames = () => [...new Set([site.sponsor.name, ...site.partners.map((p) => p.name), ...((S.report?.sponsors ?? []).map((x: any) => x.sponsor))]
+const sponsorNames = () => [...new Set([...(S.sponsors.length ? S.sponsors.map((x: any) => x.name) : [site.sponsor.name, ...site.partners.map((p) => p.name)]), ...((S.report?.sponsors ?? []).map((x: any) => x.sponsor))]
   .filter((n) => n && !n.startsWith('[')))];
 const editGoals = () => { if (!S.goalsDraft) S.goalsDraft = goalRows(); return S.goalsDraft; };
 
@@ -204,6 +213,7 @@ async function load() {
     Object.assign(S, demoApi.modState());
     S.health = demoHealth();
     S.auto = demoApi.rpc('mod_autopilot', {});
+    S.sponsors = (demoApi.rpc('mod_sponsors', {}) as any[]) ?? [];
     const site = demoApi.toSiteData();
     S.now = site.now; S.together = site.together; S.rehearsal = site.rehearsal ?? null;
     S.lines = site.lines; S.smallDonation = site.smallDonation;
@@ -235,6 +245,7 @@ async function load() {
   ]);
   S.health = (await (db as any).rpc('mod_health')).data ?? null;
   S.auto = (await (db as any).rpc('mod_autopilot')).data ?? null;
+  S.sponsors = ((await (db as any).rpc('mod_sponsors')).data as any[]) ?? [];
   const ps = (await (db as any).rpc('public_state', { p_have: {} })).data?.parts ?? {};
   S.now = ps.now ?? null; S.together = ps.together ?? null; S.rehearsal = ps.rehearsal ?? null;
   S.lines = ps.lines?.groups ?? {}; S.smallDonation = Number(ps.lines?.smallDonation) || 10;
@@ -458,7 +469,7 @@ function planLine(x: any): string {
   const what = x.kind === 'freeze' ? `până la ${when(x.until)}` : x.kind === 'double' ? `${x.minutes} min` : `${x.minutes} min pe stream`;
   return `<strong>${planKind[x.kind] ?? x.kind}</strong> · ${when(x.at)} · ${what}${x.sponsor ? ` · <span style="color:#E6C46A">${esc(x.sponsor)}</span>` : ''}`;
 }
-const mainSponsor = () => (site.sponsor.name && !site.sponsor.name.startsWith('[') ? site.sponsor.name : '');
+const mainSponsor = () => (S.sponsors.length ? (S.sponsors.find((x: any) => x.tier === 'main')?.name ?? '') : site.sponsor.name && !site.sponsor.name.startsWith('[') ? site.sponsor.name : '');
 /** A Twitch clip of the last ~30 s (make-clip), or null when it can't be made (offline, demo, no permission). */
 async function clipNow(): Promise<string | null> {
   if (demoApi || !S.timer?.stream_online) return null;
@@ -476,13 +487,13 @@ const GROUPS: { id: string; name: string; title: string; lead: string; items: [s
   { id: 'program', name: 'PROGRAM', title: 'Program automat', lead: 'Se setează o dată, merg singure.',
     items: [['pilot', 'Automat'], ['plan', 'Program']] },
   { id: 'pregatire', name: 'PREGĂTIRE', title: 'Pregătire', lead: 'O singură dată, înainte de 20 decembrie.',
-    items: [['checklist', 'Checklist'], ['cronometru', 'Start'], ['replici', 'Replici'], ['milestones', 'Milestones'], ['comunitar', 'Obiectiv comunitar'], ['roata-premii', 'Roata'], ['bingo', 'Bingo']] },
+    items: [['checklist', 'Checklist'], ['cronometru', 'Start'], ['replici', 'Replici'], ['milestones', 'Milestones'], ['comunitar', 'Obiectiv comunitar'], ['roata-premii', 'Roata'], ['bingo', 'Bingo'], ['sponsori', 'Sponsori']] },
   { id: 'setari', name: 'SETĂRI', title: 'Setări', lead: 'Folosite rar.',
     items: [['moderatori', 'Moderatori'], ['overlay-piese', 'Overlay OBS'], ['raport', 'Raport sponsori'], ['zona', 'Încheiere']] },
 ];
 /** Cards shown together with a menu item, and old anchors that now live inside another card. */
 const BUNDLE: Record<string, string[]> = { vot: ['vot', 'provocari'], propuneri: ['propuneri', 'premii'], pilot: ['pilot', 'alerte'] };
-const ALIAS: Record<string, string> = { provocari: 'vot', premii: 'propuneri', alerte: 'pilot', stare: 'cronometru', inghetare: 'rapid', 'ora-dubla': 'rapid', acum: 'rapid', cod: 'rapid', overlay: 'overlay-piese' };
+const ALIAS: Record<string, string> = { parteneri: 'sponsori', provocari: 'vot', premii: 'propuneri', alerte: 'pilot', stare: 'cronometru', inghetare: 'rapid', 'ora-dubla': 'rapid', acum: 'rapid', cod: 'rapid', overlay: 'overlay-piese' };
 /** Only Iceman (the broadcaster login) starts and ends the marathon; the database enforces it too. */
 const isIceman = () => !!S.me && !!S.status?.broadcaster_login && S.me.login.toLowerCase() === S.status.broadcaster_login.trim().toLowerCase();
 const onlyIceman = () => `<span class="muted">Doar ${esc(S.status?.broadcaster_login ?? 'Iceman')} poate porni sau încheia subathonul.</span>`;
@@ -691,6 +702,144 @@ function rehearsalHtml(): string {
     : `<div class="row">${b('start', 'Pornește repetiția', 0, true)}</div>`}`;
 }
 
+// ---- Sponsori: every field a sponsor may need, logos uploaded to Storage --------------------
+const SP_TIERS: [string, string][] = [['main', 'Partener principal'], ['partner', 'Partener'], ['supporter', 'Susținător']];
+const SP_SOCIALS: [string, string][] = [['website', 'Site'], ['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['youtube', 'YouTube'], ['facebook', 'Facebook'], ['discord', 'Discord']];
+const spShownNow = (x: any) => {
+  const now = Date.now();
+  const from = x.visible_from ? Date.parse(x.visible_from) : null, until = x.visible_until ? Date.parse(x.visible_until) : null;
+  return (from === null || from <= now) && (until === null || until > now);
+};
+function spLogo(src: string | null, name: string, big = false) {
+  return `<span class="sp-logo${big ? ' big' : ''}">${src ? `<img src="${esc(src)}" alt="">` : `<span>${esc(name ? name.toUpperCase() : 'LOGO')}</span>`}</span>`;
+}
+function sponsorsHtml(): string {
+  const list = S.sponsors;
+  const row = (x: any) => {
+    const same = list.filter((y) => y.tier === x.tier);
+    const i = same.indexOf(x);
+    const flags = [
+      !x.show_site && !x.show_overlay ? '<span class="pill off">ASCUNS</span>' : '',
+      x.show_site && !x.show_overlay ? '<span class="pill off">DOAR SITE</span>' : '',
+      !x.show_site && x.show_overlay ? '<span class="pill off">DOAR OVERLAY</span>' : '',
+      !spShownNow(x) ? '<span class="pill warn">ÎN AFARA PERIOADEI</span>' : '',
+      x.code ? `<span class="pill next">COD ${esc(x.code)}</span>` : '',
+      !x.url ? '<span class="pill warn">FĂRĂ LINK</span>' : '',
+      !x.logo_url ? '<span class="pill warn">FĂRĂ LOGO</span>' : '',
+    ].join('');
+    return `<li class="sp-row${S.spEdit === x.id ? ' on' : ''}">
+      ${spLogo(x.logo_url, x.name)}
+      <span class="grow"><strong style="color:#F2F5FA">${esc(x.name)}</strong>${x.role ? ` <span class="muted">· ${esc(x.role)}</span>` : ''}<br><span class="sp-flags">${flags || '<span class="muted">Complet</span>'}</span></span>
+      <span class="pair">
+        <button class="btn-ghost sp-mv" data-act="spMove" data-id="${x.id}" data-dir="-1" aria-label="Mută ${esc(x.name)} mai sus" ${i === 0 ? 'disabled' : ''}>↑</button>
+        <button class="btn-ghost sp-mv" data-act="spMove" data-id="${x.id}" data-dir="1" aria-label="Mută ${esc(x.name)} mai jos" ${i === same.length - 1 ? 'disabled' : ''}>↓</button>
+        <button class="${S.spEdit === x.id ? 'btn-primary' : 'btn-ghost'}" data-act="spEdit" data-id="${x.id}">Editează</button>
+      </span></li>`;
+  };
+  const groups = SP_TIERS.map(([t, label]) => {
+    const items = list.filter((x) => x.tier === t);
+    return `<h3 class="h3s">${label}${t === 'main' ? '' : ` · ${items.length}`}</h3>${items.length ? `<ul class="list sp-list">${items.map(row).join('')}</ul>` : `<p class="muted" style="margin:4px 0 0">${t === 'main' ? 'Niciunul încă.' : 'Niciunul încă. Locurile goale apar pe site ca «LOGO».'}</p>`}`;
+  }).join('');
+  const editing = S.spEdit === 'new' ? {} as any : list.find((x) => x.id === S.spEdit);
+  return `<section class="card wide" id="sponsori">
+    <div class="card-head"><h2>Sponsori</h2><button class="btn-primary btn-s" data-act="spNew">+ Adaugă sponsor</button></div>
+    <p class="muted" style="margin-top:0">Apar pe site (sub titlu, la ofertă și în peretele de parteneri) și pe overlay (linia partenerului). Se actualizează în câteva secunde.</p>
+    ${S.spEdit !== null && editing ? spFormHtml(editing) : ''}
+    ${groups}
+  </section>`;
+}
+function spFormHtml(x: any): string {
+  const v = (k: string) => esc(x[k] ?? '');
+  const isNew = !x.id;
+  const field = (id: string, label: string, value: string, attrs = '') => `<label class="inline sp-f">${label}<input class="field" id="${id}" value="${value}" ${attrs}></label>`;
+  const area = (id: string, label: string, value: string, max: number, rows = 3) => `<label class="inline sp-f sp-wide">${label} <span class="muted">(max ${max})</span><textarea class="field" id="${id}" rows="${rows}" maxlength="${max}">${value}</textarea></label>`;
+  const check = (id: string, label: string, on: boolean) => `<label class="sp-check"><input type="checkbox" id="${id}" ${on ? 'checked' : ''}> ${label}</label>`;
+  return `<div class="sp-form" id="sp-form">
+    <h3 class="h3s" style="margin-top:0">${isNew ? 'Sponsor nou' : `Editezi: ${esc(x.name)}`}</h3>
+    <div class="sp-grid">
+      <label class="inline sp-f">Nivel<select class="field" id="sp_tier">${SP_TIERS.map(([t, l]) => `<option value="${t}"${(x.tier ?? 'partner') === t ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
+      ${field('sp_name', 'Nume *', v('name'), 'maxlength="60" required')}
+      ${field('sp_role', 'Ce susține (ex: Premii roată)', v('role'), 'maxlength="40"')}
+      ${area('sp_desc', 'Descriere scurtă, pentru vizitatori', v('description'), 280)}
+    </div>
+    <h3 class="h3s">Logo</h3>
+    <div class="sp-logo-row">
+      <div class="sp-prev" id="sp_prev">${spLogo(x.logo_url ?? null, x.name ?? '', true)}</div>
+      <div class="sp-logo-ctl">
+        <label class="btn btn-ghost sp-upload">Încarcă logo<input type="file" id="sp_file" accept="image/png,image/svg+xml,image/webp,image/jpeg" hidden></label>
+        <button class="btn-ghost" data-act="spLogoClear">Scoate logo</button>
+        <p class="muted" style="margin:6px 0 0">SVG sau PNG, ideal alb pe fundal transparent, max 2 MB. Așa arată pe fundalul închis al site-ului.</p>
+        ${field('sp_logo', 'sau link spre logo', v('logo_url'), 'placeholder="https://…" inputmode="url"')}
+      </div>
+    </div>
+    <h3 class="h3s">Link și ofertă</h3>
+    <div class="sp-grid">
+      ${field('sp_url', 'Linkul unde vrea sponsorul vizitatorii', v('url'), 'placeholder="https://…" inputmode="url"')}
+      ${field('sp_cta', 'Textul butonului', v('cta'), 'placeholder="Vezi oferta" maxlength="30"')}
+      ${field('sp_code', 'Cod de reducere', v('code'), 'maxlength="30" style="text-transform:uppercase"')}
+      ${field('sp_code_note', 'Ce oferă codul (ex: 10% la periferice)', v('code_note'), 'maxlength="80"')}
+      <label class="inline sp-f">Oferta e valabilă până la<input class="field" type="datetime-local" id="sp_offer_until" value="${toLocal(x.offer_until ?? null)}"></label>
+      <div class="sp-f sp-wide">${check('sp_utm', 'Adaugă etichete UTM la link (sponsorul vede în statisticile lui vizitele venite de la noi)', x.utm !== false)}</div>
+    </div>
+    <h3 class="h3s">Pe stream</h3>
+    <div class="sp-grid">
+      ${field('sp_overlay_line', 'Linia de pe overlay (după «Cu sprijinul NUME ·»)', v('overlay_line'), 'maxlength="90" placeholder="ex: periferice cu 10% reducere, codul ICEMAN10"')}
+      ${area('sp_talk', 'Ce spune Iceman pe stream (doar moderatorii văd)', v('talking_points'), 600, 3)}
+    </div>
+    <h3 class="h3s">Rețele</h3>
+    <div class="sp-grid">${SP_SOCIALS.map(([k, l]) => field(`sp_soc_${k}`, l, esc(x.socials?.[k] ?? ''), 'placeholder="https://…" inputmode="url"')).join('')}</div>
+    <h3 class="h3s">Unde și când apare</h3>
+    <div class="sp-grid">
+      <div class="sp-f sp-wide">${check('sp_site', 'Pe site', x.show_site !== false)} ${check('sp_overlay', 'Pe overlay (linia partenerului)', x.show_overlay !== false)}</div>
+      <label class="inline sp-f">De la (gol = imediat)<input class="field" type="datetime-local" id="sp_from" value="${toLocal(x.visible_from ?? null)}"></label>
+      <label class="inline sp-f">Până la (gol = tot maratonul)<input class="field" type="datetime-local" id="sp_until" value="${toLocal(x.visible_until ?? null)}"></label>
+    </div>
+    <h3 class="h3s">Intern · doar moderatorii</h3>
+    <div class="sp-grid">
+      ${field('sp_contact_name', 'Persoană de contact', v('contact_name'), 'maxlength="80"')}
+      ${field('sp_contact_email', 'Email', v('contact_email'), 'type="email" maxlength="120"')}
+      ${field('sp_contact_phone', 'Telefon', v('contact_phone'), 'type="tel" maxlength="40"')}
+      ${area('sp_notes', 'Ce am promis (ore duble, coduri, mențiuni…)', v('notes'), 1000, 3)}
+    </div>
+    <div class="row"><button class="btn-primary" data-act="spSave" data-id="${x.id ?? ''}">Salvează</button><button class="btn-ghost" data-act="spCancel">Anulează</button>${isNew ? '' : `<button class="btn-ghost btn-danger" data-act="spDelete" data-id="${x.id}">Șterge sponsorul</button>`}</div>
+  </div>`;
+}
+// Logo upload: Storage bucket 'sponsors' (moderators only); the demo keeps a small data URL.
+async function spUpload(file: File) {
+  const okType = ['image/png', 'image/svg+xml', 'image/webp', 'image/jpeg'].includes(file.type);
+  if (!okType) { say('Logo-ul trebuie să fie SVG, PNG, WEBP sau JPG.', true); return; }
+  if (file.size > 2 * 1024 * 1024) { say('Logo-ul are peste 2 MB. Încearcă un fișier mai mic (ideal SVG).', true); return; }
+  let url: string;
+  if (demoApi) {
+    if (file.size > 400 * 1024) { say('În demo, logo-ul trebuie să aibă sub 400 KB.', true); return; }
+    url = await new Promise<string>((ok, bad) => { const r = new FileReader(); r.onload = () => ok(String(r.result)); r.onerror = bad; r.readAsDataURL(file); });
+  } else {
+    const ext = ({ 'image/png': 'png', 'image/svg+xml': 'svg', 'image/webp': 'webp', 'image/jpeg': 'jpg' } as Record<string, string>)[file.type];
+    const slug = (val('sp_name') || 'sponsor').normalize('NFD').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase().slice(0, 40) || 'sponsor';
+    const path = `${slug}-${Date.now()}.${ext}`;
+    say('Se încarcă logo-ul…');
+    const { error } = await (db as any).storage.from('sponsors').upload(path, file, { contentType: file.type, upsert: false, cacheControl: '31536000' });
+    if (error) { say(`Logo-ul nu s-a încărcat: ${error.message}`, true); return; }
+    url = (db as any).storage.from('sponsors').getPublicUrl(path).data.publicUrl;
+  }
+  const input = document.getElementById('sp_logo') as HTMLInputElement | null;
+  if (input) { input.value = url; input.dispatchEvent(new Event('input', { bubbles: true })); }
+  const prev = document.getElementById('sp_prev');
+  if (prev) prev.innerHTML = spLogo(url, val('sp_name'), true);
+  say('Logo încărcat. Apasă «Salvează» ca să apară pe site.');
+}
+function spPayload(id: string) {
+  const checked = (k: string) => (document.getElementById(k) as HTMLInputElement | null)?.checked ?? false;
+  return {
+    id: id || null, tier: val('sp_tier'), name: val('sp_name'), role: val('sp_role'), description: val('sp_desc'), logo: val('sp_logo'),
+    url: val('sp_url'), cta: val('sp_cta'), code: val('sp_code'), codeNote: val('sp_code_note'), offerUntil: fromLocal(val('sp_offer_until')),
+    utm: checked('sp_utm'), overlayLine: val('sp_overlay_line'), talkingPoints: val('sp_talk'),
+    socials: Object.fromEntries(SP_SOCIALS.map(([k]) => [k, val(`sp_soc_${k}`)])),
+    site: checked('sp_site'), overlay: checked('sp_overlay'), from: fromLocal(val('sp_from')), until: fromLocal(val('sp_until')),
+    contactName: val('sp_contact_name'), contactEmail: val('sp_contact_email'), contactPhone: val('sp_contact_phone'), notes: val('sp_notes'),
+  };
+}
+
 /** «De făcut acum»: what needs a moderator, from data /mod already has. */
 function todoHtml(): string {
   const raised = Number(S.stats?.raised ?? 0);
@@ -831,6 +980,7 @@ function markUnsaved() {
 }
 app.addEventListener('input', markUnsaved);
 app.addEventListener('change', markUnsaved);
+app.addEventListener('change', (e) => { const t = e.target as HTMLInputElement; if (t.id === 'sp_file' && t.files?.[0]) void spUpload(t.files[0]).finally(() => { t.value = ''; }); });
 window.addEventListener('beforeunload', (e) => {
   if (!app.querySelector('.card.dirty') && !Object.values(draftCards()).some(Boolean)) return;
   e.preventDefault();
@@ -969,6 +1119,7 @@ function render() {
         </div>`}
     </section>`,
     // M2: ending is irreversible, so it lives apart from the time buttons and asks for a typed word.
+    'sponsori': () => sponsorsHtml(),
     'zona': () => `
     <section class="card danger" id="zona">
       <h2>Încheiere</h2>
@@ -1236,6 +1387,22 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     render();
   },
   liveTab: (el) => { S.liveTab = (el.dataset.tab as typeof S.liveTab) || 'timp'; render(); app.querySelector<HTMLElement>(`[data-tab="${S.liveTab}"]`)?.focus(); },
+  spNew: () => { S.spEdit = 'new'; resetTyped = true; render(); document.getElementById('sp_name')?.focus(); },
+  spEdit: (el) => { const id = Number(el.dataset.id); S.spEdit = S.spEdit === id ? null : id; resetTyped = true; render(); if (S.spEdit !== null) document.getElementById('sp-form')?.scrollIntoView({ block: 'start' }); },
+  spCancel: () => { S.spEdit = null; resetTyped = true; render(); },
+  spLogoClear: () => { const i = document.getElementById('sp_logo') as HTMLInputElement | null; if (i) { i.value = ''; i.dispatchEvent(new Event('input', { bubbles: true })); } const p = document.getElementById('sp_prev'); if (p) p.innerHTML = spLogo(null, val('sp_name'), true); },
+  spSave: async (el) => {
+    if (!val('sp_name').trim()) { say('Sponsorul are nevoie de un nume.', true); document.getElementById('sp_name')?.focus(); return; }
+    await call('mod_sponsor_save', { p: spPayload(el.dataset.id ?? '') }, 'Sponsor salvat. Apare pe site în câteva secunde.');
+    S.spEdit = null;
+  },
+  spDelete: async (el) => {
+    const x = S.sponsors.find((y) => y.id === Number(el.dataset.id));
+    if (!x || !confirm(`Ștergi sponsorul «${x.name}»? Dispare de pe site și de pe overlay.`)) return;
+    await call('mod_sponsor_delete', { p_id: x.id }, 'Sponsor șters.');
+    S.spEdit = null;
+  },
+  spMove: (el) => call('mod_sponsor_move', { p_id: Number(el.dataset.id), p_dir: Number(el.dataset.dir) }, 'Ordinea s-a schimbat.'),
   rehearsal: (el) => call('mod_rehearsal', { p_action: el.dataset.a, p_minutes: Number(el.dataset.m) || null },
     ({ start: 'Repetiția a pornit. Overlay-ul arată ceasul de test în câteva secunde.', stop: 'Repetiția s-a oprit.' } as Record<string, string>)[el.dataset.a ?? ''] ?? 'Trimis. Apare în overlay în câteva secunde.'),
   ovTest: (el) => call('mod_overlay_test', { p_kind: el.dataset.kind }, 'Test trimis. Apare în overlay în câteva secunde.'),

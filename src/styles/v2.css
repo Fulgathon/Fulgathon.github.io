@@ -182,6 +182,12 @@
 .sponsor-bar { position: relative; z-index: 7; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 20px; padding: 14px 26px; background: #090C11; border: 1px solid #1C2230; border-top: 0; box-shadow: inset 3px 0 0 var(--ice); }
 .sb-t { margin: 0; font-size: 15px; color: #C9D2DF; }
 .sb-t span { font-weight: 700; color: #FFFFFF; }
+.sb-txt { min-width: 0; flex: 1 1 280px; }
+.sb-d { margin: 4px 0 0; font-size: 14px; line-height: 1.45; color: #AEB8C7; max-width: 640px; }
+.sb-soc { margin: 6px 0 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; }
+.sb-soc a { min-height: 32px; display: inline-flex; align-items: center; color: #8FE4FF; font-weight: 600; text-decoration: none; }
+.sb-soc a:hover { text-decoration: underline; }
+.sb-soc[hidden], .sb-d[hidden], .sb-offer[hidden], .sb-code[hidden], .sponsor-bar[hidden] { display: none; }
 .sb-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .sb-code { min-height: 48px; display: inline-flex; align-items: center; gap: 10px; padding: 0 14px; background: transparent; border: 2px dashed var(--ice); color: #F2F5FA; cursor: pointer; }
 .sb-code:hover, .sb-code:focus-visible { background: rgba(63, 208, 255, 0.08); }

@@ -24,6 +24,7 @@ import type { SiteData } from '../data/types';
 import { derive, initialState, type State } from '../lib/derive';
 import { count, duration, fmtInt } from '../lib/format';
 import { views, type RegionName } from '../lib/views';
+import { codeOf, mainOf, partnerWallHtml, sponsorKey, sponsorLineHtml, visibleSponsors } from '../lib/sponsorViews';
 import { LineBag, fillLine, groupFor, varsFor } from '../lib/lines';
 import { FALLBACK_LINE } from '../data/content';
 import type { TickerItem } from '../data/types';
@@ -53,6 +54,8 @@ if (demo) {
 }
 let live: Live | null = null;
 let demoApi: DemoBackend | null = null;
+// /sponsori presentation: a visiting brand replaces the main partner; live sponsors stay out of the way.
+let brandPreview = false;
 
 if (!demo) state.bingoPick = loadPick();
 
@@ -73,7 +76,53 @@ const lastHtml = new Map(regions.map(({ el, name }) => [el, views[name](builtVal
 
 const REBUILD = new Set<RegionName>(['heroRecent', 'ticker', 'todayFeed']);
 
+// ---- Sponsors from /mod (public_state 'sponsors'); null = keep the list built from site.ts ----
+let sponsorDrawn = '';
+function drawSponsors() {
+  if (!Array.isArray(data.sponsors) || brandPreview) return;
+  const now = Date.now();
+  const list = visibleSponsors(data.sponsors, now, 'site');
+  const key = sponsorKey(list, now);
+  if (key === sponsorDrawn) return;
+  sponsorDrawn = key;
+  const line = document.querySelector<HTMLElement>('.sponsor-line');
+  if (line) line.innerHTML = sponsorLineHtml(list);
+  const wall = document.querySelector<HTMLElement>('#parteneri [data-demo="pw-demo"]');
+  if (wall) wall.innerHTML = partnerWallHtml(list);
+  // The offer bar under the timer: updated in place (its text bindings stay alive).
+  const main = mainOf(list);
+  const bar = document.getElementById('oferta');
+  if (!bar) return;
+  const code = codeOf(main, now);
+  bar.hidden = !main || (!code && !main.url && !main.description);
+  if (!main) return;
+  bar.querySelectorAll<HTMLElement>('[data-sponsor="name"]').forEach((el) => { el.textContent = main.name; });
+  bar.querySelectorAll<HTMLElement>('[data-sponsor="code"]').forEach((el) => { el.textContent = code ?? ''; });
+  const desc = bar.querySelector<HTMLElement>('[data-sponsor-desc]');
+  if (desc) { desc.textContent = [main.description, code && main.codeNote ? `Cu codul: ${main.codeNote}.` : ''].filter(Boolean).join(' '); desc.hidden = !desc.textContent; }
+  const soc = bar.querySelector<HTMLElement>('[data-sponsor-soc]');
+  if (soc) {
+    const names: Record<string, string> = { website: 'Site', instagram: 'Instagram', tiktok: 'TikTok', youtube: 'YouTube', facebook: 'Facebook', discord: 'Discord' };
+    soc.replaceChildren(...Object.entries(main.socials ?? {}).filter(([, u]) => u).map(([k, u]) => {
+      const a = document.createElement('a');
+      a.href = u!; a.textContent = names[k] ?? k; a.target = '_blank'; a.rel = 'noopener'; a.dataset.track = `${main.name}|click`;
+      return a;
+    }));
+    soc.hidden = !soc.childElementCount;
+  }
+  const btn = bar.querySelector<HTMLElement>('[data-sponsor-code-btn]');
+  if (btn) { btn.hidden = !code; btn.dataset.track = `${main.name}|code_copy`; }
+  const cta = bar.querySelector<HTMLAnchorElement>('[data-sponsor-cta]');
+  if (cta) {
+    cta.hidden = !main.url;
+    if (main.url) cta.href = main.url;
+    cta.dataset.track = `${main.name}|click`;
+    cta.textContent = `${main.cta || 'Vezi oferta'} →`;
+  }
+}
+
 function render() {
+  drawSponsors();
   const v = derive(state, data);
   const vals = v as unknown as AnyVals;
 
@@ -471,6 +520,7 @@ window.addEventListener('message', (e) => {
   if (m.closeToast) set({ toast: null });
   // Sponsor presentation: show the visiting brand everywhere the main partner appears.
   if (typeof m.brand === 'string') {
+    brandPreview = true;
     const brand = m.brand.trim().slice(0, 40) || site.sponsor.name;
     const code = (brand.replace(/[^A-Za-z0-9]/g, '').slice(0, 8).toUpperCase() || 'BRAND') + '10';
     const texts: Record<string, string> = {
@@ -648,7 +698,8 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
   },
 
   copyCode: () => {
-    try { navigator.clipboard?.writeText(site.sponsor.code).catch(() => {}); } catch { /* clipboard blocked */ }
+    const code = document.querySelector('#oferta [data-sponsor="code"]')?.textContent?.trim() || site.sponsor.code;
+    try { navigator.clipboard?.writeText(code).catch(() => {}); } catch { /* clipboard blocked */ }
     set({ copied: true });
     clearTimeout(copyTimer);
     copyTimer = window.setTimeout(() => set({ copied: false }), 2000);

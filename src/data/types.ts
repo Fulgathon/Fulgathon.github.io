@@ -59,6 +59,27 @@ export interface Rehearsal {
   last: { n: number; kind: 'donation' | 'gift'; user: string; amount: number; seconds: number; doubled: boolean } | null;
 }
 
+/** A sponsor as the site and overlay see it (public fields; edited on /mod → Sponsori). */
+export interface Sponsor {
+  id: number;
+  tier: 'main' | 'partner' | 'supporter';
+  name: string;
+  logo: string | null;
+  role: string | null;
+  description: string | null;
+  url: string | null;
+  cta: string | null;
+  code: string | null;
+  codeNote: string | null;
+  offerUntil: number | null;
+  overlayLine: string | null;
+  socials: Partial<Record<'website' | 'instagram' | 'tiktok' | 'youtube' | 'facebook' | 'discord', string>>;
+  site: boolean;
+  overlay: boolean;
+  from: number | null;
+  until: number | null;
+}
+
 export interface SiteData {
   /** false until the first answer from the backend (the page then says it's loading, not «starts soon»). */
   loaded?: boolean;
@@ -95,6 +116,8 @@ export interface SiteData {
   together: Together | null;
   now: NowInfo | null;
   rehearsal?: Rehearsal | null;
+  /** null = not set up on /mod yet: the site keeps the list from src/data/site.ts. */
+  sponsors?: Sponsor[] | null;
   /** Iceman's lines for the hero bubble, per group (fewer than 5 → «Mersi, {nume}!»). */
   lines: Partial<Record<LineGroup, string[]>>;
   /** Donations below this many euros use the «Donație mică» lines. */

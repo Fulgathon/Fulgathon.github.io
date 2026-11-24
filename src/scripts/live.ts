@@ -257,6 +257,15 @@ export class Live {
       patch.now = { title: P.now.title ?? null, game: P.now.game ?? null, viewers: P.now.viewers ?? null, note: P.now.note ?? null };
     }
 
+    if (has('sponsors')) {
+      patch.sponsors = Array.isArray(P.sponsors) ? P.sponsors.map((s: Json) => ({
+        id: Number(s.id), tier: s.tier === 'main' || s.tier === 'supporter' ? s.tier : 'partner', name: String(s.name ?? ''),
+        logo: safeUrl(s.logo), role: s.role ?? null, description: s.description ?? null, url: safeUrl(s.url), cta: s.cta ?? null,
+        code: s.code ?? null, codeNote: s.codeNote ?? null, offerUntil: ms(s.offerUntil), overlayLine: s.overlayLine ?? null,
+        socials: Object.fromEntries(Object.entries(s.socials ?? {}).map(([k, u]) => [k, safeUrl(u as string)]).filter(([, u]) => u)),
+        site: s.site !== false, overlay: s.overlay !== false, from: ms(s.from), until: ms(s.until),
+      })) : null;
+    }
     if (has('rehearsal')) {
       const r = P.rehearsal;
       patch.rehearsal = r && r.until ? {
