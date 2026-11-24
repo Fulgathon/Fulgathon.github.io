@@ -252,6 +252,7 @@
 .band { margin-top: 22px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .band > div { padding: 22px 26px; }
 .band > div + div { border-left: 1px solid #1C2230; }
+.band.band-one { grid-template-columns: minmax(0, 1fr); }
 .big-num { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: clamp(32px, 3.4cqi, 48px); line-height: 1; }
 .badges-row { display: flex; gap: 10px; flex-wrap: wrap; }
 /* A <button> centres its content vertically; stack from the top so every hexagon sits on one line. */

@@ -93,7 +93,7 @@ function draw() {
   $('[data-mbar]').style.width = v.nextBar;
   // Together
   setText($('[data-hours]'), v.togetherHours.replace(' h', ''));
-  setText($('[data-hof]'), v.togetherOf ? `/ ${v.togetherOf.replace('din ', '')}` : '');
+  setText($('[data-hof]'), '');   // the community goal (target) was deleted (owner, 24 Nov)
   setText($('[data-today]'), v.todayBig);
   drawVote(v);
   // Vote: announce the winner once, right after the round closes (it can close without any data change).

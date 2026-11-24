@@ -1,6 +1,6 @@
 ---
 // 02 Comunitatea, three rows read top to bottom:
-//   1. one band: Contribuția ta (time added, stats, badges with tooltips) + Obiectiv comunitar
+//   1. one band: Contribuția ta (time added, stats, badges with tooltips); the community goal was deleted (owner, 24 Nov)
 //   2. Legende: three equal panels (place 1 prism, 2/3/4 gold/silver/bronze, 5 grey)
 //   3. Fidelii
 // Names come through public_name() (moderation + opt-out, toggle at the bottom).
@@ -21,8 +21,8 @@ const small = `font-family: ${cond}; font-weight: 800; font-size: 13px; letter-s
       <p class="side">Ce ai adăugat tu și cine conduce.</p>
     </SectionHead>
 
-    <!-- Row 1: you + the shared goal -->
-    <div class="band panel">
+    <!-- Row 1: you -->
+    <div class="band band-one panel">
       <div>
         <p class="eyebrow-s">Contribuția ta</p>
         <div {...iff('isOut')}>
@@ -42,16 +42,6 @@ const small = `font-family: ${cond}; font-weight: 800; font-size: 13px; letter-s
         </div>
         <p class="show-sm" style="margin: 6px 0 0; font-size: 12px; color: #7D8899">Atinge o insignă ca să vezi cum o obții.</p>
         <p {...iff('isIn')} data-text="mineNote" style="margin: 12px 0 0; font-size: 13px; color: #AEB8C7">{v.mineNote}</p>
-      </div>
-      <div>
-        <p class="eyebrow-s">Obiectiv comunitar · ore în chat, toți la un loc</p>
-        <div style="margin-top: 6px; display: flex; align-items: baseline; justify-content: space-between; gap: 12px">
-          <span class="big-num" data-text="togetherHours" style="color: #DFF6FF">{v.togetherHours}</span>
-          <span data-text="togetherOf" style={`font-family: ${cond}; font-weight: 800; font-size: 20px; color: #AEB8C7`}>{v.togetherOf}</span>
-        </div>
-        <div class="bar" style="margin-top: 10px; height: 10px" aria-hidden="true"><span data-style="width:togetherBar" style={`width: ${v.togetherBar}`}></span></div>
-        <p data-text="togetherAt" style="margin: 8px 0 0; font-size: 14px; color: #C9D2DF">{v.togetherAt}</p>
-        <p style="margin: 8px 0 0; font-size: 13px; color: #7D8899">Gratuit: contează doar să fii în chat cât e live.</p>
       </div>
     </div>
 
