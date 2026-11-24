@@ -121,7 +121,7 @@ function releaseField() {
 // tip(text) = a small square (i) button; the text shows in one floating box on hover, focus or tap
 // (the box lives in <body>, positioned in the window, so cards never clip it). Screen readers get
 // the same text right after the button. «\n» in the text starts a new line.
-const tip = (text: string) => `<button type="button" class="tip" data-tip="${esc(text)}" aria-label="Explicație"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 10.5v7M12 6.5v.01" stroke="currentColor" stroke-width="3" stroke-linecap="square"/></svg></button><span class="sr-only">${esc(text)}</span>`;
+const tip = (text: string) => `<button type="button" class="tip" data-tip="${esc(text)}" aria-label="Explicație"><span aria-hidden="true">?</span></button><span class="sr-only">${esc(text)}</span>`;
 const tipBox = document.createElement('div');
 tipBox.id = 'tipBox'; tipBox.setAttribute('role', 'tooltip'); tipBox.hidden = true;
 document.body.append(tipBox);
@@ -1595,6 +1595,7 @@ function render() {
 const calmMod = matchMedia('(prefers-reduced-motion: reduce)');
 let shownView = '';
 let enterTimer = 0;
+let tipHintTimer = 0;
 const lastKpi: string[] = [];
 let inkFrom: { left: number; width: number } | null = null;
 function afterRender() {
@@ -1614,6 +1615,12 @@ function afterRender() {
     app.classList.remove('pg-in'); void app.offsetWidth; app.classList.add('pg-in');
     clearTimeout(enterTimer);
     enterTimer = window.setTimeout(() => app.classList.remove('pg-in'), 1200);
+  }
+  // 1b. Every (i) on a newly opened page glows twice (CSS .tip-hint; nothing under reduced motion).
+  if (pageChanged && !calmMod.matches) {
+    clearTimeout(tipHintTimer);
+    app.classList.remove('tip-hint'); void app.offsetWidth; app.classList.add('tip-hint');
+    tipHintTimer = window.setTimeout(() => app.classList.remove('tip-hint'), 3200);
   }
   // 2. A number in the strip changed (a sub, a donation): it bumps once.
   const kv = [...app.querySelectorAll<HTMLElement>('.kpi .kv')];
