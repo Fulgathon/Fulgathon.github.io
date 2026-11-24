@@ -222,8 +222,8 @@ function seedBase(now: number): DemoState {
       closesAt: now + 2 * DAY + 5 * HOUR,
       prize: 'un espressor',
       prizeSponsor: 'Fulg Coffee',
-      // A few already ticked by moderators (as in the mockup).
-      items: bingoItems.map((label, i) => ({ id: i + 1, label, happened: [0, 13, 14, 18, 19].includes(i) })),
+      // Nothing is ticked while picks are open (ticks start after the close).
+      items: bingoItems.map((label, i) => ({ id: i + 1, label, happened: false })),
       pick: null,
       // 340 simulated players, each with a random line of the card.
       others: Array.from({ length: 340 }, (_, k) => ({
@@ -287,7 +287,7 @@ function enrich(s: DemoState, now: number): DemoState {
   s.myVotes = { [round.id]: round.items[1].challengeId };
   // The visitor is a subscriber who watched long enough today: the wheel can spin.
   s.viewer = { state: 'sub', name: 'stefan_ro', day: today(), watched: 150, spunDay: null, bonus: 1 };
-  // Their bingo line (row 4) has two events ticked already.
+  // Their bingo line: row 4.
   s.bingo.pick = [16, 17, 18, 19, 20];
   s.bingo.others = s.bingo.others.concat(Array.from({ length: 1_460 }, (_, k) => ({
     user: `viewer_${400 + k}`, items: pick(bingoLines(s.bingo.items.map((it) => it.id))),
@@ -494,9 +494,17 @@ export class DemoBackend {
       if (rule) s.nameRules.unshift({ name: k, rule, at: Date.now() });
     });
   }
-  bingoTick(id: number, happened: boolean) { this.mutate((s) => { const it = s.bingo.items.find((x) => x.id === id); if (it) it.happened = happened; }); }
+  bingoTick(id: number, happened: boolean) {
+    this.mutate((s) => {
+      if (s.bingo.closesAt === null || Date.now() < s.bingo.closesAt) fail('bingo_open');
+      const it = s.bingo.items.find((x) => x.id === id); if (it) it.happened = happened;
+    });
+  }
   bingoSettings(closesAt: number | null, prize: string, prizeSponsor: string | null = null) {
-    this.mutate((s) => { s.bingo.closesAt = closesAt; if (prize.trim()) s.bingo.prize = prize.trim(); s.bingo.prizeSponsor = prizeSponsor?.trim() || null; });
+    this.mutate((s) => {
+      if ((closesAt === null || closesAt > Date.now()) && closesAt !== s.bingo.closesAt
+        && (s.bingo.items.some((it) => it.happened) || s.bingo.draws.length)) fail('bingo_ticked');
+      s.bingo.closesAt = closesAt; if (prize.trim()) s.bingo.prize = prize.trim(); s.bingo.prizeSponsor = prizeSponsor?.trim() || null; });
   }
   setBingoItems(list: { id?: number | string; label: string }[]) {
     this.mutate((s) => {

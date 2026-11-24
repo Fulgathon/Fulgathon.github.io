@@ -361,12 +361,12 @@ export function derive(s: State, d: SiteData) {
   const lineIdx = bingoLines.findIndex((l) => l.on);
   const bingo2 = grid.map((it) => {
     const on = mine.includes(it.id);
-    const hit = it.happened;
+    const hit = !bingoOpen && it.happened;
     return { id: it.id, text: it.label, on, hit, cls: on && hit ? 'mine hit' : on ? 'mine' : hit ? 'hit' : '' };
   });
   const myLine = lineIdx >= 0 ? lineDefs[lineIdx].ids.map((id) => {
     const it = grid.find((x) => x.id === id);
-    return { text: it?.label ?? '', hit: !!it?.happened };
+    return { text: it?.label ?? '', hit: !bingoOpen && !!it?.happened };
   }) : [];
   const lineHits = myLine.filter((l) => l.hit).length;
   const hits = !bingoOpen && saved ? saved.filter((id) => B.items.find((it) => it.id === id)?.happened).length : 0;
