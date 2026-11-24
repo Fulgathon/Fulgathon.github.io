@@ -188,7 +188,7 @@ function seedBase(now: number): DemoState {
     },
     stats: { subs: 1284, bits: 48_500, raised: 1_180 },
     // The first four happened live (with clips), the fifth is unlocked and planned.
-    goals: defaultGoals.map((g, i) => ({ ...g, sponsor: i === 5 ? 'Zona IT' : i === 7 || i === 9 ? 'Nordhaus PC' : null,
+    goals: defaultGoals.map((g, i) => ({ ...g, sponsor: i === 5 ? 'Sponsor Principal' : i === 7 || i === 9 ? 'Nordhaus PC' : null,
       doneAt: i < 4 ? now - (2 - i * 0.5) * DAY : null, clip: i < 4 ? '#' : null, when: i === 4 ? 'vineri seara' : null })),
     lines: {},
     smallDonation: 10,
@@ -225,8 +225,8 @@ function seedBase(now: number): DemoState {
       { id: 1, body: 'Citește comentariile chatului cu voce de Moș Crăciun', user: 'dianaplays', at: now - 32 * MIN, status: 'pending' },
     ],
     viewer: { state: 'out', name: 'viewer_name', day: today(), watched: 95, spunDay: null, bonus: 0 },
-    prizes: defaultPrizes.map((p, i) => ({ short: p[0], full: p[1], win: WIN_LABELS[i], sponsor: i === 1 ? 'Zona IT' : i === 3 || i === 5 ? 'Glacio' : null, isWin: i !== LOSE, weight: 1 })),
-    codes: [{ code: 'K7Q-2MV', sponsor: 'Zona IT', shownAt: now - 3 * HOUR, expiresAt: now - 3 * HOUR + 10 * MIN, claims: 212, mine: false }],
+    prizes: defaultPrizes.map((p, i) => ({ short: p[0], full: p[1], win: WIN_LABELS[i], sponsor: i === 1 ? 'Sponsor Principal' : i === 3 || i === 5 ? 'Glacio' : null, isWin: i !== LOSE, weight: 1 })),
+    codes: [{ code: 'K7Q-2MV', sponsor: 'Sponsor Principal', shownAt: now - 3 * HOUR, expiresAt: now - 3 * HOUR + 10 * MIN, claims: 212, mine: false }],
     promo: { clicks: 184, copies: 57, doubleHours: 2, donatedInHours: 640 },
     mods: ['icemanlucky', 'Rares1337'],
     streamerConnected: true,
@@ -264,10 +264,10 @@ function enrich(s: DemoState, now: number): DemoState {
   s.goals = s.goals.map((g, i) => ({ ...g, doneAt: i < 6 ? now - (7 - i) * DAY : null, clip: i < 6 ? '#' : null,
     when: i === 6 ? 'diseară, 22:00' : i === 7 ? 'mâine seară' : null }));
   s.advent = [
-    { day: 1, note: 'Startul', clip: '#', sponsor: null }, { day: 2, note: 'Ora dublă', clip: '#', sponsor: 'Zona IT' },
+    { day: 1, note: 'Startul', clip: '#', sponsor: null }, { day: 2, note: 'Ora dublă', clip: '#', sponsor: 'Sponsor Principal' },
     { day: 3, note: 'Provocarea votată', clip: '#', sponsor: null }, { day: 4, note: 'Segment partener', clip: '#', sponsor: 'Fulg Coffee' },
     { day: 5, note: 'Ajunul · colinde live', clip: '#', sponsor: null }, { day: 6, note: 'Crăciun cu chatul', clip: '#', sponsor: null },
-    { day: 7, note: 'Turneu cu comunitatea', clip: '#', sponsor: 'Zona IT' }, { day: 8, note: 'Karaoke cu colinde', clip: '#', sponsor: null },
+    { day: 7, note: 'Turneu cu comunitatea', clip: '#', sponsor: 'Sponsor Principal' }, { day: 8, note: 'Karaoke cu colinde', clip: '#', sponsor: null },
     { day: 9, note: 'Ora dublă diseară', clip: null, sponsor: 'Polar Byte' }, { day: 12, note: 'Revelion live', clip: null, sponsor: null },
   ];
   // The last half hour of the feed: a mix of everything that adds time.
@@ -630,7 +630,7 @@ export class DemoBackend {
       peak_chatters: 4120, watch_hours: 38500, raised: s.stats.raised,
       sponsors: [...names].sort().map((name) => {
         // The main partner (the one with the secret codes) gets the main-partner sample numbers.
-        const main = name === (s.codes[0]?.sponsor ?? 'Zona IT');
+        const main = name === (s.codes[0]?.sponsor ?? 'Sponsor Principal');
         return {
           sponsor: name, clicks: main ? s.promo.clicks : 23, code_copies: main ? s.promo.copies : 0,
           codes_shown: s.codes.filter((c) => c.sponsor === name).length,

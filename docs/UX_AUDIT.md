@@ -36,7 +36,7 @@ Measured at 1280 × 720, 1366 × 768, 1440 × 900 and 1920 × 1080, plus phones 
 **V1. The countdown isn't on the first screen of any desktop.**
 - The page is about the timer, but its digits end at **1,085–1,117 px** from the top on every desktop size measured. That is below the fold even on 1920 × 1080.
 - The first screen is the logo art, the «Intră acum» feed and the calculator. On desktop the only timer you see is the small one in the navbar.
-- The sponsor's «Prezentat de Zona IT» line is also below the fold. That's the spot sold as the place «la care se uită toată lumea».
+- The sponsor's «Prezentat de Sponsor Principal» line is also below the fold. That's the spot sold as the place «la care se uită toată lumea».
 - On phones it fits at 390 × 844 (digits end at 712 px), but not at 375 × 667 (699 px).
 - *Change:* on desktop, put the timer card next to the mascot, or right under a shorter mascot, so the digits, «Strâns» and «Prezentat de» are all visible at 1280 × 720. The mascot stays; it gets about 40% less height. This is the main mockup in [DESIGN.md](DESIGN.md).
 

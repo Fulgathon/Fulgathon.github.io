@@ -67,7 +67,7 @@ The palette stays, but its use has spread: the source uses 73 different hex colo
 
 ![Before, 1440 × 900](ux/mock-hero-1440-before.jpg)
 
-**After.** The mascot moves to the left and the timer card to the right, so the digits, «Strâns», «Prezentat de Zona IT» and «Următorul milestone» are all on the first screen. Below the card:
+**After.** The mascot moves to the left and the timer card to the right, so the digits, «Strâns», «Prezentat de Sponsor Principal» and «Următorul milestone» are all on the first screen. Below the card:
 - three equal buttons: «Urmărește live», «Donează», «Dă un sub»;
 - the «Ce poți face acum» row;
 - «Cum adaugi timp».
@@ -199,7 +199,7 @@ Not in Phase 4 unless you say so:
 1. **Direction:** A (same identity, calmer) or B (navy and gold).
 2. **Calculator before the start:** (a) wording or (b) banked time.
 3. **Sponsor inquiry:** A (email) or B (inbox on /mod), plus the contact email.
-4. **Content, whenever you have it:** the TipeeeStream donation URL, the audience numbers and their source, the package details and prices, and confirmation that Zona IT is signed.
+4. **Content, whenever you have it:** the TipeeeStream donation URL, the audience numbers and their source, the package details and prices, and the name of the main sponsor once signed.
 
 ## 9. Phase 4: what was built (23 Nov 2026)
 

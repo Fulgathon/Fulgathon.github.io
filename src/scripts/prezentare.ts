@@ -168,9 +168,9 @@ ${compact.matches
 <li><strong>Codul secret</strong>: din /mod arăți un cod pe stream câteva minute; cine îl scrie pe site primește o rotire bonus. Oamenii urmăresc momentul sponsorului pentru că le aduce ceva.</li>
 <li><strong>Raport</strong>: click-uri, coduri copiate, revendicări, donații în orele lor. Îl copiezi din /mod și îl trimiți sponsorului.</li></ul>`,
     actions: [
-      { label: 'Arată un cod secret', primary: true, run: () => { const c = api.codeShow('Zona IT', 10); note('Pe stream: ' + c.code); } },
+      { label: 'Arată un cod secret', primary: true, run: () => { const c = api.codeShow('Sponsor Principal', 10); note('Pe stream: ' + c.code); } },
       { label: 'Revendică-l ca viewer', run: guard(() => { api.setViewer('nonsub'); const c = api.currentCode(); if (c) api.claimCode(c.code); scrollSite('roata'); }) },
-      { label: 'Ora dublă oferită de Zona IT', run: () => api.doubleHour(Date.now(), 60, 'Zona IT') },
+      { label: 'Ora dublă oferită de Sponsor Principal', run: () => api.doubleHour(Date.now(), 60, 'Sponsor Principal') },
     ],
   },
   {

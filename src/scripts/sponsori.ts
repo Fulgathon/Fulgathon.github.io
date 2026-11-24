@@ -145,7 +145,7 @@ if (contact) steps.push({
   title: 'Hai să vorbim', view: 'packages',
   body: () => `<p>V-a convins? Lăsați-ne câteva rânduri și vă răspundem cu detaliile, pe ${b()}. Plata se face pe factură, după ce stabilim împreună ce vă trebuie.</p>
 <form class="talk" id="talk" novalidate>
-  <label>Brandul<input class="field" id="talkBrand" maxlength="40" autocomplete="organization" value="${esc(brand.trim())}" placeholder="ex: Zona IT"></label>
+  <label>Brandul<input class="field" id="talkBrand" maxlength="40" autocomplete="organization" value="${esc(brand.trim())}" placeholder="Numele brandului"></label>
   <label>Pachetul<select class="field" id="talkPkg">${[...pitch.packages.map((p) => p.name), 'Altceva / nu știm încă'].map((n) => `<option${n === talk.pkg ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
   <label>Numele vostru<input class="field" id="talkName" maxlength="60" autocomplete="name" value="${esc(talk.name)}"></label>
   <label>Câteva rânduri (opțional)<textarea class="field" id="talkMsg" rows="3" maxlength="600" placeholder="ex: ne interesează Ora dublă în weekend">${esc(talk.msg)}</textarea></label>

@@ -180,7 +180,7 @@ Ideas built on data the site already has (pitch a set, let the owner pick):
 - **Twitch chat messages:** answered 23 Nov: Iceman's own account. Still open: does a bot already thank in chat (StreamElements / Nightbot)? If so, avoid thanking people twice.
 - **Iceman's real lines:** the mods will fill them in on /mod. Ask for his phrases, clips or alert texts if any copy in his voice is needed elsewhere.
 - **Thresholds:** small vs large donation (10 €?).
-- **Prizes:** the bingo prize and the real wheel prizes. «Căști de gaming de la Zona IT» in the mockup is an example.
+- **Prizes:** the bingo prize and the real wheel prizes. «Căști de gaming de la Sponsor Principal» in the mockup is an example.
 - **Badge tiers:** confirmed as listed above. The owner may want more badges for the upper tiers (for example «30 de zile la rând», «5 nopți»).
 - Everything still open in CLAUDE.md: sponsors, logos, discount code, Discord, socials, domain.
 

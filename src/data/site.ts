@@ -18,21 +18,21 @@ export const site = {
   },
   sponsor: {
     /** Plain text standing in for the official logo. */
-    logoText: 'ZONA IT',
-    /** Official logo file in public/sponsors/ (e.g. '/sponsors/zona-it.svg'); empty shows the LOGO slot. */
+    logoText: 'SPONSOR PRINCIPAL',
+    /** Official logo file in public/sponsors/ (e.g. '/sponsors/sponsor-principal.svg'); empty shows the LOGO slot. */
     logo: '',
-    name: 'Zona IT',
+    name: 'Sponsor Principal',
     code: 'ICEMAN10',
     offerUrl: '#',
     pitch:
-      'Partenerul principal al IceMaratonului. [Oferta Zona IT pentru comunitate, de exemplu 10% reducere la periferice de gaming cu codul de mai jos, pe toată durata subathonului.]',
+      'Partenerul principal al IceMaratonului. [Oferta sponsorului principal pentru comunitate, de exemplu 10% reducere cu codul de mai jos, pe toată durata subathonului.]',
   },
   /**
    * The other two sponsor tiers (the main partner is `sponsor` above).
    *   Parteneri: up to 4, each backs one thing (wheel prizes, a milestone, Ora dublă, bingo).
    *   Susținători: any number, logo + link.
    * logo: a file in public/sponsors/ (SVG or PNG, ideally all-white on transparent),
-   * e.g. '/sponsors/zona-it.svg'; without one the name is shown in a logo box.
+   * e.g. '/sponsors/sponsor-principal.svg'; without one the name is shown in a logo box.
    * When you add a sponsor here, also add it in Supabase so its clicks count:
    *   insert into private.known_sponsors (name) values ('Nume Sponsor');
    */

@@ -100,11 +100,11 @@ Behaviour (`src/scripts/motion.ts`): in-page links glide to their section in 450
 
 Sponsors appear in four places. All logos are dashed placeholders for now (`.logo-slot`).
 
-1. **Top section (main sponsor, mockup: Zona IT):**
-   - a "Prezentat de | ZONA IT" plate with small corner brackets, centred above the eyebrow line;
-   - an offer line under the buttons: "Ofertă pentru comunitate de la Zona IT" + code chip `ICEMAN10` + "Vezi oferta →";
-   - "Cronometru oferit de ZONA IT" at the bottom right of the scoreboard.
-   "ZONA IT" is plain text standing in for the official logo; swap in the real logo file when the sponsor sends it.
+1. **Top section (main sponsor, mockup: «Sponsor Principal» until a sponsor is signed):**
+   - a "Prezentat de | SPONSOR PRINCIPAL" plate with small corner brackets, centred above the eyebrow line;
+   - an offer line under the buttons: "Ofertă pentru comunitate de la Sponsor Principal" + code chip `ICEMAN10` + "Vezi oferta →";
+   - "Cronometru oferit de SPONSOR PRINCIPAL" at the bottom right of the scoreboard.
+   "SPONSOR PRINCIPAL" is plain text standing in for the official logo; swap in the real logo file when the sponsor sends it.
 2. **Spin wheel:** "Premii oferite de" with a sponsor logo, under the section heading.
 3. **Section 08:**
    - **Main partner card** with HUD corner brackets: a large logo area, "PARTENER PRINCIPAL" tag, name, one-line pitch, a discount code button (click copies `ICEMAN10` and shows "Copiat ✓" for 2 s) and a "Vezi oferta →" button.

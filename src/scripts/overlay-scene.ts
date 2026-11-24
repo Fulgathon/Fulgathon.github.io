@@ -751,7 +751,7 @@ if (params.has('demo')) (window as unknown as { __ov: unknown }).__ov = {
     moment({ cls: 'm-big', ms: 6000, html: '<span class="mk">MOMENT MARE</span><span class="mt"><b>+5:00:00</b> andreiGG · donație 50 €</span>' });
     if (data.round) announceWinner(data);
     const w = data.recentWins[0];
-    wheelMoment(w?.user ?? 'kxtrin', w?.prize ?? 'VIP 24 de ore', w?.sponsor ?? 'Zona IT');
+    wheelMoment(w?.user ?? 'kxtrin', w?.prize ?? 'VIP 24 de ore', w?.sponsor ?? 'Sponsor Principal');
     return { moments: momentQ.length };
   },
 };

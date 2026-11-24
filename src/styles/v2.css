@@ -168,8 +168,8 @@
 /* ---- Sponsors up front (owner, 23 Nov: first impression = the marathon and its sponsors) ---- */
 /* «Prezentat de» under the title: calm, no motion, the partner's name in plain white. */
 .sponsor-line { position: relative; z-index: 7; margin: 12px auto 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 28px; }
-.title-sponsor { min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 14px; color: #FFFFFF; text-decoration: none; }
-.title-sponsor .ts-l { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: clamp(13px, 1.1cqi, 15px); letter-spacing: 0.3em; text-transform: uppercase; color: #AEB8C7; }
+.title-sponsor { min-height: 44px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px 14px; text-align: center; color: #FFFFFF; text-decoration: none; }
+.title-sponsor .ts-l { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: clamp(13px, 1.1cqi, 15px); letter-spacing: 0.3em; text-transform: uppercase; color: #AEB8C7; white-space: nowrap; }
 .title-sponsor .ts-name { font-weight: 700; font-size: clamp(24px, 2.4cqi, 34px); line-height: 1; letter-spacing: 0.06em; }
 .title-sponsor .ts-logo { max-height: 40px; max-width: 220px; object-fit: contain; }
 .title-sponsor:hover .ts-name, .title-sponsor:focus-visible .ts-name { color: var(--ice); }
@@ -230,7 +230,7 @@
 }
 @container page (max-width: 760px) {
   .sponsor-line { margin-top: 6px; flex-direction: column; gap: 2px; }
-  .title-sponsor { gap: 10px; }
+  .title-sponsor { gap: 4px 10px; }
   .title-partners { flex-direction: column; gap: 2px; padding-left: 0; border-left: 0; }
   .tp-list { gap: 12px; }
   .tp img { height: 28px; max-width: 80px; }
