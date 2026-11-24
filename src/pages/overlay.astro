@@ -120,10 +120,14 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
       .tm-u { display: flex; flex-direction: column; align-items: flex-start; }
       .tm-n { display: flex; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 52px; line-height: 1; font-variant-numeric: tabular-nums; }
       /* the slot clips only up and down, so the italic digits never lose their edges */
-      .sl { position: relative; display: block; height: 1em; padding: 0 .1em; margin: 0 -.07em 0 -.05em; overflow: hidden; }
-      .sl b { display: block; font-weight: 900; line-height: 1; padding-right: .04em; background: linear-gradient(180deg, #FFFFFF 22%, #CDF2FF 60%, var(--ice) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
-      .sl b.out { position: absolute; left: .1em; top: 0; animation: tmout .28s ease-in forwards; animation-delay: var(--d, 0s); }
+      /* every digit gets the same width (the font's digits differ: «1» .29em, «4» .51em), so nothing shifts */
+      .sl { position: relative; display: block; height: 1em; padding: 0 .07em; margin: 0 -.05em; overflow: hidden; }
+      .sl b { display: block; width: .52em; text-align: center; font-weight: 900; line-height: 1; background: linear-gradient(180deg, #FFFFFF 22%, #CDF2FF 60%, var(--ice) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .sl b.out { position: absolute; left: .07em; top: 0; animation: tmout .28s ease-in forwards; animation-delay: var(--d, 0s); }
       .sl b.in { position: relative; top: 0; animation: tmin .28s ease-out both; animation-delay: var(--d, 0s); }
+      /* each second: the new digit just brightens in place, no movement */
+      .sl b.tick { animation: tmtick .45s ease-out; }
+      @keyframes tmtick { from { opacity: .45; } }
       /* position (not transform/opacity) so the digits stay inside the slot's clip on every GPU */
       @keyframes tmout { to { top: 1em; } }
       @keyframes tmin { from { top: -1em; } }

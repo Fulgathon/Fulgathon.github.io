@@ -105,6 +105,8 @@ function setGroup(el: HTMLElement, val: string, roll: boolean, big = false) {
     const cur = sl.lastElementChild as HTMLElement;
     if (cur.textContent === c) return;
     if (!roll || calm) { cur.textContent = c; cur.className = ''; cur.style.removeProperty('--d'); return; }
+    // Each second: swap in place with a soft brighten (no roll), so the clock never draws the eye.
+    if (!big) { cur.textContent = c; cur.className = ''; restart(cur, 'tick'); return; }
     const nb = document.createElement('b');
     const d = '0s'; void n;
     nb.textContent = c; nb.className = big ? 'in big' : 'in'; nb.style.setProperty('--d', d);
