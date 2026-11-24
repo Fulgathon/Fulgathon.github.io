@@ -528,8 +528,11 @@ function navHtml(): string {
   const cur = S.view;
   return GROUPS.map((g) => {
     const on = g.id === S.page;
+    // Shown on a folded group's header: what waits inside it.
+    const ws = g.items.map(([id]) => waiting(id));
+    const sum = ws.reduce((a, w) => a + w.n, 0), warn = ws.some((w) => w.n && w.warn);
     return `<div class="ng${on ? ' on' : ''}">
-      <a class="ng-head" href="#${g.items[0][0]}" ${on ? 'aria-current="true"' : ''}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICONS[g.id]}"></path></svg><span>${esc(g.name)}</span></a>
+      <a class="ng-head" href="#${g.items[0][0]}" ${on ? 'aria-current="true"' : ''}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICONS[g.id]}"></path></svg><span>${esc(g.name)}</span>${sum ? `<span class="nb ng-sum${warn ? ' warn' : ''}" aria-label="${sum} de rezolvat">${sum}</span>` : ''}</a>
       <div class="ng-items">${g.items.map(([id, label]) => {
         const w = waiting(id);
         return `<a href="#${id}" data-nav="${id}"${id === cur ? ' class="cur" aria-current="location"' : ''}>${esc(label)}${w.n ? `<span class="nb${w.warn ? ' warn' : ''}">${w.n}</span>` : ''}</a>`;
@@ -562,7 +565,20 @@ function revealCur() {
   if (navCur !== S.view) { navCur = S.view; revealUntil = Date.now() + 2000; }
   if (Date.now() < revealUntil) keepCurVisible();
 }
-new ResizeObserver(() => { if (!nav.hidden && Date.now() < revealUntil) keepCurVisible(); }).observe(nav);
+new ResizeObserver(() => { fitNav(); if (!nav.hidden && Date.now() < revealUntil) keepCurVisible(); }).observe(nav);
+// No scroll in the menu: show every group open if it fits, else only the open group (fold),
+// then shorter rows with a mouse (tight); scrolling only as a last resort on tiny windows.
+function fitNav() {
+  nav.classList.remove('fold', 'tight', 'overflow');
+  if (nav.hidden || getComputedStyle(nav).flexDirection === 'row') return;
+  const fits = () => nav.scrollHeight <= nav.clientHeight + 1;
+  if (fits()) return;
+  nav.classList.add('fold');
+  if (fits()) return;
+  if (matchMedia('(pointer: fine)').matches) { nav.classList.add('tight'); if (fits()) return; }
+  nav.classList.add('overflow');
+}
+window.addEventListener('resize', () => fitNav());
 function setNav() {
   const had = nav.contains(document.activeElement) ? (document.activeElement as HTMLAnchorElement).getAttribute('href') : null;
   nav.innerHTML = navHtml();
@@ -571,7 +587,8 @@ function setNav() {
   links.forEach((a) => { a.tabIndex = a === home ? 0 : -1; });
   if (had) (links.find((a) => a.getAttribute('href') === had) ?? home)?.focus({ preventScroll: true });
   // Only when the open item changed (live refreshes redraw the menu too and must not move it).
-  if (!nav.hidden) { revealCur(); requestAnimationFrame(() => { if (Date.now() < revealUntil) keepCurVisible(); }); }
+  fitNav();
+  if (!nav.hidden) { revealCur(); requestAnimationFrame(() => { fitNav(); if (Date.now() < revealUntil) keepCurVisible(); }); }
 }
 nav.addEventListener('keydown', (e) => {
   const links = [...nav.querySelectorAll<HTMLAnchorElement>('a')].filter((a) => a.offsetParent !== null);
