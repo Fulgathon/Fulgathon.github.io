@@ -532,10 +532,10 @@ function navHtml(): string {
     const ws = g.items.map(([id]) => waiting(id));
     const sum = ws.reduce((a, w) => a + w.n, 0), warn = ws.some((w) => w.n && w.warn);
     return `<div class="ng${on ? ' on' : ''}">
-      <a class="ng-head" href="#${g.items[0][0]}" ${on ? 'aria-current="true"' : ''}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICONS[g.id]}"></path></svg><span>${esc(g.name)}</span>${sum ? `<span class="nb ng-sum${warn ? ' warn' : ''}" aria-label="${sum} de rezolvat">${sum}</span>` : ''}</a>
-      <div class="ng-items">${g.items.map(([id, label]) => {
+      <a class="ng-head" href="#${g.items[0][0]}" ${on ? 'aria-current="true"' : ''}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICONS[g.id]}"></path></svg><span>${esc(g.name)}</span>${sum ? `<span class="nb ng-sum${warn ? ' warn' : ''}" aria-label="${sum} de rezolvat">${sum}</span>` : ''}<svg class="ng-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      <div class="ng-items">${g.items.map(([id, label], i) => {
         const w = waiting(id);
-        return `<a href="#${id}" data-nav="${id}"${id === cur ? ' class="cur" aria-current="location"' : ''}>${esc(label)}${w.n ? `<span class="nb${w.warn ? ' warn' : ''}">${w.n}</span>` : ''}</a>`;
+        return `<a href="#${id}" data-nav="${id}" style="--i:${i}"${id === cur ? ' class="cur" aria-current="location"' : ''}>${esc(label)}${w.n ? `<span class="nb${w.warn ? ' warn' : ''}">${w.n}</span>` : ''}</a>`;
       }).join('')}</div>
     </div>`;
   }).join('');
@@ -569,6 +569,8 @@ new ResizeObserver(() => { fitNav(); if (!nav.hidden && Date.now() < revealUntil
 // No scroll in the menu: show every group open if it fits, else only the open group (fold),
 // then shorter rows with a mouse (tight); scrolling only as a last resort on tiny windows.
 function fitNav() {
+  // Mid-animation the group is shorter than it will be: keep the current fit until it ends.
+  if (nav.querySelector('.ng.opening')) return;
   nav.classList.remove('fold', 'tight', 'overflow');
   if (nav.hidden || getComputedStyle(nav).flexDirection === 'row') return;
   const fits = () => nav.scrollHeight <= nav.clientHeight + 1;
@@ -577,6 +579,19 @@ function fitNav() {
   if (fits()) return;
   if (matchMedia('(pointer: fine)').matches) { nav.classList.add('tight'); if (fits()) return; }
   nav.classList.add('overflow');
+}
+// A folded group that opens slides open, its items fade in one after another (reduced motion: no motion).
+let navPage = '';
+function animateOpen() {
+  const changed = navPage && navPage !== S.page;
+  navPage = S.page;
+  if (!changed || !nav.classList.contains('fold') || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const g = nav.querySelector<HTMLElement>('.ng.on');
+  const box = g?.querySelector<HTMLElement>('.ng-items');
+  if (!g || !box) return;
+  box.style.setProperty('--h', `${box.scrollHeight}px`);
+  g.classList.add('opening');
+  window.setTimeout(() => { g.classList.remove('opening'); fitNav(); }, 900);
 }
 window.addEventListener('resize', () => fitNav());
 function setNav() {
@@ -588,6 +603,7 @@ function setNav() {
   if (had) (links.find((a) => a.getAttribute('href') === had) ?? home)?.focus({ preventScroll: true });
   // Only when the open item changed (live refreshes redraw the menu too and must not move it).
   fitNav();
+  animateOpen();
   if (!nav.hidden) { revealCur(); requestAnimationFrame(() => { fitNav(); if (Date.now() < revealUntil) keepCurVisible(); }); }
 }
 nav.addEventListener('keydown', (e) => {

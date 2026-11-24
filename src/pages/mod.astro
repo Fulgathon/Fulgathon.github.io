@@ -128,6 +128,22 @@ const favicon = await getImage({ src: emote, format: 'png', width: 64 });
       .mnav.tight .ng-items { padding: 2px 0; }
       .mnav.tight .ng-items a { min-height: 32px; }
       .mnav.overflow { overflow-y: auto; scrollbar-width: thin; }
+      /* Folded menu: an arrow on each header; the group that opens slides open and its items
+         fade in one after another (animateOpen in mod.ts). */
+      .ng-chev { display: none; flex: none; opacity: .7; transition: transform .3s cubic-bezier(.2, .8, .3, 1); }
+      .ng-sum + .ng-chev { margin-left: 8px; }
+      .mnav.fold .ng-chev { display: block; margin-left: auto; }
+      .mnav.fold .ng-sum + .ng-chev { margin-left: 8px; }
+      .mnav.fold .ng.on .ng-chev { transform: rotate(90deg); opacity: 1; }
+      .ng.opening .ng-chev { animation: ngChev .32s cubic-bezier(.2, .8, .3, 1) both; }
+      @keyframes ngChev { from { transform: rotate(0deg); } to { transform: rotate(90deg); } }
+      .ng.opening .ng-items { box-sizing: border-box; overflow: hidden; animation: ngOpen .34s cubic-bezier(.2, .8, .3, 1) both; }
+      @keyframes ngOpen { from { height: 0; padding-block: 0; } to { height: var(--h); } }
+      .ng.opening .ng-items a { animation: ngItem .36s cubic-bezier(.2, .8, .3, 1) both; animation-delay: calc(var(--i, 0) * 30ms + 70ms); }
+      @keyframes ngItem { from { opacity: 0; transform: translateX(-10px); } }
+      .ng.opening .ng-head { animation: ngHead .5s ease-out; }
+      @keyframes ngHead { from { background: #1B4A6B; } }
+      @media (prefers-reduced-motion: reduce) { .ng.opening .ng-items, .ng.opening .ng-items a, .ng.opening .ng-chev, .ng.opening .ng-head { animation: none; } .ng-chev { transition: none; } }
       .mnav[hidden] { display: none; }
       .mnav[hidden] + .mmain { grid-column: 1 / -1; max-width: 720px; }
       .ng { background: #06080C; border: 1px solid #161B26; }
