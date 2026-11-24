@@ -284,6 +284,9 @@
 .lg-dots { display: none; margin: 6px 0 0; font-size: 12px; color: #7D8899; }
 .duo { margin-top: var(--gap-group); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .duo > div { padding: 22px; }
+.duo-one { grid-template-columns: minmax(0, 1fr); }
+/* Fidelii alone on its row: two columns of regulars on wide screens. */
+@container page (min-width: 1001px) { .duo-one .rows.ly { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 40px; } }
 .rows { margin-top: 12px; border-top: 1px solid #1A2230; }
 .rows > li { padding: 10px 0; border-bottom: 1px solid #1A2230; }
 .feed > li { display: flex; align-items: baseline; gap: 12px; }
