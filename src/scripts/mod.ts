@@ -836,11 +836,23 @@ function testStripHtml(): string {
       <div class="ts-row"><span>Twitch</span>${testBtn('sub', 'Sub', {}, 'Sub de test.')}${testBtn('sub', 'Sub Tier 3', { tier: '3000' }, 'Sub Tier 3 de test.')}${testBtn('gift', '10 subs cadou', { n: 10 }, '10 subs cadou de test.')}${testBtn('bits', '400 biți', { n: 400 }, '400 de biți de test.')}${testBtn('stream', online ? 'Iceman iese de pe Twitch' : 'Iceman intră pe Twitch', { on: !online }, online ? 'Iceman apare offline pe Twitch: timpul privit nu se mai numără.' : 'Iceman apare live pe Twitch: se numără timpul privit, votul automat merge.')}</div>
       <div class="ts-row"><span>Donații</span>${testBtn('donation', '5 €', { n: 5 }, 'Donație de test, 5 €.')}${testBtn('donation', '50 €', { n: 50 }, 'Donație de test, 50 €.')}${testBtn('donation', '250 €', { n: 250 }, 'Donație de test, 250 €.')}</div>
       <div class="ts-row"><span>Spectatori</span>${testBtn('crowd', '+25 de test', { n: 25 }, '25 de spectatori de test: privesc, votează, aleg bingo.')}${testBtn('me_sub', sub ? 'Eu: neabonat' : 'Eu: abonat', { on: !sub }, sub ? 'Pe site apari neabonat.' : 'Pe site apari abonat.')}${testBtn('me_watch', 'Eu: +2 h privit', { minutes: 120 }, 'Ai 2 ore privite azi: roata e deblocată.')}</div>
+      <div class="ts-row"><span>Ceas</span>${clockTestHtml()}</div>
       <div class="ts-row"><span>Alegeri</span>${(S.tasks?.menu ?? []).map((m) => testBtn('donation', `${euroTxt(m.price)} · ${m.title}`, { n: m.price }, `Donație de test ${euroTxt(m.price)}: «${m.title}» e în coadă (Donează și alegi).`)).join('') || '<span class="ts-note">Lista e goală: completeaz-o în AZI → Donează și alegi.</span>'}${st === 'upcoming' ? '<span class="ts-note">Primul buton pornește și maratonul de test.</span>' : ''}</div>
       <div class="ts-row"><span>Sponsori</span><button class="btn-ghost" data-act="testSponsors">Sponsori de test (10)</button><span class="ts-note">Mărci inventate, cu logo, pe site și pe overlay. La oprire revin sponsorii reali.</span></div>
       <div class="ts-row"><span>Testul</span>${testBtn('extend', '+1 oră', {}, 'Testul merge încă o oră.')}<button class="btn-ghost" data-act="testRedo">De la capăt</button><button class="btn-primary" data-act="testStop">Oprește testul</button></div>
     </div>
   </section>`;
+}
+// «Ceas» in the test strip: freeze and Ora dublă (plain or sponsored) on the test marathon.
+function clockTestHtml(): string {
+  const t = S.timer ?? {};
+  const now = Date.now();
+  const frozen = !!t.paused_until && Date.parse(t.paused_until) > now;
+  const dbl = !!t.double_from && !!t.double_until && Date.parse(t.double_from) <= now && Date.parse(t.double_until) > now;
+  const main = S.sponsors.find((x: any) => x.tier === 'main')?.name ?? '';
+  const b = (a: string, label: string) => `<button class="btn-ghost" data-act="testClock" data-a="${a}">${esc(label)}</button>`;
+  return (frozen ? b('unfreeze', 'Dezgheață') : b('freeze', 'Îngheață 5 min'))
+    + (dbl ? b('nodouble', 'Oprește Ora dublă') : b('double', 'Ora dublă 10 min') + (main ? b('doubleSp', `Ora dublă de la ${main}`) : ''));
 }
 function testCardHtml(): string {
   const upcoming = (S.timer?.status ?? 'upcoming') === 'upcoming';
@@ -1750,6 +1762,20 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   testEnd: () => confirm('Închei maratonul de test? Vezi ecranul de final; «De la capăt» îl aduce înapoi.') &&
     call('mod_end_timer', {}, 'Maratonul de test s-a încheiat.'),
   testSponsors: () => call('mod_test_sponsors', {}, 'Sponsori de test pe site și pe overlay (1 principal, 5 parteneri, 4 susținători).'),
+  testClock: async (el) => {
+    const a = el.dataset.a;
+    // Freeze and Ora dublă act on the running clock: start the test marathon first if needed.
+    if ((S.timer?.status ?? 'upcoming') === 'upcoming') {
+      await call('mod_start_timer', { p_hours: Number(S.auto?.startHours) || 24, p_scheduled_end: S.timer?.scheduled_end ?? null }, 'Maratonul de test a pornit.');
+    }
+    const now = new Date().toISOString();
+    const main = S.sponsors.find((x: any) => x.tier === 'main')?.name ?? '';
+    if (a === 'freeze') return call('mod_freeze', { p_minutes: 5 }, 'Test: cronometrul e înghețat 5 minute.');
+    if (a === 'unfreeze') return call('mod_unfreeze', {}, 'Test: cronometrul merge din nou.');
+    if (a === 'double') return call('mod_double_hour', { p_from: now, p_minutes: 10, p_sponsor: '' }, 'Test: Ora dublă 10 minute.');
+    if (a === 'doubleSp') return call('mod_double_hour', { p_from: now, p_minutes: 10, p_sponsor: main }, `Test: Ora dublă de la ${main}, 10 minute.`);
+    if (a === 'nodouble') return call('mod_double_hour', { p_from: now, p_minutes: 0, p_sponsor: '' }, 'Test: Ora dublă s-a oprit.');
+  },
   // Subs, bits and donations only count while the (test) marathon runs, as for real. In a test that
   // is never what you want to check, so the first such button starts the test marathon by itself.
   testDo: async (el) => {
