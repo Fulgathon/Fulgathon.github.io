@@ -59,7 +59,7 @@ const errors: Record<string, string> = {
   bad_clip: 'Linkul clipului trebuie să înceapă cu https://',
   timer_ended: 'Cronometrul a ajuns la zero: maratonul s-a încheiat și nu se mai poate adăuga sau îngheța timp.',
   protected_broadcaster: 'Contul lui Iceman nu poate fi scos dintre moderatori.',
-  only_broadcaster: 'Doar Iceman poate porni, prelungi sau încheia subathonul.',
+  only_broadcaster: 'Doar streamerul poate porni, prelungi sau încheia subathonul.',
   extend_not_later: 'Finalul nou trebuie să fie după finalul programat de acum.',
   extend_too_far: 'Se poate prelungi cel mult un an de acum.',
   round_full: 'O rundă are cel mult 8 provocări.',
@@ -543,6 +543,7 @@ const ICONS: Record<string, string> = {
   program: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 7v5l3 3',
   pregatire: 'M9 4h10v16H5V8zM9 4v4H5M8 13l2 2 4-4',
   setari: 'M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1',
+  streamer: 'M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z',
 };
 /** HH:MM, Romania time. */
 const hmRo = (iso: string | null) => (iso ? new Date(iso).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Bucharest' }) : '—');
@@ -554,7 +555,7 @@ const CHECK: { key: string; label: string; card?: string; auto?: () => boolean }
   { key: 'reward', label: 'Recompensa «Check-in ICEMARATON» pe Twitch' },
   { key: 'obs', label: 'Overlay-ul așezat în OBS și testat', card: 'overlay-piese' },
   { key: 'schedule', label: 'Start și final verificate', card: 'cronometru' },
-  { key: 'start', label: 'Pornirea: automată sau manuală', card: 'pilot', auto: () => !!S.auto?.autoStart },
+  { key: 'start', label: 'Pornirea: automată sau manuală', card: 'cronometru', auto: () => !!S.auto?.autoStart },
   { key: 'lines', label: 'Replicile lui Iceman: minim 5 pe grup', card: 'replici', auto: () => lineGroups.every((g) => lineInfo(g.id).ok) },
   { key: 'chatline', label: 'Replicile în chat: da sau nu', card: 'replici' },
   { key: 'milestones', label: 'Milestone-urile finale', card: 'milestones' },
@@ -612,17 +613,22 @@ const GROUPS: { id: string; name: string; title: string; lead: string; items: [s
   { id: 'program', name: 'PROGRAM', title: 'Program automat', lead: 'Se setează o dată, merg singure.',
     items: [['pilot', 'Automat'], ['plan', 'Program']] },
   { id: 'pregatire', name: 'PREGĂTIRE', title: 'Pregătire', lead: 'O singură dată, înainte de 20 decembrie.',
-    items: [['checklist', 'Checklist'], ['cronometru', 'Start'], ['replici', 'Replici'], ['milestones', 'Milestones'], ['roata-premii', 'Roata'], ['bingo', 'Bingo'], ['sponsori', 'Sponsori']] },
+    items: [['checklist', 'Checklist'], ['replici', 'Replici'], ['milestones', 'Milestones'], ['roata-premii', 'Roata'], ['bingo', 'Bingo'], ['sponsori', 'Sponsori']] },
   { id: 'setari', name: 'SETĂRI', title: 'Setări', lead: 'Folosite rar.',
-    items: [['test', 'Mod test'], ['moderatori', 'Moderatori'], ['overlay-piese', 'Overlay OBS'], ['raport', 'Raport sponsori'], ['zona', 'Încheiere']] },
+    items: [['test', 'Mod test'], ['moderatori', 'Moderatori'], ['overlay-piese', 'Overlay OBS'], ['raport', 'Raport sponsori']] },
+  // Everything only the broadcaster's login can do, in one place (owner, 25 Nov 2026). Generic words only
+  // (owner: /mod becomes a template; no channel names in it). Moderators see it
+  // greyed out (the database refuses them too); during «Mod test» everyone may.
+  { id: 'streamer', name: 'STREAMER', title: 'Streamer', lead: 'Doar contul streamerului apasă aici.',
+    items: [['cronometru', 'Start'], ['prelungire', 'Prelungește'], ['zona', 'Încheiere']] },
 ];
 /** Cards shown together with a menu item, and old anchors that now live inside another card. */
-const BUNDLE: Record<string, string[]> = { vot: ['vot', 'provocari'], propuneri: ['propuneri', 'premii'], pilot: ['pilot', 'alerte'] };
+const BUNDLE: Record<string, string[]> = { vot: ['vot', 'provocari'], propuneri: ['propuneri', 'premii'], pilot: ['pilot', 'alerte'], cronometru: ['streamer', 'cronometru'] };
 const ALIAS: Record<string, string> = { parteneri: 'sponsori', provocari: 'vot', premii: 'propuneri', alerte: 'pilot', stare: 'cronometru', inghetare: 'rapid', 'ora-dubla': 'rapid', acum: 'rapid', cod: 'rapid', overlay: 'overlay-piese' };
 /** Only Iceman (the broadcaster login) starts and ends the marathon; the database enforces it too. */
 // During «Mod test» every moderator may (the database allows it too: it all goes back).
-const isIceman = () => !!S.test || (!!S.me && !!S.status?.broadcaster_login && S.me.login.toLowerCase() === S.status.broadcaster_login.trim().toLowerCase());
-const onlyIceman = () => `<span class="muted">Doar ${esc(S.status?.broadcaster_login ?? 'Iceman')} poate porni, prelungi sau încheia subathonul.</span>`;
+const isStreamer = () => !!S.test || (!!S.me && !!S.status?.broadcaster_login && S.me.login.toLowerCase() === S.status.broadcaster_login.trim().toLowerCase());
+const onlyStreamer = () => `<span class="muted">Doar streamerul${S.status?.broadcaster_login ? ` (${esc(S.status.broadcaster_login)})` : ''} poate porni, prelungi sau încheia subathonul.</span>`;
 
 /** The menu item that shows an anchor: the item itself, the card bundled under it, or an old anchor. */
 function viewOf(raw: string): string | null {
@@ -930,6 +936,7 @@ function testCardHtml(): string {
 // the clock gets the same extra time (mod_extend, migration 20261214100000). Nothing ends or restarts.
 /** Shown next to «Prelungește» and the manual «+ min» (owner, 25 Nov). */
 const TIME_BY_HAND = 'Fiecare apăsare în /mod e o acțiune separată: dacă doi moderatori apasă «+5 min» pentru același lucru, ceasul primește +10. La fel și la «Prelungește». Stabiliți cine adaugă timp de mână.';
+const EXTEND_HELP = 'Muți finalul programat mai târziu, de câte ori vrei, fără să oprești subathonul.\nCronometrul primește exact diferența: de la 17 la 25 ianuarie = +8 zile pe ceas, chiar dacă subs l-au împins deja mai departe.\nSe poate doar înainte să ajungă ceasul la zero.\n\n' + TIME_BY_HAND;
 const durRo = (ms: number) => {
   const m = Math.max(0, Math.round(ms / 60000)), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60;
   return d ? `${d} ${d === 1 ? 'zi' : 'zile'}${h ? ` ${h} h` : ''}` : h ? `${h} h${mm ? ` ${mm} min` : ''}` : `${mm} min`;
@@ -951,16 +958,15 @@ function extendPreview(t: Record<string, any>, to: string): string {
 function extendHtml(t: Record<string, any>): string {
   const base = extendBase(t);
   const def = toLocal(new Date(base + 86_400_000).toISOString());
-  const ice = isIceman();
-  return `<h3 class="h3s">Prelungește ${tip('Muți finalul programat mai târziu, de câte ori vrei, fără să oprești subathonul.\nCronometrul primește exact diferența: de la 17 la 25 ianuarie = +8 zile pe ceas, chiar dacă subs l-au împins deja mai departe.\nSe poate doar înainte să ajungă ceasul la zero.\n\n' + TIME_BY_HAND)}</h3>
-      <div class="ext">
+  const ice = isStreamer();
+  return `<div class="ext">
         <div class="ext-now"><span>Final programat</span><strong>${esc(when(t.scheduled_end))}</strong></div>
         <div class="quick ext-quick">${[1, 3, 7, 14].map((d) => `<button class="btn-ghost" data-act="extendBy" data-days="${d}"${ice ? '' : ' disabled'}>+${d} ${d === 1 ? 'zi' : 'zile'}</button>`).join('')}</div>
         <div class="fgrid">
           <label class="inline">Final nou<input class="field" type="datetime-local" id="extendTo" value="${def}"${ice ? '' : ' disabled'}></label>
           <button class="btn-primary" data-act="extend"${ice ? '' : ' disabled'}>Prelungește</button>
         </div>
-        <p class="hint" id="extendPrev" aria-live="polite">${ice ? esc(extendPreview(t, def)) : onlyIceman()}</p>
+        <p class="hint" id="extendPrev" aria-live="polite">${ice ? esc(extendPreview(t, def)) : onlyStreamer()}</p>
       </div>`;
 }
 
@@ -1323,17 +1329,14 @@ function render() {
       const A = S.auto ?? {};
       return `
     <section class="card wide" id="pilot">
-      <h2>Automat</h2>
-      <h3 class="h3s" style="margin-top:0">Votul</h3>
+      <h2>Votul automat</h2>
       <div class="opt-row"><label class="opt"><input type="checkbox" class="sw" id="apVoteOn" ${A.voteOn ? 'checked' : ''}><span class="opt-t">O rundă de vot pe zi, deschisă singură</span></label>${tip('Se deschide singură când Iceman e live după ora aleasă. Voi doar dați veto.')}</div>
       <div class="row">
         <label class="inline">După ora (România)<input class="field" type="time" id="apVoteAt" value="${esc(A.voteAt ?? '20:00')}"></label>
         <label class="inline">Cât durează (minute)<input class="field" type="number" inputmode="numeric" id="apVoteMin" min="10" max="720" value="${esc(A.voteMinutes ?? 60)}"></label>
       </div>
       ${A.lastVoteDay ? `<p class="hint">Ultima rundă automată: ${esc(A.lastVoteDay)}.</p>` : ''}
-      <h3 class="h3s">Pornirea maratonului</h3>
-      <div class="opt-row"><label class="opt"><input type="checkbox" class="sw" id="apAutoStart" ${A.autoStart ? 'checked' : ''}${isIceman() ? '' : ' disabled'}><span class="opt-t">Cronometrul pornește singur la ora de start (${when(t.starts_at)})</span></label>${tip('Altfel: «Pornește acum» din PREGĂTIRE → Start.')}</div>${isIceman() ? '' : `<p class="hint">${onlyIceman()}</p>`}
-      <div class="row"><label class="inline">Ore pe cronometru la start<input class="field" type="number" id="apStartHours" step="0.5" min="0.5" value="${esc(A.startHours ?? 24)}"></label></div>
+      <p class="callout" style="margin:16px 0 0">Pornirea automată a maratonului e acum la <a href="#cronometru">STREAMER → Start</a>.</p>
       <div class="row"><button class="btn-primary" data-act="autoSave">Salvează</button>${A.updatedBy ? `<span class="hint">Ultima schimbare: ${esc(A.updatedBy)}, ${when(A.updatedAt)}</span>` : ''}</div>
     </section>`;
     },
@@ -1397,36 +1400,61 @@ function render() {
         <span class="grow">${esc(i.label)}${i.auto_rule ? `<br><span class="muted">${esc(ruleText(i.auto_rule))}</span>` : ''}</span></li>`).join('')}</ul>
     </section>`;
     },
-    'cronometru': () => `
-    <section class="card wide" id="cronometru">
-      <h2>Start</h2>
-      <div class="row">
+    'streamer': () => `
+    <section class="card wide" id="streamer">
+      <h2>Contul de streamer ${tip('O dată, înainte de start: streamerul apasă butonul și aprobă tot. Fără el nu ajung subs, biții și statusul live, nu se fac clipurile și replicile nu ajung în chat.')}</h2>
+      <div class="row" style="margin-top:0">
         <span class="pill ${st?.broadcaster_connected ? 'ok' : 'bad'}">Streamer ${st?.broadcaster_connected ? 'conectat' : 'neconectat'}</span>
         <a class="btn btn-${st?.broadcaster_connected ? 'ghost' : 'twitch'}" href="${esc(st?.connect_url ?? '#')}">${st?.broadcaster_connected ? 'Reconectează' : 'Conectează'} contul de streamer</a>
         <span class="muted">doar ${esc(st?.broadcaster_login ?? 'streamerul')}</span>
       </div>
-      ${live || t.status === 'ended' ? `<p class="muted" style="margin:16px 0 0">Pornit la ${when(t.starts_at)} · final programat ${when(t.scheduled_end)}.</p>${live ? extendHtml(t) : ''}` : `
-        <div class="row">
-          <label class="inline">Start<input class="field" type="datetime-local" id="startAt" value="${toLocal(t.starts_at)}"${S.auto?.autoStart && !isIceman() ? ' disabled title="Pornire automată: doar Iceman mută startul"' : ''}></label>
-          <label class="inline">Final programat<input class="field" type="datetime-local" id="endAt" value="${toLocal(t.scheduled_end)}"></label>
-          <button class="btn-ghost" data-act="schedule">Salvează</button>
-        </div>
-        <div class="row">
-          <label class="inline">Ore la start<input class="field" type="number" id="startHours" value="${esc(S.auto?.startHours ?? 24)}" step="0.5"></label>
-          ${isIceman() ? '<button class="btn-primary" data-act="start">Pornește acum</button>' : `<button class="btn-primary" disabled>Pornește acum</button>${onlyIceman()}`}
-        </div>`}
+    </section>`,
+    'cronometru': () => {
+      const A = S.auto ?? {};
+      const ice = isStreamer();
+      if (live || t.status === 'ended') return `
+    <section class="card wide" id="cronometru">
+      <h2>Pornirea</h2>
+      <p class="lead" style="margin:0">Pornit la <strong>${when(t.starts_at)}</strong> · final programat <strong>${when(t.scheduled_end)}</strong>.</p>
+      ${live ? '<div class="row"><a class="btn btn-ghost" href="#prelungire">Prelungește</a><a class="btn btn-ghost btn-danger" href="#zona">Încheiere</a></div>' : ''}
+    </section>`;
+      return `
+    <section class="card wide" id="cronometru">
+      <h2>Pornirea ${tip('Startul și finalul programat le pot schimba și moderatorii, cât pornirea automată e oprită. Pornirea automată, mutarea startului cât ea e pornită și «Pornește acum» sunt doar ale streamerului.')}</h2>
+      <h3 class="h3s" style="margin-top:0">Când</h3>
+      <div class="fgrid">
+        <label class="inline">Start<input class="field" type="datetime-local" id="startAt" value="${toLocal(t.starts_at)}"${A.autoStart && !ice ? ' disabled title="Pornire automată: doar streamerul mută startul"' : ''}></label>
+        <label class="inline">Final programat<input class="field" type="datetime-local" id="endAt" value="${toLocal(t.scheduled_end)}"></label>
+        <button class="btn-ghost" data-act="schedule">Salvează datele</button>
+      </div>
+      <h3 class="h3s">Cum pornește</h3>
+      <div class="opt-row"><label class="opt"><input type="checkbox" class="sw" id="apAutoStart" ${A.autoStart ? 'checked' : ''}${ice ? '' : ' disabled'}><span class="opt-t">Cronometrul pornește singur la ora de start (${when(t.starts_at)})</span></label>${tip('Pornit: la ora de start cronometrul pornește singur cu orele de mai jos, iar mutarea startului rămâne doar a streamerului.\nOprit: streamerul apasă «Pornește acum».')}</div>
+      <div class="fgrid" style="margin-top:12px">
+        <label class="inline">Ore pe cronometru la start<input class="field" type="number" id="startHours" value="${esc(A.startHours ?? 24)}" step="0.5" min="0.5"${ice ? '' : ' disabled'}></label>
+        <button class="btn-ghost" data-act="startSave"${ice ? '' : ' disabled'}>Salvează pornirea</button>
+      </div>
+      <h3 class="h3s">Acum, de mână</h3>
+      <div class="row" style="margin-top:0">${ice ? '<button class="btn-primary" data-act="start">Pornește acum</button>' : '<button class="btn-primary" disabled>Pornește acum</button>'}</div>
+      ${ice ? '' : `<p class="hint">${onlyStreamer()}</p>`}
+    </section>`;
+    },
+    'prelungire': () => `
+    <section class="card wide" id="prelungire">
+      <h2>Prelungește ${tip(EXTEND_HELP)}</h2>
+      ${live ? extendHtml(t)
+        : `<p class="empty">${t.status === 'ended' ? 'Maratonul s-a încheiat: nu se mai poate prelungi.' : 'Merge după ce pornește cronometrul.'}</p>`}
     </section>`,
     // M2: ending is irreversible, so it lives apart from the time buttons and asks for a typed word.
     'sponsori': () => sponsorsHtml(),
     'test': () => testCardHtml(),
     'sarcini': () => tasksHtml(),
     'zona': () => `
-    <section class="card danger" id="zona">
+    <section class="card wide danger" id="zona">
       <h2>Încheiere</h2>
       ${live
         ? `<p style="margin:0">Oprește cronometrul pentru totdeauna. Nu se poate anula.</p>
-           <div class="row">${isIceman() ? '<button class="btn-ghost btn-danger" data-act="end">Încheie subathonul…</button>' : `<button class="btn-ghost btn-danger" disabled>Încheie subathonul…</button>${onlyIceman()}`}</div>`
-        : `<p class="muted" style="margin:0">Butonul de încheiere apare aici doar cât timp cronometrul merge.</p>`}
+           <div class="row">${isStreamer() ? '<button class="btn-ghost btn-danger" data-act="end">Încheie subathonul…</button>' : `<button class="btn-ghost btn-danger" disabled>Încheie subathonul…</button>${onlyStreamer()}`}</div>`
+        : `<p class="empty">Butonul de încheiere apare aici doar cât timp cronometrul merge.</p>`}
     </section>`,
     'replici': () => `
     ${linesHtml()}`,
@@ -1896,8 +1924,11 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   skipDone: (el) => call('mod_skipped_done', { p_id: el.dataset.id }, 'Gata.'),
   autoSave: () => call('mod_autopilot_set', { p: {
     voteOn: (document.getElementById('apVoteOn') as HTMLInputElement)?.checked ?? false, voteAt: val('apVoteAt') || '20:00', voteMinutes: num('apVoteMin') || 60,
-    autoStart: (document.getElementById('apAutoStart') as HTMLInputElement)?.checked ?? false, startHours: num('apStartHours') || 24,
-  } }, 'Pilotul automat a fost salvat.'),
+  } }, 'Votul automat a fost salvat.'),
+  // STREAMER → Start: auto start and the hours on the clock at the start (only these keys; the rest stays).
+  startSave: () => call('mod_autopilot_set', { p: {
+    autoStart: (document.getElementById('apAutoStart') as HTMLInputElement)?.checked ?? false, startHours: num('startHours') || 24,
+  } }, 'Pornirea a fost salvată.'),
   planAdd: () => {
     const kind = val('planKind');
     if (!val('planAt')) { say('Alege ziua și ora.', true); return; }
