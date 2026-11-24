@@ -26,13 +26,15 @@ const brb = params.get('scene') === 'brb';
 // ?part=timer: one piece per OBS Browser Source. Only that panel, at the source's top-left
 // corner, so Iceman places and sizes each piece per scene (every game has its own layout).
 // ?frame=1 outlines the piece and keeps it visible, for placing it in OBS.
-const partParam = params.get('part') ?? '';
+// 'speech' is the old name of the bubble piece; links already in OBS keep working.
+const partParam = params.get('part') === 'speech' ? 'bubble' : params.get('part') ?? '';
 const piece = overlayPieces.some((p) => p.id === partParam) ? partParam : null;
-// 'speech' is the same bubble without the drawn Iceman, to sit beside his head on the camera
-// (&tail=right points the tail to the right).
-const show = new Set(piece ? [piece === 'speech' ? 'bubble' : piece] : (params.get('show') ?? 'timer,goal,together,bubble,moments,vote,promo,code').split(','));
+const show = new Set(piece ? [piece] : (params.get('show') ?? 'timer,goal,together,bubble,moments,vote,promo,code').split(','));
 if (piece) document.body.classList.add('piece', `piece-${piece}`);
-if (piece === 'speech' && params.get('tail') === 'right') document.body.classList.add('tail-right');
+// Owner, 24 Nov: «Balonul lui Iceman» is only the speech bubble (it sits over his real camera),
+// never the drawn Iceman. &tail=right points the tail to the right.
+if (piece === 'bubble') document.body.classList.add('piece-speech');
+if (piece === 'bubble' && params.get('tail') === 'right') document.body.classList.add('tail-right');
 if (params.has('frame')) document.body.classList.add('frame');
 const scale = Math.min(2, Math.max(0.5, Number(params.get('scale')) || 1));
 const overlayKey = params.get('key');
