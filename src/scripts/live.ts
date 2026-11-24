@@ -279,6 +279,9 @@ export class Live {
         last: r.last ? { n: Number(r.last.n) || 0, kind: r.last.kind === 'gift' ? 'gift' : 'donation', user: String(r.last.user ?? 'TEST'), amount: Number(r.last.amount) || 0, seconds: Number(r.last.seconds) || 0, doubled: !!r.last.doubled } : null,
       } : null;
     }
+    if (has('scene')) {
+      patch.scene = P.scene ? { bg: safeUrl(P.scene.bg) } : null;
+    }
     if (has('tasks')) {
       const t = P.tasks;
       patch.tasks = t && Array.isArray(t.menu) ? {

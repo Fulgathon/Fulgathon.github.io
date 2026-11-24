@@ -78,6 +78,7 @@ const errors: Record<string, string> = {
   bad_tasks: 'Lista nu e bună: suma între 0 și 10.000 €, sarcina între 1 și 60 de litere, cel mult 8.',
   duplicate_price: 'Două sarcini au aceeași sumă. Fiecare sumă trebuie să fie diferită.',
   no_task: 'Cererea nu mai există (poate a bifat-o alt moderator).',
+  bad_scene_photo: 'Fotografia trebuie încărcată de aici, din /mod.',
   test_while_live: 'Testul merge doar înainte de start (maratonul real a pornit sau s-a încheiat).',
   test_too_close: 'E prea aproape de start: testul trebuie să se termine cu 30 de minute înainte.',
   test_off: 'Testul nu mai merge (s-a oprit sau a expirat).',
@@ -215,12 +216,14 @@ let S: {
   /** «Donează și alegi» (public_state part 'tasks'). */
   tasks: import('../data/types').DonationTasks | null;
   tasksDraft: string | null;
+  /** «Camera de control»: the background photo (public_state part 'scene'). */
+  sceneBg: string | null;
   /** /mod → Sponsori: every field (mod_sponsors), and the one open in the editor. */
   sponsors: any[];
   spEdit: number | 'new' | null;
   /** «Runda de vot»: the entry being swapped in the open round. */
   rSwap: number | null;
-} = { rSwap: null, rehearsal: null, test: null, tasks: null, tasksDraft: null, sponsors: [], spEdit: null, auto: null, view: 'rapid', liveTab: 'timp', page: 'azi', chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, together: null, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
+} = { rSwap: null, rehearsal: null, test: null, tasks: null, tasksDraft: null, sceneBg: null, sponsors: [], spEdit: null, auto: null, view: 'rapid', liveTab: 'timp', page: 'azi', chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, together: null, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
 /** Bingo phase (as private.bingo_phase): moderators open and close it; no ticks until the close (owner, 24 Nov). */
 const bingoPhase = (): 'soon' | 'open' | 'closed' => {
   const B = S.bingo;
@@ -278,7 +281,7 @@ async function load() {
     S.auto = demoApi.rpc('mod_autopilot', {});
     S.sponsors = (demoApi.rpc('mod_sponsors', {}) as any[]) ?? [];
     const site = demoApi.toSiteData();
-    S.now = site.now; S.together = site.together; S.rehearsal = site.rehearsal ?? null; S.test = null; S.tasks = site.tasks ?? null;
+    S.now = site.now; S.together = site.together; S.rehearsal = site.rehearsal ?? null; S.test = null; S.tasks = site.tasks ?? null; S.sceneBg = site.scene?.bg ?? null;
     S.lines = site.lines; S.smallDonation = site.smallDonation;
     S.chat = demoApi.rpc('mod_chat_status', {}) as typeof S.chat;
     if (!S.draft.length || S.draft.some((id) => !S.pool.find((p) => p.id === id))) autoDraft();
@@ -311,6 +314,7 @@ async function load() {
   S.sponsors = ((await (db as any).rpc('mod_sponsors')).data as any[]) ?? [];
   const ps = (await (db as any).rpc('public_state', { p_have: {} })).data?.parts ?? {};
   S.now = ps.now ?? null; S.together = ps.together ?? null; S.rehearsal = ps.rehearsal ?? null; S.test = ps.test?.on ? ps.test : null;
+  S.sceneBg = ps.scene?.bg ?? null;
   S.tasks = ps.tasks ? { menu: (ps.tasks.menu ?? []).map((m: any) => ({ price: Number(m.price), title: String(m.title) })), queue: (ps.tasks.queue ?? []).map((q: any) => ({ id: Number(q.id), price: Number(q.price), title: String(q.title), name: String(q.name), at: Date.parse(q.at) })), pending: Number(ps.tasks.pending) || 0 } : null;
   S.lines = ps.lines?.groups ?? {}; S.smallDonation = Number(ps.lines?.smallDonation) || 10;
   S.chat = ((await (db as any).rpc('mod_chat_status')).data as typeof S.chat) ?? null;
@@ -1002,6 +1006,25 @@ function spFormHtml(x: any): string {
     <div class="row"><button class="btn-primary" data-act="spSave" data-id="${x.id ?? ''}">Salvează</button><button class="btn-ghost" data-act="spCancel">Anulează</button>${isNew ? '' : `<button class="btn-ghost btn-danger" data-act="spDelete" data-id="${x.id}">Șterge sponsorul</button>`}</div>
   </div>`;
 }
+// «Camera de control» background: Storage bucket 'scene' (moderators only), then mod_scene_set.
+async function sceneUpload(file: File) {
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { say('Fotografia trebuie să fie JPG, PNG sau WEBP.', true); return; }
+  if (file.size > 10 * 1024 * 1024) { say('Fotografia are peste 10 MB. Salveaz-o ca JPG de calitate 85.', true); return; }
+  if (demoApi) {
+    if (file.size > 1.5 * 1024 * 1024) { say('În demo, fotografia trebuie să aibă sub 1,5 MB.', true); return; }
+    const url = await new Promise<string>((ok, bad) => { const r = new FileReader(); r.onload = () => ok(String(r.result)); r.onerror = bad; r.readAsDataURL(file); });
+    await call('mod_scene_set', { p_background: url }, 'Fotografia e pe scenă.');
+    return;
+  }
+  const ext = ({ 'image/png': 'png', 'image/webp': 'webp', 'image/jpeg': 'jpg' } as Record<string, string>)[file.type];
+  say('Se încarcă fotografia…');
+  const path = `fundal-${Date.now()}.${ext}`;
+  const { error } = await (db as any).storage.from('scene').upload(path, file, { contentType: file.type, upsert: false, cacheControl: '31536000' });
+  if (error) { say(`Fotografia nu s-a încărcat: ${error.message}`, true); return; }
+  const url = (db as any).storage.from('scene').getPublicUrl(path).data.publicUrl;
+  await call('mod_scene_set', { p_background: url }, 'Fotografia e pe scenă. Overlay-ul o arată în câteva secunde.');
+}
+
 // Logo upload: Storage bucket 'sponsors' (moderators only); the demo keeps a small data URL.
 async function spUpload(file: File) {
   const okType = ['image/png', 'image/svg+xml', 'image/webp', 'image/jpeg'].includes(file.type);
@@ -1098,16 +1121,7 @@ function milestonesHtml(): string {
 function overlayHtml(): string {
   const base = location.origin + '/overlay/';
   const key = S.overlayKey;
-  const v = (q: string) => base + '?' + [key ? `key=${key}` : '', q].filter(Boolean).join('&');
-  const rows: [string, string][] = [
-    ['Scena întreagă', v('')],
-    ['La fel, cu mai puțină mișcare (fără ninsoare și sărituri)', v('calm=1')],
-    ['Scena de pauză «Revin imediat» (o scenă separată în OBS)', v('scene=brb')],
-    ['«Camera de control»: o scenă întreagă (fundalul tău dedesubt; jocul 1152×648 la x 58, y 54; camera 518×291 la x 1325, y 54)', v('scene=control')],
-    ['Doar cronometrul și momentele (fără balon și fără ore împreună)', v('show=timer,moments,code')],
-    ['Banda subțire veche, în colțul din dreapta sus', v('style=strip')],
-    ['Cutia mare veche', v('style=box')],
-  ];
+  const control = base + '?scene=control';
   const piece = (id: string, withKey: boolean) => base + '?' + [withKey && key ? `key=${key}` : '', `part=${id}`].filter(Boolean).join('&');
   const pieces = `<section class="card wide" id="overlay-piese">
     <h2>Piesele overlay-ului, una câte una</h2>
@@ -1129,11 +1143,16 @@ function overlayHtml(): string {
       <button class="btn-ghost" data-act="ovTest" data-kind="promo">Linia partenerului</button>
     </div>
   </section>`;
+  const bg = S.sceneBg;
   return pieces + `<section class="card wide" id="overlay">
     <h2>Overlay OBS: scena întreagă</h2>
-    <p class="muted" style="margin-top:0">Tot overlay-ul dintr-o bucată: Browser Source 1920×1080. ${key ? '<strong style="color:#FF8A95">Linkurile au cheia privată.</strong>' : ''}</p>
-    <ul class="list">${rows.map(([label, url], i) => `<li><span class="grow"><strong>${esc(label)}</strong><br><input class="field" readonly value="${esc(url)}" id="ov${i}" aria-label="${esc(label)}" style="width:100%;margin-top:6px"></span><button class="btn-ghost" data-act="copyOv" data-i="${i}">Copiază</button></li>`).join('')}</ul>
-    <p class="muted">Codurile secrete apar doar cu linkul cu cheie.</p>
+    <p class="muted" style="margin-top:0">«Camera de control»: un singur Browser Source 1920×1080, deasupra jocului și a camerei.</p>
+    <ul class="list"><li><span class="grow"><strong>Camera de control</strong><br><span class="muted">În OBS, sub acest source: jocul 1152×648 la x 58, y 54 și camera 518×291 la x 1325, y 54. Cu «&amp;frame=1» la final se văd locurile.</span>
+      <input class="field" readonly value="${esc(control)}" id="ov0" aria-label="Linkul scenei Camera de control" style="width:100%;margin-top:6px"></span><button class="btn-ghost" data-act="copyOv" data-i="0">Copiază</button></li></ul>
+    <h3 class="h3s" style="margin-top:18px">Fotografia de fundal</h3>
+    <p class="muted" style="margin:4px 0 0">Overlay-ul o desenează singur, cu locurile jocului și camerei decupate, iar banda sponsorilor devine sticlă înghețată peste ea. Nu o mai pune separat în OBS. JPG, PNG sau WEBP, cel mult 10 MB, ideal 1920×1080 sau 3840×2160.</p>
+    ${bg ? `<p style="margin:10px 0 0"><img src="${esc(bg)}" alt="Fotografia de fundal" style="display:block;width:100%;max-width:480px;aspect-ratio:16/9;object-fit:cover;border:1px solid #1E4560"></p>` : '<p class="muted">Nicio fotografie: scena rămâne transparentă.</p>'}
+    <div class="row"><label class="btn btn-primary">${bg ? 'Schimbă fotografia' : 'Încarcă fotografia'}<input type="file" id="scene_file" accept="image/jpeg,image/png,image/webp" hidden></label>${bg ? '<button class="btn-ghost" data-act="sceneClear">Scoate fotografia</button>' : ''}</div>
   </section>`;
 }
 
@@ -1192,6 +1211,7 @@ nav.addEventListener('wheel', sideways, { passive: false });
 app.addEventListener('wheel', sideways, { passive: false });
 app.addEventListener('change', markUnsaved);
 app.addEventListener('change', (e) => { const t = e.target as HTMLInputElement; if (t.id === 'sp_file' && t.files?.[0]) void spUpload(t.files[0]).finally(() => { t.value = ''; }); });
+app.addEventListener('change', (e) => { const t = e.target as HTMLInputElement; if (t.id === 'scene_file' && t.files?.[0]) void sceneUpload(t.files[0]).catch(() => {}).finally(() => { t.value = ''; }); });
 window.addEventListener('beforeunload', (e) => {
   if (!app.querySelector('.card.dirty') && !Object.values(draftCards()).some(Boolean)) return;
   e.preventDefault();
@@ -1732,6 +1752,7 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     ({ start: 'Repetiția a pornit. Overlay-ul arată ceasul de test în câteva secunde.', stop: 'Repetiția s-a oprit.' } as Record<string, string>)[el.dataset.a ?? ''] ?? 'Trimis. Apare în overlay în câteva secunde.'),
   ovTest: (el) => call('mod_overlay_test', { p_kind: el.dataset.kind }, 'Test trimis. Apare în overlay în câteva secunde.'),
   copyOvp: (el) => { const v = val(`ovp${el.dataset.i}`); void navigator.clipboard?.writeText(v).then(() => say('Link copiat.')); },
+  sceneClear: () => confirm('Scoți fotografia de fundal? Scena rămâne transparentă.') && call('mod_scene_set', { p_background: null }, 'Fotografia a fost scoasă.'),
   copyOv: (el) => { const v = val(`ov${el.dataset.i}`); void navigator.clipboard?.writeText(v).then(() => say('Link copiat. Pune-l în OBS ca Browser Source, 1920×1080.')); },
   goalDel: (el) => { editGoals().splice(Number(el.dataset.i), 1); render(); },
   goalCancel: () => { S.goalsDraft = null; render(); },

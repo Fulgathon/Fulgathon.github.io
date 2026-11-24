@@ -62,6 +62,8 @@ export interface DemoState {
   /** «Donează și alegi»: the price list and the requests (same rules as public.donation_tasks / _queue). */
   tasksMenu?: { price: number; title: string }[];
   taskQueue?: { id: number; price: number; title: string; name: string; at: number; done: boolean }[];
+  /** «Camera de control» background photo (a small data URL in the demo). */
+  sceneBg?: string | null;
   /** /mod autopilot settings, the plan, Discord alerts and the shared checklist (demo: nothing runs or is sent). */
   autopilot?: {
     autoStart: boolean; startHours: number; voteOn: boolean; voteAt: string; voteMinutes: number; hasWebhook: boolean;
@@ -969,6 +971,7 @@ export class DemoBackend {
       lines: s.lines ?? {},
       smallDonation: s.smallDonation ?? 10,
       rehearsal: s.rehearsal ?? null,
+      scene: { bg: s.sceneBg ?? null },
       tasks: { menu: demoTasksMenu(s), queue: (s.taskQueue ?? []).filter((q) => !q.done).slice(0, 40).map(({ done: _d, ...q }) => q), pending: (s.taskQueue ?? []).filter((q) => !q.done).length },
       sponsors: this.publicSponsors(s),
       advent: s.advent ?? [],
@@ -1200,6 +1203,7 @@ export class DemoBackend {
       case 'mod_sponsor_move': return this.sponsorMove(Number(a.p_id), Number(a.p_dir));
       // «Mod test» needs the real database; the demo is all sample data already.
       case 'mod_test': return fail('demo_test');
+      case 'mod_scene_set': return this.mutate((s) => { s.sceneBg = (a.p_background as string | null) || null; });
       case 'mod_tasks_set': return this.mutate((s) => {
         const items = (a.p_items as { price: number | string; title: string }[]).map((x) => ({ price: Number(String(x.price).replace(',', '.')), title: String(x.title ?? '').trim() }));
         if (items.length > 8 || items.some((x) => !(x.price > 0 && x.price <= 10000) || !x.title || x.title.length > 60)) fail('bad_tasks');

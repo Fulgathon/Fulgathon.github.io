@@ -35,7 +35,13 @@ const esc = (t: unknown) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&
 const pos = (b: { x: number; y: number; w: number; h: number }) => `left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px`;
 const euro = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(2).replace('.', ',')) + ' €';
 
+// The background photo (uploaded on /mod) is drawn here, with the game and webcam places cut out, so
+// the sponsor strip can be real frosted glass over it. OBS: game and webcam under this source.
+const cut = (b: { x: number; y: number; w: number; h: number }) => `M${b.x} ${b.y}H${b.x + b.w}V${b.y + b.h}H${b.x}Z`;
+const CLIP = `path(evenodd, 'M0 0H1920V1080H0Z ${cut(HOLES.game)} ${cut(HOLES.cam)}')`;
+
 root.innerHTML = `
+  <div class="scc-bg" data-bg style="clip-path:${CLIP}"></div>
   <div class="scc-hole" id="scc-game" style="${pos(HOLES.game)}"><span>GAME · ${HOLES.game.w}×${HOLES.game.h} la ${HOLES.game.x},${HOLES.game.y}</span></div>
   <div class="scc-hole" id="scc-cam" style="${pos(HOLES.cam)}"><span>WEBCAM · ${HOLES.cam.w}×${HOLES.cam.h} la ${HOLES.cam.x},${HOLES.cam.y}</span></div>
   <section class="scc-panel scc-timer" id="scc-timer" style="${pos(BOX.timer)}">
@@ -270,7 +276,20 @@ function queueEvents(items: TickerItem[], first: boolean) {
 }
 
 // ---- Data ---------------------------------------------------------------------------------
+let bgUrl: string | null = null;
+function drawBackground() {
+  const url = data.scene?.bg ?? null;
+  if (url === bgUrl) return;
+  bgUrl = url;
+  const el = $('[data-bg]');
+  if (!url) { el.innerHTML = ''; root.classList.remove('has-bg'); return; }
+  const img = new Image();
+  img.alt = '';
+  img.onload = () => { if (bgUrl === url) { el.replaceChildren(img); root.classList.add('has-bg'); } };
+  img.src = url;
+}
 function drawAll() {
+  drawBackground();
   drawTimer();
   drawSponsors();
   drawTasks();

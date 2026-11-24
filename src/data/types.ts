@@ -126,6 +126,8 @@ export interface SiteData {
   testMode?: { until: number; by: string | null } | null;
   /** «Donează și alegi» (scene «Camera de control»): the price list and the requests waiting. */
   tasks?: DonationTasks | null;
+  /** «Camera de control»: the background photo uploaded on /mod (null = none, the scene stays transparent). */
+  scene?: { bg: string | null } | null;
   /** null = not set up on /mod yet: the site keeps the list from src/data/site.ts. */
   sponsors?: Sponsor[] | null;
   /** Iceman's lines for the hero bubble, per group (fewer than 5 → «Mersi, {nume}!»). */
