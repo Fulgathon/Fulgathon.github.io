@@ -89,6 +89,8 @@ function say(text: string, err = false) {
   msgBox.textContent = text;
   msgBox.classList.toggle('err', err);
   msgBox.hidden = false;
+  // slides in, with a bar that runs out over the 4 s it stays
+  msgBox.classList.remove('in'); void msgBox.offsetWidth; msgBox.classList.add('in');
   clearTimeout(msgTimer);
   msgTimer = window.setTimeout(() => { msgBox.hidden = true; }, 4000);
 }
@@ -1285,7 +1287,7 @@ function render() {
       <h2>Raport pentru sponsori</h2>
       ${(() => {
         const R = S.report;
-        if (!R) return '<p class="muted">Se încarcă…</p>';
+        if (!R) return '<div class="m-loader small" role="status"><span class="sr-only">Se încarcă</span><span class="ml-flake" aria-hidden="true"></span></div>';
         const fmt = (n: any) => (n === null || n === undefined ? '—' : Number(n).toLocaleString('ro-RO'));
         return `<p class="muted" style="margin-top:0">Vârf de viewers în chat: <strong style="color:#F2F5FA">${fmt(R.peak_chatters)}</strong> · ore privite în total: <strong style="color:#F2F5FA">${fmt(R.watch_hours)}</strong> · strâns: <strong style="color:#F2F5FA">${fmt(R.raised)} €</strong>.</p>
         ${(R.sponsors ?? []).length ? `<ul class="list">${R.sponsors.map((x: any, i: number) => `<li style="align-items:flex-start">
@@ -1386,6 +1388,50 @@ function render() {
   markUnsaved();
   // Opened with #section in the address: scroll there once the page exists.
   if (scrollTo) { const el = document.getElementById(scrollTo); scrollTo = ''; el?.scrollIntoView({ block: 'start' }); }
+  afterRender();
+}
+
+// ---- Motion (owner, 24 Nov: «more motion»). Only on a page change or a changed number, never on
+// every live refresh; nothing moves under prefers-reduced-motion. ---------------------------------
+const calmMod = matchMedia('(prefers-reduced-motion: reduce)');
+let shownView = '';
+let enterTimer = 0;
+const lastKpi: string[] = [];
+let inkFrom: { left: number; width: number } | null = null;
+function afterRender() {
+  if (!S.me?.is_moderator) return;
+  const pageChanged = shownView !== S.view;
+  shownView = S.view;
+  // 1. A new page comes in: title, then the cards one after another, then their rows.
+  if (pageChanged && !calmMod.matches) {
+    app.querySelectorAll<HTMLElement>('.kpi, .mmain > .grid > .card, .dash > .card, .mmain > .card').forEach((c, i) => c.style.setProperty('--d', String(Math.min(i, 8))));
+    app.classList.remove('pg-in'); void app.offsetWidth; app.classList.add('pg-in');
+    clearTimeout(enterTimer);
+    enterTimer = window.setTimeout(() => app.classList.remove('pg-in'), 1200);
+  }
+  // 2. A number in the strip changed (a sub, a donation): it bumps once.
+  const kv = [...app.querySelectorAll<HTMLElement>('.kpi .kv')];
+  kv.forEach((el, i) => {
+    const t = el.hasAttribute('data-left') ? '' : el.textContent ?? '';
+    if (!pageChanged && lastKpi[i] !== undefined && t && lastKpi[i] !== t && !calmMod.matches) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
+    lastKpi[i] = t;
+  });
+  if (pageChanged) lastKpi.length = kv.length;
+  // 3. «Control live» tabs: the ice underline slides from the old tab to the new one.
+  const tabs = app.querySelector<HTMLElement>('.tabs');
+  const on = tabs?.querySelector<HTMLElement>('.tab.on');
+  if (tabs && on) {
+    let ink = tabs.querySelector<HTMLElement>('.tab-ink');
+    if (!ink) { ink = document.createElement('span'); ink.className = 'tab-ink'; ink.setAttribute('aria-hidden', 'true'); tabs.append(ink); }
+    const to = { left: on.offsetLeft, width: on.offsetWidth };
+    const from = !pageChanged && inkFrom && (inkFrom.left !== to.left || inkFrom.width !== to.width) && !calmMod.matches ? inkFrom : to;
+    ink.style.transition = 'none';
+    ink.style.transform = `translateX(${from.left}px)`; ink.style.width = `${from.width}px`;
+    void ink.offsetWidth;
+    ink.style.transition = '';
+    ink.style.transform = `translateX(${to.left}px)`; ink.style.width = `${to.width}px`;
+    inkFrom = to;
+  } else inkFrom = null;
 }
 
 // ---- Actions ----

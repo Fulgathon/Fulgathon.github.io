@@ -692,3 +692,28 @@ a.ad-past:hover { border-color: var(--ice); }
    1920 and below are untouched. This sheet is only on the public page (not /mod or the overlay). */
 @media (min-width: 2400px) { html { zoom: 1.3333; } }
 @media (min-width: 3400px) { html { zoom: 2; } }
+
+
+/* ---- Loading (owner, 24 Nov): until the first live data the page shows an ice loader instead
+   of «Se încarcă»: a thin ice line sweeping along the top, frosted digit blocks with a light
+   sweep, and three ice dots where the status words go (screen readers still hear the words). */
+.is-loading body::before { content: ''; position: fixed; z-index: 1000; left: 0; right: 0; top: 0; height: 2px; pointer-events: none;
+  background: linear-gradient(90deg, transparent, #3FD0FF 40%, #FFFFFF 50%, #3FD0FF 60%, transparent) no-repeat; background-size: 40% 100%; animation: ldBar 1.1s cubic-bezier(.6, 0, .4, 1) infinite; }
+@keyframes ldBar { 0% { background-position: -60% 0; } 100% { background-position: 160% 0; } }
+.is-loading .unit-num { color: transparent !important; text-shadow: none !important; -webkit-text-fill-color: transparent; }
+.is-loading .unit-box { position: relative; overflow: hidden; }
+.is-loading .unit-box::after { content: ''; position: absolute; inset: 18% 22%; background: linear-gradient(100deg, rgba(63, 208, 255, .08) 20%, rgba(223, 246, 255, .32) 50%, rgba(63, 208, 255, .08) 80%) no-repeat; background-size: 250% 100%; animation: ldSweep 1.3s ease-in-out infinite; }
+.is-loading .unit-box:nth-child(1)::after, .is-loading div:nth-child(2) > .unit-box::after { animation-delay: .1s; }
+@keyframes ldSweep { 0% { background-position: 120% 0; } 100% { background-position: -120% 0; } }
+.is-loading [data-text="statusText"], .is-loading [data-text="timerLabel"]:not(.sr-only), .is-loading [data-text="timerLabelUp"],
+.is-loading [data-text="navClock"], .is-loading [data-text="navShort"] { position: relative; color: transparent !important; }
+.is-loading [data-text="statusText"]::after, .is-loading [data-text="timerLabel"]:not(.sr-only)::after, .is-loading [data-text="timerLabelUp"]::after,
+.is-loading [data-text="navClock"]::after, .is-loading [data-text="navShort"]::after {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 30px; height: 6px; margin: -3px 0 0 -15px;
+  background: radial-gradient(circle, #DFF6FF 2.4px, transparent 2.8px) 0 50% / 12px 6px repeat-x; animation: ldDots 1s ease-in-out infinite; }
+.is-loading [data-text="timerLabel"]:not(.sr-only)::after, .is-loading [data-text="timerLabelUp"]::after { left: 0; margin-left: 0; }
+@keyframes ldDots { 0%, 100% { opacity: .35; transform: translateX(-2px); } 50% { opacity: 1; transform: translateX(2px); } }
+@media (prefers-reduced-motion: reduce) {
+  .is-loading body::before { animation: none; background-position: 50% 0; }
+  .is-loading .unit-box::after, .is-loading [data-text]::after { animation: none; }
+}
