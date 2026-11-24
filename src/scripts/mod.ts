@@ -54,6 +54,7 @@ const errors: Record<string, string> = {
   bad_clip: 'Linkul clipului trebuie să înceapă cu https://',
   timer_ended: 'Cronometrul a ajuns la zero: maratonul s-a încheiat și nu se mai poate adăuga sau îngheța timp.',
   protected_broadcaster: 'Contul lui Iceman nu poate fi scos dintre moderatori.',
+  only_broadcaster: 'Doar Iceman poate porni sau încheia subathonul.',
   not_eur: 'Se adună doar donațiile în euro.',
   bad_webhook: 'Linkul nu e un webhook de Discord. Îl copiezi din Discord: Setările serverului → Integrări → Webhook-uri.',
   no_webhook: 'Pune întâi linkul webhook-ului de Discord.',
@@ -478,6 +479,10 @@ const GROUPS: { id: string; name: string; title: string; lead: string; items: [s
 /** Cards shown together with a menu item, and old anchors that now live inside another card. */
 const BUNDLE: Record<string, string[]> = { vot: ['vot', 'provocari'], propuneri: ['propuneri', 'premii'], pilot: ['pilot', 'alerte'] };
 const ALIAS: Record<string, string> = { provocari: 'vot', premii: 'propuneri', alerte: 'pilot', stare: 'cronometru', inghetare: 'rapid', 'ora-dubla': 'rapid', acum: 'rapid', cod: 'rapid', overlay: 'overlay-piese' };
+/** Only Iceman (the broadcaster login) starts and ends the marathon; the database enforces it too. */
+const isIceman = () => !!S.me && !!S.status?.broadcaster_login && S.me.login.toLowerCase() === S.status.broadcaster_login.trim().toLowerCase();
+const onlyIceman = () => `<span class="muted">Doar ${esc(S.status?.broadcaster_login ?? 'Iceman')} poate porni sau încheia subathonul.</span>`;
+
 /** The menu item that shows an anchor: the item itself, the card bundled under it, or an old anchor. */
 function viewOf(raw: string): string | null {
   const id = ALIAS[raw] ?? raw;
@@ -850,7 +855,7 @@ function render() {
       </div>
       <p class="muted" style="margin:4px 0 0">Se deschide singură când Iceman e live după ora asta. Voi doar dați veto.${A.lastVoteDay ? ` Ultima rundă automată: ${esc(A.lastVoteDay)}.` : ''}</p>
       <h3 class="h3s" style="margin-top:18px">Pornirea maratonului</h3>
-      <label style="display:flex;align-items:center;gap:10px;min-height:44px;margin-top:6px;cursor:pointer"><input type="checkbox" style="width:22px;height:22px;flex:none" id="apAutoStart" ${A.autoStart ? 'checked' : ''}> Cronometrul pornește singur la ora de start (${when(t.starts_at)})</label>
+      <label style="display:flex;align-items:center;gap:10px;min-height:44px;margin-top:6px;cursor:pointer"><input type="checkbox" style="width:22px;height:22px;flex:none" id="apAutoStart" ${A.autoStart ? 'checked' : ''}${isIceman() ? '' : ' disabled'}> Cronometrul pornește singur la ora de start (${when(t.starts_at)})</label>${isIceman() ? '' : `<p style="margin:0">${onlyIceman()}</p>`}
       <div class="row"><label class="inline">Ore pe cronometru la start<input class="field" type="number" id="apStartHours" step="0.5" min="0.5" value="${esc(A.startHours ?? 24)}"></label></div>
       <p class="muted" style="margin:4px 0 0">Altfel: «Pornește acum» din PREGĂTIRE → Start.</p>
       <div class="row"><button class="btn-primary" data-act="autoSave">Salvează</button>${A.updatedBy ? `<span class="muted">Ultima schimbare: ${esc(A.updatedBy)}, ${when(A.updatedAt)}</span>` : ''}</div>
@@ -928,13 +933,13 @@ function render() {
       </div>
       ${live || t.status === 'ended' ? `<p class="muted">Pornit la ${when(t.starts_at)} · final programat ${when(t.scheduled_end)}.</p>` : `
         <div class="row">
-          <label class="inline">Start<input class="field" type="datetime-local" id="startAt" value="${toLocal(t.starts_at)}"></label>
+          <label class="inline">Start<input class="field" type="datetime-local" id="startAt" value="${toLocal(t.starts_at)}"${S.auto?.autoStart && !isIceman() ? ' disabled title="Pornire automată: doar Iceman mută startul"' : ''}></label>
           <label class="inline">Final programat<input class="field" type="datetime-local" id="endAt" value="${toLocal(t.scheduled_end)}"></label>
           <button class="btn-ghost" data-act="schedule">Salvează</button>
         </div>
         <div class="row">
           <label class="inline">Ore la start<input class="field" type="number" id="startHours" value="${esc(S.auto?.startHours ?? 24)}" step="0.5"></label>
-          <button class="btn-primary" data-act="start">Pornește acum</button>
+          ${isIceman() ? '<button class="btn-primary" data-act="start">Pornește acum</button>' : `<button class="btn-primary" disabled>Pornește acum</button>${onlyIceman()}`}
         </div>`}
     </section>`,
     // M2: ending is irreversible, so it lives apart from the time buttons and asks for a typed word.
@@ -943,7 +948,7 @@ function render() {
       <h2>Încheiere</h2>
       ${live
         ? `<p style="margin:0">Oprește cronometrul pentru totdeauna. Nu se poate anula.</p>
-           <div class="row"><button class="btn-ghost btn-danger" data-act="end">Încheie subathonul…</button></div>`
+           <div class="row">${isIceman() ? '<button class="btn-ghost btn-danger" data-act="end">Încheie subathonul…</button>' : `<button class="btn-ghost btn-danger" disabled>Încheie subathonul…</button>${onlyIceman()}`}</div>`
         : `<p class="muted" style="margin:0">Butonul de încheiere apare aici doar cât timp cronometrul merge.</p>`}
     </section>`,
     'comunitar': () => `
@@ -1120,7 +1125,8 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     if (demoApi) { say('În demo ești conectat ca icemanlucky (moderator).'); return; }
     await db.auth.signOut(); void load();
   },
-  schedule: () => call('mod_set_schedule', { p_starts_at: fromLocal(val('startAt')), p_scheduled_end: fromLocal(val('endAt')) }, 'Programul a fost salvat.'),
+  // A locked start field (auto start on, not Iceman) sends the stored start unchanged, to the second.
+  schedule: () => call('mod_set_schedule', { p_starts_at: (document.getElementById('startAt') as HTMLInputElement | null)?.disabled ? S.timer?.starts_at ?? null : fromLocal(val('startAt')), p_scheduled_end: fromLocal(val('endAt')) }, 'Programul a fost salvat.'),
   start: () => confirm(`Pornești cronometrul acum cu ${num('startHours')} ore?`) &&
     call('mod_start_timer', { p_hours: num('startHours'), p_scheduled_end: S.timer?.scheduled_end ?? null }, 'Subathonul a pornit!'),
   add: (el) => call('mod_add_time', { p_minutes: Number(el.dataset.min) }, `${el.dataset.min} min adăugate.`),

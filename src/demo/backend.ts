@@ -303,6 +303,8 @@ export class DemoBackend {
   private readonly CHANNEL: string;
   /** The sponsor showcase (/demo): busier seed, see enrich(). */
   readonly rich: boolean;
+  /** `?demo&as=mod`: signed in as a plain moderator, not Iceman (start, end and auto start refused). */
+  readonly asMod = typeof location !== 'undefined' && new URLSearchParams(location.search).get('as') === 'mod';
 
   /** `variant` picks a separate copy (e.g. 'pitch'); by default it follows ?demo=… in the address. */
   constructor(variant: string = VARIANT) {
@@ -931,7 +933,7 @@ export class DemoBackend {
     const title = (id: number) => s.challenges.find((c) => c.id === id)?.title ?? '';
     const toCh = (c: DemoChallenge) => ({ id: c.id, title: c.title, level: c.level, category: c.category, status: c.status, scheduled_for: c.scheduledFor });
     return {
-      me: { login: 'icemanlucky', is_moderator: true },
+      me: { login: this.asMod ? 'modi' : 'icemanlucky', is_moderator: true },
       status: { broadcaster_login: 'icemanlucky', broadcaster_connected: s.streamerConnected, connect_url: '#connect-demo' },
       timer: {
         status: s.timer.status, stream_online: s.timer.streamOnline,
@@ -971,14 +973,14 @@ export class DemoBackend {
     const ms = (iso: string | null) => (iso ? Date.parse(iso) : null);
     switch (fn) {
       case 'mod_set_schedule': return this.setSchedule(ms(a.p_starts_at), ms(a.p_scheduled_end));
-      case 'mod_start_timer': return this.startTimer(Number(a.p_hours), ms(a.p_scheduled_end));
+      case 'mod_start_timer': if (this.asMod) fail('only_broadcaster'); return this.startTimer(Number(a.p_hours), ms(a.p_scheduled_end));
       case 'mod_add_time': return this.addTime(Number(a.p_minutes));
       case 'mod_freeze': return this.freeze(Number(a.p_minutes));
       case 'mod_double_hour': return this.doubleHour(ms(a.p_from) ?? Date.now(), Number(a.p_minutes) || 60, a.p_sponsor ?? null);
       case 'mod_set_prizes': return this.setPrizes(a.p_prizes);
       case 'mod_code_show': return this.codeShow(a.p_sponsor ?? null, Number(a.p_minutes) || 10);
       case 'mod_code_end': return this.codeEnd();
-      case 'mod_end_timer': return this.endTimer();
+      case 'mod_end_timer': if (this.asMod) fail('only_broadcaster'); return this.endTimer();
       case 'mod_open_round': return this.openRound(a.p_challenges, Number(a.p_minutes) || 60);
       case 'mod_close_round': return this.closeRound(Number(a.p_round));
       case 'mod_set_challenge': return this.setChallenge(Number(a.p_id), a.p_status, a.p_scheduled_for, a.p_clip);
@@ -1009,6 +1011,7 @@ export class DemoBackend {
       case 'mod_autopilot_set': return this.mutate((s) => {
         const ap = this.autopilotOf(s);
         const p = a.p ?? {};
+        if (this.asMod && 'autoStart' in p && !!p.autoStart !== !!ap.autoStart) fail('only_broadcaster');
         if ('discordWebhook' in p) {
           const hook = String(p.discordWebhook ?? '').trim();
           if (hook && !/^https:\/\/(discord\.com|discordapp\.com|canary\.discord\.com)\/api\/webhooks\/\d+\/[\w-]+$/.test(hook)) fail('bad_webhook');

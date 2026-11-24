@@ -165,7 +165,7 @@ Format: **entry** · steps · files · calls · ✓ success · ✗ expected erro
 
 **M1 · Log in** · `/m` → `/mod/` → «Conectează-te cu Twitch» → back → `load()` reads `is_moderator`, timer, stats, rounds, suggestions, prizes, mods, goals, wheel, codes, bingo, names, health, lines, chat status. Not a moderator → «Fără acces». Status bar: LIVE/offline, clock, running/frozen/Ora dublă, four connection dots (EventSub, watch time, TipeeeStream, state cron), the moderator.
 **M2 · Navigation** · grouped menu (Live · Conținut · Jocuri · Oameni · Sponsori · Overlay), `#section` deep links open the right page and scroll.
-**M3 · Before the start** · «Program»: `mod_set_schedule(starts_at, scheduled_end)`. «Pornește acum»: confirm → `mod_start_timer(hours, scheduled_end)` (`start_timer` refuses ≤ 0).
+**M3 · Before the start** · «Program»: `mod_set_schedule(starts_at, scheduled_end)`. «Pornește acum»: confirm → `mod_start_timer(hours, scheduled_end)` (`start_timer` refuses ≤ 0). Start, end, auto start and moving the start while auto start is on: broadcaster only (`only_broadcaster`, 20261202100000).
 **M4 · Timer** · `mod_add_time(±min)` (buttons +1/+5/+10/−5 and custom), `mod_freeze(min)`, `mod_freeze_until(date)`, `mod_unfreeze` (confirm), `mod_end_timer` (confirm). Each click is one request since `5b2df7e`.
 **M5 · Ora dublă** · `mod_double_hour(from, minutes, sponsor)` or «Acum».
 **M6 · «Acum pe stream» note** · `mod_set_note(text, minutes)`.

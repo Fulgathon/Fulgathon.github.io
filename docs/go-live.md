@@ -98,7 +98,7 @@ Dashboard: https://supabase.com/dashboard/project/yvbxtsuddjqqoogdoqrx
 
 ## 3. Going live
 
-On `/mod` → **Pornește acum** with the starting hours. From then on:
+Iceman, signed in on `/mod` → **Pornește acum** with the starting hours (only the broadcaster login can start or end). From then on:
 
 | What | How it works |
 | --- | --- |
