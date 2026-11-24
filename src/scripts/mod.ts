@@ -71,8 +71,6 @@ const errors: Record<string, string> = {
   bad_url: 'Un link nu e valid: trebuie să înceapă cu https://.',
   bad_tier: 'Nivel necunoscut.',
   bad_sponsor: 'O dată nu e validă.',
-  rehearsal_off: 'Repetiția nu e pornită (sau s-a terminat). Apasă «Pornește repetiția».',
-  rehearsal_while_live: 'Maratonul e LIVE: repetiția merge doar înainte de start.',
   test_running: 'Un test merge deja.',
   demo_test: 'În demo totul e deja de probă: modul test e pentru site-ul real.',
   bad_tasks: 'Lista nu e bună: suma între 0 și 10.000 €, sarcina între 1 și 60 de litere, cel mult 8.',
@@ -209,8 +207,6 @@ let S: {
   /** The open menu item (one page each) and the open tab of «Control live». */
   view: string;
   liveTab: 'timp' | 'freeze' | 'double' | 'code' | 'note';
-  /** «Repetiție»: the practice clock for testing the overlay in OBS (public_state part). */
-  rehearsal: any;
   /** «Mod test»: the whole site on fake data (public_state part 'test'). */
   test: { on: boolean; until: string; startedAt: string; hardUntil: string | null; by: string | null; streamForced: boolean } | null;
   /** «Donează și alegi» (public_state part 'tasks'). */
@@ -223,7 +219,7 @@ let S: {
   spEdit: number | 'new' | null;
   /** «Runda de vot»: the entry being swapped in the open round. */
   rSwap: number | null;
-} = { rSwap: null, rehearsal: null, test: null, tasks: null, tasksDraft: null, sceneBg: null, sponsors: [], spEdit: null, auto: null, view: 'rapid', liveTab: 'timp', page: 'azi', chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, together: null, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
+} = { rSwap: null, test: null, tasks: null, tasksDraft: null, sceneBg: null, sponsors: [], spEdit: null, auto: null, view: 'rapid', liveTab: 'timp', page: 'azi', chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, together: null, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
 /** Bingo phase (as private.bingo_phase): moderators open and close it; no ticks until the close (owner, 24 Nov). */
 const bingoPhase = (): 'soon' | 'open' | 'closed' => {
   const B = S.bingo;
@@ -281,7 +277,7 @@ async function load() {
     S.auto = demoApi.rpc('mod_autopilot', {});
     S.sponsors = (demoApi.rpc('mod_sponsors', {}) as any[]) ?? [];
     const site = demoApi.toSiteData();
-    S.now = site.now; S.together = site.together; S.rehearsal = site.rehearsal ?? null; S.test = null; S.tasks = site.tasks ?? null; S.sceneBg = site.scene?.bg ?? null;
+    S.now = site.now; S.together = site.together; S.test = null; S.tasks = site.tasks ?? null; S.sceneBg = site.scene?.bg ?? null;
     S.lines = site.lines; S.smallDonation = site.smallDonation;
     S.chat = demoApi.rpc('mod_chat_status', {}) as typeof S.chat;
     if (!S.draft.length || S.draft.some((id) => !S.pool.find((p) => p.id === id))) autoDraft();
@@ -313,7 +309,7 @@ async function load() {
   S.auto = (await (db as any).rpc('mod_autopilot')).data ?? null;
   S.sponsors = ((await (db as any).rpc('mod_sponsors')).data as any[]) ?? [];
   const ps = (await (db as any).rpc('public_state', { p_have: {} })).data?.parts ?? {};
-  S.now = ps.now ?? null; S.together = ps.together ?? null; S.rehearsal = ps.rehearsal ?? null; S.test = ps.test?.on ? ps.test : null;
+  S.now = ps.now ?? null; S.together = ps.together ?? null; S.test = ps.test?.on ? ps.test : null;
   S.sceneBg = ps.scene?.bg ?? null;
   S.tasks = ps.tasks ? { menu: (ps.tasks.menu ?? []).map((m: any) => ({ price: Number(m.price), title: String(m.title) })), queue: (ps.tasks.queue ?? []).map((q: any) => ({ id: Number(q.id), price: Number(q.price), title: String(q.title), name: String(q.name), at: Date.parse(q.at) })), pending: Number(ps.tasks.pending) || 0 } : null;
   S.lines = ps.lines?.groups ?? {}; S.smallDonation = Number(ps.lines?.smallDonation) || 10;
@@ -898,26 +894,6 @@ function tasksHtml(): string {
   </section>`;
 }
 
-// «Repetiție»: Iceman tests the overlay in OBS before the marathon, without going live.
-function rehearsalHtml(): string {
-  const r = S.rehearsal;
-  const now = Date.now();
-  // public_state sends ISO dates; the demo keeps epoch ms.
-  const at = (x: unknown) => (typeof x === 'number' ? x : x ? Date.parse(String(x)) : 0);
-  const iso = (x: unknown) => new Date(at(x)).toISOString();
-  const on = !!r?.until && at(r.until) > now;
-  const liveNow = S.timer?.status === 'live' && !demoApi;
-  const frozen = on && at(r.pausedUntil) > now;
-  const dbl = on && at(r.doubleUntil) > now;
-  const b = (a: string, label: string, m?: number, pri = false) => `<button class="${pri ? 'btn-primary' : 'btn-ghost'}" data-act="rehearsal" data-a="${a}"${m ? ` data-m="${m}"` : ''}>${label}</button>`;
-  return `<h3 class="h3s" style="margin-top:18px">Repetiție în OBS (fără LIVE)</h3>
-    <p class="muted" style="margin:4px 0 0">Un ceas de test, cu eticheta «TEST», 2 ore. Nu atinge cronometrul real, statisticile sau feed-ul. Donațiile TipeeeStream din timpul repetiției apar și ele, fără să conteze.</p>
-    ${liveNow ? '<p class="muted">Maratonul e LIVE: repetiția nu mai e nevoie.</p>' : on ? `
-      <div class="states" style="margin-top:10px"><span class="pill-s">REPETIȚIE PÂNĂ LA ${hmRo(iso(r.until))}</span>${frozen ? `<span class="pill-s">ÎNGHEȚAT PÂNĂ LA ${hmRo(iso(r.pausedUntil))}</span>` : ''}${dbl ? `<span class="pill-s">ORA DUBLĂ PÂNĂ LA ${hmRo(iso(r.doubleUntil))}</span>` : ''}</div>
-      <div class="row">${b('donation', 'Donație test 10 €', 0, true)}${b('gift', 'Val de 20 subs cadou')}${frozen ? b('unfreeze', 'Dezgheață') : b('freeze', 'Îngheață 2 min', 2)}${dbl ? b('nodouble', 'Oprește Ora dublă') : b('double', 'Ora dublă 5 min', 5)}${b('stop', 'Oprește repetiția')}</div>`
-    : `<div class="row">${b('start', 'Pornește repetiția', 0, true)}</div>`}`;
-}
-
 // ---- Sponsori: every field a sponsor may need, logos uploaded to Storage --------------------
 const SP_TIERS: [string, string][] = [['main', 'Partener principal'], ['partner', 'Partener'], ['supporter', 'Susținător']];
 const SP_SOCIALS: [string, string][] = [['website', 'Site'], ['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['youtube', 'YouTube'], ['facebook', 'Facebook'], ['discord', 'Discord']];
@@ -1141,21 +1117,12 @@ function overlayHtml(): string {
     <h2>Piesele overlay-ului, una câte una</h2>
     <p class="muted" style="margin-top:0">Fiecare piesă = un Browser Source în OBS, la mărimea scrisă (pentru canvas 2K, 2560×1440; în paranteză, pentru 1920×1080). Piesa se potrivește singură mărimii sursei. O așezi unde vrei în scena fiecărui joc; în alte scene: «Add Existing».</p>
     <p class="muted">«De așezat» = piesa conturată, cu date de exemplu.</p>
-    ${rehearsalHtml()}
     <h3 class="h3s" style="margin-top:18px">Linkurile pieselor</h3>
     <ul class="list">${overlayPieces.map((x, i) => `<li style="align-items:flex-start"><span class="grow"><strong>${esc(x.label)}</strong> <span class="pill off">${Math.round(x.w * 4 / 3)} × ${Math.round(x.h * 4 / 3)}</span> <span class="muted">(${x.w} × ${x.h})</span>${x.key ? ' <span class="pill warn">cheie privată</span>' : ''}<br><span class="muted">${esc(x.what)}</span>
       <input class="field" readonly value="${esc(piece(x.id, !!x.key))}" id="ovp${i}" aria-label="Linkul pentru ${esc(x.label)}" style="width:100%;margin-top:6px"></span>
       <span class="pair" style="flex-direction:column;align-items:stretch"><button class="btn-ghost" data-act="copyOvp" data-i="${i}">Copiază</button><a class="btn btn-ghost" href="${esc(base + '?demo&frame=1&part=' + x.id)}" target="_blank" rel="noopener">De așezat</a></span></li>`).join('')}</ul>
     <p class="muted">Opțional la final: <strong>&amp;scale=1.2</strong> sau <strong>&amp;calm=1</strong>.</p>
-    <h3 class="h3s" style="margin-top:18px">Testează pe stream</h3>
-    <p class="muted" style="margin:4px 0 0">Apare în overlay în câteva secunde, cu numele «TEST». Nu adaugă timp.</p>
-    <div class="row">
-      <button class="btn-ghost" data-act="ovTest" data-kind="event">Sub, biți și donație</button>
-      <button class="btn-ghost" data-act="ovTest" data-kind="gift">Val de subs cadou (viscol)</button>
-      <button class="btn-ghost" data-act="ovTest" data-kind="moments">Momentele</button>
-      <button class="btn-ghost" data-act="ovTest" data-kind="code">Codul secret</button>
-      <button class="btn-ghost" data-act="ovTest" data-kind="promo">Linia partenerului</button>
-    </div>
+    <p class="muted">Ca să le vezi în acțiune: SETĂRI → Mod test.</p>
   </section>`;
   const bg = S.sceneBg;
   return pieces + `<section class="card wide" id="overlay">
@@ -1786,9 +1753,6 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     }
     return call('mod_test', { p_action: a, p: JSON.parse(el.dataset.p || '{}') }, el.dataset.ok || 'Gata.');
   },
-  rehearsal: (el) => call('mod_rehearsal', { p_action: el.dataset.a, p_minutes: Number(el.dataset.m) || null },
-    ({ start: 'Repetiția a pornit. Overlay-ul arată ceasul de test în câteva secunde.', stop: 'Repetiția s-a oprit.' } as Record<string, string>)[el.dataset.a ?? ''] ?? 'Trimis. Apare în overlay în câteva secunde.'),
-  ovTest: (el) => call('mod_overlay_test', { p_kind: el.dataset.kind }, 'Test trimis. Apare în overlay în câteva secunde.'),
   copyOvp: (el) => { const v = val(`ovp${el.dataset.i}`); void navigator.clipboard?.writeText(v).then(() => say('Link copiat.')); },
   sceneClear: () => confirm('Scoți fotografia de fundal? Scena rămâne transparentă.') && call('mod_scene_set', { p_background: null }, 'Fotografia a fost scoasă.'),
   copyOv: (el) => { const v = val(`ov${el.dataset.i}`); void navigator.clipboard?.writeText(v).then(() => say('Link copiat. Pune-l în OBS ca Browser Source, 1920×1080.')); },
