@@ -121,10 +121,15 @@ function drawSponsors() {
   }
 }
 
+// The loader's snowflake turns forever: take it out once it has faded (0.45 s), so nothing keeps animating.
+const boot = document.querySelector('.boot');
+let bootGone = false;
 function render() {
   // Until the first live data: the ice loader (CSS .is-loading), never «Se încarcă» text on screen.
-  document.documentElement.classList.toggle('is-loading', data.loaded === false);
-  if (data.loaded !== false) document.documentElement.classList.remove('booting');
+  const root = document.documentElement;
+  root.classList.toggle('is-loading', data.loaded === false);
+  if (data.loaded !== false) root.classList.remove('booting');
+  if (!bootGone && !root.classList.contains('booting')) { bootGone = true; window.setTimeout(() => boot?.remove(), 600); }
   drawSponsors();
   const v = derive(state, data);
   const vals = v as unknown as AnyVals;

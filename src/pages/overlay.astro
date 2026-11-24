@@ -151,7 +151,8 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
       .tm-sep::before, .tm-sep::after { content: ''; width: 5px; height: 5px; background: var(--ice); opacity: .75; }
       /* the minute bar */
       .tm-sweep { position: relative; z-index: 2; height: 2px; margin: 2px 0 0; background: #1A2230; }
-      .tm-sweep i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #1E6BFF, var(--ice) 70%, #FFFFFF); transition: width 1s linear; }
+      /* scaleX, not width: the bar drains every second while LIVE without a layout per frame. */
+      .tm-sweep i { display: block; height: 100%; width: 100%; transform-origin: 0 50%; background: linear-gradient(90deg, #1E6BFF, var(--ice) 70%, #FFFFFF); transition: transform 1s linear; }
 
       /* icemanlucky.ro band, always on, with a rotating line on the right */
       .tm-url { position: relative; z-index: 4; margin: 4px -12px 0 -16px; padding: 0 12px 0 16px; height: 22px; display: flex; align-items: center; justify-content: space-between; gap: 8px;
@@ -194,13 +195,18 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
           radial-gradient(90px 50px at 0% 0%, rgba(223, 246, 255, .34), transparent 70%),
           radial-gradient(110px 60px at 100% 100%, rgba(223, 246, 255, .26), transparent 70%),
           url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23DFF6FF' stroke-width='1.2' stroke-linecap='square' opacity='.3'%3E%3Cpath d='M20 8v24M8 20h24M11 11l18 18M29 11L11 29M20 12l-4-4M20 12l4-4M20 28l-4 4M20 28l4 4'/%3E%3Cpath d='M86 70v16M78 78h16M80 72l12 12M92 72L80 84'/%3E%3Cpath d='M104 18l-8 6M96 24l-6 10M90 34l-10 4M60 100l8-10M68 90l12-4M80 86l6-10M40 60l-10 6M30 66l-4 10'/%3E%3C/g%3E%3C/svg%3E"); }
+      /* transform, not left/top: the sweep and the falling crystals stay on the compositor (no layout per frame).
+         translateX(533.33%) of its own 30% width = the old left: -40% → 120%. */
       .tm-shine { position: absolute; top: 0; bottom: 0; left: -40%; width: 30%; background: linear-gradient(105deg, transparent, rgba(223, 246, 255, .14), transparent); transform: skewX(-18deg); animation: tmshine 16s ease-in-out infinite; }
-      @keyframes tmshine { 0%, 70% { left: -40%; } 100% { left: 120%; } }
+      @keyframes tmshine { 0%, 70% { transform: translateX(0) skewX(-18deg); } 100% { transform: translateX(533.333%) skewX(-18deg); } }
       .tm-ice { position: absolute; left: 4px; top: -1px; width: calc(100% - 4px); height: 12px; }
-      .tm-frost i { position: absolute; width: 3px; height: 3px; background: #FFFFFF; opacity: 0; box-shadow: 0 0 4px #DFF6FF; animation: tmsnow 9s linear infinite; }
+      .tm-frost i { position: absolute; top: 6px; width: 3px; height: 3px; background: #FFFFFF; opacity: 0; box-shadow: 0 0 4px #DFF6FF; animation: tmsnow 9s linear infinite; }
       .tm-frost i:nth-of-type(1) { left: 14%; animation-delay: 0s; } .tm-frost i:nth-of-type(2) { left: 52%; animation-delay: 3s; } .tm-frost i:nth-of-type(3) { left: 86%; animation-delay: 6s; }
       .tm-frost i:nth-of-type(n+4) { display: none; }
-      @keyframes tmsnow { 0% { top: 6px; opacity: 0; } 15% { opacity: .9; } 100% { top: 100px; opacity: 0; transform: translateX(10px); } }
+      @keyframes tmsnow { 0% { transform: translate(0, 0); opacity: 0; } 15% { opacity: .9; } 100% { transform: translate(10px, 94px); opacity: 0; } }
+      /* The frost and fire layers are invisible (opacity 0) outside their state: pause their loops there. */
+      .ov-timer .tm-frost *, .ov-timer .tm-fire * { animation-play-state: paused; }
+      .ov-timer[data-state="frozen"] .tm-frost *, .ov-timer[data-state="double"] .tm-fire * { animation-play-state: running; }
       .ov-timer[data-state="frozen"] { border-color: #BFE9FF; box-shadow: 0 8px 24px rgba(0, 0, 0, .45), inset 0 0 22px rgba(191, 233, 255, .18), 0 0 18px rgba(191, 233, 255, .2); }
       .ov-timer[data-state="frozen"]::before { background: linear-gradient(180deg, #FFFFFF, #DFF6FF); }
       .ov-timer[data-state="frozen"] .tm-frost { opacity: 1; }
@@ -263,7 +269,7 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
       @keyframes tmheatin { 0% { background: radial-gradient(ellipse at 50% 55%, rgba(255, 181, 71, .35), transparent 72%); } }
 
       .ov-timer[data-state="upcoming"] .tm-tag { background: transparent; box-shadow: inset 0 0 0 1px var(--ice); color: #8FE4FF; }
-      .ov-timer[data-state="upcoming"] .tm-sweep i { width: 100% !important; opacity: .35; }
+      .ov-timer[data-state="upcoming"] .tm-sweep i { transform: none !important; opacity: .35; }
       .ov-timer[data-state="ended"] .tm-tag { background: #2A3445; color: #C9D2DF; }
       .ov-timer[data-state="ended"] .sl b { background-image: linear-gradient(180deg, #C9D2DF, #6F7B8D); }
       .ov-timer[data-state="ended"] .tm-sep { animation: none; }

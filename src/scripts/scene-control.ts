@@ -106,11 +106,12 @@ function drawTimer() {
   const test = !!data.testMode || rehearsing(data);
   const tag = $('[data-tag]');
   setText(tag, st === 'double' ? '×2 ORA DUBLĂ' : st === 'frozen' ? 'ÎNGHEȚAT' : st === 'ended' ? 'TIMPUL A EXPIRAT' : st === 'upcoming' ? 'ÎNCEPE ÎN' : test ? 'TEST' : 'LIVE');
-  tag.dataset.state = test && st === 'live' ? 'test' : st;
+  const tagState = test && st === 'live' ? 'test' : st;
+  if (tag.dataset.state !== tagState) tag.dataset.state = tagState;   // only on a change: the attribute restyles the whole scene
   setText($('[data-by]'), st === 'double' && d.doubleSponsor ? `de la ${d.doubleSponsor}` : '');
   [v.dd, v.hh, v.mm, v.ss].forEach((x, i) => setText($(`[data-cg="${i}"]`), x));
   if (root.dataset.state !== st) { if (st === 'frozen') freezeIce(true); else if (root.dataset.state === 'frozen') freezeIce(false); }
-  root.dataset.state = st;
+  if (root.dataset.state !== st) root.dataset.state = st;
   // The whole sum raised so far (not the step to the next milestone).
   setText($('[data-raised]'), data.raised || '0 €');
 }
@@ -174,6 +175,7 @@ const knownTasks = new Set<number>();
 let testReq: { item: { id: number; price: number; title: string; name: string; at: number }; until: number } | null = null;
 let tasksFirst = true;
 let menuKey = '';
+let queueKey = '';
 function drawTasks() {
   const t = data.tasks;
   const menu = t?.menu ?? [];
@@ -190,6 +192,11 @@ function drawTasks() {
   const fresh = queue.filter((q) => !knownTasks.has(q.id));
   queue.forEach((q) => knownTasks.add(q.id));
   const box = $('[data-queue]');
+  // Same requests, same count and same box size as last time: leave the list as it is (no rebuild, no
+  // measuring every poll, and a «new» highlight still running isn't cut short).
+  const qk = JSON.stringify([queue.map((q) => [q.id, q.price, q.name, q.title]), pending, box.clientHeight]);
+  if (qk === queueKey && !fresh.length) { tasksFirst = false; return; }
+  queueKey = qk;
   const item = (q: (typeof queue)[number]) => `<div class="scc-q${!tasksFirst && fresh.includes(q) ? ' new' : ''}"><b>${euro(q.price)}</b><span><i>${esc(q.name)}</i> · ${esc(q.title)}</span></div>`;
   if (!queue.length) box.innerHTML = '<p class="scc-more">Nimic deocamdată.</p>';
   else {
@@ -252,35 +259,46 @@ function fall(n: number, big = 1, fast = 1) {
 }
 function burst(b: { x: number; y: number; w: number; h: number }, n: number, spd: number, col: string) {
   const [x0, y0, w, h] = centerOf(b);
+  const rgb = rgbOf(col);
   for (let i = 0; i < n; i++) {
     const an = Math.random() * Math.PI * 2, sp = (Math.random() * 0.7 + 0.3) * spd;
-    P.push({ k: 'b', x: x0 + (Math.random() - 0.5) * w * 0.6, y: y0 + (Math.random() - 0.5) * h * 0.6, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp - 1.2, r: Math.random() * 2.2 + 1.2, col, ph: 0, life: 1 });
+    P.push({ k: 'b', x: x0 + (Math.random() - 0.5) * w * 0.6, y: y0 + (Math.random() - 0.5) * h * 0.6, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp - 1.2, r: Math.random() * 2.2 + 1.2, col: rgb, ph: 0, life: 1 });
   }
 }
 function glints(n: number) {
   for (let i = 0; i < n; i++) P.push({ k: 'g', x: Math.random() * W, y: -Math.random() * H * 0.5 - 6, r: Math.random() * 1.4 + 1, v: Math.random() * 0.9 + 1.1, ph: Math.random() * 6, life: 1 });
 }
+// Colour as a fixed rgb() and the alpha as globalAlpha: no new colour string per flake per frame.
+const rgbOf = (col: string) => col.replace(/rgba\((\d+),(\d+),(\d+),A\)/, 'rgb($1,$2,$3)');
 function loop() {
   if (Math.random() < 0.05) P.push({ k: 'f', x: Math.random() * W, y: -6, r: Math.random() * 1.6 + 0.9, v: Math.random() * 0.45 + 0.45, a: Math.random() * 0.2 + 0.15, ph: Math.random() * 6, life: 1, amb: true });
   wind *= 0.985;
   cx.clearRect(0, 0, W, H);
-  P = P.filter((p) => {
+  // Update, draw and drop finished flakes in place (no new array every frame).
+  let keep = 0;
+  for (let i = 0; i < P.length; i++) {
+    const p = P[i];
     p.ph += 0.03;
     if (p.k === 'b') {
       p.vx! *= 0.95; p.vy = p.vy! * 0.95 + 0.09; p.x += p.vx! + wind * 1.8; p.y += p.vy; p.life -= 0.008;
-      cx.fillStyle = p.col!.replace('A', (p.life * 0.95).toFixed(2));
+      cx.fillStyle = p.col!;
+      cx.globalAlpha = Math.max(0, p.life * 0.95);
     } else if (p.k === 'g') {
       p.y += p.v!; p.x += Math.sin(p.ph) * 0.55 + wind * 1.8;
       const tw = 0.45 + 0.55 * Math.abs(Math.sin(p.ph * 2.4));
-      cx.fillStyle = `rgba(190,240,255,${tw})`;
+      cx.fillStyle = 'rgb(190,240,255)';
+      cx.globalAlpha = tw;
       if (tw > 0.85) { cx.fillRect(p.x - p.r * 2.4, p.y - 0.7, p.r * 4.8, 1.4); cx.fillRect(p.x - 0.7, p.y - p.r * 2.4, 1.4, p.r * 4.8); }
     } else {
       p.y += p.v! * (1 + Math.abs(wind) * 0.35); p.x += wind * (p.amb ? 1.8 : 2.5) + Math.sin(p.ph * 0.4) * 0.28;
-      cx.fillStyle = `rgba(223,246,255,${p.a})`;
+      cx.fillStyle = 'rgb(223,246,255)';
+      cx.globalAlpha = p.a!;
     }
     cx.beginPath(); cx.arc(p.x, p.y, p.r, 0, 7); cx.fill();
-    return p.life > 0 && p.y < H + 8 && p.x > -60 && p.x < W + 60;
-  });
+    if (p.life > 0 && p.y < H + 8 && p.x > -60 && p.x < W + 60) P[keep++] = p;
+  }
+  P.length = keep;
+  cx.globalAlpha = 1;
   if (P.length > 1600) P.splice(0, P.length - 1600);
   requestAnimationFrame(loop);
 }

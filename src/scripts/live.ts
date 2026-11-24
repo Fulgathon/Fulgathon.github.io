@@ -152,15 +152,28 @@ export class Live {
     this.meTimer = window.setInterval(() => { if (document.visibilityState === 'visible') void this.refreshMe(); }, 120_000);
   }
 
+  /** The public page's first public_state answer, requested by an inline script in <head> (index.astro). Used once. */
+  private async prefetched(): Promise<{ data: Json; sent: number; got: number } | null> {
+    const w = window as unknown as { __ps?: Promise<{ text: string; sent: number; got: number } | null> };
+    const pre = w.__ps;
+    if (!pre || Object.keys(this.versions).length) return null;
+    w.__ps = undefined;
+    const r = await pre;
+    if (!r?.text) return null;
+    try { return { data: JSON.parse(r.text), sent: r.sent, got: r.got }; } catch { return null; }
+  }
+
   /** Ask for the parts that changed; safe to call any time (one request at a time). */
   async poll() {
     if (this.polling) return;
     this.polling = true;
-    const sent = Date.now();
+    let sent = Date.now();
     try {
-      const { data, error } = await this.anon('public_state', { p_have: this.versions });
+      const pre = await this.prefetched();
+      if (pre) sent = pre.sent;
+      const { data, error } = pre ? { data: pre.data, error: null } : await this.anon('public_state', { p_have: this.versions });
       if (error || !data) throw error ?? new Error('no_data');
-      const got = Date.now();
+      const got = pre ? pre.got : Date.now();
       this.handlers.onClock?.(Date.parse(data.now) - (sent + got) / 2);
       this.failures = 0;
       this.handlers.onConn?.(0);

@@ -16,6 +16,7 @@ import AddTime from '../components/AddTime.astro';
 import Community from '../components/Community.astro';
 import Footer from '../components/Footer.astro';
 import DemoPanel from '../components/DemoPanel.astro';
+import { site } from '../data/site';
 
 const title = 'ICEMARATON · Subathonul de Crăciun al lui Icemanlucky';
 const description = 'ICEMARATON: subathonul de Crăciun al lui Icemanlucky pe Twitch. Fiecare sub e un fulg. Facem viscol.';
@@ -30,6 +31,16 @@ const ogUrl = new URL(ogImage.src, Astro.site);
     <meta charset="utf-8" />
     <!-- The loader never outstays 2.5 s: if the live data is slow the page shows anyway. -->
     <script is:inline>setTimeout(function () { document.documentElement.classList.remove('booting'); }, 2500);</script>
+    <!-- The first public_state call starts here, in parallel with the page's JS, instead of after it
+         (HTML → app → its modules → live.ts); live.ts picks up the answer (window.__ps). Not in ?demo. -->
+    <script is:inline define:vars={{ psUrl: `${site.supabase.url}/rest/v1/rpc/public_state`, psKey: site.supabase.publishableKey }}>
+      if (!/[?&]demo(=|&|$)/.test(location.search) && window.fetch) {
+        var sent = Date.now();
+        window.__ps = fetch(psUrl, { method: 'POST', headers: { apikey: psKey, 'Content-Type': 'application/json' }, body: '{"p_have":{}}' })
+          .then(function (r) { var got = Date.now(); return r.ok ? r.text().then(function (text) { return { text: text, sent: sent, got: got }; }) : null; })
+          .catch(function () { return null; });
+      }
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />

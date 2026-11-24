@@ -275,7 +275,7 @@ function drawTimer(v: ReturnType<typeof derive>, view: SiteData) {
   const sec = Number(v.ss) || 0;
   const bar = $('[data-sweep]');
   bar.style.transition = sec > lastSec ? 'none' : '';
-  bar.style.width = `${state === 'live' ? (sec / 59) * 100 : 100}%`;
+  bar.style.transform = `scaleX(${state === 'live' ? sec / 59 : 1})`;
   lastSec = sec;
 }
 
@@ -341,6 +341,7 @@ let lastStormBanner = 0;
 function giftWave(t: TickerItem) {
   const now = Date.now();
   gifts.push({ at: now, n: t.qty ?? 1 });
+  wakeSnow();
   const minute = gifts.filter((g) => now - g.at < 60_000).reduce((a, g) => a + g.n, 0);
   if (((t.qty ?? 0) >= 20 || minute >= 20) && now - lastStormBanner > 60_000) {
     lastStormBanner = now;
@@ -355,16 +356,21 @@ function snowAmount() {
 }
 
 // Snow canvas (only during gift waves, and on the pause scene; never with ?calm).
+// The frame loop runs only while there is snow to draw: a gift wave wakes it, and it
+// clears the canvas and stops once the wave is over (no work per frame on a quiet stream).
 const canvas = document.getElementById('ov-snow') as HTMLCanvasElement;
 const flakes = Array.from({ length: 260 }, () => ({ x: Math.random(), y: Math.random(), r: 1 + Math.random() * 2.6, v: 0.0008 + Math.random() * 0.0016, d: Math.random() * 2 - 1 }));
+let wakeSnow = () => {};
 function snow() {
   if (calm || piece) return;
   const ctx = canvas.getContext('2d')!;
   const w = (canvas.width = innerWidth), h = (canvas.height = innerHeight);
+  let running = false;
   const frame = () => {
     const amount = brb ? 0.18 : snowAmount();
     ctx.clearRect(0, 0, w, h);
     const n = Math.round(flakes.length * amount);
+    if (!n) { running = false; return; }
     ctx.fillStyle = '#FFFFFF';
     for (let i = 0; i < n; i++) {
       const f = flakes[i];
@@ -375,7 +381,8 @@ function snow() {
     }
     requestAnimationFrame(frame);
   };
-  requestAnimationFrame(frame);
+  wakeSnow = () => { if (!running) { running = true; requestAnimationFrame(frame); } };
+  wakeSnow();
 }
 
 // ---- Events from the feed --------------------------------------------------------

@@ -284,11 +284,20 @@ async function load() {
   }
   const { data: { session } } = await db.auth.getSession();
   if (!session) { S.me = null; return render(); }
-  const { data: me } = await db.from('viewers').select('login, is_moderator, is_subscriber').eq('id', session.user.id).maybeSingle();
-  S.me = me;
-  if (!me?.is_moderator) return render();
-
-  const [status, timer, stats, rounds, pool, scheduled, suggestions, prizes, mods, goals] = await Promise.all([
+  const meQuery = db.from('viewers').select('login, is_moderator, is_subscriber').eq('id', session.user.id).maybeSingle();
+  // Already known as a moderator (every live refresh): check the role in the same round trip as the data,
+  // instead of first. The first load (or after losing the role) still asks first.
+  const knownMod = !!S.me?.is_moderator;
+  if (!knownMod) {
+    const { data: me } = await meQuery;
+    S.me = me;
+    if (!me?.is_moderator) return render();
+  }
+  const anyDb = db as any;
+  // Everything /mod shows, requested at once (one round trip instead of a chain of ten).
+  const [meRes, [status, timer, stats, rounds, pool, scheduled, suggestions, prizes, mods, goals], [wheel, codes, okey, report], health, auto, sponsors, psRes, chat, [bItems, bSet, bStatus]] = await Promise.all([
+    knownMod ? meQuery : Promise.resolve(null),
+    Promise.all([
     db.rpc('mod_status'),
     db.from('timer').select('*').eq('id', 1).maybeSingle(),
     db.from('stats').select('*').eq('id', 1).maybeSingle(),
@@ -299,30 +308,37 @@ async function load() {
     db.from('spins').select('id, user_login, created_at, prizes(win_label, is_win)').is('fulfilled_at', null).order('created_at'),
     db.from('viewers').select('login, display_name').eq('is_moderator', true).order('login'),
     db.from('goals').select('title, threshold, unlocked_at, sponsor, done_at, clip_url, scheduled_for').order('position'),
+    ]),
+    Promise.all([
+      db.from('prizes').select('short_label, full_label, win_label, sponsor, is_win, weight').order('position'),
+      db.rpc('mod_codes'), db.rpc('mod_overlay_key'), db.rpc('mod_sponsor_report'),
+    ]),
+    anyDb.rpc('mod_health'), anyDb.rpc('mod_autopilot'), anyDb.rpc('mod_sponsors'),
+    anyDb.rpc('public_state', { p_have: {} }), anyDb.rpc('mod_chat_status'),
+    Promise.all([
+      db.from('bingo_items').select('id, label, happened_at, auto_rule').order('position'),
+      db.from('bingo_settings').select('opens_at, closes_at, prize, prize_sponsor').eq('id', 1).maybeSingle(),
+      db.rpc('mod_bingo_status'),
+    ]),
   ]);
-  const [wheel, codes, okey, report] = await Promise.all([
-    db.from('prizes').select('short_label, full_label, win_label, sponsor, is_win, weight').order('position'),
-    db.rpc('mod_codes'), db.rpc('mod_overlay_key'), db.rpc('mod_sponsor_report')
-  ]);
-  S.health = (await (db as any).rpc('mod_health')).data ?? null;
-  S.auto = (await (db as any).rpc('mod_autopilot')).data ?? null;
-  S.sponsors = ((await (db as any).rpc('mod_sponsors')).data as any[]) ?? [];
-  const ps = (await (db as any).rpc('public_state', { p_have: {} })).data?.parts ?? {};
+  if (meRes) {
+    S.me = meRes.data;
+    if (!S.me?.is_moderator) return render();
+  }
+  S.health = health.data ?? null;
+  S.auto = auto.data ?? null;
+  S.sponsors = (sponsors.data as any[]) ?? [];
+  const ps = psRes.data?.parts ?? {};
   S.now = ps.now ?? null; S.test = ps.test?.on ? ps.test : null;
   S.sceneBg = ps.scene?.bg ?? null;
   S.tasks = ps.tasks ? { menu: (ps.tasks.menu ?? []).map((m: any) => ({ price: Number(m.price), title: String(m.title) })), queue: (ps.tasks.queue ?? []).map((q: any) => ({ id: Number(q.id), price: Number(q.price), title: String(q.title), name: String(q.name), at: Date.parse(q.at) })), pending: Number(ps.tasks.pending) || 0 } : null;
   S.lines = ps.lines?.groups ?? {}; S.smallDonation = Number(ps.lines?.smallDonation) || 10;
-  S.chat = ((await (db as any).rpc('mod_chat_status')).data as typeof S.chat) ?? null;
+  S.chat = (chat.data as typeof S.chat) ?? null;
   S.wheel = (wheel.data ?? []) as typeof S.wheel;
   S.codes = (codes.data ?? []) as typeof S.codes;
   S.overlayKey = (okey.data as string | null) ?? null;
   S.report = report.data ?? null;
   S.goals = (goals.data ?? []) as typeof S.goals;
-  const [bItems, bSet, bStatus] = await Promise.all([
-    db.from('bingo_items').select('id, label, happened_at, auto_rule').order('position'),
-    db.from('bingo_settings').select('opens_at, closes_at, prize, prize_sponsor').eq('id', 1).maybeSingle(),
-    db.rpc('mod_bingo_status'),
-  ]);
   S.bingo = {
     opens_at: (bSet.data as any)?.opens_at ?? null, closes_at: bSet.data?.closes_at ?? null, prize: bSet.data?.prize ?? '', prize_sponsor: bSet.data?.prize_sponsor ?? null,
     items: (bItems.data ?? []) as any,
@@ -471,7 +487,7 @@ function healthHtml(h: any): string {
     : errs / Math.max(calls, 1) > 0.2 ? ['bad', 'Funcții (ultimele 30 min)', `${errs} erori din ${calls} apeluri. Ultima: ${h.httpErrors[0].status ?? 'fără răspuns'} ${ago(age(h.httpErrors[0].at))}.`]
     : ['warn', 'Funcții (ultimele 30 min)', `${errs} erori trecătoare din ${calls} apeluri (se reîncearcă singure).`]);
   const label: Record<string, string> = { ok: 'OK', warn: 'Atenție', bad: 'Problemă', off: 'Oprit' };
-  return rows.map(([c, name, text]) => `<div class="ci" title="${esc(text)}"><span class="dot ${c}" aria-label="${label[c]}"></span><span class="ci-n">${esc(name)}</span><span class="ci-t">${esc(text)}</span></div>`).join('');
+  return rows.map(([c, name, text]) => `<div class="ci" title="${esc(text)}"><span class="dot ${c}" role="img" aria-label="${label[c]}"></span><span class="ci-n">${esc(name)}</span><span class="ci-t">${esc(text)}</span></div>`).join('');
 }
 
 // ---- Layout: grouped by job (status bar on top, prism menu on the left) ----
