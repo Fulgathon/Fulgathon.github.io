@@ -1083,6 +1083,7 @@ function render() {
   const active = document.activeElement;
   if (active && app.contains(active) && /^(INPUT|SELECT|TEXTAREA)$/.test(active.tagName)) { deferred = true; return; }
   const isMod = !!S.me?.is_moderator;
+  if (shownView === S.view) { app.classList.remove('pg-in'); clearTimeout(enterTimer); }   // same page redrawn: no entrance again
   nav.hidden = !isMod;
   bar.innerHTML = barHtml();
   if (!S.me) {
@@ -1400,10 +1401,12 @@ const lastKpi: string[] = [];
 let inkFrom: { left: number; width: number } | null = null;
 function afterRender() {
   if (!S.me?.is_moderator) return;
+  const firstDraw = shownView === '';
   const pageChanged = shownView !== S.view;
   shownView = S.view;
   // 1. A new page comes in: title, then the cards one after another, then their rows.
-  if (pageChanged && !calmMod.matches) {
+  //    Not on the first draw after a reload (the loader just went away: content simply appears).
+  if (pageChanged && !firstDraw && !calmMod.matches) {
     app.querySelectorAll<HTMLElement>('.kpi, .mmain > .grid > .card, .dash > .card, .mmain > .card').forEach((c, i) => c.style.setProperty('--d', String(Math.min(i, 8))));
     app.classList.remove('pg-in'); void app.offsetWidth; app.classList.add('pg-in');
     clearTimeout(enterTimer);
