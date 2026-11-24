@@ -59,7 +59,9 @@ const errors: Record<string, string> = {
   bad_clip: 'Linkul clipului trebuie să înceapă cu https://',
   timer_ended: 'Cronometrul a ajuns la zero: maratonul s-a încheiat și nu se mai poate adăuga sau îngheța timp.',
   protected_broadcaster: 'Contul lui Iceman nu poate fi scos dintre moderatori.',
-  only_broadcaster: 'Doar Iceman poate porni sau încheia subathonul.',
+  only_broadcaster: 'Doar Iceman poate porni, prelungi sau încheia subathonul.',
+  extend_not_later: 'Finalul nou trebuie să fie după finalul programat de acum.',
+  extend_too_far: 'Se poate prelungi cel mult un an de acum.',
   round_full: 'O rundă are cel mult 8 provocări.',
   challenge_unavailable: 'Provocarea nu mai e disponibilă (e deja în rundă sau a fost folosită).',
   challenge_exists: 'Provocarea există deja în listă.',
@@ -620,7 +622,7 @@ const ALIAS: Record<string, string> = { parteneri: 'sponsori', provocari: 'vot',
 /** Only Iceman (the broadcaster login) starts and ends the marathon; the database enforces it too. */
 // During «Mod test» every moderator may (the database allows it too: it all goes back).
 const isIceman = () => !!S.test || (!!S.me && !!S.status?.broadcaster_login && S.me.login.toLowerCase() === S.status.broadcaster_login.trim().toLowerCase());
-const onlyIceman = () => `<span class="muted">Doar ${esc(S.status?.broadcaster_login ?? 'Iceman')} poate porni sau încheia subathonul.</span>`;
+const onlyIceman = () => `<span class="muted">Doar ${esc(S.status?.broadcaster_login ?? 'Iceman')} poate porni, prelungi sau încheia subathonul.</span>`;
 
 /** The menu item that shows an anchor: the item itself, the card bundled under it, or an old anchor. */
 function viewOf(raw: string): string | null {
@@ -924,6 +926,42 @@ function testCardHtml(): string {
   </section>`;
 }
 
+// «Prelungește» (owner, 25 Nov): while LIVE, Iceman moves the planned end later as often as he wants;
+// the clock gets the same extra time (mod_extend, migration 20261214100000). Nothing ends or restarts.
+const durRo = (ms: number) => {
+  const m = Math.max(0, Math.round(ms / 60000)), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60;
+  return d ? `${d} ${d === 1 ? 'zi' : 'zile'}${h ? ` ${h} h` : ''}` : h ? `${h} h${mm ? ` ${mm} min` : ''}` : `${mm} min`;
+};
+/** From where an extension counts: the planned end, or now if that already passed. */
+const extendBase = (t: Record<string, any>) => Math.max(t.scheduled_end ? Date.parse(t.scheduled_end) : 0, Date.now());
+// The date field has whole minutes; the planned end may have seconds. Count from its minute and send the
+// new end with the same seconds, so «+1 zi» is exactly 24 h on the clock (not 23 h 59 min 30 s).
+const extendSecs = (t: Record<string, any>) => extendBase(t) % 60_000;
+function extendPreview(t: Record<string, any>, to: string): string {
+  const v = to ? Date.parse(to) : NaN;
+  if (!Number.isFinite(v)) return 'Alege data nouă.';
+  const add = v + extendSecs(t) - extendBase(t);
+  if (add < 60_000) return 'Data nouă trebuie să fie după finalul programat de acum.';
+  const now = Date.now();
+  const clock = Date.parse(t.ends_at) - (t.paused_until && Date.parse(t.paused_until) > now ? Date.parse(t.paused_until) : now);
+  return `Cronometrul primește +${durRo(add)}: va arăta ${left(clock + add)}. Nimic nu se oprește.`;
+}
+function extendHtml(t: Record<string, any>): string {
+  const base = extendBase(t);
+  const def = toLocal(new Date(base + 86_400_000).toISOString());
+  const ice = isIceman();
+  return `<h3 class="h3s">Prelungește ${tip('Muți finalul programat mai târziu, de câte ori vrei, fără să oprești subathonul.\nCronometrul primește exact diferența: de la 17 la 25 ianuarie = +8 zile pe ceas, chiar dacă subs l-au împins deja mai departe.\nSe poate doar înainte să ajungă ceasul la zero.')}</h3>
+      <div class="ext">
+        <div class="ext-now"><span>Final programat</span><strong>${esc(when(t.scheduled_end))}</strong></div>
+        <div class="quick ext-quick">${[1, 3, 7, 14].map((d) => `<button class="btn-ghost" data-act="extendBy" data-days="${d}"${ice ? '' : ' disabled'}>+${d} ${d === 1 ? 'zi' : 'zile'}</button>`).join('')}</div>
+        <div class="fgrid">
+          <label class="inline">Final nou<input class="field" type="datetime-local" id="extendTo" value="${def}"${ice ? '' : ' disabled'}></label>
+          <button class="btn-primary" data-act="extend"${ice ? '' : ' disabled'}>Prelungește</button>
+        </div>
+        <p class="hint" id="extendPrev" aria-live="polite">${ice ? esc(extendPreview(t, def)) : onlyIceman()}</p>
+      </div>`;
+}
+
 // «Donează și alegi»: one donation of exactly a listed amount = that task, with the donor's name.
 // The requests wait here until a moderator ticks «Făcută»; the list is edited below them.
 const euroTxt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(2).replace('.', ',')) + ' €';
@@ -1220,6 +1258,12 @@ function markUnsaved() {
   });
 }
 app.addEventListener('input', markUnsaved);
+app.addEventListener('input', (e) => {
+  const t = e.target as HTMLInputElement;
+  if (t.id !== 'extendTo') return;
+  const p = document.getElementById('extendPrev');
+  if (p) p.textContent = extendPreview(S.timer ?? {}, t.value);
+});
 // Narrow windows: the menu groups and the item chips are rows that scroll sideways; a mouse wheel
 // only scrolls up and down, so turn it sideways there (trackpads and touch already work).
 const sideways = (e: WheelEvent) => {
@@ -1359,7 +1403,7 @@ function render() {
         <a class="btn btn-${st?.broadcaster_connected ? 'ghost' : 'twitch'}" href="${esc(st?.connect_url ?? '#')}">${st?.broadcaster_connected ? 'Reconectează' : 'Conectează'} contul de streamer</a>
         <span class="muted">doar ${esc(st?.broadcaster_login ?? 'streamerul')}</span>
       </div>
-      ${live || t.status === 'ended' ? `<p class="muted">Pornit la ${when(t.starts_at)} · final programat ${when(t.scheduled_end)}.</p>` : `
+      ${live || t.status === 'ended' ? `<p class="muted" style="margin:16px 0 0">Pornit la ${when(t.starts_at)} · final programat ${when(t.scheduled_end)}.</p>${live ? extendHtml(t) : ''}` : `
         <div class="row">
           <label class="inline">Start<input class="field" type="datetime-local" id="startAt" value="${toLocal(t.starts_at)}"${S.auto?.autoStart && !isIceman() ? ' disabled title="Pornire automată: doar Iceman mută startul"' : ''}></label>
           <label class="inline">Final programat<input class="field" type="datetime-local" id="endAt" value="${toLocal(t.scheduled_end)}"></label>
@@ -1609,6 +1653,22 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   start: () => confirm(`Pornești cronometrul acum cu ${num('startHours')} ore?`) &&
     call('mod_start_timer', { p_hours: num('startHours'), p_scheduled_end: S.timer?.scheduled_end ?? null }, 'Subathonul a pornit!'),
   add: (el) => call('mod_add_time', { p_minutes: Number(el.dataset.min) }, `${el.dataset.min} min adăugate.`),
+  extendBy: (el) => {
+    const input = document.getElementById('extendTo') as HTMLInputElement | null;
+    if (!input) return;
+    input.value = toLocal(new Date(extendBase(S.timer ?? {}) + Number(el.dataset.days) * 86_400_000).toISOString());
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.focus();
+  },
+  extend: async () => {
+    const to = val('extendTo');
+    const v = to ? Date.parse(to) : NaN;
+    const T = S.timer ?? {};
+    const add = Number.isFinite(v) ? v + extendSecs(T) - extendBase(T) : 0;
+    if (add < 60_000) { say('Finalul nou trebuie să fie după finalul programat de acum.', true); return; }
+    if (!confirm(`Prelungești subathonul până la ${when(new Date(v).toISOString())}?\n\nCronometrul primește +${durRo(add)}. Nu se poate anula din buton.`)) return;
+    await call('mod_extend', { p_new_end: new Date(v + extendSecs(T)).toISOString() }, `Prelungit până la ${when(new Date(v).toISOString())}: +${durRo(add)} pe cronometru.`);
+  },
   addCustom: () => num('addMin') && call('mod_add_time', { p_minutes: num('addMin') }, `${num('addMin')} min adăugate.`),
   freeze: () => call('mod_freeze', { p_minutes: num('freezeMin') }, 'Cronometrul e înghețat.'),
   freezeUntil: () => val('freezeUntil') && call('mod_freeze_until', { p_until: fromLocal(val('freezeUntil')) }, 'Cronometrul e înghețat până atunci.'),

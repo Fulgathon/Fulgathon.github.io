@@ -458,6 +458,18 @@ export class DemoBackend {
     });
   }
   setSchedule(startsAt: number | null, scheduledEnd: number | null) { this.mutate((s) => { s.timer.startsAt = startsAt; s.timer.scheduledEnd = scheduledEnd; }); }
+  /** «Prelungește»: the planned end moves later and the clock gets the same time (mod_extend). */
+  extend(newEnd: number | null) {
+    this.mutate((s) => {
+      if (s.timer.status !== 'live' || s.timer.endsAt === null) fail('timer_not_live');
+      if (atZero(s)) fail('timer_ended');
+      const base = Math.max(s.timer.scheduledEnd ?? 0, Date.now());
+      if (newEnd === null || newEnd < base + 60_000) fail('extend_not_later');
+      if (newEnd! > Date.now() + 366 * DAY) fail('extend_too_far');
+      s.timer.endsAt! += newEnd! - base;
+      s.timer.scheduledEnd = newEnd;
+    });
+  }
   addTime(minutes: number) {
     this.mutate((s) => {
       if (s.timer.status !== 'live' || s.timer.endsAt === null) fail('timer_not_live');
@@ -1134,6 +1146,7 @@ export class DemoBackend {
     switch (fn) {
       case 'mod_set_schedule': return this.setSchedule(ms(a.p_starts_at), ms(a.p_scheduled_end));
       case 'mod_start_timer': if (this.asMod) fail('only_broadcaster'); return this.startTimer(Number(a.p_hours), ms(a.p_scheduled_end));
+      case 'mod_extend': if (this.asMod) fail('only_broadcaster'); return this.extend(ms(a.p_new_end));
       case 'mod_add_time': return this.addTime(Number(a.p_minutes));
       case 'mod_freeze': return this.freeze(Number(a.p_minutes));
       case 'mod_double_hour': return this.doubleHour(ms(a.p_from) ?? Date.now(), Number(a.p_minutes) || 60, a.p_sponsor ?? null);
