@@ -115,6 +115,53 @@ function releaseField() {
   const a = document.activeElement as HTMLElement | null;
   if (a && app.contains(a) && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)) a.blur();
 }
+// ---- Explanations behind an (i) (owner, 25 Nov: «put them behind a tooltip») ----
+// tip(text) = a small square (i) button; the text shows in one floating box on hover, focus or tap
+// (the box lives in <body>, positioned in the window, so cards never clip it). Screen readers get
+// the same text right after the button. «\n» in the text starts a new line.
+const tip = (text: string) => `<button type="button" class="tip" data-tip="${esc(text)}" aria-label="Explicație"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 10.5v7M12 6.5v.01" stroke="currentColor" stroke-width="3" stroke-linecap="square"/></svg></button><span class="sr-only">${esc(text)}</span>`;
+const tipBox = document.createElement('div');
+tipBox.id = 'tipBox'; tipBox.setAttribute('role', 'tooltip'); tipBox.hidden = true;
+document.body.append(tipBox);
+let tipFor: HTMLElement | null = null;
+function tipShow(b: HTMLElement) {
+  tipFor = b;
+  tipBox.textContent = b.dataset.tip ?? '';
+  tipBox.hidden = false;
+  b.setAttribute('aria-expanded', 'true');
+  // Big screens zoom the whole page (html { zoom }): rectangles come in zoomed pixels, positions don't.
+  const z = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--z')) || 1;
+  const r = b.getBoundingClientRect();
+  const vw = innerWidth / z, vh = innerHeight / z;
+  const bx = r.left / z, by = r.top / z, bw = r.width / z, bh = r.height / z;
+  const w = tipBox.offsetWidth, h = tipBox.offsetHeight;
+  const left = Math.max(12, Math.min(vw - w - 12, bx + bw / 2 - w / 2));
+  const below = by + bh + 10 + h <= vh - 12 || by - 10 - h < 12;
+  tipBox.style.left = `${left}px`;
+  tipBox.style.top = `${below ? by + bh + 10 : by - 10 - h}px`;
+  tipBox.dataset.side = below ? 'below' : 'above';
+  tipBox.style.setProperty('--ax', `${Math.max(10, Math.min(w - 10, bx + bw / 2 - left))}px`);
+}
+function tipHide() {
+  if (!tipFor) return;
+  tipFor.setAttribute('aria-expanded', 'false');
+  tipFor = null;
+  tipBox.hidden = true;
+}
+const tipOf = (e: Event) => (e.target as Element | null)?.closest?.<HTMLElement>('.tip') ?? null;
+document.addEventListener('pointerover', (e) => { const b = tipOf(e); if (b && (e as PointerEvent).pointerType === 'mouse') tipShow(b); });
+document.addEventListener('pointerout', (e) => { const b = tipOf(e); if (b && b === tipFor && (e as PointerEvent).pointerType === 'mouse' && document.activeElement !== b) tipHide(); });
+document.addEventListener('focusin', (e) => { const b = tipOf(e); if (b) tipShow(b); else if (tipFor) tipHide(); });
+document.addEventListener('focusout', (e) => { if (tipOf(e) === tipFor) tipHide(); });
+document.addEventListener('click', (e) => {
+  const b = tipOf(e);
+  if (b) { e.preventDefault(); tipShow(b); return; }   // a tap shows it; a tap elsewhere, Esc or scrolling hides it
+  if (tipFor) tipHide();
+}, true);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && tipFor) tipHide(); });
+addEventListener('scroll', () => tipHide(), { passive: true, capture: true });
+addEventListener('resize', () => tipHide());
+
 async function call(fn: string, args: Record<string, unknown> = {}, ok = 'Gata.') {
   releaseField();
   if (demoApi) {
@@ -399,10 +446,10 @@ function chatHtml(): string {
     : !C.canWrite ? '<span class="pill warn">Lipsește permisiunea</span> <span class="muted">Iceman reconectează contul de streamer.</span>'
     : C.on ? `<span class="pill ok">Pornit</span> <span class="muted">Scrie din contul lui Iceman.${C.lastAt ? ` Ultimul mesaj: ${when(C.lastAt)}.` : ''}</span>`
     : '<span class="pill off">Oprit</span>';
-  return `<div style="padding:14px 16px;border:1px solid #23415E">
-        <label style="display:flex;align-items:center;gap:14px;min-height:44px"><input type="checkbox" data-act="chatToggle" ${C?.on ? 'checked' : ''} ${C && C.canWrite ? '' : 'disabled'} aria-describedby="chat-state chat-warn"><span><strong style="font-family:'Barlow Condensed',sans-serif;font-size:20px;text-transform:uppercase;color:#F2F5FA">Trimite replica și în chatul Twitch</strong><span style="display:block;font-size:14px;color:#AEB8C7">Replica din balon, scrisă de contul lui Iceman. Maxim un mesaj la 5 secunde.</span></span></label>
+  return `<div class="panel">
+        <label class="opt"><input type="checkbox" class="sw" data-act="chatToggle" ${C?.on ? 'checked' : ''} ${C && C.canWrite ? '' : 'disabled'} aria-describedby="chat-state chat-warn"><span><strong class="opt-t">Trimite replica și în chatul Twitch</strong><span class="opt-d">Replica din balon, scrisă de contul lui Iceman. Maxim un mesaj la 5 secunde.</span></span></label>
         <p id="chat-state" style="margin:8px 0 0;font-size:14px">${state}</p>
-        <p id="chat-warn" style="margin:6px 0 0;font-size:14px;color:#F2C14E">Dacă un bot mulțumește deja în chat, oamenii primesc două mulțumiri.</p>
+        <p id="chat-warn" class="warn-t">Dacă un bot mulțumește deja în chat, oamenii primesc două mulțumiri.</p>
         <p style="margin:8px 0 0;font-size:13px;color:#8C97A8">În chat: <span style="color:#EFEFF1"><strong style="color:#9147FF">icemanlucky</strong>: ${esc(preview)}</span></p>
       </div>`;
 }
@@ -410,7 +457,7 @@ function chatHtml(): string {
 function linesHtml(): string {
   const groups = lineGroups.map((g) => {
     const L = lineInfo(g.id);
-    return `<div class="line-group" data-lg="${g.id}" style="padding:18px;background:#0B1018;border:1px solid ${L.border}">
+    return `<div class="line-group panel" data-lg="${g.id}" style="border-color:${L.border}">
       <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
         <label for="lines-${g.id}" style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-style:italic;font-size:24px;line-height:1;text-transform:uppercase">${esc(g.name)}</label>
         <span data-lg-count style="flex:none;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:15px;color:${L.color}">${esc(L.count)}</span>
@@ -422,21 +469,19 @@ function linesHtml(): string {
     </div>`;
   }).join('');
   return `<section class="card wide" id="replici">
-    <h2>Replicile lui Iceman</h2>
-    <p class="muted" style="margin-top:0;max-width:900px">O replică pe rând, minim ${MIN_LINES} pe grup, maxim ${MAX_LINE} de caractere. Poți folosi <code>{nume}</code> <code>{timp}</code> <code>{suma}</code> <code>{subs}</code>.</p>
-    <div style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:12px">
+    <h2>Replicile lui Iceman ${tip(`O replică pe rând, minim ${MIN_LINES} pe grup, maxim ${MAX_LINE} de caractere.\nPoți folosi {nume}, {timp}, {suma} și {subs}.\nUn grup cu mai puțin de ${MIN_LINES} replici e galben, iar balonul spune «${FALLBACK_LINE}» în loc.`)}</h2>
+    <div class="panels">
       ${chatHtml()}
-      <div style="padding:14px 16px;border:1px solid #23415E">
-        <label class="inline">Donație mare de la (€)<input class="field" type="number" inputmode="decimal" min="1" max="10000" id="smallDonation" value="${esc(S.smallDonation)}" style="width:110px"></label>
-        <p class="muted" style="margin:8px 0 0;font-size:14px">Sub prag = «Donație mică».</p>
+      <div class="panel">
+        <label class="inline">Donație mare de la (€)<input class="field" type="number" inputmode="decimal" min="1" max="10000" id="smallDonation" value="${esc(S.smallDonation)}" style="width:120px"></label>
+        <p class="hint">Sub prag e «Donație mică».</p>
       </div>
     </div>
-    <div style="margin-top:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px">${groups}</div>
+    <div class="panels lg-grid">${groups}</div>
     <div class="row">
       <button class="btn-primary" data-act="linesSave">Salvează tot</button>
       ${S.linesDraft ? '<button class="btn-ghost" data-act="linesCancel">Renunță</button><span class="muted">Modificări nesalvate</span>' : ''}
     </div>
-    <p class="muted">Sub ${MIN_LINES} replici: galben, cu «${esc(FALLBACK_LINE)}» în loc.</p>
   </section>`;
 }
 
@@ -790,8 +835,8 @@ function dashHtml(t: Record<string, any>, live: boolean, remaining: number, now:
         <button class="btn-ghost" data-act="add" data-min="10">+10 min</button><button class="btn-ghost" data-act="add" data-min="-5">−5 min</button></div>
       <div class="row"><label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="addMin" placeholder="ex: 15"></label><button class="btn-primary" data-act="addCustom">Adaugă</button></div>`,
     freeze: !live ? needsLive : `<div class="row"><label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="freezeMin" value="10"></label>
-        <button class="btn-primary" data-act="freeze">Îngheață</button>${frozen ? '<button class="btn-ghost" data-act="unfreeze">Dezgheață</button>' : ''}</div>
-      <p class="muted">Subs și donațiile adaugă timp și cât e înghețat. Pentru 20–25 dec: PROGRAM → Program.</p>`,
+        <button class="btn-primary" data-act="freeze">Îngheață</button>${frozen ? '<button class="btn-ghost" data-act="unfreeze">Dezgheață</button>' : ''}${tip('Subs și donațiile adaugă timp și cât e înghețat.\nPentru 20–25 decembrie: PROGRAM → Program.')}</div>
+      `,
     double: !live ? needsLive : `<div class="row"><label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="dblMin" value="60"></label>
         <label class="inline" style="flex:1 1 200px">Oferită de<input class="field" id="dblSponsor" list="sponsorNames" placeholder="opțional"></label>
         <button class="btn-primary" data-act="doubleNow">Pornește acum</button></div>`,
@@ -803,7 +848,7 @@ function dashHtml(t: Record<string, any>, live: boolean, remaining: number, now:
         <label class="inline">Minute<input class="field" type="number" id="nowMin" value="30" min="1" max="1440"></label>
         <button class="btn-primary" data-act="noteSet">Arată</button>${S.now?.note ? '<button class="btn-ghost" data-act="noteClear">Scoate</button>' : ''}</div>`,
   };
-  const control = `<section class="card flush" id="control"><h2>Control live <span class="h2-note">apare pe site și pe stream în câteva secunde</span></h2>
+  const control = `<section class="card flush" id="control"><h2>Control live ${tip('Ce schimbi aici apare pe site și pe stream în câteva secunde.')}</h2>
     <div class="tabs" role="tablist" aria-label="Control live">${LIVE_TABS.map(([k, l]) => `<button type="button" role="tab" class="tab${S.liveTab === k ? ' on' : ''}" aria-selected="${S.liveTab === k}" data-act="liveTab" data-tab="${k}">${l}${on[k] ? '<span class="pip" aria-label="activ"></span>' : ''}</button>`).join('')}</div>
     <div class="tab-body" role="tabpanel">${states ? `<div class="states">${states}</div>` : ''}${panel[S.liveTab]}</div>
   </section>`;
@@ -836,19 +881,18 @@ function testStripHtml(): string {
   const marathon = st === 'live'
     ? `<span class="pill-s">LIVE PE SITE · SE TERMINĂ LA ${hmRo(S.timer?.ends_at ?? null)}</span><button class="btn-ghost" data-act="testEnd">Încheie maratonul de test</button>`
     : st === 'ended'
-      ? '<span class="pill-s">ÎNCHEIAT</span><span class="ts-note">«De la capăt» îl aduce înapoi la start.</span>'
-      : `<button class="btn-primary" data-act="testGoLive" data-h="${hrs}">Pornește maratonul de test (${hrs} h)</button><span class="ts-note">Până atunci site-ul arată «Începe curând», iar donațiile umplu doar «Strâns», fără timp (ca în realitate).</span>`;
+      ? `<span class="pill-s">ÎNCHEIAT</span>${tip('«De la capăt» îl aduce înapoi la start.')}`
+      : `<button class="btn-primary" data-act="testGoLive" data-h="${hrs}">Pornește maratonul de test (${hrs} h)</button>${tip('Până atunci site-ul arată «Începe curând», iar donațiile umplu doar «Strâns», fără timp (ca în realitate).')}`;
   return `<section class="test-strip" aria-label="Mod test">
-    <p class="ts-head"><span class="ts-tag">TEST</span><strong>Mod test</strong><span>pornit de ${esc(T.by ?? 'un moderator')} · se oprește singur la ${hmRo(T.until)}</span></p>
-    <p class="ts-warn">Tot ce se schimbă acum, și pe /mod, se șterge la oprire. Pregătirea reală (sponsori, premii, provocări) o faci după test.</p>
+    <p class="ts-head"><span class="ts-tag">TEST</span><strong>Mod test</strong><span>pornit de ${esc(T.by ?? 'un moderator')} · se oprește singur la ${hmRo(T.until)}</span>${tip('Tot ce se schimbă acum, și pe /mod, se șterge la oprire.\nPregătirea reală (sponsori, premii, provocări) o faci după test.')}</p>
     <div class="ts-rows">
       <div class="ts-row"><span>Maraton</span>${marathon}</div>
       <div class="ts-row"><span>Twitch</span>${testBtn('sub', 'Sub', {}, 'Sub de test.')}${testBtn('sub', 'Sub Tier 3', { tier: '3000' }, 'Sub Tier 3 de test.')}${testBtn('gift', '10 subs cadou', { n: 10 }, '10 subs cadou de test.')}${testBtn('bits', '400 biți', { n: 400 }, '400 de biți de test.')}${testBtn('stream', online ? 'Iceman iese de pe Twitch' : 'Iceman intră pe Twitch', { on: !online }, online ? 'Iceman apare offline pe Twitch: timpul privit nu se mai numără.' : 'Iceman apare live pe Twitch: se numără timpul privit, votul automat merge.')}</div>
       <div class="ts-row"><span>Donații</span>${testBtn('donation', '5 €', { n: 5 }, 'Donație de test, 5 €.')}${testBtn('donation', '50 €', { n: 50 }, 'Donație de test, 50 €.')}${testBtn('donation', '250 €', { n: 250 }, 'Donație de test, 250 €.')}</div>
       <div class="ts-row"><span>Spectatori</span>${testBtn('crowd', '+25 de test', { n: 25 }, '25 de spectatori de test: privesc, votează, aleg bingo.')}${testBtn('me_sub', sub ? 'Eu: neabonat' : 'Eu: abonat', { on: !sub }, sub ? 'Pe site apari neabonat.' : 'Pe site apari abonat.')}${testBtn('me_watch', 'Eu: +2 h privit', { minutes: 120 }, 'Ai 2 ore privite azi: roata e deblocată.')}</div>
       <div class="ts-row"><span>Ceas</span>${clockTestHtml()}</div>
-      <div class="ts-row"><span>Alegeri</span>${(S.tasks?.menu ?? []).map((m) => testBtn('donation', `${euroTxt(m.price)} · ${m.title}`, { n: m.price }, `Donație de test ${euroTxt(m.price)}: «${m.title}» e în coadă (Donează și alegi).`)).join('') || '<span class="ts-note">Lista e goală: completeaz-o în AZI → Donează și alegi.</span>'}${st === 'upcoming' ? '<span class="ts-note">Primul buton pornește și maratonul de test.</span>' : ''}</div>
-      <div class="ts-row"><span>Sponsori</span><button class="btn-ghost" data-act="testSponsors">Sponsori de test (10)</button><span class="ts-note">Mărci inventate, cu logo, pe site și pe overlay. La oprire revin sponsorii reali.</span></div>
+      <div class="ts-row"><span>Alegeri</span>${(S.tasks?.menu ?? []).map((m) => testBtn('donation', `${euroTxt(m.price)} · ${m.title}`, { n: m.price }, `Donație de test ${euroTxt(m.price)}: «${m.title}» e în coadă (Donează și alegi).`)).join('') || '<span class="ts-note">Lista e goală: completeaz-o în AZI → Donează și alegi.</span>'}${st === 'upcoming' ? tip('Primul buton pornește și maratonul de test.') : ''}</div>
+      <div class="ts-row"><span>Sponsori</span><button class="btn-ghost" data-act="testSponsors">Sponsori de test (10)</button>${tip('Mărci inventate, cu logo, pe site și pe overlay. La oprire revin sponsorii reali.')}</div>
       <div class="ts-row"><span>Testul</span>${testBtn('extend', '+1 oră', {}, 'Testul merge încă o oră.')}<button class="btn-ghost" data-act="testRedo">De la capăt</button><button class="btn-primary" data-act="testStop">Oprește testul</button></div>
     </div>
   </section>`;
@@ -874,15 +918,8 @@ function testCardHtml(): string {
       : `<div class="row"><label class="inline">Cât ține<select class="field" id="testHours">${[1, 2, 3, 4, 6].map((h) => `<option value="${h}"${h === 3 ? ' selected' : ''}>${h} ${h === 1 ? 'oră' : 'ore'}</option>`).join('')}</select></label>
          <button class="btn-primary" data-act="testStart">Pornește testul</button></div>`;
   return `<section class="card wide" id="test">
-    <h2>Mod test</h2>
-    <p style="margin-top:0">Tot site-ul, /mod și overlay-ul merg pe date de probă: subs, donații, spectatori, vot, roată, bingo. La oprire totul revine exact cum era.</p>
-    <ul class="muted ts-list">
-      <li>Pe site apare o bandă galbenă «TEST», în overlay eticheta TEST.</li>
-      <li>Orice moderator poate porni și încheia maratonul de test.</li>
-      <li>Chatul Twitch nu primește mesaje, clipurile nu se fac, alertele Discord au «TEST».</li>
-      <li>Rămân neatinse: moderatorii, checklistul de pregătire, conturile spectatorilor.</li>
-      <li>Se oprește singur la ora aleasă, cel târziu cu 30 de minute înainte de start.</li>
-    </ul>
+    <h2>Mod test ${tip('Pe site apare o bandă galbenă «TEST», în overlay eticheta TEST.\nOrice moderator poate porni și încheia maratonul de test.\nChatul Twitch nu primește mesaje, clipurile nu se fac, alertele Discord au «TEST».\nRămân neatinse: moderatorii, checklistul de pregătire, conturile spectatorilor.\nSe oprește singur la ora aleasă, cel târziu cu 30 de minute înainte de start.')}</h2>
+    <p class="lead">Tot site-ul, /mod și overlay-ul merg pe date de probă: subs, donații, spectatori, vot, roată, bingo. La oprire totul revine exact cum era.</p>
     ${body}
   </section>`;
 }
@@ -898,13 +935,11 @@ function tasksHtml(): string {
   const rows = queue.map((q) => `<li><span class="grow"><strong>${euroTxt(q.price)} · ${esc(q.title)}</strong><br><span class="muted">${esc(q.name)} · ${hmRo(new Date(q.at).toISOString())}</span></span>
       <button class="btn-primary" data-act="taskDone" data-id="${q.id}">Făcută</button></li>`).join('');
   return `<section class="card wide" id="sarcini">
-    <h2>Donează și alegi ${T?.pending ? `<span class="h2-note">${T.pending} de făcut</span>` : ''}</h2>
-    <p class="muted" style="margin-top:0">O donație de exact suma din listă (în euro, cât maratonul e LIVE) pune sarcina în coadă, cu numele donatorului. Alte sume adaugă doar timp. Bifați «Făcută» când Iceman a făcut-o.</p>
-    ${queue.length ? `<ul class="list">${rows}</ul>${T && T.pending > queue.length ? `<p class="muted">+${T.pending - queue.length} mai vechi după acestea.</p>` : ''}` : '<p class="muted">Nimic de făcut acum.</p>'}
-    <h3 class="h3s" style="margin-top:18px">Lista de pe overlay</h3>
-    <textarea class="field" id="tasksList" rows="6" aria-label="Lista: câte una pe rând, suma | sarcina" style="width:100%;padding:10px;font:inherit">${esc(draft)}</textarea>
+    <h2>Donează și alegi ${tip('O donație de exact suma din listă (în euro, cât maratonul e LIVE) pune sarcina în coadă, cu numele donatorului. Alte sume adaugă doar timp.\nBifați «Făcută» când Iceman a făcut-o.')}${T?.pending ? `<span class="h2-note">${T.pending} de făcut</span>` : ''}</h2>
+    ${queue.length ? `<ul class="list">${rows}</ul>${T && T.pending > queue.length ? `<p class="muted">+${T.pending - queue.length} mai vechi după acestea.</p>` : ''}` : '<p class="empty">Nimic de făcut acum.</p>'}
+    <h3 class="h3s">Lista de pe overlay ${tip('Câte una pe rând: suma | sarcina, de exemplu «10 | Alege un campion».\nCel mult 8, fiecare cu altă sumă.')}</h3>
+    <textarea class="field" id="tasksList" rows="6" aria-label="Lista: câte una pe rând, suma | sarcina" placeholder="10 | Alege un campion" style="width:100%">${esc(draft)}</textarea>
     <div class="row"><button class="btn-primary" data-act="tasksSave">Salvează lista</button></div>
-    <p class="muted">Câte una pe rând: <strong>suma | sarcina</strong>, de exemplu «10 | Alege un campion». Cel mult 8, fiecare cu altă sumă.</p>
   </section>`;
 }
 
@@ -935,7 +970,7 @@ function sponsorsHtml(): string {
     ].join('');
     return `<li class="sp-row${S.spEdit === x.id ? ' on' : ''}">
       ${spLogo(x.logo_url, x.name)}
-      <span class="grow"><strong style="color:#F2F5FA">${esc(x.name)}</strong>${x.role ? ` <span class="muted">· ${esc(x.role)}</span>` : ''}<br><span class="sp-flags">${flags || '<span class="muted">Complet</span>'}</span></span>
+      <span class="grow"><strong style="color:#F2F5FA">${esc(x.name)}</strong>${x.role ? ` <span class="muted">· ${esc(x.role)}</span>` : ''}<br><span class="sp-flags">${flags || '<span class="pill ok">Complet</span>'}</span></span>
       <span class="pair">
         <button class="btn-ghost sp-mv" data-act="spMove" data-id="${x.id}" data-dir="-1" aria-label="Mută ${esc(x.name)} mai sus" ${i === 0 ? 'disabled' : ''}>↑</button>
         <button class="btn-ghost sp-mv" data-act="spMove" data-id="${x.id}" data-dir="1" aria-label="Mută ${esc(x.name)} mai jos" ${i === same.length - 1 ? 'disabled' : ''}>↓</button>
@@ -948,8 +983,7 @@ function sponsorsHtml(): string {
   }).join('');
   const editing = S.spEdit === 'new' ? {} as any : list.find((x) => x.id === S.spEdit);
   return `<section class="card wide" id="sponsori">
-    <div class="card-head"><h2>Sponsori</h2><button class="btn-primary btn-s" data-act="spNew">+ Adaugă sponsor</button></div>
-    <p class="muted" style="margin-top:0">Apar pe site (sub titlu, la ofertă și în peretele de parteneri) și pe overlay (linia partenerului). Se actualizează în câteva secunde.</p>
+    <div class="card-head"><h2>Sponsori ${tip('Apar pe site (sub titlu, la ofertă și în peretele de parteneri) și pe overlay (linia partenerului). Se actualizează în câteva secunde.')}</h2><button class="btn-primary btn-s" data-act="spNew">+ Adaugă sponsor</button></div>
     ${S.spEdit !== null && editing ? spFormHtml(editing) : ''}
     ${groups}
   </section>`;
@@ -958,7 +992,7 @@ function spFormHtml(x: any): string {
   const v = (k: string) => esc(x[k] ?? '');
   const isNew = !x.id;
   const field = (id: string, label: string, value: string, attrs = '') => `<label class="inline sp-f">${label}<input class="field" id="${id}" value="${value}" ${attrs}></label>`;
-  const area = (id: string, label: string, value: string, max: number, rows = 3) => `<label class="inline sp-f sp-wide">${label} <span class="muted">(max ${max})</span><textarea class="field" id="${id}" rows="${rows}" maxlength="${max}">${value}</textarea></label>`;
+  const area = (id: string, label: string, value: string, max: number, rows = 3) => `<label class="inline sp-f sp-wide"><span>${label} <span class="lbl-note">· max ${max}</span></span><textarea class="field" id="${id}" rows="${rows}" maxlength="${max}">${value}</textarea></label>`;
   const check = (id: string, label: string, on: boolean) => `<label class="sp-check"><input type="checkbox" id="${id}" ${on ? 'checked' : ''}> ${label}</label>`;
   return `<div class="sp-form" id="sp-form">
     <h3 class="h3s" style="margin-top:0">${isNew ? 'Sponsor nou' : `Editezi: ${esc(x.name)}`}</h3>
@@ -968,13 +1002,12 @@ function spFormHtml(x: any): string {
       ${field('sp_role', 'Ce susține (ex: Premii roată)', v('role'), 'maxlength="40"')}
       ${area('sp_desc', 'Descriere scurtă, pentru vizitatori', v('description'), 280)}
     </div>
-    <h3 class="h3s">Logo</h3>
+    <h3 class="h3s">Logo ${tip('SVG sau PNG, ideal alb pe fundal transparent, max 2 MB. Previzualizarea arată cum iese pe fundalul închis al site-ului.')}</h3>
     <div class="sp-logo-row">
       <div class="sp-prev" id="sp_prev">${spLogo(x.logo_url ?? null, x.name ?? '', true)}</div>
       <div class="sp-logo-ctl">
         <label class="btn btn-ghost sp-upload">Încarcă logo<input type="file" id="sp_file" accept="image/png,image/svg+xml,image/webp,image/jpeg" hidden></label>
         <button class="btn-ghost" data-act="spLogoClear">Scoate logo</button>
-        <p class="muted" style="margin:6px 0 0">SVG sau PNG, ideal alb pe fundal transparent, max 2 MB. Așa arată pe fundalul închis al site-ului.</p>
         ${field('sp_logo', 'sau link spre logo', v('logo_url'), 'placeholder="https://…" inputmode="url"')}
       </div>
     </div>
@@ -1094,8 +1127,7 @@ function milestonesHtml(): string {
   const rows = goalRows();
   let nextFound = false;
   return `<section class="card wide" id="milestones">
-    <div class="card-head"><h2>Milestone Maraton</h2><span class="muted">Strâns acum: <strong style="color:#F2F5FA">${fmtInt(raised)} €</strong></span></div>
-    <p class="muted" style="margin-top:0">Se deblochează la suma în euro. «Făcut» + link = clip pe site.</p>
+    <div class="card-head"><h2>Milestone Maraton ${tip('Se deblochează la suma în euro.\n«Făcut» + linkul clipului = clipul apare pe site.')}</h2><span class="head-stat">Strâns acum <strong>${fmtInt(raised)} €</strong></span></div>
     <div class="ms-headrow" aria-hidden="true"><span>NR.</span><span>SUMA (€)</span><span>PROVOCAREA</span><span>PREZENTAT DE</span><span>STARE</span><span>CÂND SE FACE</span><span>CLIPUL (DUPĂ LIVE)</span><span></span><span></span></div>
     <ul class="list ms-list">${rows.map((g, i) => {
       const reached = g.threshold !== '' && raised >= Number(g.threshold);
@@ -1128,25 +1160,18 @@ function overlayHtml(): string {
   const control = base + '?scene=control';
   const piece = (id: string, withKey: boolean) => base + '?' + [withKey && key ? `key=${key}` : '', `part=${id}`].filter(Boolean).join('&');
   const pieces = `<section class="card wide" id="overlay-piese">
-    <h2>Piesele overlay-ului, una câte una</h2>
-    <p class="muted" style="margin-top:0">Fiecare piesă = un Browser Source în OBS, la mărimea scrisă (pentru canvas 2K, 2560×1440; în paranteză, pentru 1920×1080). Piesa se potrivește singură mărimii sursei. O așezi unde vrei în scena fiecărui joc; în alte scene: «Add Existing».</p>
-    <p class="muted">«De așezat» = piesa conturată, cu date de exemplu.</p>
-    <h3 class="h3s" style="margin-top:18px">Linkurile pieselor</h3>
+    <h2>Piesele overlay-ului, una câte una ${tip('Fiecare piesă = un Browser Source în OBS, la mărimea scrisă (pentru canvas 2K, 2560×1440; în paranteză, pentru 1920×1080). Piesa se potrivește singură mărimii sursei.\nO așezi unde vrei în scena fiecărui joc; în alte scene: «Add Existing».\n«De așezat» = piesa conturată, cu date de exemplu.\nOpțional la finalul linkului: &scale=1.2 sau &calm=1.\nCa să le vezi în acțiune: SETĂRI → Mod test.')}</h2>
     <ul class="list">${overlayPieces.map((x, i) => `<li style="align-items:flex-start"><span class="grow"><strong>${esc(x.label)}</strong> <span class="pill off">${Math.round(x.w * 4 / 3)} × ${Math.round(x.h * 4 / 3)}</span> <span class="muted">(${x.w} × ${x.h})</span>${x.key ? ' <span class="pill warn">cheie privată</span>' : ''}<br><span class="muted">${esc(x.what)}</span>
       <input class="field" readonly value="${esc(piece(x.id, !!x.key))}" id="ovp${i}" aria-label="Linkul pentru ${esc(x.label)}" style="width:100%;margin-top:6px"></span>
       <span class="pair" style="flex-direction:column;align-items:stretch"><button class="btn-ghost" data-act="copyOvp" data-i="${i}">Copiază</button><a class="btn btn-ghost" href="${esc(base + '?demo&frame=1&part=' + x.id)}" target="_blank" rel="noopener">De așezat</a></span></li>`).join('')}</ul>
-    <p class="muted">Opțional la final: <strong>&amp;scale=1.2</strong> sau <strong>&amp;calm=1</strong>.</p>
-    <p class="muted">Ca să le vezi în acțiune: SETĂRI → Mod test.</p>
   </section>`;
   const bg = S.sceneBg;
   return pieces + `<section class="card wide" id="overlay">
-    <h2>Overlay OBS: scena întreagă</h2>
-    <p class="muted" style="margin-top:0">«Camera de control»: un singur Browser Source 2560×1440 (2K), deasupra jocului și a camerei. Merge și la 1920×1080: se potrivește singură.</p>
-    <ul class="list"><li><span class="grow"><strong>Camera de control</strong><br><span class="muted">În OBS (2K), sub acest source: jocul 1536×864 la x 77, y 72 și camera 691×388 la x 1767, y 72. La 1920×1080: jocul 1152×648 la x 58, y 54, camera 518×291 la x 1325, y 54. Cu «&amp;frame=1» la final se văd locurile, cu mărimile.</span>
+    <h2>Overlay OBS: scena întreagă ${tip('«Camera de control»: un singur Browser Source 2560×1440 (2K), deasupra jocului și a camerei. Merge și la 1920×1080: se potrivește singură.')}</h2>
+    <ul class="list"><li><span class="grow"><strong>Camera de control</strong> <span class="pill off">2560 × 1440</span> ${tip('În OBS (2K), sub acest source: jocul 1536×864 la x 77, y 72 și camera 691×388 la x 1767, y 72.\nLa 1920×1080: jocul 1152×648 la x 58, y 54, camera 518×291 la x 1325, y 54.\nCu «&frame=1» la finalul linkului se văd locurile, cu mărimile.')}
       <input class="field" readonly value="${esc(control)}" id="ov0" aria-label="Linkul scenei Camera de control" style="width:100%;margin-top:6px"></span><button class="btn-ghost" data-act="copyOv" data-i="0">Copiază</button></li></ul>
-    <h3 class="h3s" style="margin-top:18px">Fotografia de fundal</h3>
-    <p class="muted" style="margin:4px 0 0">Overlay-ul o desenează singur, cu locurile jocului și camerei decupate, iar banda sponsorilor devine sticlă înghețată peste ea. Nu o mai pune separat în OBS. JPG, PNG sau WEBP, cel mult 10 MB, ideal 2560×1440 sau 3840×2160.</p>
-    ${bg ? `<p style="margin:10px 0 0"><img src="${esc(bg)}" alt="Fotografia de fundal" style="display:block;width:100%;max-width:480px;aspect-ratio:16/9;object-fit:cover;border:1px solid #1E4560"></p>` : '<p class="muted">Nicio fotografie: scena rămâne transparentă.</p>'}
+    <h3 class="h3s">Fotografia de fundal ${tip('Overlay-ul o desenează singur, cu locurile jocului și camerei decupate. Nu o mai pune separat în OBS.\nJPG, PNG sau WEBP, cel mult 10 MB, ideal 2560×1440 sau 3840×2160.')}</h3>
+    ${bg ? `<p style="margin:10px 0 0"><img class="scene-img" src="${esc(bg)}" alt="Fotografia de fundal"></p>` : '<p class="empty">Nicio fotografie: scena rămâne transparentă.</p>'}
     <div class="row"><label class="btn btn-primary">${bg ? 'Schimbă fotografia' : 'Încarcă fotografia'}<input type="file" id="scene_file" accept="image/jpeg,image/png,image/webp" hidden></label>${bg ? '<button class="btn-ghost" data-act="sceneClear">Scoate fotografia</button>' : ''}</div>
   </section>`;
 }
@@ -1162,9 +1187,7 @@ function typedValues(): Map<string, string> {
       if (c.checked !== c.defaultChecked) out.set(el.id, c.checked ? '\u0001on' : '\u0001off');
       return;
     }
-    const dirty = el instanceof HTMLSelectElement
-      ? [...el.options].some((o) => o.selected !== o.defaultSelected)
-      : el.value !== el.defaultValue;
+    const dirty = el instanceof HTMLSelectElement ? selectChanged(el) : el.value !== el.defaultValue;
     if (dirty) out.set(el.id, el.value);
   });
   return out;
@@ -1178,7 +1201,12 @@ const draftCards = (): Record<string, unknown> => ({ replici: S.linesDraft, mile
 function fieldChanged(el: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement): boolean {
   if ((el as HTMLInputElement).readOnly || el.disabled || el.closest('dialog')) return false;
   if (el instanceof HTMLInputElement && (el.type === 'checkbox' || el.type === 'radio')) return false;
-  return el instanceof HTMLSelectElement ? [...el.options].some((o) => o.selected !== o.defaultSelected) : el.value !== el.defaultValue;
+  return el instanceof HTMLSelectElement ? selectChanged(el) : el.value !== el.defaultValue;
+}
+/** A list with no option marked «selected» starts on its first one: that isn't a change. */
+function selectChanged(el: HTMLSelectElement): boolean {
+  const start = Math.max(0, [...el.options].findIndex((o) => o.defaultSelected));
+  return el.selectedIndex !== start;
 }
 function markUnsaved() {
   const drafts = draftCards();
@@ -1250,18 +1278,17 @@ function render() {
       return `
     <section class="card wide" id="pilot">
       <h2>Automat</h2>
-      <h3 class="h3s">Votul</h3>
-      <label style="display:flex;align-items:center;gap:10px;min-height:44px;margin-top:6px;cursor:pointer"><input type="checkbox" style="width:22px;height:22px;flex:none" id="apVoteOn" ${A.voteOn ? 'checked' : ''}> O rundă de vot pe zi, deschisă singură</label>
+      <h3 class="h3s" style="margin-top:0">Votul</h3>
+      <div class="opt-row"><label class="opt"><input type="checkbox" class="sw" id="apVoteOn" ${A.voteOn ? 'checked' : ''}><span class="opt-t">O rundă de vot pe zi, deschisă singură</span></label>${tip('Se deschide singură când Iceman e live după ora aleasă. Voi doar dați veto.')}</div>
       <div class="row">
         <label class="inline">După ora (România)<input class="field" type="time" id="apVoteAt" value="${esc(A.voteAt ?? '20:00')}"></label>
         <label class="inline">Cât durează (minute)<input class="field" type="number" inputmode="numeric" id="apVoteMin" min="10" max="720" value="${esc(A.voteMinutes ?? 60)}"></label>
       </div>
-      <p class="muted" style="margin:4px 0 0">Se deschide singură când Iceman e live după ora asta. Voi doar dați veto.${A.lastVoteDay ? ` Ultima rundă automată: ${esc(A.lastVoteDay)}.` : ''}</p>
-      <h3 class="h3s" style="margin-top:18px">Pornirea maratonului</h3>
-      <label style="display:flex;align-items:center;gap:10px;min-height:44px;margin-top:6px;cursor:pointer"><input type="checkbox" style="width:22px;height:22px;flex:none" id="apAutoStart" ${A.autoStart ? 'checked' : ''}${isIceman() ? '' : ' disabled'}> Cronometrul pornește singur la ora de start (${when(t.starts_at)})</label>${isIceman() ? '' : `<p style="margin:0">${onlyIceman()}</p>`}
+      ${A.lastVoteDay ? `<p class="hint">Ultima rundă automată: ${esc(A.lastVoteDay)}.</p>` : ''}
+      <h3 class="h3s">Pornirea maratonului</h3>
+      <div class="opt-row"><label class="opt"><input type="checkbox" class="sw" id="apAutoStart" ${A.autoStart ? 'checked' : ''}${isIceman() ? '' : ' disabled'}><span class="opt-t">Cronometrul pornește singur la ora de start (${when(t.starts_at)})</span></label>${tip('Altfel: «Pornește acum» din PREGĂTIRE → Start.')}</div>${isIceman() ? '' : `<p class="hint">${onlyIceman()}</p>`}
       <div class="row"><label class="inline">Ore pe cronometru la start<input class="field" type="number" id="apStartHours" step="0.5" min="0.5" value="${esc(A.startHours ?? 24)}"></label></div>
-      <p class="muted" style="margin:4px 0 0">Altfel: «Pornește acum» din PREGĂTIRE → Start.</p>
-      <div class="row"><button class="btn-primary" data-act="autoSave">Salvează</button>${A.updatedBy ? `<span class="muted">Ultima schimbare: ${esc(A.updatedBy)}, ${when(A.updatedAt)}</span>` : ''}</div>
+      <div class="row"><button class="btn-primary" data-act="autoSave">Salvează</button>${A.updatedBy ? `<span class="hint">Ultima schimbare: ${esc(A.updatedBy)}, ${when(A.updatedAt)}</span>` : ''}</div>
     </section>`;
     },
     'plan': () => {
@@ -1270,46 +1297,43 @@ function render() {
       const res = (r: string) => (r === 'done' ? '<span class="pill ok">făcut</span>' : r === 'missed' ? '<span class="pill warn">ratat</span>' : `<span class="pill bad">${esc(r)}</span>`);
       return `
     <section class="card wide" id="plan">
-      <h2>Program</h2>
-      <p class="muted" style="margin-top:0">Pornesc singure la ora lor, cât timp cronometrul merge.</p>
-      <div class="row">
+      <h2>Program ${tip('Ora dublă, codurile secrete și înghețurile pornesc singure la ora lor, cât timp cronometrul merge.')}</h2>
+      <div class="fgrid plan-form">
         <label class="inline">Ce<select class="field" id="planKind"><option value="double" selected>Ora dublă</option><option value="code">Cod secret</option><option value="freeze">Îngheț</option></select></label>
         <label class="inline">Când<input class="field" type="datetime-local" id="planAt"></label>
-        <label class="inline">Minute (oră dublă, cod)<input class="field" type="number" inputmode="numeric" id="planMin" value="60" min="1" max="720"></label>
-        <label class="inline">Până la (îngheț)<input class="field" type="datetime-local" id="planUntil"></label>
-        <label class="inline" style="flex:1 1 180px">Oferit de<input class="field" id="planSponsor" list="sponsorNames" maxlength="60" placeholder="sponsor (opțional)"></label>
+        <label class="inline pf-min">Minute<input class="field" type="number" inputmode="numeric" id="planMin" value="60" min="1" max="720"></label>
+        <label class="inline pf-until">Până la<input class="field" type="datetime-local" id="planUntil"></label>
+        <label class="inline pf-sp">Oferit de<input class="field" id="planSponsor" list="sponsorNames" maxlength="60" placeholder="sponsor (opțional)"></label>
         <button class="btn-primary" data-act="planAdd">Programează</button>
       </div>
       <h3 class="h3s">Programate (${todo.length})</h3>
-      ${todo.length ? `<ul class="list">${todo.map((x) => `<li><span class="grow">${planLine(x)}<br><span class="muted">pus de ${esc(x.by ?? '')}</span></span><button class="btn-ghost" data-act="planDel" data-id="${x.id}">Șterge</button></li>`).join('')}</ul>` : '<p class="muted" style="margin:4px 0 0">Nimic programat.</p>'}
+      ${todo.length ? `<ul class="list">${todo.map((x) => `<li><span class="grow">${planLine(x)}<br><span class="muted">pus de ${esc(x.by ?? '')}</span></span><button class="btn-ghost" data-act="planDel" data-id="${x.id}">Șterge</button></li>`).join('')}</ul>` : '<p class="empty">Nimic programat.</p>'}
       ${past.length ? `<h3 class="h3s">Ultimele 2 zile</h3><ul class="list">${past.map((x) => `<li><span class="grow">${planLine(x)}</span>${res(x.result)}</li>`).join('')}</ul>` : ''}
     </section>`;
     },
     'alerte': () => `
     <section class="card wide" id="alerte">
-      <h2>Alerte în Discord</h2>
-      <p class="muted" style="margin-top:0">Site-ul vă scrie pe Discord când ceva cere un om.</p>
+      <h2>Alerte în Discord ${tip('Site-ul vă scrie pe Discord când ceva cere un om.\nLinkul: Discord → Setările serverului → Integrări → Webhook-uri → Webhook nou → Copiază URL-ul. Rămâne privat.')}</h2>
       <p style="margin:0">${S.auto?.hasWebhook ? '<span class="pill ok">Pornite</span> Webhook-ul e salvat (nu se mai afișează).' : '<span class="pill off">Oprite</span>'}</p>
       <div class="row">
         <input class="field" type="password" id="hookUrl" autocomplete="off" placeholder="https://discord.com/api/webhooks/…" aria-label="Linkul webhook-ului de Discord" style="flex:1 1 320px;min-width:0">
         <button class="btn-primary" data-act="hookSave">Salvează</button>
         ${S.auto?.hasWebhook ? '<button class="btn-ghost" data-act="hookTest">Trimite un test</button><button class="btn-ghost" data-act="hookClear">Oprește alertele</button>' : ''}
       </div>
-      <p class="muted">Discord → Setările serverului → Integrări → Webhook-uri → Webhook nou → Copiază URL-ul. Linkul rămâne privat.</p>
     </section>`,
     'checklist': () => {
       const done = CHECK.filter((c) => checkState(c).done).length;
       return `
     <section class="card wide" id="checklist">
-      <div class="card-head"><h2>Checklist de pregătire</h2><span class="muted"><strong style="color:#F2F5FA">${done} din ${CHECK.length}</strong> gata</span></div>
-      <p class="muted" style="margin-top:0">Bifele se văd la toți.</p>
+      <div class="card-head"><h2>Checklist de pregătire ${tip('Bifele se văd la toți moderatorii. «Automat» = se bifează singur când e gata.')}</h2><span class="head-stat"><strong>${done} din ${CHECK.length}</strong> gata</span></div>
+      <div class="kbar head-bar"><span style="width:${Math.round((done / Math.max(1, CHECK.length)) * 100)}%"></span></div>
       <ul class="list">${CHECK.map((c) => {
         const st = checkState(c);
         return `<li><label style="display:flex;align-items:center;gap:12px;min-height:44px;flex:1 1 auto">${st.auto
           ? '<span class="ck-mark"><span class="pill ok">automat</span></span>'
-          : `<span class="ck-mark"><input type="checkbox" data-act="check" data-key="${c.key}" ${st.done ? 'checked' : ''} style="width:22px;height:22px"></span>`}
+          : `<span class="ck-mark"><input type="checkbox" data-act="check" data-key="${c.key}" ${st.done ? 'checked' : ''}></span>`}
           <span class="grow"${st.done ? ' style="color:#8C97A8"' : ''}>${esc(c.label)}${st.by ? `<br><span class="muted">bifat de ${esc(st.by)}, ${when(st.at ?? null)}</span>` : ''}</span></label>
-          ${c.card ? `<a class="btn btn-ghost" href="#${c.card}">Deschide</a>` : ''}</li>`;
+          ${c.card ? `<a class="btn btn-link" href="#${c.card}">Deschide<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a>` : ''}</li>`;
       }).join('')}</ul>
     </section>`;
     },
@@ -1320,8 +1344,8 @@ function render() {
       if (bingoPicksOpen()) return `<section class="card wide" id="bingo-bife"><h2>Bingo</h2>${bingoNowHtml()}</section>`;
       return `
     <section class="card wide" id="bingo-bife">
-      <div class="card-head"><h2>Bife de bingo</h2><span class="muted">${B.items.filter((i) => i.happened_at).length} din ${B.items.length} s-au întâmplat</span></div>
-      <p class="muted" style="margin-top:0">Bifați ce se vede pe stream. «Automat» = se bifează singur.${B.status.winners.length ? ` <strong style="color:#F2F5FA">${B.status.winners.length} cu bingo</strong>: trageți la sorți din PREGĂTIRE → Bingo.` : ''}</p>
+      <div class="card-head"><h2>Bife de bingo ${tip('Bifați ce se vede pe stream. «Automat» = se bifează singur.')}</h2><span class="head-stat"><strong>${B.items.filter((i) => i.happened_at).length} din ${B.items.length}</strong> s-au întâmplat</span></div>
+      ${B.status.winners.length ? `<p class="callout"><strong>${B.status.winners.length} cu bingo</strong>: trageți la sorți din PREGĂTIRE → Bingo.</p>` : ''}
       <ul class="list">${B.items.map((i) => `<li>
         ${tickBtn(i.id, !!i.happened_at)}
         <span class="grow">${esc(i.label)}${i.auto_rule ? `<br><span class="muted">${esc(ruleText(i.auto_rule))}</span>` : ''}</span></li>`).join('')}</ul>
@@ -1368,16 +1392,16 @@ function render() {
       return `<section class="card wide" id="bingo">
       <h2>Bingo</h2>
       ${bingoNowHtml()}
-      <p class="muted" style="margin:14px 0 0">Sau planificați orele (opțional): bingo se deschide și se închide singur.</p>
-      <div class="row">
+      <h3 class="h3s">Ore și premiu ${tip('Opțional: cu orele planificate, bingo se deschide și se închide singur.')}</h3>
+      <div class="fgrid">
         <label class="inline">Se deschide la<input class="field" type="datetime-local" id="bingoOpenAt" value="${toLocal(B.opens_at)}"></label>
         <label class="inline">Se închide la<input class="field" type="datetime-local" id="bingoClose" value="${toLocal(B.closes_at)}"></label>
         <label class="inline" style="flex:1 1 220px">Premiul<input class="field" id="bingoPrize" value="${esc(B.prize)}" maxlength="120"></label>
         <label class="inline" style="flex:1 1 180px">Premiul e de la<input class="field" id="bingoPrizeSponsor" list="sponsorNames" value="${esc(B.prize_sponsor ?? '')}" maxlength="60" placeholder="sponsor (opțional)"></label>
         <button class="btn-ghost" data-act="bingoSettings">Salvează</button>
       </div>
-      <h3 style="margin:20px 0 0;font-family:'Barlow Condensed',sans-serif;font-size:18px;text-transform:uppercase">Cartonașul (25 = 5×5, rând cu rând) · ${open ? 'bifele vin după închidere' : 'bifează când se întâmplă'}</h3>
-      <p class="muted" style="margin:4px 0 0">Ordinea de pe cartonaș, rând cu rând. ${bingoRows().length !== 25 ? `<strong style="color:#FF8A95">Acum sunt ${bingoRows().length}; trebuie exact 25.</strong>` : ''}</p>
+      <h3 class="h3s">Cartonașul · ${open ? 'bifele vin după închidere' : 'bifează când se întâmplă'} ${tip('25 de evenimente = cartonașul 5×5, în ordine, rând cu rând.')}</h3>
+      ${bingoRows().length !== 25 ? `<p class="callout bad">Acum sunt ${bingoRows().length}; trebuie exact 25.</p>` : ''}
       <ul class="list">${bingoRows().map((r, i) => `<li>
         ${r.id !== undefined ? tickBtn(r.id, happened(r.id)) : '<span class="pill off">nou</span>'}
         <input class="field grow" data-bingo-label="${i}" value="${esc(r.label)}" maxlength="80" aria-label="Evenimentul ${i + 1}" style="flex:1 1 200px;min-width:0">
@@ -1394,24 +1418,22 @@ function render() {
         <button class="btn-primary" data-act="bingoSaveList">Salvează lista</button>
         ${S.bingoDraft ? '<button class="btn-ghost" data-act="bingoCancel">Renunță</button><span class="muted">Modificări nesalvate</span>' : ''}
       </div>
-      <h3 style="margin:24px 0 0;font-family:'Barlow Condensed',sans-serif;font-size:18px;text-transform:uppercase">Tragerea la sorți</h3>
-      <p class="muted" style="margin-top:4px">${B.status.winners.length ? `${B.status.winners.length} cu bingo: ${B.status.winners.map((w) => esc(w.login)).join(', ')}` : 'Nimeni nu are încă toate cele 5 evenimente bifate.'}</p>
-      <p class="muted" style="margin:4px 0 0">Pe stream se vede în sursa OBS «Tragerea la bingo»: o ruletă cu toți cei cu bingo, care se oprește pe câștigător. Câștigătorul e ales de server înainte de animație.</p>
+      <h3 class="h3s">Tragerea la sorți ${tip('Pe stream se vede în sursa OBS «Tragerea la bingo»: o ruletă cu toți cei cu bingo, care se oprește pe câștigător.\nCâștigătorul e ales de server înainte de animație.')}</h3>
+      <p class="muted" style="margin:0">${B.status.winners.length ? `${B.status.winners.length} cu bingo: ${B.status.winners.map((w) => esc(w.login)).join(', ')}` : 'Nimeni nu are încă toate cele 5 evenimente bifate.'}</p>
       <div class="row"><button class="btn-primary" data-act="bingoDraw" ${B.status.winners.length && !bingoPicksOpen() ? '' : 'disabled'}>Trage la sorți</button>${B.status.draws.length ? '<button class="btn-ghost" data-act="bingoReplay">Arată din nou pe stream</button>' : ''}</div>
       ${B.status.draws.length ? `<p style="margin:10px 0 0">Extrași: ${B.status.draws.map((d) => `<strong>${esc(d.login)}</strong>${d.drawn_at ? ` <span class="muted">(${when(d.drawn_at)})</span>` : ''}`).join(' · ')}</p>` : ''}
     </section>`;
     })() : ''}`,
     'roata-premii': () => `
     <section class="card wide" id="roata-premii">
-      <h2>Premiile roții</h2>
-      <p class="muted" style="margin-top:0">8 felii. «Pe roată» = max. 16 caractere. Șansa 0 = niciodată.</p>
+      <h2>Premiile roții ${tip('8 felii. Textul de pe roată are cel mult 16 caractere.\nȘansa 0 = nu iese niciodată.')}</h2>
       <ul class="list">${wheelRows().map((p, i) => `<li>
-        <span class="muted" style="flex:0 0 22px">${i + 1}</span>
+        <span class="d-no">${i + 1}</span>
         <input class="field" data-wheel="short_label" data-i="${i}" value="${esc(p.short_label)}" maxlength="16" aria-label="Pe roată, felia ${i + 1}" style="flex:0 1 130px;min-width:0">
         <input class="field" data-wheel="full_label" data-i="${i}" value="${esc(p.full_label)}" maxlength="80" aria-label="Premiul, felia ${i + 1}" style="flex:1 1 200px;min-width:0">
         <input class="field" data-wheel="sponsor" data-i="${i}" value="${esc(p.sponsor)}" list="sponsorNames" maxlength="60" placeholder="de la (sponsor)" aria-label="Sponsorul, felia ${i + 1}" style="flex:0 1 170px;min-width:0">
-        <label style="display:inline-flex;align-items:center;gap:6px;min-height:44px"><input type="checkbox" data-wheel="is_win" data-i="${i}" ${p.is_win ? 'checked' : ''}> câștig</label>
-        <label style="display:inline-flex;align-items:center;gap:6px">șansa<input class="field" type="number" min="0" max="9999" data-wheel="weight" data-i="${i}" value="${esc(p.weight)}" style="width:80px"></label>
+        <label class="opt opt-s"><input type="checkbox" data-wheel="is_win" data-i="${i}" ${p.is_win ? 'checked' : ''}> câștig</label>
+        <label class="opt opt-s">șansa<input class="field" type="number" min="0" max="9999" data-wheel="weight" data-i="${i}" value="${esc(p.weight)}" style="width:80px"></label>
       </li>`).join('')}</ul>
       <div class="row"><button class="btn-primary" data-act="wheelSave">Salvează premiile</button>${S.wheelDraft ? '<button class="btn-ghost" data-act="wheelCancel">Renunță</button><span class="muted">Modificări nesalvate</span>' : ''}</div>
     </section>`,
@@ -1439,12 +1461,12 @@ function render() {
         ${roundOpen ? `
         <div class="row"><label class="inline" style="flex:1 1 320px">Adaugă în rundă<select class="field" id="rAddSel">${poolOptions(0)}</select></label><button class="btn-ghost" data-act="rAdd"${S.round.items.length >= 8 ? ' disabled' : ''}>+ Adaugă</button></div>
         ${newChallengeRow('round')}
-        <div class="row"><button class="btn-primary" data-act="closeRound" data-id="${S.round.id}">Închide runda acum</button><span class="muted">Se închide singură la final și alege câștigătoarea.</span></div>` : ''}
+        <div class="row"><button class="btn-primary" data-act="closeRound" data-id="${S.round.id}">Închide runda acum</button>${tip('Se închide singură la final și alege câștigătoarea.')}</div>` : ''}
       ` : '<p class="muted" style="margin-top:0">Nicio rundă încă.</p>'}
       ${!roundOpen && S.auto?.voteOn ? `<p style="margin:14px 0 0"><span class="pill ok">Vot automat</span> Următoarea rundă se deschide singură${S.auto.lastVoteDay === new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Bucharest' }) ? ' mâine' : ' azi'}, după ${esc(S.auto.voteAt)}, când Iceman e live.</p>` : ''}
       ${!roundOpen ? `
-        <details class="more"${S.auto?.voteOn ? '' : ' open'} style="margin-top:14px"><summary style="cursor:pointer;min-height:44px;display:flex;align-items:center;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:20px;text-transform:uppercase">Deschide o rundă acum, de mână</summary>
-        <p class="muted" style="margin-top:0">2 ușoare, 2 medii, 1 grea. Schimbă ce vrei.</p>
+        <details class="more"${S.auto?.voteOn ? '' : ' open'} style="margin-top:14px"><summary>Deschide o rundă acum, de mână</summary>
+        <p class="hint" style="margin:0 0 4px">2 ușoare, 2 medii, 1 grea. Schimbă ce vrei.</p>
         ${S.draft.map((id, i) => `<div class="row d-row"><span class="d-no">${i + 1}</span><select class="field" data-draft="${i}" aria-label="Provocarea ${i + 1}">${poolOptions(id)}</select><button class="btn-ghost" data-act="draftRemove" data-i="${i}"${S.draft.length <= 2 ? ' disabled' : ''} aria-label="Scoate provocarea ${i + 1}">Scoate</button></div>`).join('')}
         <div class="row"><button class="btn-ghost" data-act="draftAdd"${S.draft.length >= 8 ? ' disabled' : ''}>+ Adaugă încă o provocare</button></div>
         ${newChallengeRow('draft')}
@@ -1468,8 +1490,7 @@ function render() {
     </section>`,
     'propuneri': () => `
     <section class="card" id="propuneri">
-      <h2>Propuneri (${S.suggestions.length})</h2>
-      <p class="muted" style="margin-top:0">Spam-ul și dublurile sunt refuzate automat.</p>
+      <h2>Propuneri (${S.suggestions.length}) ${tip('Spam-ul, linkurile și dublurile sunt refuzate automat.')}</h2>
       ${S.suggestions.length > 1 ? '<div class="row"><button class="btn-primary" data-act="approveAll">Aprobă tot</button><button class="btn-ghost" data-act="rejectAll">Respinge tot</button></div>' : ''}
       ${S.suggestions.length ? `<ul class="list">${S.suggestions.map((s) => `<li class="acts-row">
         <span class="grow">${esc(s.body)}<br><span class="muted">${esc(s.viewers?.display_name ?? s.viewers?.login ?? '')} · ${when(s.created_at)}</span></span>
@@ -1487,7 +1508,7 @@ function render() {
     </section>`,
     'moderatori': () => `
     <section class="card wide" id="moderatori">
-      <h2>Moderatori</h2>
+      <h2>Moderatori ${tip('Merge și înainte ca persoana să se fi conectat pe site.')}</h2>
       <ul class="list">${S.mods.map((m) => `<li><span class="grow">${esc(m.display_name ?? m.login)}</span>${m.login === S.me!.login ? '<span class="muted">tu</span>' : m.login === site.channel ? '<span class="muted">streamer</span>' : `<button class="btn-ghost" data-act="unmod" data-login="${esc(m.login)}">Scoate</button>`}</li>`).join('')}</ul>
       <div class="row">
         <div class="pair">
@@ -1495,7 +1516,6 @@ function render() {
           <button class="btn-primary" data-act="mod">Adaugă</button>
         </div>
       </div>
-      <p class="muted">Merge și înainte ca persoana să se fi conectat pe site.</p>
     </section>`,
     milestones: milestonesHtml,
     'overlay-piese': overlayHtml,
@@ -1532,6 +1552,11 @@ let enterTimer = 0;
 const lastKpi: string[] = [];
 let inkFrom: { left: number; width: number } | null = null;
 function afterRender() {
+  // A live refresh redrew the page under an open explanation: keep it on the new (i), or close it.
+  if (tipFor && !tipFor.isConnected) {
+    const again = [...app.querySelectorAll<HTMLElement>('.tip')].find((b) => b.dataset.tip === tipFor!.dataset.tip);
+    if (again) tipShow(again); else tipHide();
+  }
   if (!S.me?.is_moderator) return;
   const firstDraw = shownView === '';
   const pageChanged = shownView !== S.view;
