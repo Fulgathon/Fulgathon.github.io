@@ -59,10 +59,12 @@ const announced = new Set<number>();
 
 // ---- Base layout, every second -------------------------------------------------
 function draw() {
-  data = forcedData(data);
-  const v = derive({ ...initialState(), now: Date.now() }, data);
+  // The clock's view: demo samples or the practice clock on top of the real data (never stored
+  // back, so the change detector only ever compares real data).
+  const view = rehearsalData(forcedData(data));
+  const v = derive({ ...initialState(), now: Date.now() }, view);
   if (brb) return drawBrb(v);
-  drawTimer(v);
+  drawTimer(v, view);
   // Next milestone
   setText($('[data-mtag]'), v.allGoalsDone ? 'TOATE MILESTONE-URILE' : 'URMĂTORUL MILESTONE');
   setText($('[data-mleft]'), v.nextLeft.toUpperCase());
@@ -125,23 +127,30 @@ function showClock(total: number, roll: boolean, big = false) {
 // +1:15:00» grows in and holds, then the changed digits roll to the new time together. More time
 // arriving meanwhile adds up in the same moment instead of starting a new one.
 let shown = -1;
-let gain: { delta: number; last: number } | null = null;
+let shownAt = 0;
+let gain: { delta: number; last: number; at: number } | null = null;
+// The clock also ran down while we waited for the update: put those seconds back so the
+// moment says +2:00:00, not +1:59:59 (a frozen clock doesn't run down).
+const ranDown = (since: number, state: string) => (state === 'frozen' ? 0 : Math.round((Date.now() - since) / 1000));
 const fmtGain = (sec: number) => {
   const s = Math.round(sec), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
   return `+${h ? `${h}:${pad2(m)}:${pad2(x)}` : `${m}:${pad2(x)}`}`;
 };
 function drawClock(target: number, state: string) {
   // Until the first real data arrives, no «time added»: the first value is just the clock.
-  if (data.loaded === false) { showClock(target, false); shown = -1; return; }
+  if (data.loaded === false && !rehearsing(data)) { showClock(target, false); shown = -1; return; }
+
   if (gain) {
-    if (target - gain.last > 5) { gain.delta += target - gain.last; setText($('[data-gainv]'), fmtGain(gain.delta)); }
-    gain.last = target;
+    const more = target - gain.last + ranDown(gain.at, state);
+    if (more > 5) { gain.delta += more; setText($('[data-gainv]'), fmtGain(gain.delta)); }
+    gain.last = target; gain.at = Date.now();
     return;
   }
   const canGain = state === 'live' || state === 'frozen' || state === 'double';
-  if (shown >= 0 && canGain && !calm && target - shown > 5) {
+  const added = shown >= 0 ? target - shown + ranDown(shownAt, state) : 0;
+  if (shown >= 0 && canGain && !calm && added > 5) {
     const el = $('.ov-timer');
-    gain = { delta: target - shown, last: target };
+    gain = { delta: added, last: target, at: Date.now() };
     setText($('[data-gainl]'), state === 'double' ? 'TIMP ADĂUGAT · ×2' : 'TIMP ADĂUGAT');
     setText($('[data-gainv]'), fmtGain(gain.delta));
     el.classList.add('gaining');
@@ -152,12 +161,12 @@ function drawClock(target: number, state: string) {
       const now = gain!.last;
       gain = null;
       showClock(now, true, true);
-      shown = now;
+      shown = now; shownAt = Date.now();
     }, 1450);
     return;
   }
   showClock(target, shown >= 0);
-  shown = target;
+  shown = target; shownAt = Date.now();
 }
 
 // The band's rotating line: what matters in this state, then where to go.
@@ -178,6 +187,27 @@ function showTick(text: string) {
 setInterval(() => { const l = tickLines(); if (l.length > 1) { tickI = (tickI + 1) % l.length; showTick(l[tickI]); } }, 8000);
 
 let prevState = '';
+// «Repetiție» from /mod: while the real marathon isn't live, the overlay runs the practice clock
+// (tag «TEST»), so Iceman can see every piece react in OBS without going live.
+const rehearsing = (d: SiteData) => !!d.rehearsal && d.rehearsal.until > Date.now() && (d.status !== 'live' || params.has('demo'));
+function rehearsalData(d: SiteData): SiteData {
+  if (!rehearsing(d)) return d;
+  const r = d.rehearsal!;
+  return { ...d, loaded: true, status: 'live', endsAt: r.endsAt, pausedUntil: r.pausedUntil, doubleFrom: r.doubleFrom, doubleUntil: r.doubleUntil, doubleSponsor: r.doubleUntil ? d.doubleSponsor ?? null : null };
+}
+let lastRehearsalN = -1;
+function rehearsalEvents(d: SiteData) {
+  const last = d.rehearsal?.last;
+  if (!rehearsing(d) || !last) { if (!d.rehearsal) lastRehearsalN = -1; return; }
+  if (lastRehearsalN === -1) { lastRehearsalN = last.n; return; }
+  if (last.n <= lastRehearsalN) return;
+  lastRehearsalN = last.n;
+  const t = tickerItem({ id: -(100000 + last.n), kind: last.kind, tier: '1000', quantity: last.amount, currency: 'EUR', seconds_added: last.seconds, user_name: last.user, user_login: null });
+  bubbleQ.push(t);
+  if (last.kind === 'gift') giftWave(t);
+  void bubbleLoop();
+}
+
 /** Demo &state=…: the sample times, applied before derive() so every frame agrees. */
 function forcedData(d: SiteData): SiteData {
   if (!forced || !FORCED_STATES.includes(forced)) return d;
@@ -186,7 +216,7 @@ function forcedData(d: SiteData): SiteData {
     doubleSponsor: forced === 'double' ? (d.doubleSponsor || site.sponsor.logoText) : null,
     startsAt: forced === 'upcoming' ? SAMPLE.start : d.startsAt };
 }
-function drawTimer(v: ReturnType<typeof derive>) {
+function drawTimer(v: ReturnType<typeof derive>, view: SiteData) {
   const timer = $('.ov-timer');
   let state = v.isFrozen ? 'frozen' : v.isLive && v.doubleNow ? 'double' : v.isLive ? 'live' : v.isEnded ? 'ended' : 'upcoming';
   if (forced && FORCED_STATES.includes(forced)) {
@@ -204,10 +234,12 @@ function drawTimer(v: ReturnType<typeof derive>) {
     }
     prevState = state;
   }
-  setText($('[data-ttext]'), state === 'frozen' ? 'ÎNGHEȚAT' : state === 'double' ? '×2 ORA DUBLĂ' : state === 'live' ? 'LIVE' : state === 'ended' ? 'TIMPUL A EXPIRAT' : v.statusText);
+  const test = rehearsing(view) && !forced;
+  setText($('[data-ttext]'), state === 'frozen' ? (test ? 'ÎNGHEȚAT · TEST' : 'ÎNGHEȚAT') : state === 'double' ? (test ? '×2 · TEST' : '×2 ORA DUBLĂ') : state === 'live' ? (test ? 'TEST' : 'LIVE') : state === 'ended' ? 'TIMPUL A EXPIRAT' : v.statusText);
+  timer.classList.toggle('rehearsal', test);
   drawClock(Number(v.dd) * 86400 + Number(v.hh) * 3600 + Number(v.mm) * 60 + Number(v.ss), state);
   // Band lines for this state (read fresh at every rotation, so «ÎNCĂ 41 MIN» stays current).
-  const t = data;
+  const t = view;
   const when = (ms: number) => (dayBuc(ms) === dayBuc(Date.now()) ? `LA ${hmBuc(ms)}` : `PE ${dayBuc(ms).toUpperCase()} · ${hmBuc(ms)}`);
   tickLines = () => {
     if (state === 'frozen' && t.pausedUntil) return [`PÂNĂ ${when(t.pausedUntil)}`, 'SUBS ȘI DONAȚIILE ADAUGĂ TIMP', GOODS];
@@ -535,6 +567,7 @@ function runTest(kind: string) {
 // ---- Data -------------------------------------------------------------------------------
 function onData(first: boolean) {
   compare(data);
+  rehearsalEvents(data);
   if (first) prev = data;
   draw();
 }

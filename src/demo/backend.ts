@@ -54,6 +54,8 @@ export interface DemoState {
   nameRules?: { name: string; rule: 'hide' | 'allow'; at: number }[];
   /** The last «Testează» pressed on /mod → Overlay OBS (the overlay plays it once). */
   overlayTest?: { kind: string; at: number; n: number };
+  /** «Repetiție»: the practice clock (same rules as mod_rehearsal). */
+  rehearsal?: import('../data/types').Rehearsal | null;
   /** /mod autopilot settings, the plan, Discord alerts and the shared checklist (demo: nothing runs or is sent). */
   autopilot?: {
     autoStart: boolean; startHours: number; voteOn: boolean; voteAt: string; voteMinutes: number; hasWebhook: boolean;
@@ -894,6 +896,7 @@ export class DemoBackend {
       ...this.community(s, now),
       lines: s.lines ?? {},
       smallDonation: s.smallDonation ?? 10,
+      rehearsal: s.rehearsal ?? null,
       advent: s.advent ?? [],
       // The showcase runs on today's clock but labels the calendar with the real dates (20 Dec, 12:00 RO).
       calendarStart: this.rich ? Date.parse('2026-12-20T10:00:00Z') : null,
@@ -1004,6 +1007,33 @@ export class DemoBackend {
       case 'mod_bingo_settings': return this.bingoSettings(ms(a.p_closes_at), String(a.p_prize ?? ''), a.p_prize_sponsor ?? null);
       case 'mod_bingo_draw': return this.bingoDraw();
       case 'mod_autopilot': return this.autopilot();
+      case 'mod_rehearsal': return this.mutate((s) => {
+        const now = Date.now();
+        const act = String(a.p_action);
+        const m = Math.max(1, Math.min(Number(a.p_minutes) || 10, 240));
+        if (act === 'start') {
+          // The demo clock is always live, so the demo allows a rehearsal anyway (the real backend refuses).
+          s.rehearsal = { until: now + 2 * HOUR, endsAt: now + 24 * HOUR, pausedUntil: null, doubleFrom: null, doubleUntil: null, last: null };
+          return;
+        }
+        if (act === 'stop') { s.rehearsal = null; return; }
+        const r = s.rehearsal;
+        if (!r || r.until <= now) fail('rehearsal_off');
+        const R = r!;
+        const gain = (kind: 'donation' | 'gift', amount: number, secs: number) => {
+          const dbl = !!R.doubleUntil && R.doubleUntil > now;
+          const sec = secs * (dbl ? 2 : 1);
+          R.endsAt += sec * 1000;
+          R.last = { n: (R.last?.n ?? 0) + 1, kind, user: 'TEST', amount, seconds: sec, doubled: dbl };
+        };
+        if (act === 'donation') gain('donation', 10, 10 * RATES.donation[0]);
+        else if (act === 'gift') gain('gift', 20, 20 * RATES.gift[0]);
+        else if (act === 'freeze') { R.endsAt += m * MIN; R.pausedUntil = Math.max(R.pausedUntil ?? now, now) + m * MIN; }
+        else if (act === 'unfreeze') { if (R.pausedUntil && R.pausedUntil > now) { R.endsAt -= R.pausedUntil - now; R.pausedUntil = null; } }
+        else if (act === 'double') { R.doubleFrom = now; R.doubleUntil = now + m * MIN; }
+        else if (act === 'nodouble') { R.doubleFrom = null; R.doubleUntil = null; }
+        else fail('bad_rehearsal');
+      });
       case 'mod_overlay_test': return this.mutate((s) => {
         if (!['event', 'gift', 'moments', 'code', 'promo'].includes(String(a.p_kind))) fail('bad_test');
         s.overlayTest = { kind: String(a.p_kind), at: Date.now(), n: (s.overlayTest?.n ?? 0) + 1 };

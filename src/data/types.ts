@@ -48,6 +48,17 @@ export interface Together { hours: number; goals: { title: string; hours: number
 /** "Acum pe stream": Twitch title + game, or a moderator note. */
 export interface NowInfo { title: string | null; game: string | null; viewers: number | null; note: string | null }
 
+/** «Repetiție» (/mod → Overlay OBS): a practice clock for testing the overlay in OBS before the
+ * marathon. The overlay uses it while the real marathon isn't live; nothing real is touched. */
+export interface Rehearsal {
+  until: number;
+  endsAt: number;
+  pausedUntil: number | null;
+  doubleFrom: number | null;
+  doubleUntil: number | null;
+  last: { n: number; kind: 'donation' | 'gift'; user: string; amount: number; seconds: number; doubled: boolean } | null;
+}
+
 export interface SiteData {
   /** false until the first answer from the backend (the page then says it's loading, not «starts soon»). */
   loaded?: boolean;
@@ -83,6 +94,7 @@ export interface SiteData {
   loyal: Loyal[];
   together: Together | null;
   now: NowInfo | null;
+  rehearsal?: Rehearsal | null;
   /** Iceman's lines for the hero bubble, per group (fewer than 5 → «Mersi, {nume}!»). */
   lines: Partial<Record<LineGroup, string[]>>;
   /** Donations below this many euros use the «Donație mică» lines. */

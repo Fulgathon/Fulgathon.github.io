@@ -257,6 +257,13 @@ export class Live {
       patch.now = { title: P.now.title ?? null, game: P.now.game ?? null, viewers: P.now.viewers ?? null, note: P.now.note ?? null };
     }
 
+    if (has('rehearsal')) {
+      const r = P.rehearsal;
+      patch.rehearsal = r && r.until ? {
+        until: ms(r.until)!, endsAt: ms(r.endsAt)!, pausedUntil: ms(r.pausedUntil), doubleFrom: ms(r.doubleFrom), doubleUntil: ms(r.doubleUntil),
+        last: r.last ? { n: Number(r.last.n) || 0, kind: r.last.kind === 'gift' ? 'gift' : 'donation', user: String(r.last.user ?? 'TEST'), amount: Number(r.last.amount) || 0, seconds: Number(r.last.seconds) || 0, doubled: !!r.last.doubled } : null,
+      } : null;
+    }
     if (has('lines') && P.lines) {
       const groups = P.lines.groups ?? {};
       patch.lines = Object.fromEntries(Object.entries(groups).filter(([, l]) => Array.isArray(l)).map(([k, l]) => [k, (l as unknown[]).map(String)]));

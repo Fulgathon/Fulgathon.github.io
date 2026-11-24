@@ -55,6 +55,8 @@ const errors: Record<string, string> = {
   timer_ended: 'Cronometrul a ajuns la zero: maratonul s-a încheiat și nu se mai poate adăuga sau îngheța timp.',
   protected_broadcaster: 'Contul lui Iceman nu poate fi scos dintre moderatori.',
   only_broadcaster: 'Doar Iceman poate porni sau încheia subathonul.',
+  rehearsal_off: 'Repetiția nu e pornită (sau s-a terminat). Apasă «Pornește repetiția».',
+  rehearsal_while_live: 'Maratonul e LIVE: repetiția merge doar înainte de start.',
   not_eur: 'Se adună doar donațiile în euro.',
   bad_webhook: 'Linkul nu e un webhook de Discord. Îl copiezi din Discord: Setările serverului → Integrări → Webhook-uri.',
   no_webhook: 'Pune întâi linkul webhook-ului de Discord.',
@@ -170,7 +172,9 @@ let S: {
   /** The open menu item (one page each) and the open tab of «Control live». */
   view: string;
   liveTab: 'timp' | 'freeze' | 'double' | 'code' | 'note';
-} = { auto: null, view: 'rapid', liveTab: 'timp', page: 'azi', chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, together: null, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
+  /** «Repetiție»: the practice clock for testing the overlay in OBS (public_state part). */
+  rehearsal: any;
+} = { rehearsal: null, auto: null, view: 'rapid', liveTab: 'timp', page: 'azi', chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, together: null, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
 const bingoRows = () => S.bingoDraft ?? (S.bingo?.items ?? []).map((i) => ({ id: i.id, label: i.label }));
 const editBingo = () => { if (!S.bingoDraft) S.bingoDraft = bingoRows(); return S.bingoDraft; };
 const goalRows = () => S.goalsDraft ?? S.goals.map((g) => ({ title: g.title, threshold: String(g.threshold), sponsor: g.sponsor ?? '', done: !!g.done_at, clip: g.clip_url ?? '', when: g.scheduled_for ?? '' }));
@@ -201,7 +205,7 @@ async function load() {
     S.health = demoHealth();
     S.auto = demoApi.rpc('mod_autopilot', {});
     const site = demoApi.toSiteData();
-    S.now = site.now; S.together = site.together;
+    S.now = site.now; S.together = site.together; S.rehearsal = site.rehearsal ?? null;
     S.lines = site.lines; S.smallDonation = site.smallDonation;
     S.chat = demoApi.rpc('mod_chat_status', {}) as typeof S.chat;
     if (!S.draft.length || S.draft.some((id) => !S.pool.find((p) => p.id === id))) autoDraft();
@@ -232,7 +236,7 @@ async function load() {
   S.health = (await (db as any).rpc('mod_health')).data ?? null;
   S.auto = (await (db as any).rpc('mod_autopilot')).data ?? null;
   const ps = (await (db as any).rpc('public_state', { p_have: {} })).data?.parts ?? {};
-  S.now = ps.now ?? null; S.together = ps.together ?? null;
+  S.now = ps.now ?? null; S.together = ps.together ?? null; S.rehearsal = ps.rehearsal ?? null;
   S.lines = ps.lines?.groups ?? {}; S.smallDonation = Number(ps.lines?.smallDonation) || 10;
   S.chat = ((await (db as any).rpc('mod_chat_status')).data as typeof S.chat) ?? null;
   S.wheel = (wheel.data ?? []) as typeof S.wheel;
@@ -667,6 +671,26 @@ function dashHtml(t: Record<string, any>, live: boolean, remaining: number, now:
   return `${kpis}<div class="dash">${control}${todoHtml()}</div><div class="dash">${plan}${conn}</div>`;
 }
 
+// «Repetiție»: Iceman tests the overlay in OBS before the marathon, without going live.
+function rehearsalHtml(): string {
+  const r = S.rehearsal;
+  const now = Date.now();
+  // public_state sends ISO dates; the demo keeps epoch ms.
+  const at = (x: unknown) => (typeof x === 'number' ? x : x ? Date.parse(String(x)) : 0);
+  const iso = (x: unknown) => new Date(at(x)).toISOString();
+  const on = !!r?.until && at(r.until) > now;
+  const liveNow = S.timer?.status === 'live' && !demoApi;
+  const frozen = on && at(r.pausedUntil) > now;
+  const dbl = on && at(r.doubleUntil) > now;
+  const b = (a: string, label: string, m?: number, pri = false) => `<button class="${pri ? 'btn-primary' : 'btn-ghost'}" data-act="rehearsal" data-a="${a}"${m ? ` data-m="${m}"` : ''}>${label}</button>`;
+  return `<h3 class="h3s" style="margin-top:18px">Repetiție în OBS (fără LIVE)</h3>
+    <p class="muted" style="margin:4px 0 0">Un ceas de test, cu eticheta «TEST», 2 ore. Nu atinge cronometrul real, statisticile sau feed-ul. Donațiile TipeeeStream din timpul repetiției apar și ele, fără să conteze.</p>
+    ${liveNow ? '<p class="muted">Maratonul e LIVE: repetiția nu mai e nevoie.</p>' : on ? `
+      <div class="states" style="margin-top:10px"><span class="pill-s">REPETIȚIE PÂNĂ LA ${hmRo(iso(r.until))}</span>${frozen ? `<span class="pill-s">ÎNGHEȚAT PÂNĂ LA ${hmRo(iso(r.pausedUntil))}</span>` : ''}${dbl ? `<span class="pill-s">ORA DUBLĂ PÂNĂ LA ${hmRo(iso(r.doubleUntil))}</span>` : ''}</div>
+      <div class="row">${b('donation', 'Donație test 10 €', 0, true)}${b('gift', 'Val de 20 subs cadou')}${frozen ? b('unfreeze', 'Dezgheață') : b('freeze', 'Îngheață 2 min', 2)}${dbl ? b('nodouble', 'Oprește Ora dublă') : b('double', 'Ora dublă 5 min', 5)}${b('stop', 'Oprește repetiția')}</div>`
+    : `<div class="row">${b('start', 'Pornește repetiția', 0, true)}</div>`}`;
+}
+
 /** «De făcut acum»: what needs a moderator, from data /mod already has. */
 function todoHtml(): string {
   const raised = Number(S.stats?.raised ?? 0);
@@ -741,6 +765,8 @@ function overlayHtml(): string {
     <h2>Piesele overlay-ului, una câte una</h2>
     <p class="muted" style="margin-top:0">Fiecare piesă = un Browser Source în OBS, la mărimea scrisă. O așezi unde vrei în scena fiecărui joc; în alte scene: «Add Existing».</p>
     <p class="muted">«De așezat» = piesa conturată, cu date de exemplu.</p>
+    ${rehearsalHtml()}
+    <h3 class="h3s" style="margin-top:18px">Linkurile pieselor</h3>
     <ul class="list">${overlayPieces.map((x, i) => `<li style="align-items:flex-start"><span class="grow"><strong>${esc(x.label)}</strong> <span class="pill off">${x.w} × ${x.h}</span>${x.key ? ' <span class="pill warn">cheie privată</span>' : ''}<br><span class="muted">${esc(x.what)}</span>
       <input class="field" readonly value="${esc(piece(x.id, !!x.key))}" id="ovp${i}" aria-label="Linkul pentru ${esc(x.label)}" style="width:100%;margin-top:6px"></span>
       <span class="pair" style="flex-direction:column;align-items:stretch"><button class="btn-ghost" data-act="copyOvp" data-i="${i}">Copiază</button><a class="btn btn-ghost" href="${esc(base + '?demo&frame=1&part=' + x.id)}" target="_blank" rel="noopener">De așezat</a></span></li>`).join('')}</ul>
@@ -1210,6 +1236,8 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     render();
   },
   liveTab: (el) => { S.liveTab = (el.dataset.tab as typeof S.liveTab) || 'timp'; render(); app.querySelector<HTMLElement>(`[data-tab="${S.liveTab}"]`)?.focus(); },
+  rehearsal: (el) => call('mod_rehearsal', { p_action: el.dataset.a, p_minutes: Number(el.dataset.m) || null },
+    ({ start: 'Repetiția a pornit. Overlay-ul arată ceasul de test în câteva secunde.', stop: 'Repetiția s-a oprit.' } as Record<string, string>)[el.dataset.a ?? ''] ?? 'Trimis. Apare în overlay în câteva secunde.'),
   ovTest: (el) => call('mod_overlay_test', { p_kind: el.dataset.kind }, 'Test trimis. Apare în overlay în câteva secunde.'),
   copyOvp: (el) => { const v = val(`ovp${el.dataset.i}`); void navigator.clipboard?.writeText(v).then(() => say('Link copiat.')); },
   copyOv: (el) => { const v = val(`ov${el.dataset.i}`); void navigator.clipboard?.writeText(v).then(() => say('Link copiat. Pune-l în OBS ca Browser Source, 1920×1080.')); },

@@ -264,6 +264,9 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
       .ov-timer[data-state="ended"] .tm-sweep, .ov-timer[data-state="frozen"] .tm-sweep i { opacity: 0; }
       .ov-timer[data-state="ended"]::before { background: #4A5568; }
       .ov-timer:not([data-state="live"]) .tm-dot { display: none; }
+      /* «Repetiție»: a yellow TEST tag, so nobody takes the practice clock for the real one */
+      .ov-timer.rehearsal[data-state="live"] .tm-tag { background: #F2C14E; color: #1A1300; }
+      .ov-timer.rehearsal .tm-dot { display: none; }
       .tm-fi, .tm-fl { display: none; } .ov-timer[data-state="double"] .tm-fi, .ov-timer[data-state="frozen"] .tm-fl { display: inline-flex; } .tm-flake { display: block; }
       .ov-mile { position: absolute; right: 24px; bottom: 24px; width: 380px; padding: 12px 16px; }
       .ov-mile .m-head { display: flex; justify-content: space-between; gap: 10px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: .1em; color: #8C97A8; }

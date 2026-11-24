@@ -9,6 +9,7 @@
 //   * Donations count only while the subathon is live (and after it started), and only in
 //     euros: any other currency goes to /mod for a moderator to decide (tipeee_skip).
 //   * Each new donation may send Iceman's bubble line to Twitch chat (chatLine; /mod switch).
+//   * Not live + a rehearsal running on /mod: the donation plays on the practice clock only.
 // Deployed with verify_jwt = false; the cron call is checked with x-cron-secret.
 
 import { admin, chatLine, json, safeEqual } from '../_shared/twitch.ts';
@@ -114,11 +115,21 @@ Deno.serve(async (req) => {
     const at = parseDate(e.created_at ?? e.inserted_at);
     if (!Number.isFinite(at) || at < started) continue;
     newest = Math.max(newest, at);
-    if (!live || at < timerStarted) continue;
 
     const p = e.parameters ?? {};
     const amount = Number(p.amount ?? e['parameters.amount']) || 0;
     const id = e.id ?? e.ref;
+    if (!live) {
+      // Not live: nothing counts, but an active rehearsal on /mod plays it on the practice clock.
+      if (amount > 0 && id !== undefined) {
+        const { error: rhError } = await db.rpc('tipeee_rehearsal', {
+          p_id: `tipeee:${id}`, p_user: (p.username ?? '').trim() || 'Anonim', p_amount: amount, p_currency: String(p.currency ?? 'EUR').toUpperCase(),
+        });
+        if (rhError) console.error('tipeee_rehearsal', id, rhError.message);
+      }
+      continue;
+    }
+    if (at < timerStarted) continue;
     if (amount <= 0 || id === undefined) continue;
     const currency = String(p.currency ?? 'EUR').toUpperCase();
     // Euros only (owner, 23 Nov 2026, B-09): no conversion table. A donation in another
