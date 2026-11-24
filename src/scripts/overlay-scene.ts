@@ -51,6 +51,12 @@ document.querySelectorAll<HTMLElement>('[data-part]').forEach((el) => { if (scen
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => sceneEl.querySelector<T>(sel)!;
 const esc = (t: unknown) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 const setText = (el: HTMLElement | null, t: string) => { if (el && el.textContent !== t) el.textContent = t; };
+// Ticking numbers (countdowns, the pause clock): every digit in a same-width box, so the text never jiggles.
+const setMono = (el: Element | null, text: string) => {
+  if (!el || (el as HTMLElement).dataset.mono === text) return;
+  (el as HTMLElement).dataset.mono = text;
+  el.innerHTML = esc(text).replace(/\d/g, (d) => `<span class="dg">${d}</span>`);
+};
 const restart = (el: HTMLElement, cls: string) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -445,7 +451,7 @@ function drawVote(v: ReturnType<typeof derive>) {
   el.classList.toggle('show', open);
   if (!open) return;
   setText(el.querySelector('[data-vround]'), `VOTUL ABONAȚILOR · RUNDA ${data.round!.number}`);
-  setText(el.querySelector('[data-vleft]'), v.roundLeft);
+  setMono(el.querySelector('[data-vleft]'), v.roundLeft);
   const html = v.challenges.slice(0, 3).map((c) => `<div class="vo"><div class="vo-top"><span>${esc(c.title)}</span><span>${c.pct}</span></div><div class="vo-bar"><span style="width:${c.pct};background:${c.leading ? '#FFFFFF' : 'var(--ice)'}"></span></div></div>`).join('');
   const list = el.querySelector<HTMLElement>('[data-vlist]')!;
   if (list.innerHTML !== html) list.innerHTML = html;
@@ -504,7 +510,7 @@ function showCode(c: { code: string; sponsor: string | null; expires_at: string 
   clearInterval(codeTimer);
   const tick = () => {
     const s = Math.max(0, Math.round((end - Date.now()) / 1000));
-    setText(el.querySelector('[data-cleft]'), `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`);
+    setMono(el.querySelector('[data-cleft]'), `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`);
   };
   tick();
   codeTimer = window.setInterval(tick, 1000);
@@ -525,7 +531,7 @@ if (params.has('promoNow')) window.setTimeout(promo, 1500);
 
 // ---- Pause scene (?scene=brb) --------------------------------------------------------
 function drawBrb(v: ReturnType<typeof derive>) {
-  setText($('[data-bclock]'), v.navClock);
+  setMono($('[data-bclock]'), v.navClock);
   const leg = [['Donatori', v.legendsDon[0], ' €'], ['Subs dăruite', v.legendsGifts[0], ' subs'], ['Biți', v.legendsBits[0], ' biți']] as const;
   const legHtml = leg.filter(([, r]) => r).map(([, r, u]) => `${esc(r!.name)} ${esc(r!.total)}${u}`).join('<br>') || 'Locurile 1 sunt libere.';
   const today = v.advent.find((d) => d.today);

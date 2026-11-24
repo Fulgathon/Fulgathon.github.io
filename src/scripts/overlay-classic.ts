@@ -39,8 +39,14 @@ let lastId: number | null = null;
 function draw() {
   const v = derive({ ...initialState(), now: Date.now() }, data);
   const set = (sel: string, text: string) => all(sel).forEach((el) => { if (el.textContent !== text) el.textContent = text; });
-  set('[data-clock]', v.navClock);
-  for (const k of ['dd', 'hh', 'mm', 'ss'] as const) set(`[data-unit="${k}"]`, v[k]);
+  // Every digit in a same-width box (the font has no fixed-width figures), so the clock never jiggles.
+  const mono = (sel: string, text: string) => all(sel).forEach((el) => {
+    if (el.dataset.mono === text) return;
+    el.dataset.mono = text;
+    el.innerHTML = text.replace(/[&<>]/g, '').replace(/\d/g, (d) => `<span class="dg">${d}</span>`);
+  });
+  mono('[data-clock]', v.navClock);
+  for (const k of ['dd', 'hh', 'mm', 'ss'] as const) mono(`[data-unit="${k}"]`, v[k]);
   set('[data-label]', v.timerLabel);
   set('[data-badge]', v.statusText);
   all('[data-badge]').forEach((el) => el.classList.toggle('live', v.isLive));
