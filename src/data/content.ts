@@ -131,11 +131,10 @@ export const adventTree = ['12-24', '12-25'];
 
 /** OBS overlay pieces (?part=…): one Browser Source each, placed per scene by Iceman.
     w × h = the Browser Source size that fits the piece at ?scale=1 (measured in ?demo). */
-// «Momentele» and «Ninsoarea» were deleted (owner, 24 Nov); an old ?part= link for them loads an empty page.
+// «Momentele», «Ninsoarea» and «Ore împreună» were deleted (owner, 24 Nov); an old ?part= link for them loads an empty page.
 export const overlayPieces: { id: string; label: string; what: string; w: number; h: number; key?: boolean }[] = [
   { id: 'timer', label: 'Cronometrul', what: 'Timpul rămas, «+timp», înghețat, Ora dublă și icemanlucky.ro.', w: 340, h: 130 },
   { id: 'goal', label: 'Următorul milestone', what: 'Ce urmează și cât mai e.', w: 430, h: 180 },
-  { id: 'together', label: 'Ore împreună', what: 'Ore privite și timp adăugat azi.', w: 340, h: 80 },
   { id: 'bubble', label: 'Balonul lui Iceman', what: 'Doar balonul cu replica, lângă capul lui pe cameră. Coada în dreapta: &tail=right.', w: 340, h: 200 },
   { id: 'vote', label: 'Votul live', what: 'Doar cât e deschis votul.', w: 400, h: 330 },
   { id: 'code', label: 'Codul secret', what: 'Doar când arătați un cod. Link privat.', w: 460, h: 170, key: true },

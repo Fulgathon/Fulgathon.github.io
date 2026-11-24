@@ -3,11 +3,11 @@
 // overlay fits its source: the scene on a 1920×1080 grid, each ?part= piece on its own size (×4/3 at 2K).
 //
 //   https://icemanlucky.ro/overlay/                             the full scene (layout v2, default):
-//       timer bottom left, next milestone bottom right, hours together top left,
+//       timer bottom left, next milestone bottom right,
 //       Iceman's bubble top right, moments in the middle, a quiet partner line
-//   ?show=timer,goal,together,bubble,moments,vote,promo,code   which parts (default: all)
+//   ?show=timer,goal,bubble,moments,vote,promo,code   which parts (default: all)
 //   ?part=timer                                   ONE piece per OBS source, at the source's top-left
-//       (timer, goal, together, bubble, vote, code, promo, draw): Iceman composes
+//       (timer, goal, bubble, vote, code, promo, draw): Iceman composes
 //       each scene himself. Sizes to use are listed on /mod → SETĂRI → Overlay OBS.
 //   ?frame=1                                      outline + always visible, for placing a piece
 //   ?calm=1                                       less motion: no snow, no jumps, moments just appear
@@ -281,12 +281,8 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
       .ov-mile .bar { margin-top: 8px; height: 8px; background: #1A2230; }
       .ov-mile .bar span { display: block; height: 100%; background: linear-gradient(90deg, #1E6BFF, var(--ice)); transition: width .8s ease; }
       .ov-mile .m-of { margin: 4px 0 0; font-size: 13px; color: #AEB8C7; }
-      .ov-together { position: absolute; left: 24px; top: 22px; display: flex; }
-      .ov-together > div { padding: 8px 14px; white-space: nowrap; }
-      .ov-together > div + div { border-left: 1px solid #23415E; }
-      .tg-k { margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px; letter-spacing: .12em; color: #8C97A8; }
-      .tg-v { margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 26px; line-height: 1; color: #DFF6FF; }
-      .tg-v small { font-size: 16px; color: #8C97A8; }
+      /* The timer's «TIMP ADĂUGAT» number (this rule used to be shared with the deleted «Ore împreună» panel). */
+      .tm-gain .tg-v { margin: 0; font-size: 26px; line-height: 1; color: #DFF6FF; }
       .ov-bubble { position: absolute; right: 24px; top: 18px; width: 330px; height: 250px; opacity: 0; transition: opacity .4s; }
       .ov-bubble.show { opacity: 1; }
       .ov-bubble img { position: absolute; right: 0; top: 34px; width: 200px; height: auto; filter: drop-shadow(0 8px 24px rgba(63,208,255,.3)); }
@@ -552,10 +548,6 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
 
     <!-- Scene (layout v2, default) -->
     <div class="ov-scene" id="scene" hidden>
-      <div class="ov-together panel" data-part="together">
-        <div><p class="tg-k">ORE ÎMPREUNĂ</p><p class="tg-v"><span data-hours>0</span> <small data-hof></small></p></div>
-        <div><p class="tg-k">ADĂUGAT AZI</p><p class="tg-v" data-today>+0 min</p></div>
-      </div>
       <div class="ov-bubble" data-part="bubble" aria-live="polite">
         <img src={mascot.src} alt="" width="200" height="194" />
         <div class="bub"><small data-bwho></small><span data-btext></span></div>

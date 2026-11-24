@@ -1,6 +1,6 @@
 // OBS overlay, layout v2 (design/layout-v2/Overlay.dc.html): a full 1920×1080
 // scene with the living timer (bottom left), the next milestone (bottom right),
-// hours watched together (top left), Iceman's bubble (top right) and a quiet
+// Iceman's bubble (top right; «Ore împreună» was deleted, owner 24 Nov) and a quiet
 // partner line, plus the moments, one at a time:
 //   timer jump / frost / Ora dublă ×2 · VISCOL (gift waves) · milestone unlocked ·
 //   new legend (prism for #1, gold/silver/bronze for 2–4) · big badge (50 h / 100 h) ·
@@ -30,7 +30,7 @@ const brb = params.get('scene') === 'brb';
 // 'speech' is the old name of the bubble piece; links already in OBS keep working.
 const partParam = params.get('part') === 'speech' ? 'bubble' : params.get('part') ?? '';
 const piece = overlayPieces.some((p) => p.id === partParam) ? partParam : null;
-const show = new Set(piece ? [piece] : (params.get('show') ?? 'timer,goal,together,bubble,moments,vote,promo,code,draw').split(','));
+const show = new Set(piece ? [piece] : (params.get('show') ?? 'timer,goal,bubble,moments,vote,promo,code,draw').split(','));
 if (piece) document.body.classList.add('piece', `piece-${piece}`);
 // Owner, 24 Nov: «Balonul lui Iceman» is only the speech bubble (it sits over his real camera),
 // never the drawn Iceman. &tail=right points the tail to the right.
@@ -92,9 +92,6 @@ function draw() {
   setText($('[data-mof]'), v.nextOf);
   $('[data-mbar]').style.width = v.nextBar;
   // Together
-  setText($('[data-hours]'), v.togetherHours.replace(' h', ''));
-  setText($('[data-hof]'), '');   // the community goal (target) was deleted (owner, 24 Nov)
-  setText($('[data-today]'), v.todayBig);
   drawVote(v);
   // Vote: announce the winner once, right after the round closes (it can close without any data change).
   const r = data.round;
