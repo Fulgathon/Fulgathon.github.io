@@ -566,6 +566,7 @@ const favicon = await getImage({ src: emote, format: 'png', width: 64 });
       }
       button.tip:active:not(:disabled) { transform: none; }
       #tipBox { position: fixed; z-index: 80; left: 0; top: 0; width: max-content; max-width: min(340px, calc(100vw / var(--z, 1) - 24px)); padding: 10px 12px; background: #120F22; border: 1px solid #5A4C9E; border-top: 2px solid #B9A6FF; box-shadow: 0 16px 40px rgba(0, 0, 0, .65), 0 0 24px rgba(185, 166, 255, .12); color: #E6E1FA; font: 400 13.5px/1.55 Barlow, system-ui, sans-serif; letter-spacing: normal; text-transform: none; white-space: pre-line; pointer-events: none; }
+      #tipBox strong { color: #FFFFFF; font-weight: 700; }
       #tipBox::before { content: ''; position: absolute; left: calc(var(--ax, 50%) - 5px); width: 8px; height: 8px; background: #120F22; border: solid #5A4C9E; transform: rotate(45deg); }
       #tipBox[data-side="below"]::before { top: -6px; border-width: 2px 0 0 2px; border-color: #B9A6FF; }
       #tipBox[data-side="above"]::before { bottom: -5px; border-width: 0 1px 1px 0; }

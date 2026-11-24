@@ -121,14 +121,17 @@ function releaseField() {
 // tip(text) = a small square (i) button; the text shows in one floating box on hover, focus or tap
 // (the box lives in <body>, positioned in the window, so cards never clip it). Screen readers get
 // the same text right after the button. «\n» in the text starts a new line.
-const tip = (text: string) => `<button type="button" class="tip" data-tip="${esc(text)}" aria-label="Explicație"><span aria-hidden="true">?</span></button><span class="sr-only">${esc(text)}</span>`;
+// Words in «» are names of buttons or things to type: the box shows them bold, without the marks
+// (owner, 25 Nov: no code-like quoting in the explanations).
+const tip = (text: string) => `<button type="button" class="tip" data-tip="${esc(text)}" aria-label="Explicație"><span aria-hidden="true">?</span></button><span class="sr-only">${esc(text.replace(/[«»]/g, ''))}</span>`;
+const tipHtml = (text: string) => esc(text).replace(/«([^»]+)»/g, '<strong>$1</strong>');
 const tipBox = document.createElement('div');
 tipBox.id = 'tipBox'; tipBox.setAttribute('role', 'tooltip'); tipBox.hidden = true;
 document.body.append(tipBox);
 let tipFor: HTMLElement | null = null;
 function tipShow(b: HTMLElement) {
   tipFor = b;
-  tipBox.textContent = b.dataset.tip ?? '';
+  tipBox.innerHTML = tipHtml(b.dataset.tip ?? '');
   tipBox.hidden = false;
   b.setAttribute('aria-expanded', 'true');
   // Big screens zoom the whole page (html { zoom }): rectangles come in zoomed pixels, positions don't.
@@ -471,7 +474,7 @@ function linesHtml(): string {
     </div>`;
   }).join('');
   return `<section class="card wide" id="replici">
-    <h2>Replicile lui Iceman ${tip(`O replică pe rând, minim ${MIN_LINES} pe grup, maxim ${MAX_LINE} de caractere.\nPoți folosi {nume}, {timp}, {suma} și {subs}.\nUn grup cu mai puțin de ${MIN_LINES} replici e galben, iar balonul spune «${FALLBACK_LINE}» în loc.`)}</h2>
+    <h2>Replicile lui Iceman ${tip(`O replică pe rând, minim ${MIN_LINES} pe grup, maxim ${MAX_LINE} de caractere.\nÎn replică poți scrie «{nume}», «{timp}», «{suma}» și «{subs}»: pe stream se înlocuiesc cu numele, timpul adăugat, suma și numărul de subs.\nUn grup cu mai puțin de ${MIN_LINES} replici e galben, iar balonul spune «${FALLBACK_LINE}» în loc.`)}</h2>
     <div class="panels">
       ${chatHtml()}
       <div class="panel">
@@ -936,7 +939,7 @@ function testCardHtml(): string {
 // the clock gets the same extra time (mod_extend, migration 20261214100000). Nothing ends or restarts.
 /** Shown next to «Prelungește» and the manual «+ min» (owner, 25 Nov). */
 const TIME_BY_HAND = 'Fiecare apăsare în /mod e o acțiune separată: dacă doi moderatori apasă «+5 min» pentru același lucru, ceasul primește +10. La fel și la «Prelungește». Stabiliți cine adaugă timp de mână.';
-const EXTEND_HELP = 'Muți finalul programat mai târziu, de câte ori vrei, fără să oprești subathonul.\nCronometrul primește exact diferența: de la 17 la 25 ianuarie = +8 zile pe ceas, chiar dacă subs l-au împins deja mai departe.\nSe poate doar înainte să ajungă ceasul la zero.\n\n' + TIME_BY_HAND;
+const EXTEND_HELP = 'Muți finalul programat mai târziu, de câte ori vrei, fără să oprești subathonul.\nCronometrul primește exact diferența: mutat de la 17 la 25 ianuarie, ceasul primește 8 zile în plus, chiar dacă subs l-au împins deja mai departe.\nSe poate doar înainte să ajungă ceasul la zero.\n\n' + TIME_BY_HAND;
 const durRo = (ms: number) => {
   const m = Math.max(0, Math.round(ms / 60000)), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60;
   return d ? `${d} ${d === 1 ? 'zi' : 'zile'}${h ? ` ${h} h` : ''}` : h ? `${h} h${mm ? ` ${mm} min` : ''}` : `${mm} min`;
@@ -983,7 +986,7 @@ function tasksHtml(): string {
   return `<section class="card wide" id="sarcini">
     <h2>Donează și alegi ${tip('O donație de exact suma din listă (în euro, cât maratonul e LIVE) pune sarcina în coadă, cu numele donatorului. Alte sume adaugă doar timp.\nBifați «Făcută» când Iceman a făcut-o.')}${T?.pending ? `<span class="h2-note">${T.pending} de făcut</span>` : ''}</h2>
     ${queue.length ? `<ul class="list">${rows}</ul>${T && T.pending > queue.length ? `<p class="muted">+${T.pending - queue.length} mai vechi după acestea.</p>` : ''}` : '<p class="empty">Nimic de făcut acum.</p>'}
-    <h3 class="h3s">Lista de pe overlay ${tip('Câte una pe rând: suma | sarcina, de exemplu «10 | Alege un campion».\nCel mult 8, fiecare cu altă sumă.')}</h3>
+    <h3 class="h3s">Lista de pe overlay ${tip('Câte una pe rând: suma, o bară verticală, apoi sarcina. De exemplu «10 | Alege un campion».\nCel mult 8, fiecare cu altă sumă.')}</h3>
     <textarea class="field" id="tasksList" rows="6" aria-label="Lista: câte una pe rând, suma | sarcina" placeholder="10 | Alege un campion" style="width:100%">${esc(draft)}</textarea>
     <div class="row"><button class="btn-primary" data-act="tasksSave">Salvează lista</button></div>
   </section>`;
@@ -1173,7 +1176,7 @@ function milestonesHtml(): string {
   const rows = goalRows();
   let nextFound = false;
   return `<section class="card wide" id="milestones">
-    <div class="card-head"><h2>Milestone Maraton ${tip('Se deblochează la suma în euro.\n«Făcut» + linkul clipului = clipul apare pe site.')}</h2><span class="head-stat">Strâns acum <strong>${fmtInt(raised)} €</strong></span></div>
+    <div class="card-head"><h2>Milestone Maraton ${tip('Se deblochează când suma strânsă în euro ajunge la prag.\nApăsați «Marchează făcut» și puneți linkul clipului: clipul apare pe site.')}</h2><span class="head-stat">Strâns acum <strong>${fmtInt(raised)} €</strong></span></div>
     <div class="ms-headrow" aria-hidden="true"><span>NR.</span><span>SUMA (€)</span><span>PROVOCAREA</span><span>PREZENTAT DE</span><span>STARE</span><span>CÂND SE FACE</span><span>CLIPUL (DUPĂ LIVE)</span><span></span><span></span></div>
     <ul class="list ms-list">${rows.map((g, i) => {
       const reached = g.threshold !== '' && raised >= Number(g.threshold);
@@ -1206,7 +1209,7 @@ function overlayHtml(): string {
   const control = base + '?scene=control';
   const piece = (id: string, withKey: boolean) => base + '?' + [withKey && key ? `key=${key}` : '', `part=${id}`].filter(Boolean).join('&');
   const pieces = `<section class="card wide" id="overlay-piese">
-    <h2>Piesele overlay-ului, una câte una ${tip('Fiecare piesă = un Browser Source în OBS, la mărimea scrisă (pentru canvas 2K, 2560×1440; în paranteză, pentru 1920×1080). Piesa se potrivește singură mărimii sursei.\nO așezi unde vrei în scena fiecărui joc; în alte scene: «Add Existing».\n«De așezat» = piesa conturată, cu date de exemplu.\nOpțional la finalul linkului: &scale=1.2 sau &calm=1.\nCa să le vezi în acțiune: SETĂRI → Mod test.')}</h2>
+    <h2>Piesele overlay-ului, una câte una ${tip('Fiecare piesă e un Browser Source separat în OBS, la mărimea scrisă (pentru canvas 2K, 2560×1440; în paranteză, pentru 1920×1080). Piesa se potrivește singură mărimii sursei.\nO așezi unde vrei în scena fiecărui joc; în alte scene: «Add Existing».\nButonul «De așezat» arată piesa conturată, cu date de exemplu.\nOpțional, adăugați la finalul linkului «&scale=1.2» ca piesa să fie mai mare, sau «&calm=1» ca să meargă fără ninsoare și animații.\nCa să le vedeți în acțiune: «SETĂRI → Mod test».')}</h2>
     <ul class="list">${overlayPieces.map((x, i) => `<li style="align-items:flex-start"><span class="grow"><strong>${esc(x.label)}</strong> <span class="pill off">${Math.round(x.w * 4 / 3)} × ${Math.round(x.h * 4 / 3)}</span> <span class="muted">(${x.w} × ${x.h})</span>${x.key ? ' <span class="pill warn">cheie privată</span>' : ''}<br><span class="muted">${esc(x.what)}</span>
       <input class="field" readonly value="${esc(piece(x.id, !!x.key))}" id="ovp${i}" aria-label="Linkul pentru ${esc(x.label)}" style="width:100%;margin-top:6px"></span>
       <span class="pair" style="flex-direction:column;align-items:stretch"><button class="btn-ghost" data-act="copyOvp" data-i="${i}">Copiază</button><a class="btn btn-ghost" href="${esc(base + '?demo&frame=1&part=' + x.id)}" target="_blank" rel="noopener">De așezat</a></span></li>`).join('')}</ul>
@@ -1214,7 +1217,7 @@ function overlayHtml(): string {
   const bg = S.sceneBg;
   return pieces + `<section class="card wide" id="overlay">
     <h2>Overlay OBS: scena întreagă ${tip('«Camera de control»: un singur Browser Source 2560×1440 (2K), deasupra jocului și a camerei. Merge și la 1920×1080: se potrivește singură.')}</h2>
-    <ul class="list"><li><span class="grow"><strong>Camera de control</strong> <span class="pill off">2560 × 1440</span> ${tip('În OBS (2K), sub acest source: jocul 1536×864 la x 77, y 72 și camera 691×388 la x 1767, y 72.\nLa 1920×1080: jocul 1152×648 la x 58, y 54, camera 518×291 la x 1325, y 54.\nCu «&frame=1» la finalul linkului se văd locurile, cu mărimile.')}
+    <ul class="list"><li><span class="grow"><strong>Camera de control</strong> <span class="pill off">2560 × 1440</span> ${tip('În OBS (2K), sub acest source: jocul 1536×864 la x 77, y 72 și camera 691×388 la x 1767, y 72.\nLa 1920×1080: jocul 1152×648 la x 58, y 54, camera 518×291 la x 1325, y 54.\nAdăugați «&frame=1» la finalul linkului ca să vedeți locurile, cu mărimile.')}
       <input class="field" readonly value="${esc(control)}" id="ov0" aria-label="Linkul scenei Camera de control" style="width:100%;margin-top:6px"></span><button class="btn-ghost" data-act="copyOv" data-i="0">Copiază</button></li></ul>
     <h3 class="h3s">Fotografia de fundal ${tip('Overlay-ul o desenează singur, cu locurile jocului și camerei decupate. Nu o mai pune separat în OBS.\nJPG, PNG sau WEBP, cel mult 10 MB, ideal 2560×1440 sau 3840×2160.')}</h3>
     ${bg ? `<p style="margin:10px 0 0"><img class="scene-img" src="${esc(bg)}" alt="Fotografia de fundal"></p>` : '<p class="empty">Nicio fotografie: scena rămâne transparentă.</p>'}
@@ -1374,7 +1377,7 @@ function render() {
       const done = CHECK.filter((c) => checkState(c).done).length;
       return `
     <section class="card wide" id="checklist">
-      <div class="card-head"><h2>Checklist de pregătire ${tip('Bifele se văd la toți moderatorii. «Automat» = se bifează singur când e gata.')}</h2><span class="head-stat"><strong>${done} din ${CHECK.length}</strong> gata</span></div>
+      <div class="card-head"><h2>Checklist de pregătire ${tip('Bifele se văd la toți moderatorii. Cele marcate «automat» se bifează singure când sunt gata.')}</h2><span class="head-stat"><strong>${done} din ${CHECK.length}</strong> gata</span></div>
       <div class="kbar head-bar"><span style="width:${Math.round((done / Math.max(1, CHECK.length)) * 100)}%"></span></div>
       <ul class="list">${CHECK.map((c) => {
         const st = checkState(c);
@@ -1393,7 +1396,7 @@ function render() {
       if (bingoPicksOpen()) return `<section class="card wide" id="bingo-bife"><h2>Bingo</h2>${bingoNowHtml()}</section>`;
       return `
     <section class="card wide" id="bingo-bife">
-      <div class="card-head"><h2>Bife de bingo ${tip('Bifați ce se vede pe stream. «Automat» = se bifează singur.')}</h2><span class="head-stat"><strong>${B.items.filter((i) => i.happened_at).length} din ${B.items.length}</strong> s-au întâmplat</span></div>
+      <div class="card-head"><h2>Bife de bingo ${tip('Bifați ce se vede pe stream. Cele cu regulă «automat» se bifează singure.')}</h2><span class="head-stat"><strong>${B.items.filter((i) => i.happened_at).length} din ${B.items.length}</strong> s-au întâmplat</span></div>
       ${B.status.winners.length ? `<p class="callout"><strong>${B.status.winners.length} cu bingo</strong>: trageți la sorți din PREGĂTIRE → Bingo.</p>` : ''}
       <ul class="list">${B.items.map((i) => `<li>
         ${tickBtn(i.id, !!i.happened_at)}
@@ -1474,7 +1477,7 @@ function render() {
         <label class="inline" style="flex:1 1 180px">Premiul e de la<input class="field" id="bingoPrizeSponsor" list="sponsorNames" value="${esc(B.prize_sponsor ?? '')}" maxlength="60" placeholder="sponsor (opțional)"></label>
         <button class="btn-ghost" data-act="bingoSettings">Salvează</button>
       </div>
-      <h3 class="h3s">Cartonașul · ${open ? 'bifele vin după închidere' : 'bifează când se întâmplă'} ${tip('25 de evenimente = cartonașul 5×5, în ordine, rând cu rând.')}</h3>
+      <h3 class="h3s">Cartonașul · ${open ? 'bifele vin după închidere' : 'bifează când se întâmplă'} ${tip('Cartonașul are 25 de evenimente (5 × 5), în ordine, rând cu rând.')}</h3>
       ${bingoRows().length !== 25 ? `<p class="callout bad">Acum sunt ${bingoRows().length}; trebuie exact 25.</p>` : ''}
       <ul class="list">${bingoRows().map((r, i) => `<li>
         ${r.id !== undefined ? tickBtn(r.id, happened(r.id)) : '<span class="pill off">nou</span>'}
@@ -1500,7 +1503,7 @@ function render() {
     })() : ''}`,
     'roata-premii': () => `
     <section class="card wide" id="roata-premii">
-      <h2>Premiile roții ${tip('8 felii. Textul de pe roată are cel mult 16 caractere.\nȘansa 0 = nu iese niciodată.')}</h2>
+      <h2>Premiile roții ${tip('8 felii. Textul de pe roată are cel mult 16 caractere.\nCu șansa 0, felia nu iese niciodată.')}</h2>
       <ul class="list">${wheelRows().map((p, i) => `<li>
         <span class="d-no">${i + 1}</span>
         <input class="field" data-wheel="short_label" data-i="${i}" value="${esc(p.short_label)}" maxlength="16" aria-label="Pe roată, felia ${i + 1}" style="flex:0 1 130px;min-width:0">
