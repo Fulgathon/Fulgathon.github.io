@@ -1,12 +1,13 @@
 ---
-// OBS overlay: add as a Browser Source, 1920×1080, transparent background.
+// OBS overlay: add as a Browser Source, 2560×1440 (2K) or 1920×1080, transparent background. Every
+// overlay fits its source: the scene on a 1920×1080 grid, each ?part= piece on its own size (×4/3 at 2K).
 //
 //   https://icemanlucky.ro/overlay/                             the full scene (layout v2, default):
 //       timer bottom left, next milestone bottom right, hours together top left,
 //       Iceman's bubble top right, moments in the middle, a quiet partner line
 //   ?show=timer,goal,together,bubble,moments,vote,promo,code   which parts (default: all)
 //   ?part=timer                                   ONE piece per OBS source, at the source's top-left
-//       (timer, goal, together, bubble, vote, moments, code, promo, snow): Iceman composes
+//       (timer, goal, together, bubble, vote, code, promo, draw): Iceman composes
 //       each scene himself. Sizes to use are listed on /mod → SETĂRI → Overlay OBS.
 //   ?frame=1                                      outline + always visible, for placing a piece
 //   ?calm=1                                       less motion: no snow, no jumps, moments just appear
@@ -94,7 +95,7 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
       @media (prefers-reduced-motion: reduce) { .fill, .chip, .box-event, .code-chip { transition: none; } }
 
       /* ---- Scene (layout v2, default) ---- */
-      .ov-scene { position: fixed; inset: 0; transform: scale(var(--scale)); transform-origin: 0 0; }
+      .ov-scene { position: fixed; left: 0; top: 0; width: 1920px; height: 1080px; transform: scale(var(--scale)); transform-origin: 0 0; }
       #ov-snow { position: fixed; inset: 0; pointer-events: none; }
       .cond { font-family: 'Barlow Condensed', sans-serif; }
       .panel { background: rgba(5, 6, 8, 0.9); border: 1px solid #23415E; }
@@ -392,7 +393,8 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
       @keyframes drShard { 0% { opacity: 1; transform: rotate(var(--a)) translateY(-20px) scaleY(.4); } 100% { opacity: 0; transform: rotate(var(--a)) translateY(-210px) scaleY(1); } }
       body.frame .ov-draw { opacity: 1; min-height: 480px; }
       /* Pause scene (?scene=brb) */
-      .ov-brb { position: fixed; inset: 0; background: #050608; }
+      .ov-brb { position: fixed; left: 0; top: 0; width: 1920px; height: 1080px; background: #050608; transform: scale(var(--scale)); transform-origin: 0 0; }
+      body:has(.ov-brb:not([hidden])) { background: #050608; }
       .brb-title { position: absolute; left: 80px; top: 80px; margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 140px; line-height: .9; text-transform: uppercase; }
       .brb-title span { color: var(--ice); }
       .brb-clock { position: absolute; left: 80px; top: 230px; margin: 0; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 80px; color: #DFF6FF; font-variant-numeric: tabular-nums; }
@@ -406,8 +408,6 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
       /* ?part=…: one piece per OBS source, pinned to the source's top-left corner. */
       body.piece .ov-scene > [data-part]:not(.ov-moment) { left: 8px !important; top: 8px !important; right: auto !important; bottom: auto !important; }
       body.piece-promo .ov-promo { transform: none; margin: 0; }
-      body.piece-moments .ov-moment { top: 8px; }
-      body.piece-snow .ov-scene { display: none; }
       /* ?part=bubble (old name ?part=speech): only the speech bubble, bigger, its tail pointing down to his head on the camera. */
       body.piece-speech .ov-bubble { width: 324px; height: auto; }
       body.piece-speech .ov-bubble img { display: none; }
@@ -422,7 +422,6 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
       body.frame .ov-scene > [data-part]:empty::before { content: attr(data-part); display: block; padding: 10px 14px; font: 800 18px/1 'Barlow Condensed', sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #8FE4FF; }
       body.frame .ov-moment:not(.show) { min-height: 360px; }
       body.frame .ov-code:empty { width: 400px; min-height: 120px; }
-      body.frame.piece-snow #ov-snow { outline: 2px dashed rgba(63, 208, 255, .85); outline-offset: -2px; }
       /* ?calm=1 and reduced motion: values just change, moments simply appear and go. */
       body.calm *, body.calm *::before, body.calm *::after { animation: none !important; transition: none !important; }
       @media (prefers-reduced-motion: reduce) { .ov-scene *, .ov-brb * { animation: none !important; transition: none !important; } }
@@ -603,9 +602,14 @@ const mascot = await getImage({ src: logo, format: 'webp', width: 400 });
       <div class="brb-panels" data-bpanels></div>
     </div>
     <script>
+      import { overlayPieces } from '../data/content';
       // The old strip and box (?style=strip, ?style=box) keep their own script; the scene is the default.
-      const style = new URLSearchParams(location.search).get('style');
-      if (style === 'box' || style === 'strip') void import('../scripts/overlay-classic');
+      const q = new URLSearchParams(location.search);
+      const style = q.get('style');
+      const part = q.get('part') === 'speech' ? 'bubble' : q.get('part');
+      // A piece that no longer exists (e.g. the deleted «Momentele», «Ninsoarea»): an empty, transparent page.
+      if (part && !overlayPieces.some((p) => p.id === part)) document.body.replaceChildren();
+      else if (style === 'box' || style === 'strip') void import('../scripts/overlay-classic');
       else if (new URLSearchParams(location.search).get('scene') === 'control') void import('../scripts/scene-control');
       else void import('../scripts/overlay-scene');
     </script>

@@ -43,7 +43,18 @@ const promoMinutes = params.has('promo') ? Math.max(0, Number(params.get('promo'
 const codeSecs = Math.min(600, Math.max(10, Number(params.get('codeSecs')) || 60));
 
 document.body.classList.toggle('calm', calm);
-document.documentElement.style.setProperty('--scale', String(scale));
+// Every overlay fits its Browser Source (owner, 24 Nov: all overlays at 2K). The scene and the pause
+// scene are laid out on a 1920×1080 grid, a piece on its own size (overlayPieces); a 2560×1440 source
+// (2K) draws everything ×4/3, a 1920×1080 one as before. &scale= still multiplies on top.
+const pieceSize = overlayPieces.find((p) => p.id === piece);
+let fitK = 1;
+function fitScale() {
+  const [w, h] = pieceSize ? [pieceSize.w, pieceSize.h] : [1920, 1080];
+  fitK = Math.min(4, Math.max(0.25, Math.min(innerWidth / w, innerHeight / h) || 1));
+  document.documentElement.style.setProperty('--scale', String(fitK * scale));
+}
+fitScale();
+addEventListener('resize', fitScale);
 const sceneEl = document.getElementById(brb ? 'brb' : 'scene')!;
 sceneEl.hidden = false;
 document.getElementById('compact')!.hidden = true;
@@ -350,7 +361,7 @@ function snowAmount() {
 const canvas = document.getElementById('ov-snow') as HTMLCanvasElement;
 const flakes = Array.from({ length: 260 }, () => ({ x: Math.random(), y: Math.random(), r: 1 + Math.random() * 2.6, v: 0.0008 + Math.random() * 0.0016, d: Math.random() * 2 - 1 }));
 function snow() {
-  if (calm || (piece && piece !== 'snow')) return;
+  if (calm || piece) return;
   const ctx = canvas.getContext('2d')!;
   const w = (canvas.width = innerWidth), h = (canvas.height = innerHeight);
   const frame = () => {
@@ -363,7 +374,7 @@ function snow() {
       f.y += f.v * (1 + amount); f.x += f.d * 0.0004;
       if (f.y > 1) { f.y = -0.02; f.x = Math.random(); }
       ctx.globalAlpha = 0.35 + (f.r / 3.6) * 0.5;
-      ctx.beginPath(); ctx.arc(f.x * w, f.y * h, f.r, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(f.x * w, f.y * h, f.r * fitK, 0, Math.PI * 2); ctx.fill();
     }
     requestAnimationFrame(frame);
   };

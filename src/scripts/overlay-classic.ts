@@ -20,7 +20,10 @@ const promoMinutes = params.has('promo') ? Math.max(0, Number(params.get('promo'
 const codeSecs = Math.min(600, Math.max(10, Number(params.get('codeSecs')) || 60));
 
 document.body.className = `pos-${pos}`;
-document.documentElement.style.setProperty('--scale', String(scale));
+// Fits the source like the other overlays: a 2560×1440 (2K) source draws it ×4/3.
+const fitClassic = () => document.documentElement.style.setProperty('--scale', String(scale * Math.min(4, Math.max(0.25, Math.min(innerWidth / 1920, innerHeight / 1080) || 1))));
+fitClassic();
+addEventListener('resize', fitClassic);
 
 // Only the chosen style, and only the chosen parts.
 const root = document.getElementById(boxStyle ? 'box' : 'compact')!;

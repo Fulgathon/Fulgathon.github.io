@@ -1139,11 +1139,11 @@ function overlayHtml(): string {
   const piece = (id: string, withKey: boolean) => base + '?' + [withKey && key ? `key=${key}` : '', `part=${id}`].filter(Boolean).join('&');
   const pieces = `<section class="card wide" id="overlay-piese">
     <h2>Piesele overlay-ului, una câte una</h2>
-    <p class="muted" style="margin-top:0">Fiecare piesă = un Browser Source în OBS, la mărimea scrisă. O așezi unde vrei în scena fiecărui joc; în alte scene: «Add Existing».</p>
+    <p class="muted" style="margin-top:0">Fiecare piesă = un Browser Source în OBS, la mărimea scrisă (pentru canvas 2K, 2560×1440; în paranteză, pentru 1920×1080). Piesa se potrivește singură mărimii sursei. O așezi unde vrei în scena fiecărui joc; în alte scene: «Add Existing».</p>
     <p class="muted">«De așezat» = piesa conturată, cu date de exemplu.</p>
     ${rehearsalHtml()}
     <h3 class="h3s" style="margin-top:18px">Linkurile pieselor</h3>
-    <ul class="list">${overlayPieces.map((x, i) => `<li style="align-items:flex-start"><span class="grow"><strong>${esc(x.label)}</strong> <span class="pill off">${x.w} × ${x.h}</span>${x.key ? ' <span class="pill warn">cheie privată</span>' : ''}<br><span class="muted">${esc(x.what)}</span>
+    <ul class="list">${overlayPieces.map((x, i) => `<li style="align-items:flex-start"><span class="grow"><strong>${esc(x.label)}</strong> <span class="pill off">${Math.round(x.w * 4 / 3)} × ${Math.round(x.h * 4 / 3)}</span> <span class="muted">(${x.w} × ${x.h})</span>${x.key ? ' <span class="pill warn">cheie privată</span>' : ''}<br><span class="muted">${esc(x.what)}</span>
       <input class="field" readonly value="${esc(piece(x.id, !!x.key))}" id="ovp${i}" aria-label="Linkul pentru ${esc(x.label)}" style="width:100%;margin-top:6px"></span>
       <span class="pair" style="flex-direction:column;align-items:stretch"><button class="btn-ghost" data-act="copyOvp" data-i="${i}">Copiază</button><a class="btn btn-ghost" href="${esc(base + '?demo&frame=1&part=' + x.id)}" target="_blank" rel="noopener">De așezat</a></span></li>`).join('')}</ul>
     <p class="muted">Opțional la final: <strong>&amp;scale=1.2</strong> sau <strong>&amp;calm=1</strong>.</p>
