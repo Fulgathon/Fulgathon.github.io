@@ -36,6 +36,26 @@ const favicon = await getImage({ src: emote, format: 'png', width: 64 });
       .card { background: #0B1018; border: 1px solid #1A2230; padding: 18px; }
       .card.wide { grid-column: 1 / -1; }
       .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+      /* A row with labelled fields: buttons line up with the fields, not with label + field. */
+      .row:has(> label.inline) { align-items: flex-end; }
+      /* Winning challenges: the title on its own line, all controls on one row under it. */
+      #provocari .list > li { flex-wrap: wrap; align-items: center; }
+      #provocari .list > li > .grow { flex: 1 1 100%; font-weight: 600; }
+      /* Bingo ticks: one button width for both states, so the event names line up; two columns when there's room. */
+      button[data-act="bingoTick"] { min-width: 158px; flex: none; }
+      #bingo-bife .list > li { flex-wrap: nowrap; }
+      #bingo-bife .list > li > .grow { min-width: 0; }
+      @media (min-width: 1100px) { #bingo-bife .list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; } }
+      /* Suggestions: the text on its own line, Aprobă + Respinge together under it. Prizes card only as tall as its list. */
+      #propuneri .list > li { flex-wrap: wrap; }
+      #propuneri .list > li > .grow { flex: 1 1 100%; }
+      #premii { align-self: start; }
+      /* Checklist: checkbox and «automat» share one slot, so every item's text starts at the same place. */
+      .ck-mark { flex: none; width: 76px; display: flex; align-items: center; }
+      details.more > summary { list-style: none; }
+      details.more > summary::-webkit-details-marker { display: none; }
+      details.more > summary::after { content: '+'; margin-left: 10px; color: var(--ice); }
+      details.more[open] > summary::after { content: '−'; }
       .muted { color: #8C97A8; font-size: 14px; }
       .big { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 40px; line-height: 1; }
       .pill { display: inline-block; padding: 2px 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
@@ -141,7 +161,7 @@ const favicon = await getImage({ src: emote, format: 'png', width: 64 });
       .ms-headrow { display: none; }
       .ms-na { color: #4A5568; }
       @media (min-width: 1200px) {
-        ul.ms-list li, .ms-headrow { display: grid; grid-template-columns: 30px 90px minmax(0, 1.6fr) minmax(0, .9fr) 112px minmax(0, 1fr) minmax(0, 1.3fr) 150px 84px; gap: 8px; align-items: center; }
+        ul.ms-list li, .ms-headrow { display: grid; grid-template-columns: 30px 76px minmax(0, 2fr) minmax(112px, .9fr) 104px minmax(0, .9fr) minmax(0, .9fr) 150px 84px; gap: 8px; align-items: center; }
         .ms-headrow { padding: 8px 0; border-bottom: 1px solid #1C2230; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: .1em; color: #8C97A8; }
         ul.ms-list li { padding: 6px 0; }
         ul.ms-list li .field { width: 100%; min-width: 0; }

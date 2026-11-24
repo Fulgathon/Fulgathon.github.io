@@ -878,8 +878,8 @@ function render() {
       <ul class="list">${CHECK.map((c) => {
         const st = checkState(c);
         return `<li><label style="display:flex;align-items:center;gap:12px;min-height:44px;flex:1 1 auto">${st.auto
-          ? '<span class="pill ok" style="flex:none">automat</span>'
-          : `<input type="checkbox" data-act="check" data-key="${c.key}" ${st.done ? 'checked' : ''} style="width:22px;height:22px;flex:none">`}
+          ? '<span class="ck-mark"><span class="pill ok">automat</span></span>'
+          : `<span class="ck-mark"><input type="checkbox" data-act="check" data-key="${c.key}" ${st.done ? 'checked' : ''} style="width:22px;height:22px"></span>`}
           <span class="grow"${st.done ? ' style="color:#8C97A8"' : ''}>${esc(c.label)}${st.by ? `<br><span class="muted">bifat de ${esc(st.by)}, ${when(st.at ?? null)}</span>` : ''}</span></label>
           ${c.card ? `<a class="btn btn-ghost" href="#${c.card}">Deschide</a>` : ''}</li>`;
       }).join('')}</ul>
@@ -888,7 +888,7 @@ function render() {
     'bingo-bife': () => {
       const B = S.bingo;
       if (!B || !B.items.length) return '';
-      if (B.status.draws.length) return `<section class="card" id="bingo-bife"><h2>Bingo</h2><p class="muted" style="margin-top:0">Tragerea s-a făcut: ${B.status.draws.map((d) => `<strong style="color:#F2F5FA">${esc(d.login)}</strong>`).join(', ')}.</p></section>`;
+      if (B.status.draws.length) return `<section class="card wide" id="bingo-bife"><h2>Bingo</h2><p class="muted" style="margin-top:0">Tragerea s-a făcut: ${B.status.draws.map((d) => `<strong style="color:#F2F5FA">${esc(d.login)}</strong>`).join(', ')}.</p></section>`;
       return `
     <section class="card wide" id="bingo-bife">
       <div class="card-head"><h2>Bife de bingo</h2><span class="muted">${B.items.filter((i) => i.happened_at).length} din ${B.items.length} s-au întâmplat</span></div>
@@ -927,7 +927,7 @@ function render() {
         : `<p class="muted" style="margin:0">Butonul de încheiere apare aici doar cât timp cronometrul merge.</p>`}
     </section>`,
     'comunitar': () => `
-    <section class="card" id="comunitar">
+    <section class="card wide" id="comunitar">
       <h2>Obiectiv comunitar</h2>
       <p class="muted" style="margin-top:0">Ore privite împreună până acum: <strong style="color:#F2F5FA">${S.together ? Math.round(S.together.hours) : 0} h</strong>.</p>
       <textarea class="field" id="togetherList" rows="5" aria-label="Obiective comunitare, câte unul pe rând: ore | titlu" style="width:100%;padding:10px;font:inherit">${esc((S.together?.goals ?? []).map((g) => `${g.hours} | ${g.title}`).join('\n'))}</textarea>
@@ -1012,7 +1012,7 @@ function render() {
       ` : '<p class="muted" style="margin-top:0">Nicio rundă încă.</p>'}
       ${!roundOpen && S.auto?.voteOn ? `<p style="margin:14px 0 0"><span class="pill ok">Vot automat</span> Următoarea rundă se deschide singură${S.auto.lastVoteDay === new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Bucharest' }) ? ' mâine' : ' azi'}, după ${esc(S.auto.voteAt)}, când Iceman e live.</p>` : ''}
       ${!roundOpen ? `
-        <details${S.auto?.voteOn ? '' : ' open'} style="margin-top:14px"><summary style="cursor:pointer;min-height:44px;display:flex;align-items:center;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:20px;text-transform:uppercase">Deschide o rundă acum, de mână</summary>
+        <details class="more"${S.auto?.voteOn ? '' : ' open'} style="margin-top:14px"><summary style="cursor:pointer;min-height:44px;display:flex;align-items:center;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:20px;text-transform:uppercase">Deschide o rundă acum, de mână</summary>
         <p class="muted" style="margin-top:0">2 ușoare, 2 medii, 1 grea. Schimbă ce vrei.</p>
         ${S.draft.map((id, i) => `<div class="row"><select class="field" data-draft="${i}" aria-label="Provocarea ${i + 1}">${poolOptions(id)}</select></div>`).join('')}
         <div class="row">
@@ -1022,7 +1022,7 @@ function render() {
         </div></details>` : ''}
     </section>`,
     'provocari': () => `
-    <section class="card" id="provocari">
+    <section class="card wide" id="provocari">
       <h2>Provocări câștigătoare</h2>
       ${S.scheduled.length ? `<ul class="list">${S.scheduled.map((c) => `<li>
         <span class="grow">${esc(c.title)}</span>
@@ -1053,7 +1053,7 @@ function render() {
         : '<p class="muted" style="margin-top:0">Toate premiile au fost date.</p>'}
     </section>`,
     'moderatori': () => `
-    <section class="card" id="moderatori">
+    <section class="card wide" id="moderatori">
       <h2>Moderatori</h2>
       <ul class="list">${S.mods.map((m) => `<li><span class="grow">${esc(m.display_name ?? m.login)}</span>${m.login === S.me!.login ? '<span class="muted">tu</span>' : m.login === site.channel ? '<span class="muted">streamer</span>' : `<button class="btn-ghost" data-act="unmod" data-login="${esc(m.login)}">Scoate</button>`}</li>`).join('')}</ul>
       <div class="row">
