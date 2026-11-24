@@ -260,6 +260,19 @@ const favicon = await getImage({ src: emote, format: 'png', width: 64 });
       .tab-body > .row:first-child, .tab-body > .quick:first-child { margin-top: 0; }
       .tab-body .muted { margin: 10px 0 0; }
       .states { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+      /* «Mod test»: yellow like the overlay's TEST tag, on top of every page while a test runs. */
+      .test-strip { margin: 16px 0 4px; padding: 12px 14px; background: #1A1608; border: 2px solid #F2C14E; }
+      .ts-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0; color: #F2F5FA; }
+      .ts-head span:last-child { color: #E8DDB8; }
+      .ts-tag { padding: 1px 8px; background: #F2C14E; color: #1A1300; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; letter-spacing: .1em; }
+      .ts-warn { margin: 6px 0 0; color: #E8DDB8; font-size: 14px; }
+      .ts-rows { display: grid; gap: 6px; margin-top: 10px; }
+      .ts-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+      .ts-row > span { width: 92px; flex: none; color: #F2C14E; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; }
+      .ts-row .btn-ghost, .ts-row .btn-primary { min-height: 44px; }
+      .ts-list { margin: 0 0 4px; padding-left: 18px; }
+      .ts-list li { margin: 2px 0; }
+      @media (max-width: 640px) { .ts-row > span { width: 100%; } }
       .pill-s { padding: 3px 9px; background: #0F2230; border: 1px solid #1E4560; color: #8FE4FF; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: .08em; overflow-wrap: anywhere; }
       .quick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
       .quick button { justify-content: center; }

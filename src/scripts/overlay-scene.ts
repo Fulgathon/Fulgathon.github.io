@@ -243,7 +243,8 @@ function drawTimer(v: ReturnType<typeof derive>, view: SiteData) {
     }
     prevState = state;
   }
-  const test = rehearsing(view) && !forced;
+  // A practice clock or «Mod test» on /mod: the yellow TEST tag.
+  const test = (rehearsing(view) || !!view.testMode) && !forced;
   setText($('[data-ttext]'), state === 'frozen' ? (test ? 'ÎNGHEȚAT · TEST' : 'ÎNGHEȚAT') : state === 'double' ? (test ? '×2 · TEST' : '×2 ORA DUBLĂ') : state === 'live' ? (test ? 'TEST' : 'LIVE') : state === 'ended' ? 'TIMPUL A EXPIRAT' : v.statusText);
   timer.classList.toggle('rehearsal', test);
   drawClock(Number(v.dd) * 86400 + Number(v.hh) * 3600 + Number(v.mm) * 60 + Number(v.ss), state);

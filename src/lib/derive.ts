@@ -534,6 +534,8 @@ export function derive(s: State, d: SiteData) {
   const sug = s.suggestion;
 
   return {
+    testMode: !!d.testMode,
+    testText: d.testMode ? `Date de probă, nimic nu e real. Site-ul revine la normal cel târziu la ${timeRo(d.testMode.until)}.` : '',
     showSnow: s.showSnow,
     dd, hh, mm, ss, navClock: `${dd}:${hh}:${mm}:${ss}`, tickerTwice,
     isLive: live, pops: live ? d.pops : [],

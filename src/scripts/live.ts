@@ -279,6 +279,9 @@ export class Live {
         last: r.last ? { n: Number(r.last.n) || 0, kind: r.last.kind === 'gift' ? 'gift' : 'donation', user: String(r.last.user ?? 'TEST'), amount: Number(r.last.amount) || 0, seconds: Number(r.last.seconds) || 0, doubled: !!r.last.doubled } : null,
       } : null;
     }
+    if (has('test')) {
+      patch.testMode = P.test?.on && P.test.until ? { until: ms(P.test.until)!, by: P.test.by ?? null } : null;
+    }
     if (has('lines') && P.lines) {
       const groups = P.lines.groups ?? {};
       patch.lines = Object.fromEntries(Object.entries(groups).filter(([, l]) => Array.isArray(l)).map(([k, l]) => [k, (l as unknown[]).map(String)]));

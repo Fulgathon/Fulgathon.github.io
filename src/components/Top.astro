@@ -32,6 +32,7 @@ const cond = "'Barlow Condensed', sans-serif";
 
 <!-- LIVE STRIP + NAV: sticky, so the clock in the nav is visible everywhere -->
 <div class="sticky-top">
+<p class="test-bar" role="status" {...iff('testMode')}><span class="test-tag">TEST</span><span data-text="testText">{v.testText}</span></p>
 <div class="strip">
   <span data-style="background:liveBg" style={`flex: none; display: flex; align-items: center; gap: 8px; padding: 0 16px 0 14px; background: ${v.liveBg}; color: #FFFFFF; font-family: ${cond}; font-weight: 800; font-style: italic; letter-spacing: 0.08em; text-transform: uppercase; clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%)`}>
     <span style="width: 8px; height: 8px; border-radius: 50%; background: #FFFFFF"></span>

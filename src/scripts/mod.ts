@@ -73,6 +73,14 @@ const errors: Record<string, string> = {
   bad_sponsor: 'O dată nu e validă.',
   rehearsal_off: 'Repetiția nu e pornită (sau s-a terminat). Apasă «Pornește repetiția».',
   rehearsal_while_live: 'Maratonul e LIVE: repetiția merge doar înainte de start.',
+  test_running: 'Un test merge deja.',
+  demo_test: 'În demo totul e deja de probă: modul test e pentru site-ul real.',
+  test_while_live: 'Testul merge doar înainte de start (maratonul real a pornit sau s-a încheiat).',
+  test_too_close: 'E prea aproape de start: testul trebuie să se termine cu 30 de minute înainte.',
+  test_off: 'Testul nu mai merge (s-a oprit sau a expirat).',
+  test_crowd_full: 'Sunt deja 500 de spectatori de test.',
+  bad_test_amount: 'Sumă nevalidă.',
+  test_backup_missing: 'Copia de siguranță lipsește. Nu opri nimic, scrie-i lui barsmin.',
   not_eur: 'Se adună doar donațiile în euro.',
   bad_webhook: 'Linkul nu e un webhook de Discord. Îl copiezi din Discord: Setările serverului → Integrări → Webhook-uri.',
   no_webhook: 'Pune întâi linkul webhook-ului de Discord.',
@@ -152,7 +160,7 @@ const toLocal = (iso: string | null) => {
 // ---- State ----
 interface Challenge { id: number; title: string; level: string; category: string; status: string; scheduled_for: string | null }
 let S: {
-  me: { login: string; is_moderator: boolean } | null;
+  me: { login: string; is_moderator: boolean; is_subscriber?: boolean } | null;
   status: { broadcaster_login: string; broadcaster_connected: boolean; connect_url: string } | null;
   timer: Record<string, any> | null;
   stats: Record<string, any> | null;
@@ -199,12 +207,14 @@ let S: {
   liveTab: 'timp' | 'freeze' | 'double' | 'code' | 'note';
   /** «Repetiție»: the practice clock for testing the overlay in OBS (public_state part). */
   rehearsal: any;
+  /** «Mod test»: the whole site on fake data (public_state part 'test'). */
+  test: { on: boolean; until: string; startedAt: string; hardUntil: string | null; by: string | null; streamForced: boolean } | null;
   /** /mod → Sponsori: every field (mod_sponsors), and the one open in the editor. */
   sponsors: any[];
   spEdit: number | 'new' | null;
   /** «Runda de vot»: the entry being swapped in the open round. */
   rSwap: number | null;
-} = { rSwap: null, rehearsal: null, sponsors: [], spEdit: null, auto: null, view: 'rapid', liveTab: 'timp', page: 'azi', chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, together: null, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
+} = { rSwap: null, rehearsal: null, test: null, sponsors: [], spEdit: null, auto: null, view: 'rapid', liveTab: 'timp', page: 'azi', chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, together: null, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
 /** Bingo phase (as private.bingo_phase): moderators open and close it; no ticks until the close (owner, 24 Nov). */
 const bingoPhase = (): 'soon' | 'open' | 'closed' => {
   const B = S.bingo;
@@ -262,7 +272,7 @@ async function load() {
     S.auto = demoApi.rpc('mod_autopilot', {});
     S.sponsors = (demoApi.rpc('mod_sponsors', {}) as any[]) ?? [];
     const site = demoApi.toSiteData();
-    S.now = site.now; S.together = site.together; S.rehearsal = site.rehearsal ?? null;
+    S.now = site.now; S.together = site.together; S.rehearsal = site.rehearsal ?? null; S.test = null;
     S.lines = site.lines; S.smallDonation = site.smallDonation;
     S.chat = demoApi.rpc('mod_chat_status', {}) as typeof S.chat;
     if (!S.draft.length || S.draft.some((id) => !S.pool.find((p) => p.id === id))) autoDraft();
@@ -270,7 +280,7 @@ async function load() {
   }
   const { data: { session } } = await db.auth.getSession();
   if (!session) { S.me = null; return render(); }
-  const { data: me } = await db.from('viewers').select('login, is_moderator').eq('id', session.user.id).maybeSingle();
+  const { data: me } = await db.from('viewers').select('login, is_moderator, is_subscriber').eq('id', session.user.id).maybeSingle();
   S.me = me;
   if (!me?.is_moderator) return render();
 
@@ -294,7 +304,7 @@ async function load() {
   S.auto = (await (db as any).rpc('mod_autopilot')).data ?? null;
   S.sponsors = ((await (db as any).rpc('mod_sponsors')).data as any[]) ?? [];
   const ps = (await (db as any).rpc('public_state', { p_have: {} })).data?.parts ?? {};
-  S.now = ps.now ?? null; S.together = ps.together ?? null; S.rehearsal = ps.rehearsal ?? null;
+  S.now = ps.now ?? null; S.together = ps.together ?? null; S.rehearsal = ps.rehearsal ?? null; S.test = ps.test?.on ? ps.test : null;
   S.lines = ps.lines?.groups ?? {}; S.smallDonation = Number(ps.lines?.smallDonation) || 10;
   S.chat = ((await (db as any).rpc('mod_chat_status')).data as typeof S.chat) ?? null;
   S.wheel = (wheel.data ?? []) as typeof S.wheel;
@@ -519,7 +529,7 @@ function planLine(x: any): string {
 const mainSponsor = () => (S.sponsors.length ? (S.sponsors.find((x: any) => x.tier === 'main')?.name ?? '') : site.sponsor.name && !site.sponsor.name.startsWith('[') ? site.sponsor.name : '');
 /** A Twitch clip of the last ~30 s (make-clip), or null when it can't be made (offline, demo, no permission). */
 async function clipNow(): Promise<string | null> {
-  if (demoApi || !S.timer?.stream_online) return null;
+  if (demoApi || S.test || !S.timer?.stream_online) return null;   // no real clips during a test
   try {
     const { data } = await db.functions.invoke('make-clip', { body: {} });
     if (data?.url) return String(data.url);
@@ -536,13 +546,14 @@ const GROUPS: { id: string; name: string; title: string; lead: string; items: [s
   { id: 'pregatire', name: 'PREGĂTIRE', title: 'Pregătire', lead: 'O singură dată, înainte de 20 decembrie.',
     items: [['checklist', 'Checklist'], ['cronometru', 'Start'], ['replici', 'Replici'], ['milestones', 'Milestones'], ['comunitar', 'Obiectiv comunitar'], ['roata-premii', 'Roata'], ['bingo', 'Bingo'], ['sponsori', 'Sponsori']] },
   { id: 'setari', name: 'SETĂRI', title: 'Setări', lead: 'Folosite rar.',
-    items: [['moderatori', 'Moderatori'], ['overlay-piese', 'Overlay OBS'], ['raport', 'Raport sponsori'], ['zona', 'Încheiere']] },
+    items: [['test', 'Mod test'], ['moderatori', 'Moderatori'], ['overlay-piese', 'Overlay OBS'], ['raport', 'Raport sponsori'], ['zona', 'Încheiere']] },
 ];
 /** Cards shown together with a menu item, and old anchors that now live inside another card. */
 const BUNDLE: Record<string, string[]> = { vot: ['vot', 'provocari'], propuneri: ['propuneri', 'premii'], pilot: ['pilot', 'alerte'] };
 const ALIAS: Record<string, string> = { parteneri: 'sponsori', provocari: 'vot', premii: 'propuneri', alerte: 'pilot', stare: 'cronometru', inghetare: 'rapid', 'ora-dubla': 'rapid', acum: 'rapid', cod: 'rapid', overlay: 'overlay-piese' };
 /** Only Iceman (the broadcaster login) starts and ends the marathon; the database enforces it too. */
-const isIceman = () => !!S.me && !!S.status?.broadcaster_login && S.me.login.toLowerCase() === S.status.broadcaster_login.trim().toLowerCase();
+// During «Mod test» every moderator may (the database allows it too: it all goes back).
+const isIceman = () => !!S.test || (!!S.me && !!S.status?.broadcaster_login && S.me.login.toLowerCase() === S.status.broadcaster_login.trim().toLowerCase());
 const onlyIceman = () => `<span class="muted">Doar ${esc(S.status?.broadcaster_login ?? 'Iceman')} poate porni sau încheia subathonul.</span>`;
 
 /** The menu item that shows an anchor: the item itself, the card bundled under it, or an old anchor. */
@@ -785,6 +796,50 @@ function dashHtml(t: Record<string, any>, live: boolean, remaining: number, now:
     ${planRows || '<p class="muted flush-p">Nimic programat.</p>'}</section>`;
   const conn = `<section class="card flush" id="sanatate"><h2>Conexiuni <span class="h2-note">la un minut</span></h2>${healthHtml(S.health)}</section>`;
   return `${kpis}<div class="dash">${control}${todoHtml()}</div><div class="dash">${plan}${conn}</div>`;
+}
+
+// «Mod test»: the whole site on fake data; «Oprește testul» puts everything back (see the
+// migration 20261209100000_test_session.sql). The strip sits on top of every /mod page while it runs.
+function testBtn(a: string, label: string, p: Record<string, unknown> = {}, ok = 'Gata.') {
+  return `<button class="btn-ghost" data-act="testDo" data-a="${a}" data-p='${esc(JSON.stringify(p))}' data-ok="${esc(ok)}">${esc(label)}</button>`;
+}
+function testStripHtml(): string {
+  const T = S.test;
+  if (!T) return '';
+  const online = !!S.timer?.stream_online;
+  const sub = !!S.me?.is_subscriber;
+  return `<section class="test-strip" aria-label="Mod test">
+    <p class="ts-head"><span class="ts-tag">TEST</span><strong>Mod test</strong><span>pornit de ${esc(T.by ?? 'un moderator')} · se oprește singur la ${hmRo(T.until)}</span></p>
+    <p class="ts-warn">Tot ce se schimbă acum, și pe /mod, se șterge la oprire. Pregătirea reală (sponsori, premii, provocări) o faci după test.</p>
+    <div class="ts-rows">
+      <div class="ts-row"><span>Twitch</span>${testBtn('sub', 'Sub', {}, 'Sub de test.')}${testBtn('sub', 'Sub Tier 3', { tier: '3000' }, 'Sub Tier 3 de test.')}${testBtn('gift', '10 subs cadou', { n: 10 }, '10 subs cadou de test.')}${testBtn('bits', '400 biți', { n: 400 }, '400 de biți de test.')}${testBtn('stream', online ? 'Stream offline' : 'Stream LIVE', { on: !online }, online ? 'Stream-ul apare offline.' : 'Stream-ul apare LIVE.')}</div>
+      <div class="ts-row"><span>Donații</span>${testBtn('donation', '5 €', { n: 5 }, 'Donație de test, 5 €.')}${testBtn('donation', '50 €', { n: 50 }, 'Donație de test, 50 €.')}${testBtn('donation', '250 €', { n: 250 }, 'Donație de test, 250 €.')}</div>
+      <div class="ts-row"><span>Spectatori</span>${testBtn('crowd', '+25 de test', { n: 25 }, '25 de spectatori de test: privesc, votează, aleg bingo.')}${testBtn('me_sub', sub ? 'Eu: neabonat' : 'Eu: abonat', { on: !sub }, sub ? 'Pe site apari neabonat.' : 'Pe site apari abonat.')}${testBtn('me_watch', 'Eu: +2 h privit', { minutes: 120 }, 'Ai 2 ore privite azi: roata e deblocată.')}</div>
+      <div class="ts-row"><span>Testul</span>${testBtn('extend', '+1 oră', {}, 'Testul merge încă o oră.')}<button class="btn-ghost" data-act="testRedo">De la capăt</button><button class="btn-primary" data-act="testStop">Oprește testul</button></div>
+    </div>
+  </section>`;
+}
+function testCardHtml(): string {
+  const upcoming = (S.timer?.status ?? 'upcoming') === 'upcoming';
+  const body = S.test
+    ? `<p style="margin:0">Testul merge până la <strong>${hmRo(S.test.until)}</strong>. Comenzile sunt în banda galbenă de sus, pe orice pagină.</p>
+       <div class="row"><button class="btn-primary" data-act="testStop">Oprește testul</button></div>`
+    : !upcoming
+      ? '<p class="muted" style="margin:0">Doar înainte de start: maratonul real a pornit.</p>'
+      : `<div class="row"><label class="inline">Cât ține<select class="field" id="testHours">${[1, 2, 3, 4, 6].map((h) => `<option value="${h}"${h === 3 ? ' selected' : ''}>${h} ${h === 1 ? 'oră' : 'ore'}</option>`).join('')}</select></label>
+         <button class="btn-primary" data-act="testStart">Pornește testul</button></div>`;
+  return `<section class="card wide" id="test">
+    <h2>Mod test</h2>
+    <p style="margin-top:0">Tot site-ul, /mod și overlay-ul merg pe date de probă: subs, donații, spectatori, vot, roată, bingo. La oprire totul revine exact cum era.</p>
+    <ul class="muted ts-list">
+      <li>Pe site apare o bandă galbenă «TEST», în overlay eticheta TEST.</li>
+      <li>Orice moderator poate porni și încheia maratonul de test.</li>
+      <li>Chatul Twitch nu primește mesaje, clipurile nu se fac, alertele Discord au «TEST».</li>
+      <li>Rămân neatinse: moderatorii, checklistul de pregătire, conturile spectatorilor.</li>
+      <li>Se oprește singur la ora aleasă, cel târziu cu 30 de minute înainte de start.</li>
+    </ul>
+    ${body}
+  </section>`;
 }
 
 // «Repetiție»: Iceman tests the overlay in OBS before the marathon, without going live.
@@ -1239,6 +1294,7 @@ function render() {
     </section>`,
     // M2: ending is irreversible, so it lives apart from the time buttons and asks for a typed word.
     'sponsori': () => sponsorsHtml(),
+    'test': () => testCardHtml(),
     'zona': () => `
     <section class="card danger" id="zona">
       <h2>Încheiere</h2>
@@ -1404,7 +1460,7 @@ function render() {
   // typed but hasn't sent yet: «Îngheață 120 min» would quietly become the default 5.
   const typed = resetTyped ? new Map<string, string>() : typedValues();
   resetTyped = false;
-  app.innerHTML = `
+  app.innerHTML = `${testStripHtml()}
   <datalist id="sponsorNames">${sponsorNames().map((n) => `<option value="${esc(n)}"></option>`).join('')}</datalist>
   <div class="crumb"><h1 tabindex="-1">${esc(label)}</h1><span>${esc(page.name)} · ${esc(page.lead)}</span></div>
   <nav class="subnav" aria-label="${esc(page.name)}">${page.items.map(([i, l]) => `<a href="#${i}"${i === S.view ? ' class="cur" aria-current="page"' : ''}>${esc(l)}${(({ n, warn }) => (n ? `<span class="nb${warn ? ' warn' : ''}">${n}</span>` : ''))(waiting(i))}</a>`).join('')}</nav>
@@ -1618,6 +1674,13 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     S.spEdit = null;
   },
   spMove: (el) => call('mod_sponsor_move', { p_id: Number(el.dataset.id), p_dir: Number(el.dataset.dir) }, 'Ordinea s-a schimbat.'),
+  testStart: () => confirm(`Pornești modul test pentru ${num('testHours') || 3} ore? Tot site-ul, /mod și overlay-ul trec pe date de probă; la oprire totul revine exact cum e acum.`) &&
+    call('mod_test', { p_action: 'start', p: { hours: num('testHours') || 3 } }, 'Testul a pornit. Comenzile sunt în banda galbenă de sus.'),
+  testStop: () => confirm('Oprești testul? Tot ce s-a făcut în test se șterge și site-ul revine la normal.') &&
+    call('mod_test', { p_action: 'stop' }, 'Testul s-a oprit. Site-ul e din nou cel real.'),
+  testRedo: () => confirm('Iei testul de la capăt? Datele de test se șterg, testul merge în continuare.') &&
+    call('mod_test', { p_action: 'redo' }, 'De la capăt: totul e ca la pornirea testului.'),
+  testDo: (el) => call('mod_test', { p_action: el.dataset.a, p: JSON.parse(el.dataset.p || '{}') }, el.dataset.ok || 'Gata.'),
   rehearsal: (el) => call('mod_rehearsal', { p_action: el.dataset.a, p_minutes: Number(el.dataset.m) || null },
     ({ start: 'Repetiția a pornit. Overlay-ul arată ceasul de test în câteva secunde.', stop: 'Repetiția s-a oprit.' } as Record<string, string>)[el.dataset.a ?? ''] ?? 'Trimis. Apare în overlay în câteva secunde.'),
   ovTest: (el) => call('mod_overlay_test', { p_kind: el.dataset.kind }, 'Test trimis. Apare în overlay în câteva secunde.'),

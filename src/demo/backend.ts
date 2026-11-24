@@ -1191,6 +1191,8 @@ export class DemoBackend {
       case 'mod_sponsor_save': return this.sponsorSave(a.p ?? {});
       case 'mod_sponsor_delete': return this.mutate((s) => { s.sponsors = this.sponsorsOf(s).filter((x) => x.id !== Number(a.p_id)); });
       case 'mod_sponsor_move': return this.sponsorMove(Number(a.p_id), Number(a.p_dir));
+      // «Mod test» needs the real database; the demo is all sample data already.
+      case 'mod_test': return fail('demo_test');
       case 'mod_rehearsal': return this.mutate((s) => {
         const now = Date.now();
         const act = String(a.p_action);
