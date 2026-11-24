@@ -166,7 +166,10 @@ let S: {
   page: string;
   /** mod_autopilot(): auto start, vote autopilot, the plan, Discord alerts, the shared checklist. */
   auto: any;
-} = { auto: null, page: 'azi', chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, together: null, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
+  /** The open menu item (one page each) and the open tab of «Control live». */
+  view: string;
+  liveTab: 'timp' | 'freeze' | 'double' | 'code' | 'note';
+} = { auto: null, view: 'rapid', liveTab: 'timp', page: 'azi', chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, together: null, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
 const bingoRows = () => S.bingoDraft ?? (S.bingo?.items ?? []).map((i) => ({ id: i.id, label: i.label }));
 const editBingo = () => { if (!S.bingoDraft) S.bingoDraft = bingoRows(); return S.bingoDraft; };
 const goalRows = () => S.goalsDraft ?? S.goals.map((g) => ({ title: g.title, threshold: String(g.threshold), sponsor: g.sponsor ?? '', done: !!g.done_at, clip: g.clip_url ?? '', when: g.scheduled_for ?? '' }));
@@ -389,7 +392,7 @@ function healthHtml(h: any): string {
     : errs / Math.max(calls, 1) > 0.2 ? ['bad', 'Funcții (ultimele 30 min)', `${errs} erori din ${calls} apeluri. Ultima: ${h.httpErrors[0].status ?? 'fără răspuns'} ${ago(age(h.httpErrors[0].at))}.`]
     : ['warn', 'Funcții (ultimele 30 min)', `${errs} erori trecătoare din ${calls} apeluri (se reîncearcă singure).`]);
   const label: Record<string, string> = { ok: 'OK', warn: 'Atenție', bad: 'Problemă', off: 'Oprit' };
-  return `<ul class="list health">${rows.map(([c, name, text]) => `<li><span class="pill ${c}">${label[c]}</span><span class="grow"><strong style="color:#F2F5FA">${esc(name)}</strong><br><span class="muted">${esc(text)}</span></span></li>`).join('')}</ul>`;
+  return rows.map(([c, name, text]) => `<div class="ci" title="${esc(text)}"><span class="dot ${c}" aria-label="${label[c]}"></span><span class="ci-n">${esc(name)}</span><span class="ci-t">${esc(text)}</span></div>`).join('');
 }
 
 // ---- Layout: grouped by job (status bar on top, prism menu on the left) ----
@@ -475,6 +478,13 @@ const GROUPS: { id: string; name: string; title: string; lead: string; items: [s
 /** Cards shown together with a menu item, and old anchors that now live inside another card. */
 const BUNDLE: Record<string, string[]> = { vot: ['vot', 'provocari'], propuneri: ['propuneri', 'premii'], pilot: ['pilot', 'alerte'] };
 const ALIAS: Record<string, string> = { provocari: 'vot', premii: 'propuneri', alerte: 'pilot', stare: 'cronometru', inghetare: 'rapid', 'ora-dubla': 'rapid', acum: 'rapid', cod: 'rapid', overlay: 'overlay-piese' };
+/** The menu item that shows an anchor: the item itself, the card bundled under it, or an old anchor. */
+function viewOf(raw: string): string | null {
+  const id = ALIAS[raw] ?? raw;
+  if (['todo', 'sanatate', 'control', 'urmeaza'].includes(id)) return 'rapid';
+  for (const g of GROUPS) for (const [i] of g.items) if (i === id || (BUNDLE[i] ?? []).includes(id)) return i;
+  return null;
+}
 const groupOf = (raw: string) => {
   const id = ALIAS[raw] ?? raw;
   return id === 'todo' || id === 'sanatate' ? GROUPS[0] : GROUPS.find((g) => g.id === id || g.items.some(([i]) => i === id));
@@ -495,7 +505,7 @@ function waiting(id: string): { n: number; warn?: boolean } {
 }
 
 function navHtml(): string {
-  const cur = decodeURIComponent(location.hash.slice(1)) || GROUPS.find((g) => g.id === S.page)?.items[0][0];
+  const cur = S.view;
   return GROUPS.map((g) => {
     const on = g.id === S.page;
     return `<div class="ng${on ? ' on' : ''}">
@@ -555,7 +565,7 @@ function healthDots(): string {
     : ['ok', 'Totul merge'];
   // The colour of each dot is also said in words for screen readers; only one of dots / chip is displayed.
   const state = (c: string) => (c === 'ok' ? 'merge' : c === 'off' ? 'oprit' : c === 'warn' ? 'de verificat' : 'problemă');
-  return `<a class="hdots" href="#sanatate">${dots.map(([c, n, v]) => `<span class="hd"><span class="dot ${c}"></span><span class="hd-n">${n}</span><span class="sr-only">: ${state(c)},</span> <span class="muted">${v}</span></span>`).join('')}<span class="hsum ${cls}">${esc(text)}</span></a>`;
+  return `<a class="hdots" href="#rapid">${dots.map(([c, n, v]) => `<span class="hd"><span class="dot ${c}"></span><span class="hd-n">${n}</span><span class="sr-only">: ${state(c)},</span> <span class="muted">${v}</span></span>`).join('')}<span class="hsum ${cls}">${esc(text)}</span></a>`;
 }
 
 function barHtml(): string {
@@ -574,15 +584,82 @@ function barHtml(): string {
   return `${brand}<span class="sep"></span>
     <span class="pill ${live ? 'bad' : 'off'} skew">${live ? 'LIVE' : t.status === 'ended' || t.status === 'live' ? 'ÎNCHEIAT' : 'CURÂND'}</span>
     <span class="bar-clock" data-left>${live ? left(Date.parse(t.ends_at) - (frozen ? Date.parse(t.paused_until) : now)) : '—'}</span>
-    ${live ? (frozen ? `<span class="chip frost">ÎNGHEȚAT PÂNĂ LA ${esc(when(t.paused_until))}</span>` : '<span class="chip run">MERGE</span>') : ''}
+    ${live && frozen ? `<span class="chip frost">ÎNGHEȚAT PÂNĂ LA ${esc(when(t.paused_until))}</span>` : ''}
     ${dbl ? `<span class="chip dbl">ORA DUBLĂ ${dblNow ? `×2 PÂNĂ LA ${hm(t.double_until)}` : esc(when(t.double_from))}${t.double_sponsor ? ` · ${esc(String(t.double_sponsor).toUpperCase())}` : ''}</span>` : ''}
-    <span class="grow"></span>${healthDots()}<span class="sep"></span>${who}`;
+    ${(() => { const c = S.codes.find((x) => x.expires_at && Date.parse(x.expires_at) > now); return c ? `<span class="chip run">COD ${esc(c.code)} · ${c.claims}</span>` : ''; })()}
+    <span class="grow"></span>${healthDots()}${who}`;
 }
 
-function unitsHtml(ms: number): string {
-  const s = Math.max(0, Math.floor(ms / 1000));
-  const u: [string, string][] = [[pad(Math.floor(s / 86400)), 'ZILE'], [pad(Math.floor((s % 86400) / 3600)), 'ORE'], [pad(Math.floor((s % 3600) / 60)), 'MINUTE'], [pad(s % 60), 'SECUNDE']];
-  return u.map(([v, l]) => `<div class="unit"><div class="unit-v" data-unit>${v}</div><div class="unit-l">${l}</div></div>`).join('');
+// ---- «Stream acum»: the dashboard (numbers strip, Control live, inbox, timeline, connections) ----
+const LIVE_TABS: [S_tab: 'timp' | 'freeze' | 'double' | 'code' | 'note', label: string][] = [
+  ['timp', 'Timp'], ['freeze', 'Îngheață'], ['double', 'Ora dublă'], ['code', 'Cod secret'], ['note', 'Notă pe site'],
+];
+const shortWhen = (iso: string | null) => {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  const day = d.toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Bucharest' });
+  const today = new Date().toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Bucharest' });
+  return day === today ? hmRo(iso) : `${day} ${hmRo(iso)}`;
+};
+function dashHtml(t: Record<string, any>, live: boolean, remaining: number, now: number): string {
+  const raised = Number(S.stats?.raised ?? 0);
+  const next = S.goals.find((g) => raised < g.threshold) ?? null;
+  const prev = [...S.goals].reverse().find((g) => raised >= g.threshold)?.threshold ?? 0;
+  const pct = next ? Math.max(0, Math.min(100, ((raised - prev) / Math.max(1, next.threshold - prev)) * 100)) : 100;
+  const frozen = !!t.paused_until && Date.parse(t.paused_until) > now;
+  const dblNow = !!t.double_from && Date.parse(t.double_from) <= now && Date.parse(t.double_until) > now;
+  const cur = S.codes.find((c) => c.expires_at && Date.parse(c.expires_at) > now);
+  const chatters = S.health?.watch?.chatters;
+  const kpi = (k: string, v: string, sub: string, extra = '') => `<div class="kpi"><div class="kl">${k}</div><div class="kv"${k === 'TIMP RĂMAS' && live ? ' data-left' : ''}>${v}</div>${extra}<div class="ks">${sub}</div></div>`;
+  const kpis = `<section class="kpis" aria-label="Pe scurt">
+    ${kpi('TIMP RĂMAS', live ? left(remaining) : t.status === 'ended' ? 'Încheiat' : '—', live ? `Final programat ${esc(shortWhen(t.scheduled_end))}` : `Start ${esc(when(t.starts_at))}`)}
+    ${kpi('STRÂNS', `${fmtInt(raised)} €`, next ? `Următorul milestone la ${fmtInt(next.threshold)} €` : 'Toate milestone-urile deblocate', `<div class="kbar"><span style="width:${pct.toFixed(1)}%"></span></div>`)}
+    ${kpi('SUBS', fmtInt(Number(S.stats?.subs ?? 0)), `${fmtInt(Number(S.stats?.bits ?? 0))} biți`)}
+    ${kpi('ÎN CHAT', chatters !== undefined && chatters !== null ? fmtInt(Number(chatters)) : '—', 'numărat la 5 minute')}
+  </section>`;
+
+  const on = { timp: false, freeze: frozen, double: dblNow, code: !!cur, note: !!S.now?.note } as Record<string, boolean>;
+  const states = [
+    frozen ? `<span class="pill-s">ÎNGHEȚAT PÂNĂ LA ${hmRo(t.paused_until)}</span>` : '',
+    dblNow ? `<span class="pill-s">ORA DUBLĂ ×2 PÂNĂ LA ${hmRo(t.double_until)}${t.double_sponsor ? ` · ${esc(String(t.double_sponsor).toUpperCase())}` : ''}</span>` : '',
+    cur ? `<span class="pill-s">COD ${esc(cur.code)} · ${cur.claims} REVENDICĂRI</span>` : '',
+    S.now?.note ? `<span class="pill-s">NOTĂ: ${esc(S.now.note)}</span>` : '',
+  ].join('');
+  const needsLive = '<p class="muted" style="margin:0">Merge după ce pornește cronometrul.</p>';
+  const panel: Record<string, string> = {
+    timp: !live ? needsLive : `<div class="quick">
+        <button class="btn-ghost" data-act="add" data-min="1">+1 min</button><button class="btn-ghost" data-act="add" data-min="5">+5 min</button>
+        <button class="btn-ghost" data-act="add" data-min="10">+10 min</button><button class="btn-ghost" data-act="add" data-min="-5">−5 min</button></div>
+      <div class="row"><label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="addMin" placeholder="ex: 15"></label><button class="btn-primary" data-act="addCustom">Adaugă</button></div>`,
+    freeze: !live ? needsLive : `<div class="row"><label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="freezeMin" value="10"></label>
+        <button class="btn-primary" data-act="freeze">Îngheață</button>${frozen ? '<button class="btn-ghost" data-act="unfreeze">Dezgheață</button>' : ''}</div>
+      <p class="muted">Subs și donațiile adaugă timp și cât e înghețat. Pentru 20–25 dec: PROGRAM → Program.</p>`,
+    double: !live ? needsLive : `<div class="row"><label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="dblMin" value="60"></label>
+        <label class="inline" style="flex:1 1 200px">Oferită de<input class="field" id="dblSponsor" list="sponsorNames" placeholder="opțional"></label>
+        <button class="btn-primary" data-act="doubleNow">Pornește acum</button></div>`,
+    code: !live ? needsLive : `<div class="row"><label class="inline" style="flex:1 1 200px">Oferit de<input class="field" id="codeSponsor" list="sponsorNames" value="${esc(mainSponsor())}" maxlength="60"></label>
+        <label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="codeMin" value="10" min="1" max="60"></label>
+        <button class="btn-primary" data-act="codeShow">Arată pe stream</button>${cur ? '<button class="btn-ghost" data-act="codeEnd">Oprește</button>' : ''}</div>`,
+    note: `<p class="muted" style="margin:0">Twitch: ${esc(S.now?.title ?? '—')}</p>
+      <div class="row"><input class="field" id="nowNote" placeholder="ex: Pauză de masă, revin în 15 min" maxlength="140" aria-label="Notă pe site" style="flex:1 1 260px;min-width:0">
+        <label class="inline">Minute<input class="field" type="number" id="nowMin" value="30" min="1" max="1440"></label>
+        <button class="btn-primary" data-act="noteSet">Arată</button>${S.now?.note ? '<button class="btn-ghost" data-act="noteClear">Scoate</button>' : ''}</div>`,
+  };
+  const control = `<section class="card flush" id="control"><h2>Control live <span class="h2-note">apare pe site și pe stream în câteva secunde</span></h2>
+    <div class="tabs" role="tablist" aria-label="Control live">${LIVE_TABS.map(([k, l]) => `<button type="button" role="tab" class="tab${S.liveTab === k ? ' on' : ''}" aria-selected="${S.liveTab === k}" data-act="liveTab" data-tab="${k}">${l}${on[k] ? '<span class="pip" aria-label="activ"></span>' : ''}</button>`).join('')}</div>
+    <div class="tab-body" role="tabpanel">${states ? `<div class="states">${states}</div>` : ''}${panel[S.liveTab]}</div>
+  </section>`;
+
+  const A = S.auto;
+  const items = (A?.plan ?? []).filter((x: any) => !x.done).slice(0, 4);
+  const planRows = [
+    ...items.map((x: any) => `<div class="tli"><time>${esc(shortWhen(x.at))}</time><span class="tlm"></span><span>${planLine(x)}</span></div>`),
+    A?.voteOn ? `<div class="tli"><time>${esc(A.voteAt)}</time><span class="tlm"></span><span><strong>Vot automat</strong> · runda de azi, când Iceman e live</span></div>` : '',
+  ].join('');
+  const plan = `<section class="card flush" id="urmeaza"><div class="card-head"><h2>Urmează din program</h2><a class="btn btn-ghost btn-s" href="#plan">Programează</a></div>
+    ${planRows || '<p class="muted flush-p">Nimic programat.</p>'}</section>`;
+  const conn = `<section class="card flush" id="sanatate"><h2>Conexiuni <span class="h2-note">la un minut</span></h2>${healthHtml(S.health)}</section>`;
+  return `${kpis}<div class="dash">${control}${todoHtml()}</div><div class="dash">${plan}${conn}</div>`;
 }
 
 /** «De făcut acum»: what needs a moderator, from data /mod already has. */
@@ -602,8 +679,8 @@ function todoHtml(): string {
   if (S.suggestions.length) items.push({ tag: 'PROPUNERI', cls: 'off', t: `${S.suggestions.length} ${S.suggestions.length === 1 ? 'propunere nouă' : 'propuneri noi'} de la abonați`, d: '', btn: '<a class="btn btn-ghost" href="#propuneri">Vezi propunerile</a>' });
   const bw = S.bingo?.status.winners.length ?? 0;
   if (bw && !S.bingo?.status.draws.length) items.push({ tag: 'BINGO', cls: 'ok', t: `${bw} cu bingo, gata de tragere`, d: '', btn: '<a class="btn btn-ghost" href="#bingo">Trage la sorți</a>' });
-  return `<section class="card todo" id="todo"><h2>De făcut acum${items.length ? ` · ${items.length}` : ''}</h2>
-    ${items.length ? items.map((x) => `<div class="todo-i"><p><span class="pill ${x.cls}">${x.tag}</span> <strong>${esc(x.t)}</strong></p>${x.d ? `<p class="muted">${esc(x.d)}</p>` : ''}<div class="row">${x.btn}</div></div>`).join('') : '<p class="muted">Nimic nu așteaptă acum.</p>'}
+  return `<section class="card flush" id="todo"><h2>De făcut acum${items.length ? ` · ${items.length}` : ''}</h2>
+    ${items.length ? items.map((x) => `<div class="ib"><span class="pill ${x.cls} ib-tag">${x.tag}</span><span class="ib-t"><b>${esc(x.t)}</b>${x.d ? `<small>${esc(x.d)}</small>` : ''}</span><span class="ib-a">${x.btn}</span></div>`).join('') : '<p class="muted flush-p">Nimic nu așteaptă acum.</p>'}
   </section>`;
 }
 
@@ -760,63 +837,6 @@ function render() {
 
   setNav();
   const sec: Record<string, () => string> = {
-    'rapid': () => {
-      const A = S.auto;
-      const next = (A?.plan ?? []).filter((x: any) => !x.done).slice(0, 3);
-      const frozen = !!t.paused_until && Date.parse(t.paused_until) > now;
-      const dblNow = !!t.double_from && Date.parse(t.double_from) <= now && Date.parse(t.double_until) > now;
-      const cur = S.codes.find((c) => c.expires_at && Date.parse(c.expires_at) > now);
-      return `
-    <section class="card wide" id="rapid">
-      <div class="card-head"><h2>Stream acum</h2><span class="muted">${live ? `Final programat: <strong style="color:#F2F5FA">${when(t.scheduled_end)}</strong>` : ''}</span></div>
-      ${live ? `
-        <div class="units" aria-label="Timp rămas">${unitsHtml(remaining)}</div>
-        <h3 class="h3s">Timp</h3>
-        <div class="row">
-          <div class="quick">
-            <button class="btn-ghost" data-act="add" data-min="1">+1 min</button>
-            <button class="btn-ghost" data-act="add" data-min="5">+5 min</button>
-            <button class="btn-ghost" data-act="add" data-min="10">+10 min</button>
-            <button class="btn-ghost" data-act="add" data-min="-5">−5 min</button>
-          </div>
-          <div class="pair">
-            <input class="field" type="number" inputmode="numeric" id="addMin" placeholder="min" aria-label="Minute de adăugat">
-            <button class="btn-primary" data-act="addCustom">Adaugă</button>
-          </div>
-        </div>
-        <h3 class="h3s">Îngheață ${frozen ? `<span class="pill ok">până la ${hmRo(t.paused_until)}</span>` : ''}</h3>
-        <div class="row">
-          <label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="freezeMin" value="10"></label>
-          <button class="btn-ghost" data-act="freeze">Îngheață</button>
-          ${frozen ? '<button class="btn-ghost" data-act="unfreeze">Dezgheață</button>' : ''}
-        </div>
-        <h3 class="h3s">Ora dublă ${dblNow ? `<span class="pill ok">×2 până la ${hmRo(t.double_until)}${t.double_sponsor ? ` · ${esc(t.double_sponsor)}` : ''}</span>` : ''}</h3>
-        <div class="row">
-          <label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="dblMin" value="60"></label>
-          <label class="inline" style="flex:1 1 180px">Oferită de<input class="field" id="dblSponsor" list="sponsorNames" placeholder="opțional"></label>
-          <button class="btn-ghost" data-act="doubleNow">Pornește acum</button>
-        </div>
-        <h3 class="h3s">Cod secret ${cur ? `<span class="pill ok">${esc(cur.code)} · ${cur.claims} revendicări</span>` : ''}</h3>
-        <div class="row">
-          <label class="inline" style="flex:1 1 180px">Oferit de<input class="field" id="codeSponsor" list="sponsorNames" value="${esc(mainSponsor())}" maxlength="60"></label>
-          <label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="codeMin" value="10" min="1" max="60"></label>
-          <button class="btn-ghost" data-act="codeShow">Arată pe stream</button>
-          ${cur ? '<button class="btn-ghost" data-act="codeEnd">Oprește</button>' : ''}
-        </div>
-        <h3 class="h3s">Notă pe site</h3>
-        <p class="muted" style="margin:2px 0 0">Twitch: ${esc(S.now?.title ?? '—')}${S.now?.note ? ` · <strong style="color:#F2F5FA">notă: ${esc(S.now.note)}</strong>` : ''}</p>
-        <div class="row">
-          <input class="field" id="nowNote" placeholder="ex: Pauză de masă, revin în 15 min" maxlength="140" aria-label="Notă pe site" style="flex:1 1 240px;min-width:0">
-          <label class="inline">Minute<input class="field" type="number" id="nowMin" value="30" min="1" max="1440"></label>
-          <button class="btn-ghost" data-act="noteSet">Arată</button>
-          ${S.now?.note ? '<button class="btn-ghost" data-act="noteClear">Scoate</button>' : ''}
-        </div>`
-      : t.status === 'ended' ? '<p class="muted" style="margin-top:0">Maratonul s-a încheiat.</p>'
-      : `<p style="margin-top:0">Start: <strong>${when(t.starts_at)}</strong> · ${A?.autoStart ? `<span class="pill ok">pornește singur</span>` : '<span class="pill warn">pornire manuală</span> (PREGĂTIRE → Start)'}</p>`}
-      <h3 class="h3s">Urmează din program</h3>
-      ${next.length ? `<ul class="list">${next.map((x: any) => `<li><span class="grow">${planLine(x)}</span></li>`).join('')}</ul>` : '<p class="muted" style="margin:4px 0 0">Nimic programat.</p>'}
-    </section>`;
-    },
     'pilot': () => {
       const A = S.auto ?? {};
       return `
@@ -1067,20 +1087,18 @@ function render() {
     milestones: milestonesHtml,
     'overlay-piese': overlayHtml,
   };
-  const page = GROUPS.find((g) => g.id === S.page) ?? GROUPS[0];
-  const cards = page.items.flatMap(([id]) => (BUNDLE[id] ?? [id])).map((id) => sec[id]?.() ?? '').join('\n');
+  const page = groupOf(S.view) ?? GROUPS[0];
+  const label = page.items.find(([i]) => i === S.view)?.[1] ?? page.title;
+  const cards = (BUNDLE[S.view] ?? [S.view]).map((id) => sec[id]?.() ?? '').join('\n');
   // A live refresh (every sub re-draws the page) must not undo what a moderator
   // typed but hasn't sent yet: «Îngheață 120 min» would quietly become the default 5.
   const typed = resetTyped ? new Map<string, string>() : typedValues();
   resetTyped = false;
   app.innerHTML = `
   <datalist id="sponsorNames">${sponsorNames().map((n) => `<option value="${esc(n)}"></option>`).join('')}</datalist>
-  <div class="page-head">
-    <div><span class="tag-ice">${esc(page.name)}</span><h1>${esc(page.title)}</h1></div>
-    <p class="muted">${esc(page.lead)}</p>
-  </div>
-  ${page.id === 'azi' ? `<div class="live-cols"><div class="grid">${cards}</div><aside class="aside">${todoHtml()}<section class="card" id="sanatate"><h2>Conexiuni</h2>${healthHtml(S.health)}<p class="muted">Se actualizează singur la un minut.</p></section></aside></div>`
-    : `<div class="grid">${cards}</div>`}`;
+  <div class="crumb"><h1 tabindex="-1">${esc(label)}</h1><span>${esc(page.name)} · ${esc(page.lead)}</span></div>
+  <nav class="subnav" aria-label="${esc(page.name)}">${page.items.map(([i, l]) => `<a href="#${i}"${i === S.view ? ' class="cur" aria-current="page"' : ''}>${esc(l)}${(({ n, warn }) => (n ? `<span class="nb${warn ? ' warn' : ''}">${n}</span>` : ''))(waiting(i))}</a>`).join('')}</nav>
+  ${S.view === 'rapid' ? dashHtml(t, live, remaining, now) : `<div class="grid">${cards}</div>`}`;
   for (const [id, v] of typed) {
     const el = document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
     if (!el || !app.contains(el)) continue;
@@ -1185,6 +1203,7 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     }
     render();
   },
+  liveTab: (el) => { S.liveTab = (el.dataset.tab as typeof S.liveTab) || 'timp'; render(); app.querySelector<HTMLElement>(`[data-tab="${S.liveTab}"]`)?.focus(); },
   ovTest: (el) => call('mod_overlay_test', { p_kind: el.dataset.kind }, 'Test trimis. Apare în overlay în câteva secunde.'),
   copyOvp: (el) => { const v = val(`ovp${el.dataset.i}`); void navigator.clipboard?.writeText(v).then(() => say('Link copiat.')); },
   copyOv: (el) => { const v = val(`ov${el.dataset.i}`); void navigator.clipboard?.writeText(v).then(() => say('Link copiat. Pune-l în OBS ca Browser Source, 1920×1080.')); },
@@ -1318,28 +1337,34 @@ setInterval(() => {
   const now = Date.now();
   const ms = Date.parse(t.ends_at) - (t.paused_until && Date.parse(t.paused_until) > now ? Date.parse(t.paused_until) : now);
   document.querySelectorAll<HTMLElement>('[data-left]').forEach((el) => { el.textContent = left(ms); });
-  const s = Math.max(0, Math.floor(ms / 1000));
-  const v = [pad(Math.floor(s / 86400)), pad(Math.floor((s % 86400) / 3600)), pad(Math.floor((s % 3600) / 60)), pad(s % 60)];
-  app.querySelectorAll<HTMLElement>('[data-unit]').forEach((el, i) => { if (el.textContent !== v[i]) el.textContent = v[i]; });
 }, 1000);
 
 // Pages: the hash names a section (#bingo); its group's page opens and scrolls to it.
 let scrollTo = decodeURIComponent(location.hash.slice(1));
 function route(scroll: boolean) {
   const id = decodeURIComponent(location.hash.slice(1));
-  const g = id ? groupOf(id) : null;
-  if (g && g.id !== S.page) { S.page = g.id; deferred = false; if (S.me) render(); }
+  const v = id ? viewOf(id) : null;
+  const changed = !!v && v !== S.view;
+  if (v) { S.view = v; S.page = groupOf(v)?.id ?? S.page; }
+  if (changed) { deferred = false; if (S.me) render(); }
   else if (S.me?.is_moderator) setNav();
-  if (scroll && id) requestAnimationFrame(() => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.scrollIntoView({ block: 'start' });
-    // Keyboard and screen-reader users land in the section they asked for (M5).
-    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
-    el.focus({ preventScroll: true });
+  // A new page opens at its top; an anchor inside the page (#premii) scrolls to it.
+  if (scroll) requestAnimationFrame(() => {
+    const el = id && id !== v ? document.getElementById(id) : null;
+    if (el) {
+      el.scrollIntoView({ block: 'start' });
+      if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
+      el.focus({ preventScroll: true });
+    } else if (changed) {
+      window.scrollTo({ top: 0 });
+      app.querySelector<HTMLElement>('h1')?.focus({ preventScroll: true });
+    }
   });
   // Phone: the menu is one scrolling row; slide it so the open group is in view.
   requestAnimationFrame(() => {
+    const sub = app.querySelector<HTMLElement>('.subnav');
+    const sc = sub?.querySelector<HTMLElement>('a.cur');
+    if (sub && sc && sub.scrollWidth > sub.clientWidth) sub.scrollLeft = Math.max(0, sc.offsetLeft - sub.offsetLeft - 12);
     const on = nav.querySelector<HTMLElement>('.ng.on');
     if (!on || nav.scrollWidth <= nav.clientWidth) return;
     const left = on.offsetLeft - 12;

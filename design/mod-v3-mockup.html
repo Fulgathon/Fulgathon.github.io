@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>/mod v3 · propunere</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:ital,wght@0,700;0,800;1,800;1,900&display=swap" rel="stylesheet">
+<style>
+  :root { --ice:#3FD0FF; --bg:#050608; --s1:#0A0E14; --s2:#0E141D; --line:#1A2230; --line2:#23415E; --tx:#F2F5FA; --mut:#8C97A8; --mut2:#AEB8C7; --ok:#3FD0FF; --warn:#E6C46A; --bad:#FF6B7A; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--tx); font:15px/1.45 Barlow, system-ui, sans-serif; }
+  .cond { font-family:'Barlow Condensed', sans-serif; }
+  .shell { display:grid; grid-template-columns: 220px minmax(0,1fr); grid-template-rows: 56px minmax(0,1fr); min-height:100vh; }
+  /* top bar */
+  .top { grid-column:1/-1; display:flex; align-items:center; gap:18px; padding:0 20px; border-bottom:1px solid var(--line); background:#07090D; }
+  .brand { font:italic 900 21px 'Barlow Condensed'; letter-spacing:.01em; } .brand b{color:var(--ice);font-weight:900} .brand small{font:800 12px 'Barlow Condensed';letter-spacing:.14em;color:var(--mut);margin-left:6px;font-style:normal}
+  .live { padding:2px 10px; transform:skewX(-12deg); background:#D5162B; font:italic 900 14px 'Barlow Condensed'; letter-spacing:.06em; }
+  .clock { font:italic 900 26px 'Barlow Condensed'; font-variant-numeric:tabular-nums; }
+  .chip { padding:3px 10px; border:1px solid var(--line2); font:800 12px 'Barlow Condensed'; letter-spacing:.1em; color:var(--mut2); }
+  .chip.on { border-color:var(--ice); color:var(--ice); }
+  .grow { flex:1 1 auto; }
+  .health { display:flex; align-items:center; gap:8px; font:800 13px 'Barlow Condensed'; letter-spacing:.08em; color:var(--mut2); padding:6px 10px; border:1px solid var(--line); }
+  .dot { width:8px; height:8px; background:var(--ok); } .dot.warn{background:var(--warn)} .dot.bad{background:var(--bad)}
+  .me { display:flex; align-items:center; gap:8px; font-weight:600; } .av { width:30px; height:30px; display:grid; place-items:center; background:#7C4DFF; font-weight:700; }
+  /* side nav */
+  .nav { border-right:1px solid var(--line); padding:14px 10px; background:#07090D; }
+  .ng { margin-bottom:14px; } .ngh { padding:6px 10px; font:800 12px 'Barlow Condensed'; letter-spacing:.16em; color:var(--ice); }
+  .ni { display:flex; justify-content:space-between; align-items:center; padding:8px 10px; color:var(--mut2); font-weight:500; border-left:2px solid transparent; }
+  .ni.cur { color:var(--tx); background:var(--s2); border-left-color:var(--ice); }
+  .nb { min-width:20px; padding:0 6px; background:var(--ice); color:#04101A; font:800 12px 'Barlow Condensed'; text-align:center; } .nb.warn{background:var(--warn)}
+  /* main */
+  main { padding:18px 24px 40px; display:grid; gap:16px; align-content:start; }
+  .crumb { display:flex; align-items:baseline; gap:12px; } .crumb h1 { margin:0; font:italic 900 30px 'Barlow Condensed'; text-transform:uppercase; } .crumb span { color:var(--mut); font-size:13px; }
+  .kpis { display:grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap:12px; }
+  .kpi { background:var(--s1); border:1px solid var(--line); padding:14px 16px; }
+  .kl { font:800 12px 'Barlow Condensed'; letter-spacing:.14em; color:var(--mut); }
+  .kv { margin-top:4px; font:italic 900 34px/1 'Barlow Condensed'; font-variant-numeric:tabular-nums; }
+  .ks { margin-top:6px; font-size:13px; color:var(--mut2); }
+  .bar { height:4px; background:#1A2230; margin-top:8px; } .bar span{display:block;height:100%;background:var(--ice)}
+  .row2 { display:grid; grid-template-columns: minmax(0,1.65fr) minmax(0,1fr); gap:16px; align-items:start; }
+  .card { background:var(--s1); border:1px solid var(--line); }
+  .ch { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px; border-bottom:1px solid var(--line); }
+  .ch h2 { margin:0; font:italic 900 19px 'Barlow Condensed'; text-transform:uppercase; letter-spacing:.02em; }
+  .cb { padding:16px; }
+  .tabs { display:flex; border-bottom:1px solid var(--line); }
+  .tab { padding:11px 16px; font:800 14px 'Barlow Condensed'; letter-spacing:.08em; text-transform:uppercase; color:var(--mut2); border-bottom:2px solid transparent; cursor:pointer; background:none; border-top:0; border-left:0; border-right:0; }
+  .tab.on { color:var(--tx); border-bottom-color:var(--ice); }
+  .tab .pip { display:inline-block; width:6px; height:6px; background:var(--ice); margin-left:6px; vertical-align:2px; }
+  .btn { min-height:44px; padding:0 16px; border:1px solid var(--line2); background:transparent; color:var(--tx); font:800 15px 'Barlow Condensed'; letter-spacing:.06em; text-transform:uppercase; cursor:pointer; }
+  .btn.pri { background:var(--ice); border-color:var(--ice); color:#04101A; }
+  .quick { display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; }
+  .fld { display:grid; gap:4px; } .fld label{font-size:12px;color:var(--mut);font-weight:600} .fld input{height:44px;background:#05080C;border:1px solid var(--line2);color:var(--tx);padding:0 12px;font:inherit}
+  .form { display:grid; grid-template-columns: 120px minmax(0,1fr) auto; gap:10px; align-items:end; margin-top:14px; }
+  .state { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+  .pill { padding:3px 9px; background:#0F2230; border:1px solid #1E4560; color:#8FE4FF; font:800 12px 'Barlow Condensed'; letter-spacing:.08em; }
+  .inbox .it { display:grid; grid-template-columns: 74px minmax(0,1fr) auto; gap:12px; align-items:center; padding:12px 16px; border-bottom:1px solid var(--line); }
+  .tag { padding:2px 0; text-align:center; font:800 11px 'Barlow Condensed'; letter-spacing:.1em; background:#16202D; color:var(--mut2); }
+  .tag.ice{background:#0F2230;color:#8FE4FF} .tag.warn{background:#2B2410;color:var(--warn)}
+  .it b { display:block; font-weight:600; } .it small { color:var(--mut); font-size:13px; }
+  .sbtn { min-height:36px; padding:0 12px; font-size:13px; }
+  .tl .ti { display:grid; grid-template-columns: 64px 14px minmax(0,1fr); gap:10px; align-items:center; padding:10px 16px; border-bottom:1px solid var(--line); }
+  .tl time { font:800 16px 'Barlow Condensed'; color:var(--ice); font-variant-numeric:tabular-nums; }
+  .tl .mk { width:10px; height:10px; border:2px solid var(--ice); }
+  .conn .ci { display:grid; grid-template-columns: 12px minmax(0,1fr) auto; gap:10px; align-items:center; padding:10px 16px; border-bottom:1px solid var(--line); font-size:14px; }
+  .conn small { color:var(--mut); }
+  .note { margin:6px 0 0; color:var(--mut); font-size:12px; }
+  .ann { position:relative; }
+  .tagline { font:800 11px 'Barlow Condensed'; letter-spacing:.16em; color:#04101A; background:var(--warn); padding:2px 8px; position:absolute; top:-10px; right:12px; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="top">
+    <span class="brand"><b>ICE</b>MARATON<small>/MOD</small></span>
+    <span class="live">LIVE</span>
+    <span class="clock">3z 12:25:11</span>
+    <span class="chip on">×2 PÂNĂ LA 21:00</span>
+    <span class="chip">COD ABC-DEF · 3</span>
+    <span class="grow"></span>
+    <span class="health"><span class="dot"></span>TOTUL MERGE</span>
+    <span class="me"><span class="av">M</span>modi</span>
+  </header>
+
+  <nav class="nav">
+    <div class="ng"><div class="ngh">AZI</div>
+      <div class="ni cur">Stream acum</div><div class="ni">Vot <span class="nb">1</span></div><div class="ni">Bingo</div><div class="ni">Propuneri și premii <span class="nb">3</span></div></div>
+    <div class="ng"><div class="ngh">PROGRAM</div><div class="ni">Automat</div><div class="ni">Program</div></div>
+    <div class="ng"><div class="ngh">PREGĂTIRE</div><div class="ni">Checklist <span class="nb">14</span></div><div class="ni">Start</div><div class="ni">Replici <span class="nb warn">6</span></div><div class="ni">Milestones</div><div class="ni">Obiectiv comunitar</div><div class="ni">Roata</div><div class="ni">Bingo</div></div>
+    <div class="ng"><div class="ngh">SETĂRI</div><div class="ni">Moderatori</div><div class="ni">Overlay OBS</div><div class="ni">Raport sponsori</div><div class="ni">Încheiere</div></div>
+  </nav>
+
+  <main>
+    <div class="crumb"><h1>Stream acum</h1><span>AZI · ce cere un om acum</span></div>
+
+    <section class="kpis">
+      <div class="kpi"><div class="kl">TIMP RĂMAS</div><div class="kv">3z 12:25:11</div><div class="ks">Final programat 10.01, 12:00</div></div>
+      <div class="kpi"><div class="kl">STRÂNS</div><div class="kv">2.640 €</div><div class="bar"><span style="width:88%"></span></div><div class="ks">Următorul milestone la 3.000 €</div></div>
+      <div class="kpi"><div class="kl">SUBS</div><div class="kv">412</div><div class="ks">+18 în ultima oră</div></div>
+      <div class="kpi"><div class="kl">ÎN CHAT</div><div class="kv">534</div><div class="ks">vârf 612</div></div>
+    </section>
+
+    <div class="row2">
+      <section class="card">
+        <div class="ch"><h2>Control live</h2><span class="note">Totul apare pe site și pe stream în câteva secunde.</span></div>
+        <div class="tabs">
+          <button class="tab on">Timp</button><button class="tab">Îngheață</button><button class="tab">Ora dublă<span class="pip"></span></button><button class="tab">Cod secret<span class="pip"></span></button><button class="tab">Notă pe site</button>
+        </div>
+        <div class="cb">
+          <div class="state"><span class="pill">ORA DUBLĂ ×2 PÂNĂ LA 21:00 · ZONA IT</span><span class="pill">COD ABC-DEF · 3 REVENDICĂRI</span></div>
+          <div class="quick"><button class="btn">+1 min</button><button class="btn">+5 min</button><button class="btn">+10 min</button><button class="btn">−5 min</button></div>
+          <div class="form"><div class="fld"><label>Minute</label><input value=""></div><div></div><button class="btn pri">Adaugă</button></div>
+        </div>
+      </section>
+
+      <section class="card inbox">
+        <div class="ch"><h2>De făcut acum · 3</h2></div>
+        <div class="it"><span class="tag ice">PREMIU</span><span><b>vladutz97 · VIP 24h</b><small>Câștigat pe roată acum 4 min</small></span><button class="btn pri sbtn">Dat</button></div>
+        <div class="it"><span class="tag">MILESTONE</span><span><b>05 · Chatul îmi pictează fața</b><small>Deblocat. Pune clipul după live.</small></span><button class="btn sbtn">Deschide</button></div>
+        <div class="it"><span class="tag warn">REPLICI</span><span><b>6 grupuri sub 5 replici</b><small>Balonul folosește «Mersi, {nume}!»</small></span><button class="btn sbtn">Completează</button></div>
+      </section>
+    </div>
+
+    <div class="row2">
+      <section class="card tl">
+        <div class="ch"><h2>Urmează din program</h2><button class="btn sbtn">Programează</button></div>
+        <div class="ti"><time>21:00</time><span class="mk"></span><span><b>Ora dublă</b> · 60 min · Zona IT</span></div>
+        <div class="ti"><time>21:30</time><span class="mk"></span><span><b>Cod secret</b> · 10 min · Glacio</span></div>
+        <div class="ti"><time>20:00</time><span class="mk"></span><span><b>Vot automat</b> · runda de azi, când Iceman e live</span></div>
+      </section>
+
+      <section class="card conn">
+        <div class="ch"><h2>Conexiuni</h2><span class="note">la 1 min</span></div>
+        <div class="ci"><span class="dot"></span><span>Donații (TipeeeStream)</span><small>acum 9 s</small></div>
+        <div class="ci"><span class="dot"></span><span>Subs și biți (Twitch)</span><small>acum 2 min</small></div>
+        <div class="ci"><span class="dot"></span><span>Timp privit (chat)</span><small>acum 3 min</small></div>
+        <div class="ci"><span class="dot warn"></span><span>Resubs din chat</span><small>lipsește permisiunea</small></div>
+      </section>
+    </div>
+  </main>
+</div>
+</body>
+</html>
