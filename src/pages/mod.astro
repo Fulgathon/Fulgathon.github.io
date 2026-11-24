@@ -298,6 +298,15 @@ const favicon = await getImage({ src: emote, format: 'png', width: 64 });
       /* --z: viewport heights (vh) don't shrink with zoom, so anything sized to the window divides by it. */
       @media (min-width: 2400px) { html { zoom: 1.3333; --z: 1.3333; } }
       @media (min-width: 3400px) { html { zoom: 2; --z: 2; } }
+      /* Runda de vot: edit entries */
+      .r-list > li { flex-wrap: wrap; }
+      .r-pct { min-width: 40px; text-align: right; }
+      .r-swap { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; padding: 10px 12px 12px; margin-top: 4px; background: #080B10; border-left: 2px solid var(--ice); }
+      .r-swap .field { width: 100%; min-width: 0; }
+      .d-row { flex-wrap: nowrap; }
+      .d-row select { flex: 1 1 300px; min-width: 0; }
+      .d-no { flex: none; width: 22px; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-style: italic; font-size: 20px; color: #8FE4FF; }
+      @media (max-width: 640px) { .d-row { flex-wrap: wrap; } .d-row select { flex-basis: calc(100% - 30px); } }
       /* Sponsori editor */
       .sp-list > li.sp-row { flex-wrap: nowrap; }
       .sp-row.on { background: rgba(63,208,255,.06); }

@@ -55,6 +55,11 @@ const errors: Record<string, string> = {
   timer_ended: 'Cronometrul a ajuns la zero: maratonul s-a încheiat și nu se mai poate adăuga sau îngheța timp.',
   protected_broadcaster: 'Contul lui Iceman nu poate fi scos dintre moderatori.',
   only_broadcaster: 'Doar Iceman poate porni sau încheia subathonul.',
+  round_full: 'O rundă are cel mult 8 provocări.',
+  challenge_unavailable: 'Provocarea nu mai e disponibilă (e deja în rundă sau a fost folosită).',
+  challenge_exists: 'Provocarea există deja în listă.',
+  challenge_title: 'Scrie textul provocării.',
+  not_in_round: 'Provocarea nu mai e în rundă.',
   main_exists: 'Există deja un partener principal. Schimbă-l întâi la «Partener».',
   sponsor_name: 'Sponsorul are nevoie de un nume.',
   sponsor_gone: 'Sponsorul nu mai există (l-a șters altcineva).',
@@ -87,7 +92,14 @@ function say(text: string, err = false) {
   clearTimeout(msgTimer);
   msgTimer = window.setTimeout(() => { msgBox.hidden = true; }, 4000);
 }
+// After an action, focus leaves the field it used (Safari keeps focus there on button clicks),
+// so the held-back redraw (see `deferred`) happens and the page shows the result.
+function releaseField() {
+  const a = document.activeElement as HTMLElement | null;
+  if (a && app.contains(a) && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)) a.blur();
+}
 async function call(fn: string, args: Record<string, unknown> = {}, ok = 'Gata.') {
+  releaseField();
   if (demoApi) {
     try {
       const data = demoApi.rpc(fn, args);
@@ -183,7 +195,9 @@ let S: {
   /** /mod → Sponsori: every field (mod_sponsors), and the one open in the editor. */
   sponsors: any[];
   spEdit: number | 'new' | null;
-} = { rehearsal: null, sponsors: [], spEdit: null, auto: null, view: 'rapid', liveTab: 'timp', page: 'azi', chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, together: null, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
+  /** «Runda de vot»: the entry being swapped in the open round. */
+  rSwap: number | null;
+} = { rSwap: null, rehearsal: null, sponsors: [], spEdit: null, auto: null, view: 'rapid', liveTab: 'timp', page: 'azi', chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, together: null, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
 const bingoRows = () => S.bingoDraft ?? (S.bingo?.items ?? []).map((i) => ({ id: i.id, label: i.label }));
 const editBingo = () => { if (!S.bingoDraft) S.bingoDraft = bingoRows(); return S.bingoDraft; };
 const goalRows = () => S.goalsDraft ?? S.goals.map((g) => ({ title: g.title, threshold: String(g.threshold), sponsor: g.sponsor ?? '', done: !!g.done_at, clip: g.clip_url ?? '', when: g.scheduled_for ?? '' }));
@@ -195,6 +209,12 @@ const sponsorNames = () => [...new Set([...(S.sponsors.length ? S.sponsors.map((
 const editGoals = () => { if (!S.goalsDraft) S.goalsDraft = goalRows(); return S.goalsDraft; };
 
 // Suggest a round: 2 easy, 2 medium, 1 hard, all from different categories.
+// «Provocare nouă»: a challenge written by a moderator, into the pool and into the round or the draft.
+function newChallengeRow(to: 'round' | 'draft') {
+  return `<div class="row"><label class="inline" style="flex:1 1 320px">Provocare nouă<input class="field" id="newCh_${to}" maxlength="140" placeholder="ex: Cântă imnul cu accent de pirat"></label>
+    <label class="inline">Nivel<select class="field" id="newChLvl_${to}"><option value="ușor">Ușor</option><option value="mediu" selected>Mediu</option><option value="greu">Greu</option></select></label>
+    <button class="btn-ghost" data-act="newChallenge" data-to="${to}">Adaugă</button></div>`;
+}
 function autoDraft() {
   const pick: number[] = [];
   const used = new Set<string>();
@@ -1279,14 +1299,20 @@ function render() {
       <h2>Runda de vot</h2>
       ${S.round ? `
         <p class="muted" style="margin-top:0">Runda ${S.round.number} · ${roundOpen ? `se închide la ${when(S.round.closes_at)}` : 'închisă'} · ${totalVotes} voturi</p>
-        <ul class="list">${S.round.items.map((x) => `<li><span class="grow">${esc(x.title)}${S.round!.winner_id === x.challenge_id ? ' <span class="pill ok">câștigă</span>' : ''}</span><strong>${x.votes}</strong><span class="muted">${totalVotes ? Math.round((x.votes / totalVotes) * 100) : 0}%</span></li>`).join('')}</ul>
-        ${roundOpen ? `<div class="row"><button class="btn-primary" data-act="closeRound" data-id="${S.round.id}">Închide runda acum</button><span class="muted">Se închide singură la final și alege câștigătoarea.</span></div>` : ''}
+        <ul class="list r-list">${S.round.items.map((x) => `<li><span class="grow">${esc(x.title)}${S.round!.winner_id === x.challenge_id ? ' <span class="pill ok">câștigă</span>' : ''}</span><strong>${x.votes}</strong><span class="muted r-pct">${totalVotes ? Math.round((x.votes / totalVotes) * 100) : 0}%</span>${roundOpen ? `<span class="pair"><button class="btn-ghost" data-act="rSwap" data-id="${x.challenge_id}" aria-expanded="${S.rSwap === x.challenge_id}">Schimbă</button><button class="btn-ghost" data-act="rRemove" data-id="${x.challenge_id}"${S.round!.items.length <= 2 ? ' disabled title="O rundă are cel puțin 2 provocări"' : ''}>Scoate</button></span>` : ''}
+          ${roundOpen && S.rSwap === x.challenge_id ? `<div class="r-swap"><label class="inline" style="flex:1 1 320px">Înlocuiește cu<select class="field" id="rSwapSel">${poolOptions(0)}</select></label><button class="btn-primary" data-act="rSwapSave" data-id="${x.challenge_id}">Salvează</button><button class="btn-ghost" data-act="rSwapCancel">Anulează</button><span class="muted" style="flex-basis:100%">Voturile ei (${x.votes}) se pierd; cei care au votat pot vota din nou.</span></div>` : ''}</li>`).join('')}</ul>
+        ${roundOpen ? `
+        <div class="row"><label class="inline" style="flex:1 1 320px">Adaugă în rundă<select class="field" id="rAddSel">${poolOptions(0)}</select></label><button class="btn-ghost" data-act="rAdd"${S.round.items.length >= 8 ? ' disabled' : ''}>+ Adaugă</button></div>
+        ${newChallengeRow('round')}
+        <div class="row"><button class="btn-primary" data-act="closeRound" data-id="${S.round.id}">Închide runda acum</button><span class="muted">Se închide singură la final și alege câștigătoarea.</span></div>` : ''}
       ` : '<p class="muted" style="margin-top:0">Nicio rundă încă.</p>'}
       ${!roundOpen && S.auto?.voteOn ? `<p style="margin:14px 0 0"><span class="pill ok">Vot automat</span> Următoarea rundă se deschide singură${S.auto.lastVoteDay === new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Bucharest' }) ? ' mâine' : ' azi'}, după ${esc(S.auto.voteAt)}, când Iceman e live.</p>` : ''}
       ${!roundOpen ? `
         <details class="more"${S.auto?.voteOn ? '' : ' open'} style="margin-top:14px"><summary style="cursor:pointer;min-height:44px;display:flex;align-items:center;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:20px;text-transform:uppercase">Deschide o rundă acum, de mână</summary>
         <p class="muted" style="margin-top:0">2 ușoare, 2 medii, 1 grea. Schimbă ce vrei.</p>
-        ${S.draft.map((id, i) => `<div class="row"><select class="field" data-draft="${i}" aria-label="Provocarea ${i + 1}">${poolOptions(id)}</select></div>`).join('')}
+        ${S.draft.map((id, i) => `<div class="row d-row"><span class="d-no">${i + 1}</span><select class="field" data-draft="${i}" aria-label="Provocarea ${i + 1}">${poolOptions(id)}</select><button class="btn-ghost" data-act="draftRemove" data-i="${i}"${S.draft.length <= 2 ? ' disabled' : ''} aria-label="Scoate provocarea ${i + 1}">Scoate</button></div>`).join('')}
+        <div class="row"><button class="btn-ghost" data-act="draftAdd"${S.draft.length >= 8 ? ' disabled' : ''}>+ Adaugă încă o provocare</button></div>
+        ${newChallengeRow('draft')}
         <div class="row">
           <button class="btn-ghost" data-act="reroll">Alege altele</button>
           <label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="roundMin" value="60"></label>
@@ -1429,6 +1455,44 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   },
   closeRound: (el) => call('mod_close_round', { p_round: Number(el.dataset.id) }, 'Runda s-a închis.'),
   reroll: () => { autoDraft(); render(); },
+  draftRemove: (el) => { if (S.draft.length <= 2) return; S.draft.splice(Number(el.dataset.i), 1); resetTyped = true; render(); },
+  draftAdd: () => {
+    if (S.draft.length >= 8) return;
+    const next = S.pool.find((c) => !S.draft.includes(c.id));
+    if (!next) { say('Nu mai sunt provocări libere în listă.', true); return; }
+    S.draft.push(next.id); resetTyped = true; render();
+    document.querySelector<HTMLSelectElement>(`[data-draft="${S.draft.length - 1}"]`)?.focus();
+  },
+  newChallenge: async (el) => {
+    const to = el.dataset.to as 'round' | 'draft';
+    const title = val(`newCh_${to}`).trim();
+    if (!title) { say('Scrie textul provocării.', true); document.getElementById(`newCh_${to}`)?.focus(); return; }
+    const id = Number(await call('mod_challenge_add', { p_title: title, p_level: val(`newChLvl_${to}`) }, 'Provocare adăugată.'));
+    if (to === 'round' && S.round) await call('mod_round_edit', { p_round: S.round.id, p_action: 'add', p_new: id }, 'Provocarea nouă e în rundă.');
+    else if (to === 'draft') { if (S.draft.length >= 8) S.draft[S.draft.length - 1] = id; else S.draft.push(id); render(); }
+  },
+  rSwap: (el) => { const id = Number(el.dataset.id); S.rSwap = S.rSwap === id ? null : id; render(); document.getElementById('rSwapSel')?.focus(); },
+  rSwapCancel: () => { S.rSwap = null; render(); },
+  rSwapSave: async (el) => {
+    if (!S.round) return;
+    const nid = Number(val('rSwapSel'));
+    if (!nid) { say('Alege provocarea nouă.', true); return; }
+    await call('mod_round_edit', { p_round: S.round.id, p_action: 'replace', p_challenge: Number(el.dataset.id), p_new: nid }, 'Provocarea a fost schimbată.');
+    S.rSwap = null;
+  },
+  rRemove: (el) => {
+    if (!S.round) return;
+    const x = S.round.items.find((y) => y.challenge_id === Number(el.dataset.id));
+    if (!x) return;
+    if (!confirm(x.votes ? `Scoți «${x.title}» din rundă? Cele ${x.votes} voturi ale ei se pierd; cei care au votat pot vota din nou.` : `Scoți «${x.title}» din rundă?`)) return;
+    return call('mod_round_edit', { p_round: S.round.id, p_action: 'remove', p_challenge: x.challenge_id }, 'Provocarea a fost scoasă din rundă.');
+  },
+  rAdd: () => {
+    if (!S.round) return;
+    const nid = Number(val('rAddSel'));
+    if (!nid) { say('Alege o provocare.', true); return; }
+    return call('mod_round_edit', { p_round: S.round.id, p_action: 'add', p_new: nid }, 'Provocarea a fost adăugată în rundă.');
+  },
   openRound: () => {
     const ids = [...document.querySelectorAll<HTMLSelectElement>('[data-draft]')].map((s) => Number(s.value));
     if (new Set(ids).size !== ids.length) { say('Ai ales aceeași provocare de două ori.', true); return; }

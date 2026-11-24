@@ -1099,6 +1099,36 @@ export class DemoBackend {
       case 'mod_bingo_settings': return this.bingoSettings(ms(a.p_closes_at), String(a.p_prize ?? ''), a.p_prize_sponsor ?? null);
       case 'mod_bingo_draw': return this.bingoDraw();
       case 'mod_autopilot': return this.autopilot();
+      case 'mod_round_edit': return this.mutate((s) => {
+        const r = s.rounds.find((x) => x.id === Number(a.p_round));
+        if (!r || r.closesAt <= Date.now() || r.winnerId !== null) fail('round_closed');
+        const R = r!;
+        const old = Number(a.p_challenge), nid = Number(a.p_new), act = String(a.p_action);
+        const ch = (id: number) => s.challenges.find((c) => c.id === id);
+        if ((act === 'remove' || act === 'replace') && !R.items.some((x) => x.challengeId === old)) fail('not_in_round');
+        if ((act === 'add' || act === 'replace') && !(ch(nid)?.status === 'pool' && ch(nid)?.votable)) fail('challenge_unavailable');
+        const drop = (id: number) => {
+          R.items = R.items.filter((x) => x.challengeId !== id);
+          if (s.myVotes[R.id] === id) delete s.myVotes[R.id];   // their vote goes; they can vote again
+          const c = ch(id); if (c && c.status === 'in_round') c.status = 'pool';
+        };
+        if (act === 'remove') { if (R.items.length <= 2) fail('need_two_challenges'); drop(old); }
+        else if (act === 'add') { if (R.items.length >= 8) fail('round_full'); R.items.push({ challengeId: nid, votes: 0 }); ch(nid)!.status = 'in_round'; }
+        else if (act === 'replace') { const i = R.items.findIndex((x) => x.challengeId === old); drop(old); R.items.splice(i, 0, { challengeId: nid, votes: 0 }); ch(nid)!.status = 'in_round'; }
+        else fail('bad_action');
+      });
+      case 'mod_challenge_add': {
+        const title = String(a.p_title ?? '').trim().slice(0, 140);
+        if (!title) fail('challenge_title');
+        if (!['ușor', 'mediu', 'greu'].includes(String(a.p_level))) fail('bad_level');
+        let id = 0;
+        this.mutate((s) => {
+          if (s.challenges.some((c) => c.title.trim().toLowerCase() === title.toLowerCase() && ['pool', 'in_round', 'scheduled'].includes(c.status))) fail('challenge_exists');
+          id = Math.max(0, ...s.challenges.map((c) => c.id)) + 1;
+          s.challenges.push({ id, title, how: title, level: String(a.p_level), category: 'moderatori', votable: true, status: 'pool', scheduledFor: null, clip: null });
+        });
+        return id;
+      }
       case 'mod_sponsors': return this.sortedSponsors(this.load());
       case 'mod_sponsor_save': return this.sponsorSave(a.p ?? {});
       case 'mod_sponsor_delete': return this.mutate((s) => { s.sponsors = this.sponsorsOf(s).filter((x) => x.id !== Number(a.p_id)); });
