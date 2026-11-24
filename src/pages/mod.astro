@@ -113,8 +113,8 @@ const favicon = await getImage({ src: emote, format: 'png', width: 64 });
       .who { display: inline-flex; align-items: center; gap: 10px; }
       .avatar { width: 30px; height: 30px; display: grid; place-items: center; background: #9146FF; font-weight: 700; }
       .who-n { font-weight: 600; font-size: 14px; }
-      .mshell { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: calc(100vh - 64px); }
-      .mnav { position: sticky; top: var(--bar-h, 64px); align-self: start; max-height: calc(100vh - var(--bar-h, 64px)); overflow-y: auto; padding: 14px 12px; display: flex; flex-direction: column; gap: 10px; background: #050608; border-right: 1px solid #1C2230; }
+      .mshell { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: calc(100vh / var(--z, 1) - 64px); }
+      .mnav { position: sticky; top: var(--bar-h, 64px); align-self: start; max-height: calc(100vh / var(--z, 1) - var(--bar-h, 64px)); overflow-y: auto; padding: 14px 12px; display: flex; flex-direction: column; gap: 10px; background: #050608; border-right: 1px solid #1C2230; }
       /* Menu column: its own scroll never drags the page; the bar shows only while you're on it. */
       .mnav { overscroll-behavior: contain; scrollbar-gutter: stable; scrollbar-color: transparent transparent; }
       .mnav:hover, .mnav:focus-within { scrollbar-color: #23415E transparent; }
@@ -272,8 +272,9 @@ const favicon = await getImage({ src: emote, format: 'png', width: 64 });
         .ci { grid-template-columns: 10px minmax(0, 1fr); } .ci-t { grid-column: 2; text-align: left; white-space: normal; }
       }
       /* Big screens at 100% scaling (1440p, 4K): keep the 1920 px proportions, like the public page. */
-      @media (min-width: 2400px) { html { zoom: 1.3333; } }
-      @media (min-width: 3400px) { html { zoom: 2; } }
+      /* --z: viewport heights (vh) don't shrink with zoom, so anything sized to the window divides by it. */
+      @media (min-width: 2400px) { html { zoom: 1.3333; --z: 1.3333; } }
+      @media (min-width: 3400px) { html { zoom: 2; --z: 2; } }
       /* Sponsori editor */
       .sp-list > li.sp-row { flex-wrap: nowrap; }
       .sp-row.on { background: rgba(63,208,255,.06); }

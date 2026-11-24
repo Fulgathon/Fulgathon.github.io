@@ -540,6 +540,17 @@ function navHtml(): string {
 
 /** The menu is one Tab stop: ↑/↓ (←/→ on phones), Home and End move inside it (M5).
     A live refresh re-draws it without taking the focus away. */
+// Desktop: the menu column scrolls on its own; keep the open item in view (without moving the page).
+function keepCurVisible(): boolean {
+  const cur = nav.querySelector<HTMLElement>('.ng-items a.cur');
+  if (!cur || nav.hidden || !cur.offsetParent) return false;   // not drawn yet: try again later
+  if (nav.scrollHeight <= nav.clientHeight) return true;
+  const nr = nav.getBoundingClientRect(), cr = cur.getBoundingClientRect();
+  if (cr.top < nr.top + 8) nav.scrollTop -= nr.top + 8 - cr.top + 40;
+  else if (cr.bottom > nr.bottom - 8) nav.scrollTop += cr.bottom - (nr.bottom - 8) + 40;
+  return true;
+}
+let navCur = '';
 function setNav() {
   const had = nav.contains(document.activeElement) ? (document.activeElement as HTMLAnchorElement).getAttribute('href') : null;
   nav.innerHTML = navHtml();
@@ -547,6 +558,8 @@ function setNav() {
   const home = links.find((a) => a.classList.contains('cur')) ?? links.find((a) => a.closest('.ng.on')) ?? links[0];
   links.forEach((a) => { a.tabIndex = a === home ? 0 : -1; });
   if (had) (links.find((a) => a.getAttribute('href') === had) ?? home)?.focus({ preventScroll: true });
+  // Only when the open item changed (live refreshes redraw the menu too and must not move it).
+  if (navCur !== S.view) requestAnimationFrame(() => { if (navCur !== S.view && keepCurVisible()) navCur = S.view; });
 }
 nav.addEventListener('keydown', (e) => {
   const links = [...nav.querySelectorAll<HTMLAnchorElement>('a')].filter((a) => a.offsetParent !== null);
@@ -979,6 +992,18 @@ function markUnsaved() {
   });
 }
 app.addEventListener('input', markUnsaved);
+// Narrow windows: the menu groups and the item chips are rows that scroll sideways; a mouse wheel
+// only scrolls up and down, so turn it sideways there (trackpads and touch already work).
+const sideways = (e: WheelEvent) => {
+  const row = (e.target as Element).closest<HTMLElement>('.mnav, .subnav');
+  if (!row || Math.abs(e.deltaY) <= Math.abs(e.deltaX) || row.scrollWidth <= row.clientWidth + 1) return;
+  if (getComputedStyle(row).flexDirection !== 'row') return;
+  const before = row.scrollLeft;
+  row.scrollLeft += e.deltaY;
+  if (row.scrollLeft !== before) e.preventDefault();
+};
+nav.addEventListener('wheel', sideways, { passive: false });
+app.addEventListener('wheel', sideways, { passive: false });
 app.addEventListener('change', markUnsaved);
 app.addEventListener('change', (e) => { const t = e.target as HTMLInputElement; if (t.id === 'sp_file' && t.files?.[0]) void spUpload(t.files[0]).finally(() => { t.value = ''; }); });
 window.addEventListener('beforeunload', (e) => {
@@ -992,6 +1017,7 @@ function render() {
   if (active && app.contains(active) && /^(INPUT|SELECT|TEXTAREA)$/.test(active.tagName)) { deferred = true; return; }
   const isMod = !!S.me?.is_moderator;
   nav.hidden = !isMod;
+  if (isMod && navCur !== S.view) requestAnimationFrame(() => { if (navCur !== S.view && keepCurVisible()) navCur = S.view; });
   bar.innerHTML = barHtml();
   if (!S.me) {
     app.innerHTML = `<div class="card" style="margin-top:20px"><h2>Conectează-te</h2>
@@ -1561,6 +1587,7 @@ function route(scroll: boolean) {
       app.querySelector<HTMLElement>('h1')?.focus({ preventScroll: true });
     }
   });
+  requestAnimationFrame(() => { keepCurVisible(); });
   // Phone: the menu is one scrolling row; slide it so the open group is in view.
   requestAnimationFrame(() => {
     const sub = app.querySelector<HTMLElement>('.subnav');
