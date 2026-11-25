@@ -69,6 +69,10 @@ const errors: Record<string, string> = {
   bad_raffle: 'Alege cine intră în tombolă.',
   bad_raffle_hours: 'Scrie câte ore trebuie să fi privit (de exemplu 5).',
   bad_raffle_prize: 'Scrie premiul (cel mult 120 de caractere).',
+  bad_raffle_points: 'Scrie câte puncte de canal costă intrarea (de la 1 la 1.000.000).',
+  raffle_cost_locked: 'Costul nu se mai schimbă: recompensa e deja pe Twitch sau s-a înscris cineva.',
+  raffle_has_entries: 'S-au înscris deja spectatori cu puncte: regula rămâne «puncte de canal».',
+  not_points_raffle: 'Înscrierile se închid doar la tombolele cu puncte de canal.',
   raffle_drawn: 'S-a tras deja la sorți: regula nu se mai schimbă și tombola nu se mai poate șterge. Premiul se poate redenumi.',
   raffle_empty: 'Nu mai e nimeni pe listă care să nu fi câștigat deja.',
   no_raffle: 'Tombola nu mai există. Reîncarcă pagina.',
@@ -254,8 +258,9 @@ const toLocal = (iso: string | null) => {
 
 // ---- State ----
 interface DueItem { kind: 'roata' | 'bingo' | 'tombola'; id: number; login: string; prize: string | null; sponsor: string | null; at: string }
-interface Raffle { id: number; prize: string; sponsor: string | null; rule: 'all' | 'subs' | 'hours'; min_hours: number | null; created_by: string | null; created_at: string; pool: number;
+interface Raffle { id: number; prize: string; sponsor: string | null; rule: 'all' | 'subs' | 'hours' | 'points'; min_hours: number | null; created_by: string | null; created_at: string; pool: number;
   include_mods?: boolean; allow_past_winners?: boolean; allow_repeat?: boolean;
+  points_cost?: number | null; entries_closed_at?: string | null; on_twitch?: boolean; reward_error?: string | null; entries?: number;
   draws: { id: number; login: string; drawn_at: string; drawn_by: string | null; given_at: string | null; total: number | null }[] }
 interface Challenge { id: number; title: string; level: string; category: string; status: string; scheduled_for: string | null }
 let S: {
@@ -1251,6 +1256,7 @@ function dueRow(p: DueItem): string {
 const fmtHours = (h: number | null) => (h === null ? '' : String(h).replace('.', ','));
 function ruleLabel(rule: string, h: number | null): string {
   const n = Number(h), de = Number.isInteger(n) && (n % 100 === 0 || n % 100 >= 20) ? 'de ' : '';
+  if (rule === 'points') return 'Cine răscumpără recompensa pe Twitch';
   return rule === 'subs' ? 'Abonații conectați pe site' : rule === 'hours' ? `Cine a privit cel puțin ${fmtHours(h)} ${n === 1 ? 'oră' : de + 'ore'}` : 'Toți cei conectați pe site cu Twitch';
 }
 const RAFFLE_HELP = 'Intrarea e mereu gratuită: lista se face singură după regula aleasă, spectatorii nu fac nimic. Donațiile nu dau șanse în plus.\nStreamerul nu e niciodată pe listă. Cu bifele alegeți dacă intră și moderatorii, dacă intră cei care au câștigat deja la alte tombole și dacă același om poate câștiga de mai multe ori la aceeași tombolă. Bifele se pot schimba oricând și contează la următoarea tragere.\n«Trage la sorți»: serverul alege câștigătorul, apoi sursa OBS «Tragerea la sorți» arată ruleta cu numele de pe listă. Câștigătorul vede «Ai câștigat» pe site și intră în PREMII → De dat.';
@@ -1264,14 +1270,47 @@ function raffleTicks(prefix: string, r?: Raffle): string {
     </div>`;
 }
 const isOn = (id: string) => (document.getElementById(id) as HTMLInputElement | null)?.checked ?? false;
-const raffleTickArgs = (prefix: string) => ({ p_include_mods: isOn(`${prefix}Mods`), p_allow_past: isOn(`${prefix}Past`), p_allow_repeat: isOn(`${prefix}Repeat`) });
+const raffleTickArgs = (prefix: string) => ({ p_include_mods: isOn(`${prefix}Mods`), p_allow_past: isOn(`${prefix}Past`), p_allow_repeat: isOn(`${prefix}Repeat`),
+  p_points_cost: val(`${prefix}Rule`) === 'points' ? Math.round(Number(val(`${prefix}Cost`))) || null : null });
+/** After a raffle change: put / take its channel-points reward on Twitch (Edge Function raffle-reward). */
+async function syncRewards() {
+  if (demoApi) return;
+  try { await db.functions.invoke('raffle-reward', { body: {} }); } catch { /* the raffle shows «Pune pe Twitch din nou» */ }
+  void load();
+}
 const raffleTickNote = (r: Raffle) => [r.include_mods ? 'cu moderatori' : '', r.allow_past_winners === false ? 'fără câștigătorii altor tombole' : '', r.allow_repeat ? 'se poate câștiga de mai multe ori' : ''].filter(Boolean).map((x) => ` · ${x}`).join('');
-function raffleRuleFields(prefix: string, rule: string, hours: number | null, locked: boolean): string {
+function raffleRuleFields(prefix: string, rule: string, hours: number | null, locked: boolean, cost: number | null = null, costLocked = false): string {
   return `<label class="inline">Cine intră<select class="field" id="${prefix}Rule" data-raffle-rule="${prefix}"${locked ? ' disabled' : ''}>
       <option value="all"${rule === 'all' ? ' selected' : ''}>Toți cei conectați pe site cu Twitch</option>
       <option value="subs"${rule === 'subs' ? ' selected' : ''}>Doar abonații conectați pe site</option>
-      <option value="hours"${rule === 'hours' ? ' selected' : ''}>Cine a privit cel puțin … ore</option></select></label>
-    <label class="inline rf-hours"${rule === 'hours' ? '' : ' hidden'}>Ore privite (în total)<input class="field" type="number" inputmode="decimal" id="${prefix}Hours" data-raffle-rule="${prefix}" min="0.5" max="2000" step="0.5" value="${esc(hours ?? 5)}"${locked ? ' disabled' : ''}></label>`;
+      <option value="hours"${rule === 'hours' ? ' selected' : ''}>Cine a privit cel puțin … ore</option>
+      <option value="points"${rule === 'points' ? ' selected' : ''}>Cine răscumpără recompensa pe Twitch (puncte de canal)</option></select></label>
+    <label class="inline rf-hours"${rule === 'hours' ? '' : ' hidden'}>Ore privite (în total)<input class="field" type="number" inputmode="decimal" id="${prefix}Hours" data-raffle-rule="${prefix}" min="0.5" max="2000" step="0.5" value="${esc(hours ?? 5)}"${locked ? ' disabled' : ''}></label>
+    <label class="inline rf-cost"${rule === 'points' ? '' : ' hidden'}>Costă (puncte de canal)<input class="field" type="number" inputmode="numeric" id="${prefix}Cost" min="1" max="1000000" step="1" value="${esc(cost ?? 1000)}"${locked || costLocked ? ' disabled' : ''}></label>`;
+}
+/** Which extra field a rule needs: hours watched, or the points cost. */
+function raffleRuleExtras(prefix: string) {
+  const rule = val(`${prefix}Rule`);
+  const hrs = document.getElementById(`${prefix}Hours`)?.closest('label');
+  const cost = document.getElementById(`${prefix}Cost`)?.closest('label');
+  if (hrs) hrs.hidden = rule !== 'hours';
+  if (cost) cost.hidden = rule !== 'points';
+}
+const REWARD_ERRORS: Record<string, string> = {
+  no_scope: 'Streamerul trebuie să reconecteze o dată contul de streamer (STREAMER → Start), ca site-ul să poată pune recompensa pe Twitch.',
+  not_connected: 'Contul de streamer nu e conectat (STREAMER → Start).',
+  title_taken: 'Pe Twitch există deja o recompensă cu numele ăsta: schimbați puțin premiul și salvați.',
+  not_allowed: 'Twitch nu permite recompense pe canalul ăsta (trebuie Affiliate sau Partner).',
+  test: 'În Mod test recompensa nu se pune pe Twitch.',
+};
+/** Points raffles: what's on Twitch right now. */
+function rewardState(r: Raffle): string {
+  const n = r.entries ?? 0;
+  const who = `<strong>${fmtInt(n)}</strong> ${n === 1 ? 'înscris' : 'înscriși'}`;
+  if (r.entries_closed_at) return `<p style="margin:10px 0 0"><span class="pill off">Înscrieri închise</span> ${who}${r.on_twitch ? ' · recompensa se scoate de pe Twitch…' : ' · recompensa nu mai e pe Twitch'}</p>`;
+  if (r.on_twitch) return `<p style="margin:10px 0 0"><span class="pill ok">Pe Twitch</span> recompensa costă ${fmtInt(r.points_cost ?? 0)} puncte · ${who}</p>`;
+  if (r.reward_error) return `<p class="callout bad" style="margin:10px 0 0">${esc(REWARD_ERRORS[r.reward_error] ?? `Twitch a refuzat (${r.reward_error}). Încercați din nou.`)}</p>`;
+  return `<p style="margin:10px 0 0"><span class="pill warn">Se pune pe Twitch…</span> ${who}</p>`;
 }
 function tombolaHtml(): string {
   const P = S.rafflePreview;
@@ -1290,14 +1329,18 @@ function tombolaHtml(): string {
       <div class="fgrid">
         <label class="inline" style="flex:1 1 260px">Premiul<input class="field" id="rf${r.id}Prize" maxlength="120" value="${esc(r.prize)}"></label>
         <label class="inline" style="flex:1 1 200px">Premiul e de la<input class="field" id="rf${r.id}Sponsor" list="sponsorNames" maxlength="60" value="${esc(r.sponsor ?? '')}" placeholder="sponsor (opțional)"></label>
-        ${raffleRuleFields(`rf${r.id}`, r.rule, r.min_hours, drawn)}
+        ${raffleRuleFields(`rf${r.id}`, r.rule, r.min_hours, drawn, r.points_cost ?? null, !!r.on_twitch || (r.entries ?? 0) > 0)}
         <button class="btn-ghost" data-act="raffleSave" data-id="${r.id}">Salvează</button>
       </div>
       ${raffleTicks(`rf${r.id}`, r)}
       <p class="hint" style="margin:8px 0 0">${esc(ruleLabel(r.rule, r.min_hours))}${raffleTickNote(r)} · pot câștiga acum <strong>${fmtInt(r.pool)}</strong>${r.created_by ? ` · adăugată de ${esc(r.created_by)}` : ''}${drawn ? ' · regula nu se mai schimbă după prima tragere' : ''}</p>
+      ${r.rule === 'points' ? rewardState(r) : ''}
       ${drawn ? `<p style="margin:10px 0 0">Câștigători: ${r.draws.map((d) => `<strong>${esc(d.login)}</strong> <span class="muted">(${when(d.drawn_at)}${d.given_at ? ', dat' : ''})</span>`).join(' · ')}</p>` : ''}
       <div class="row">
         <button class="btn-primary" data-act="raffleDraw" data-id="${r.id}"${r.pool ? '' : ' disabled'}>${drawn ? 'Trage încă un câștigător' : 'Trage la sorți'}</button>
+        ${r.rule === 'points' && !r.entries_closed_at ? `<button class="btn-ghost" data-act="raffleEntries" data-id="${r.id}" data-open="0">Închide înscrierile</button>` : ''}
+        ${r.rule === 'points' && r.entries_closed_at && !drawn ? `<button class="btn-ghost" data-act="raffleEntries" data-id="${r.id}" data-open="1">Redeschide înscrierile</button>` : ''}
+        ${r.rule === 'points' && !r.entries_closed_at && !r.on_twitch ? '<button class="btn-ghost" data-act="raffleSync">Pune pe Twitch din nou</button>' : ''}
         ${last ? `<button class="btn-ghost" data-act="raffleReplay" data-id="${last.id}">Arată din nou pe stream</button>` : `<button class="btn-ghost btn-danger" data-act="raffleDel" data-id="${r.id}">Șterge</button>`}
       </div></li>`;
   }).join('');
@@ -1490,7 +1533,12 @@ async function raffleCount() {
   const hours = rule === 'hours' ? Number(val('rfHours')) || null : null;
   const mods = isOn('rfMods'), past = isOn('rfPast');
   const key = `rf:${rule}:${hours ?? ''}:${mods}:${past}`;
-  const out = () => { const el = document.getElementById('rfCount'); if (el && S.rafflePreview?.key === key) el.innerHTML = S.rafflePreview.n === null ? 'Pe listă acum: —' : `Pe listă acum: <strong>${fmtInt(S.rafflePreview.n)}</strong>`; };
+  const out = () => {
+    const el = document.getElementById('rfCount');
+    if (!el || S.rafflePreview?.key !== key) return;
+    el.innerHTML = rule === 'points' ? 'Lista se face pe măsură ce spectatorii răscumpără recompensa pe Twitch. O singură intrare de persoană; cine răscumpără de două ori primește punctele înapoi.'
+      : S.rafflePreview.n === null ? 'Pe listă acum: —' : `Pe listă acum: <strong>${fmtInt(S.rafflePreview.n)}</strong>`;
+  };
   if (S.rafflePreview?.key === key) return out();
   S.rafflePreview = { key, n: null };
   try {
@@ -1502,8 +1550,7 @@ async function raffleCount() {
 }
 function raffleRuleChanged(t: HTMLElement) {
   const prefix = t.dataset.raffleRule!;
-  const hrs = document.getElementById(`${prefix}Hours`)?.closest('label');
-  if (hrs) hrs.hidden = val(`${prefix}Rule`) !== 'hours';
+  raffleRuleExtras(prefix);
   if (prefix === 'rf') { clearTimeout(rfTimer); rfTimer = window.setTimeout(() => void raffleCount(), 250); }
 }
 app.addEventListener('change', (e) => { const t = e.target as HTMLElement; if (t.dataset?.raffleRule) raffleRuleChanged(t); });
@@ -1855,10 +1902,7 @@ function afterRender() {
   }
   if (!S.me?.is_moderator) return;
   // Tombole: a live refresh keeps a typed rule (typedValues); show the hours field to match it.
-  app.querySelectorAll<HTMLSelectElement>('select[data-raffle-rule]').forEach((el) => {
-    const hrs = document.getElementById(`${el.dataset.raffleRule}Hours`)?.closest('label');
-    if (hrs) hrs.hidden = el.value !== 'hours';
-  });
+  app.querySelectorAll<HTMLSelectElement>('select[data-raffle-rule]').forEach((el) => raffleRuleExtras(el.dataset.raffleRule!));
   if (document.getElementById('rfRule')) void raffleCount();
   const firstDraw = shownView === '';
   const pageChanged = shownView !== S.view;
@@ -2050,18 +2094,25 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   raffleAdd: () => {
     const rule = val('rfRule');
     if (!val('rfPrize').trim()) return say('Scrie premiul.', true);
-    return call('mod_raffle_save', { p_id: null, p_prize: val('rfPrize'), p_sponsor: val('rfSponsor'), p_rule: rule, p_min_hours: rule === 'hours' ? Number(val('rfHours')) || null : null, ...raffleTickArgs('rf') }, 'Tombola a fost adăugată.');
+    return call('mod_raffle_save', { p_id: null, p_prize: val('rfPrize'), p_sponsor: val('rfSponsor'), p_rule: rule, p_min_hours: rule === 'hours' ? Number(val('rfHours')) || null : null, ...raffleTickArgs('rf') }, 'Tombola a fost adăugată.').then((x: unknown) => { void syncRewards(); return x; });
   },
   raffleSave: (el) => {
     const id = el.dataset.id!, rule = val(`rf${id}Rule`);
-    return call('mod_raffle_save', { p_id: Number(id), p_prize: val(`rf${id}Prize`), p_sponsor: val(`rf${id}Sponsor`), p_rule: rule, p_min_hours: rule === 'hours' ? Number(val(`rf${id}Hours`)) || null : null, ...raffleTickArgs(`rf${id}`) }, 'Tombola a fost salvată.');
+    return call('mod_raffle_save', { p_id: Number(id), p_prize: val(`rf${id}Prize`), p_sponsor: val(`rf${id}Sponsor`), p_rule: rule, p_min_hours: rule === 'hours' ? Number(val(`rf${id}Hours`)) || null : null, ...raffleTickArgs(`rf${id}`) }, 'Tombola a fost salvată.').then((x: unknown) => { void syncRewards(); return x; });
   },
-  raffleDel: (el) => ask('Ștergi tombola?') && call('mod_raffle_delete', { p_id: Number(el.dataset.id) }, 'Tombola a fost ștearsă.'),
+  raffleDel: (el) => ask('Ștergi tombola? Dacă are recompensă pe Twitch, se scoate și aceea.') && call('mod_raffle_delete', { p_id: Number(el.dataset.id) }, 'Tombola a fost ștearsă.').then(() => void syncRewards()),
+  raffleEntries: (el) => {
+    const open = el.dataset.open === '1';
+    if (!open && !ask('Închizi înscrierile? Recompensa se scoate de pe Twitch; cei înscriși rămân pe listă.')) return;
+    return call('mod_raffle_entries', { p_id: Number(el.dataset.id), p_open: open }, open ? 'Înscrierile sunt deschise: recompensa se pune pe Twitch.' : 'Înscrierile s-au închis.').then(() => void syncRewards());
+  },
+  raffleSync: () => { say('Se pune pe Twitch…'); void syncRewards(); },
   raffleDraw: (el) => {
     const r = S.raffles.find((x) => x.id === Number(el.dataset.id));
     if (!r) return;
-    return ask(`Tragi la sorți «${r.prize}» acum? Ruleta pornește pe stream (sursa «Tragerea la sorți»).`) &&
-      call('mod_raffle_draw', { p_id: r.id }, 'Câștigătorul a fost ales. Ruleta merge pe stream.');
+    const closes = r.rule === 'points' && !r.entries_closed_at ? ' Înscrierile se închid și recompensa se scoate de pe Twitch.' : '';
+    return ask(`Tragi la sorți «${r.prize}» acum? Ruleta pornește pe stream (sursa «Tragerea la sorți»).${closes}`) &&
+      call('mod_raffle_draw', { p_id: r.id }, 'Câștigătorul a fost ales. Ruleta merge pe stream.').then(() => { if (closes) void syncRewards(); });
   },
   raffleReplay: (el) => call('mod_raffle_replay', { p_draw: Number(el.dataset.id) }, 'Tragerea se vede din nou pe stream.'),
   goalAdd: () => { editGoals().push({ title: '', threshold: '', sponsor: '', done: false, clip: '', when: '' }); render(); },

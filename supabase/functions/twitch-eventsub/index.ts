@@ -18,6 +18,7 @@
 
 import { admin, broadcasterToken, chatLine, getConfig, helix, hmacHex, safeEqual, type Config, type Db } from '../_shared/twitch.ts';
 import { subBadge } from '../_shared/badges.ts';
+import { raffleRedemption } from '../_shared/raffle.ts';
 
 const MAX_AGE_MS = 10 * 60_000;
 
@@ -124,6 +125,9 @@ Deno.serve(async (req) => {
       // Any reward whose title mentions "check-in" / "checkin" (e.g. "Check-in ICEMARATON").
       if (/check[\s-]?in/i.test(e.reward?.title ?? '')) {
         await db.rpc('record_checkin', { p_user_id: e.user_id ?? null, p_login: e.user_login ?? null, p_name: e.user_name ?? null });
+      } else {
+        // A raffle's reward (Tombole with channel points): enter or give the points back.
+        await raffleRedemption(db, e);
       }
       break;
   }

@@ -42,7 +42,9 @@ export const CHAT_SCOPE = 'user:write:chat';
 // with the app token, for the subscriber badge months (resubs nobody shared).
 export const READ_CHAT_SCOPES = ['user:read:chat', 'user:bot', 'channel:bot'];
 // clips:edit: «Făcută» on /mod clips the moment (make-clip).
-export const SCOPES = ['channel:read:subscriptions', 'bits:read', 'moderator:read:chatters', 'channel:read:redemptions', CHAT_SCOPE, ...READ_CHAT_SCOPES, 'clips:edit'];
+// channel:manage:redemptions: Tombole with channel points (the site creates/deletes each raffle's reward
+// and gives points back for extra or late redemptions; _shared/raffle.ts).
+export const SCOPES = ['channel:read:subscriptions', 'bits:read', 'moderator:read:chatters', 'channel:read:redemptions', 'channel:manage:redemptions', CHAT_SCOPE, ...READ_CHAT_SCOPES, 'clips:edit'];
 
 export async function getConfig(db: Db): Promise<Config> {
   const { data, error } = await db.rpc('twitch_config');

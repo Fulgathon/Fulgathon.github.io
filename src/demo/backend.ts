@@ -40,7 +40,9 @@ interface DemoChallenge {
 interface DemoRound { id: number; number: number; opensAt: number; closesAt: number; winnerId: number | null; items: { challengeId: number; votes: number }[] }
 interface DemoSpin { id: number; user: string; prize: number; at: number; fulfilled: boolean }
 interface DemoRaffle {
-  id: number; prize: string; sponsor: string | null; rule: 'all' | 'subs' | 'hours'; minHours: number | null; by: string; at: number;
+  id: number; prize: string; sponsor: string | null; rule: 'all' | 'subs' | 'hours' | 'points'; minHours: number | null; by: string; at: number;
+  /** Channel points (migration 20261220100000): the cost, who redeemed (demo: sample viewers), entries closed at. */
+  pointsCost?: number | null; entries?: string[]; entriesClosed?: number | null;
   /** The three ticks (migration 20261219100000). */
   includeMods?: boolean; allowPast?: boolean; allowRepeat?: boolean;
   draws: { id: number; name: string; at: number; by: string; given: number | null; total: number }[];
@@ -124,11 +126,11 @@ const RATES = { tier1: [360, 1], tier2: [720, 1], tier3: [1080, 1], gift: [360, 
 const WHEEL_MINUTES = 120;
 const today = () => new Date().toLocaleDateString('sv-SE');
 /** A raffle rule as private.raffle_rule_ok() checks it. */
-function raffleRule(rule: unknown, hours: unknown): { rule: 'all' | 'subs' | 'hours'; minHours: number | null } {
-  if (rule !== 'all' && rule !== 'subs' && rule !== 'hours') fail('bad_raffle');
+function raffleRule(rule: unknown, hours: unknown): { rule: 'all' | 'subs' | 'hours' | 'points'; minHours: number | null } {
+  if (rule !== 'all' && rule !== 'subs' && rule !== 'hours' && rule !== 'points') fail('bad_raffle');
   const h = rule === 'hours' ? Number(hours) : null;
   if (rule === 'hours' && (!h || h <= 0 || h > 2000)) fail('bad_raffle_hours');
-  return { rule: rule as 'all' | 'subs' | 'hours', minHours: h };
+  return { rule: rule as 'all' | 'subs' | 'hours' | 'points', minHours: h };
 }
 /** Bingo phase, as private.bingo_phase() in the database. */
 const bingoOpensAt = (s: DemoState) => (s.bingo.opensAt === undefined ? 0 : s.bingo.opensAt);
@@ -617,7 +619,11 @@ export class DemoBackend {
 
   // ---- Tombole and «Premii de dat» (same rules as migration 20261216100000) ----------
   /** Who is on a raffle's list: the simulated players (viewer_…) and the demo viewer when logged in. */
-  private rafflePool(s: DemoState, rule: { rule: string; minHours: number | null; includeMods?: boolean }): string[] {
+  private rafflePool(s: DemoState, rule: { rule: string; minHours: number | null; includeMods?: boolean; entries?: string[] }): string[] {
+    if (rule.rule === 'points') {
+      const modSet = new Set(s.mods.map((m) => m.toLowerCase()));
+      return (rule.entries ?? []).filter((n) => n.toLowerCase() !== 'icemanlucky' && (rule.includeMods || !modSet.has(n.toLowerCase())));
+    }
     // Moderators only with the tick; the streamer never.
     const modSet = new Set(s.mods.map((m) => m.toLowerCase()));
     const mods = rule.includeMods ? s.mods.filter((m) => m !== 'icemanlucky') : [];
@@ -630,7 +636,7 @@ export class DemoBackend {
     return people.filter((n) => rule.rule === 'all' || (rule.rule === 'subs' && isSub(n)) || (rule.rule === 'hours' && hours(n) >= (rule.minHours ?? 1)));
   }
   /** Who can win this raffle's next draw: the list minus earlier winners (here and/or elsewhere) per the ticks. */
-  private raffleCanWin(s: DemoState, r: { id?: number; rule: string; minHours: number | null; includeMods?: boolean; allowPast?: boolean; allowRepeat?: boolean }): string[] {
+  private raffleCanWin(s: DemoState, r: { id?: number; rule: string; minHours: number | null; includeMods?: boolean; allowPast?: boolean; allowRepeat?: boolean; entries?: string[] }): string[] {
     const here = new Set((s.raffles ?? []).filter((x) => x.id === r.id).flatMap((x) => x.draws.map((d) => d.name)));
     const elsewhere = new Set((s.raffles ?? []).filter((x) => x.id !== r.id).flatMap((x) => x.draws.map((d) => d.name)));
     return this.rafflePool(s, r).filter((n) => (r.allowRepeat || !here.has(n)) && (r.allowPast !== false || !elsewhere.has(n)));
@@ -644,24 +650,31 @@ export class DemoBackend {
     return [...(s.raffles ?? [])].sort((a, b) => b.id - a.id).map((r) => ({
       id: r.id, prize: r.prize, sponsor: r.sponsor, rule: r.rule, min_hours: r.minHours, created_by: r.by, created_at: iso(r.at),
       include_mods: !!r.includeMods, allow_past_winners: r.allowPast !== false, allow_repeat: !!r.allowRepeat,
+      points_cost: r.pointsCost ?? null, entries_closed_at: iso(r.entriesClosed ?? null), on_twitch: r.rule === 'points' && !r.entriesClosed, reward_error: null, entries: (r.entries ?? []).length,
       pool: this.raffleCanWin(s, r).length,
       draws: r.draws.map((d) => ({ id: d.id, login: d.name, drawn_at: iso(d.at), drawn_by: d.by, given_at: iso(d.given), total: d.total })),
     }));
   }
-  raffleSave(id: number | null, prize: string, sponsor: string | null, ruleIn: unknown, hoursIn: unknown, ticks: { includeMods: boolean; allowPast: boolean; allowRepeat: boolean } = { includeMods: false, allowPast: true, allowRepeat: false }) {
+  raffleSave(id: number | null, prize: string, sponsor: string | null, ruleIn: unknown, hoursIn: unknown, ticks: { includeMods: boolean; allowPast: boolean; allowRepeat: boolean } = { includeMods: false, allowPast: true, allowRepeat: false }, costIn: unknown = null) {
     return this.mutate((s) => {
       if (!prize.trim() || prize.trim().length > 120) fail('bad_raffle_prize');
       const r = raffleRule(ruleIn, hoursIn);
+      const cost = r.rule === 'points' ? Number(costIn) : null;
+      if (r.rule === 'points' && !(cost! >= 1 && cost! <= 1_000_000)) fail('bad_raffle_points');
       const list = (s.raffles ??= []);
       if (id === null) {
         const nid = Math.max(0, ...list.map((x) => x.id)) + 1;
-        list.push({ id: nid, prize: prize.trim(), sponsor: sponsor?.trim() || null, rule: r.rule, minHours: r.minHours, ...ticks, by: this.asMod ? 'modi' : 'icemanlucky', at: Date.now(), draws: [] });
+        // Demo: a points raffle starts with sample viewers who already redeemed.
+        const entries = r.rule === 'points' ? s.bingo.others.map((o) => o.user).filter((_, i) => i % 9 === 0).slice(0, 80) : [];
+        list.push({ id: nid, prize: prize.trim(), sponsor: sponsor?.trim() || null, rule: r.rule, minHours: r.minHours, pointsCost: cost, entries, entriesClosed: null, ...ticks, by: this.asMod ? 'modi' : 'icemanlucky', at: Date.now(), draws: [] });
         return nid;
       }
       const cur = list.find((x) => x.id === id);
       if (!cur) return fail('no_raffle');
-      if ((cur.rule !== r.rule || cur.minHours !== r.minHours) && cur.draws.length) fail('raffle_drawn');
-      Object.assign(cur, { prize: prize.trim(), sponsor: sponsor?.trim() || null, rule: r.rule, minHours: r.minHours, ...ticks });
+      if ((cur.rule !== r.rule || cur.minHours !== r.minHours || (cur.pointsCost ?? null) !== cost) && cur.draws.length) fail('raffle_drawn');
+      if (cur.rule === 'points' && r.rule === 'points' && cur.pointsCost !== cost && (cur.entries ?? []).length) fail('raffle_cost_locked');
+      if (cur.rule === 'points' && r.rule !== 'points' && (cur.entries ?? []).length) fail('raffle_has_entries');
+      Object.assign(cur, { prize: prize.trim(), sponsor: sponsor?.trim() || null, rule: r.rule, minHours: r.minHours, pointsCost: cost, ...ticks });
       return id;
     });
   }
@@ -669,6 +682,7 @@ export class DemoBackend {
     return this.mutate((s) => {
       const r = (s.raffles ?? []).find((x) => x.id === id);
       if (!r) return fail('no_raffle');
+      if (r.rule === 'points' && !r.entriesClosed) r.entriesClosed = Date.now();   // the first draw closes entries
       const all = this.rafflePool(s, r);
       const left = this.raffleCanWin(s, r);
       if (!left.length) return fail('raffle_empty');
@@ -1287,7 +1301,13 @@ export class DemoBackend {
       case 'mod_raffles': return this.rafflesFor(this.load());
       case 'mod_raffle_count': return this.raffleCanWin(this.load(), { ...raffleRule(a.p_rule, a.p_min_hours), includeMods: !!a.p_include_mods, allowPast: a.p_allow_past !== false }).length;
       case 'mod_raffle_save': return this.raffleSave(a.p_id == null ? null : Number(a.p_id), String(a.p_prize ?? ''), a.p_sponsor ?? null, a.p_rule, a.p_min_hours,
-        { includeMods: !!a.p_include_mods, allowPast: a.p_allow_past !== false, allowRepeat: !!a.p_allow_repeat });
+        { includeMods: !!a.p_include_mods, allowPast: a.p_allow_past !== false, allowRepeat: !!a.p_allow_repeat }, a.p_points_cost);
+      case 'mod_raffle_entries': return this.mutate((s) => {
+        const r = (s.raffles ?? []).find((x) => x.id === Number(a.p_id));
+        if (!r) return fail('no_raffle');
+        if (r.rule !== 'points') fail('not_points_raffle');
+        if (a.p_open) { if (r.draws.length) fail('raffle_drawn'); r.entriesClosed = null; } else r.entriesClosed ??= Date.now();
+      });
       case 'mod_raffle_delete': return this.mutate((s) => {
         const r = (s.raffles ?? []).find((x) => x.id === Number(a.p_id));
         if (r?.draws.length) fail('raffle_drawn');
