@@ -115,7 +115,7 @@ const errors: Record<string, string> = {
 };
 let msgTimer: number | undefined;
 function say(text: string, err = false) {
-  msgBox.textContent = text;
+  msgBox.innerHTML = tipHtml(text);   // «word» shows as bold, never with the quote marks
   msgBox.classList.toggle('err', err);
   msgBox.hidden = false;
   // slides in, with a bar that runs out over the 4 s it stays
@@ -137,6 +137,35 @@ function releaseField() {
 // (owner, 25 Nov: no code-like quoting in the explanations).
 const tip = (text: string) => `<button type="button" class="tip" data-tip="${esc(text)}" aria-label="Explicație"><span aria-hidden="true">?</span></button><span class="sr-only">${esc(text.replace(/[«»]/g, ''))}</span>`;
 const tipHtml = (text: string) => esc(text).replace(/«([^»]+)»/g, '<strong>$1</strong>');
+// Owner, 25 Nov 2026: no «word» quote marks anywhere in /mod; names of buttons and things show in bold.
+// Every text the console draws goes through boldQuotes() after a render; native confirm boxes can't show
+// bold, so ask() drops the marks there.
+const ask = (text: string) => window.confirm(text.replace(/[«»]/g, ''));
+const NO_BOLD = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'OPTION', 'TITLE', 'SELECT']);
+function boldQuotes(root: Element) {
+  const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: (n) => (n.nodeValue?.includes('«') ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
+  });
+  const found: Text[] = [];
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) found.push(n as Text);
+  for (const t of found) {
+    const parent = t.parentElement;
+    if (!parent) continue;
+    if (NO_BOLD.has(parent.tagName)) { t.nodeValue = t.nodeValue!.replace(/[«»]/g, ''); continue; }
+    const frag = document.createDocumentFragment();
+    let last = 0;
+    const text = t.nodeValue!;
+    for (const m of text.matchAll(/«([^»]+)»/g)) {
+      frag.append(text.slice(last, m.index));
+      const b = document.createElement('strong');
+      b.textContent = m[1];
+      frag.append(b);
+      last = m.index! + m[0].length;
+    }
+    frag.append(text.slice(last).replace(/[«»]/g, ''));
+    parent.replaceChild(frag, t);
+  }
+}
 const tipBox = document.createElement('div');
 tipBox.id = 'tipBox'; tipBox.setAttribute('role', 'tooltip'); tipBox.hidden = true;
 document.body.append(tipBox);
@@ -323,7 +352,7 @@ function resizeBingo(n: number): boolean {
   const rows = editBingo();
   const want = n * n;
   const lost = rows.slice(want).filter((r) => r.label.trim()).length;
-  if (lost && !confirm(`Cartonașul ${n} × ${n} are ${want} de pătrate: ultimele ${lost} evenimente completate se scot. Continui?`)) return false;
+  if (lost && !ask(`Cartonașul ${n} × ${n} are ${want} de pătrate: ultimele ${lost} evenimente completate se scot. Continui?`)) return false;
   rows.length = Math.min(rows.length, want);
   while (rows.length < want) rows.push({ label: '' });
   S.bingoSize = n;
@@ -1801,6 +1830,7 @@ let tipHintTimer = 0;
 const lastKpi: string[] = [];
 let inkFrom: { left: number; width: number } | null = null;
 function afterRender() {
+  boldQuotes(app);
   // A live refresh redrew the page under an open explanation: keep it on the new (i), or close it.
   if (tipFor && !tipFor.isConnected) {
     const again = [...app.querySelectorAll<HTMLElement>('.tip')].find((b) => b.dataset.tip === tipFor!.dataset.tip);
@@ -1867,7 +1897,7 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   },
   // A locked start field (auto start on, not Iceman) sends the stored start unchanged, to the second.
   schedule: () => call('mod_set_schedule', { p_starts_at: (document.getElementById('startAt') as HTMLInputElement | null)?.disabled ? S.timer?.starts_at ?? null : fromLocal(val('startAt')), p_scheduled_end: fromLocal(val('endAt')) }, 'Programul a fost salvat.'),
-  start: () => confirm(`Pornești cronometrul acum cu ${num('startHours')} ore?`) &&
+  start: () => ask(`Pornești cronometrul acum cu ${num('startHours')} ore?`) &&
     call('mod_start_timer', { p_hours: num('startHours'), p_scheduled_end: S.timer?.scheduled_end ?? null }, 'Subathonul a pornit!'),
   add: (el) => call('mod_add_time', { p_minutes: Number(el.dataset.min) }, `${el.dataset.min} min adăugate.`),
   extendBy: (el) => {
@@ -1883,15 +1913,15 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     const T = S.timer ?? {};
     const add = Number.isFinite(v) ? v + extendSecs(T) - extendBase(T) : 0;
     if (add < 60_000) { say('Finalul nou trebuie să fie după finalul programat de acum.', true); return; }
-    if (!confirm(`Prelungești subathonul până la ${when(new Date(v).toISOString())}?\n\nCronometrul primește +${durRo(add)}. Nu se poate anula din buton.`)) return;
+    if (!ask(`Prelungești subathonul până la ${when(new Date(v).toISOString())}?\n\nCronometrul primește +${durRo(add)}. Nu se poate anula din buton.`)) return;
     await call('mod_extend', { p_new_end: new Date(v + extendSecs(T)).toISOString() }, `Prelungit până la ${when(new Date(v).toISOString())}: +${durRo(add)} pe cronometru.`);
   },
   addCustom: () => num('addMin') && call('mod_add_time', { p_minutes: num('addMin') }, `${num('addMin')} min adăugate.`),
   freeze: () => call('mod_freeze', { p_minutes: num('freezeMin') }, 'Cronometrul e înghețat.'),
   freezeUntil: () => val('freezeUntil') && call('mod_freeze_until', { p_until: fromLocal(val('freezeUntil')) }, 'Cronometrul e înghețat până atunci.'),
-  unfreeze: () => confirm('Dezgheți cronometrul acum?') && call('mod_unfreeze', {}, 'Cronometrul merge din nou.'),
-  bingoOpen: () => confirm('Deschizi bingo acum? Spectatorii își pot alege linia de acum.') && call('mod_bingo_open', {}, 'Bingo e deschis: spectatorii își aleg linia.'),
-  bingoClose: () => confirm('Închizi alegerile de bingo acum? Nimeni nu mai poate alege sau schimba linia; de acum se pot bifa evenimentele.') && call('mod_bingo_close', {}, 'Alegerile s-au închis. Acum se pot bifa evenimentele.'),
+  unfreeze: () => ask('Dezgheți cronometrul acum?') && call('mod_unfreeze', {}, 'Cronometrul merge din nou.'),
+  bingoOpen: () => ask('Deschizi bingo acum? Spectatorii își pot alege linia de acum.') && call('mod_bingo_open', {}, 'Bingo e deschis: spectatorii își aleg linia.'),
+  bingoClose: () => ask('Închizi alegerile de bingo acum? Nimeni nu mai poate alege sau schimba linia; de acum se pot bifa evenimentele.') && call('mod_bingo_close', {}, 'Alegerile s-au închis. Acum se pot bifa evenimentele.'),
   bingoSettings: () => call('mod_bingo_settings', { p_opens_at: fromLocal(val('bingoOpenAt')), p_closes_at: fromLocal(val('bingoClose')), p_prize: val('bingoPrize'), p_prize_sponsor: val('bingoPrizeSponsor') }, 'Setările de bingo au fost salvate.'),
   wheelSave: async () => {
     const list = wheelRows().map((p) => ({ short_label: p.short_label.trim(), full_label: p.full_label.trim(), sponsor: p.sponsor.trim(), is_win: p.is_win, weight: Number(p.weight) || 0 }));
@@ -1931,13 +1961,13 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   },
   bingoClear: () => {
     const n = bingoN();
-    if (!confirm(`Golești cartonașul? Rămân ${n * n} pătrate goale, pe care le scrieți voi. Se salvează abia când apăsați «Salvează cartonașul».`)) return;
+    if (!ask(`Golești cartonașul? Rămân ${n * n} pătrate goale, pe care le scrieți voi. Se salvează abia când apăsați «Salvează cartonașul».`)) return;
     S.bingoDraft = Array.from({ length: n * n }, () => ({ label: '' }));
     S.bingoSize = n;
     render();
   },
   bingoDraw: async () => {
-    if (!confirm('Tragi la sorți un câștigător dintre cei cu bingo?')) return;
+    if (!ask('Tragi la sorți un câștigător dintre cei cu bingo?')) return;
     const won = await call('mod_bingo_draw', {}, 'Tragere făcută.');
     if (won) alert(`Câștigătorul: ${won}. Pe stream, ruleta se oprește pe el în câteva secunde.`);
   },
@@ -1961,7 +1991,7 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     const old = to === 'round' ? S.round?.items.find((x) => x.challenge_id === Number(val('newChFor_round'))) : undefined;
     const slot = Math.max(0, Math.min(Number(val('newChFor_draft')) || 0, S.draft.length - 1));
     if (to === 'round' && !old) return;
-    if (old?.votes && !confirm(`Provocarea nouă ia locul «${old.title}». Cele ${old.votes} voturi ale ei se pierd; cei care au votat pot vota din nou. Continui?`)) return;
+    if (old?.votes && !ask(`Provocarea nouă ia locul «${old.title}». Cele ${old.votes} voturi ale ei se pierd; cei care au votat pot vota din nou. Continui?`)) return;
     const id = Number(await call('mod_challenge_add', { p_title: title, p_level: to === 'draft' ? draftLevel() : val('newChLvl_round') }, 'Provocare adăugată.'));
     if (!id) return;
     if (to === 'round' && S.round && old) {
@@ -1996,7 +2026,7 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     if (!clip) clip = (await clipNow()) ?? '';
     return call('mod_set_challenge', { p_id: Number(el.dataset.id), p_status: 'done', p_clip: clip || null }, clip ? 'Marcată ca făcută, cu clip.' : 'Marcată ca făcută.');
   },
-  veto: (el) => confirm('Veto pe provocarea asta?') && call('mod_set_challenge', { p_id: Number(el.dataset.id), p_status: 'vetoed' }, 'Veto.'),
+  veto: (el) => ask('Veto pe provocarea asta?') && call('mod_set_challenge', { p_id: Number(el.dataset.id), p_status: 'vetoed' }, 'Veto.'),
   approve: (el) => call('mod_review_suggestion', { p_id: Number(el.dataset.id), p_approve: true }, 'Aprobată: e acum în lista de provocări.'),
   reject: (el) => call('mod_review_suggestion', { p_id: Number(el.dataset.id), p_approve: false }, 'Respinsă.'),
   given: (el) => call('mod_prize_given', { p_kind: el.dataset.kind, p_id: Number(el.dataset.id) }, 'Premiu marcat ca dat.'),
@@ -2009,11 +2039,11 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     const id = el.dataset.id!, rule = val(`rf${id}Rule`);
     return call('mod_raffle_save', { p_id: Number(id), p_prize: val(`rf${id}Prize`), p_sponsor: val(`rf${id}Sponsor`), p_rule: rule, p_min_hours: rule === 'hours' ? Number(val(`rf${id}Hours`)) || null : null }, 'Tombola a fost salvată.');
   },
-  raffleDel: (el) => confirm('Ștergi tombola?') && call('mod_raffle_delete', { p_id: Number(el.dataset.id) }, 'Tombola a fost ștearsă.'),
+  raffleDel: (el) => ask('Ștergi tombola?') && call('mod_raffle_delete', { p_id: Number(el.dataset.id) }, 'Tombola a fost ștearsă.'),
   raffleDraw: (el) => {
     const r = S.raffles.find((x) => x.id === Number(el.dataset.id));
     if (!r) return;
-    return confirm(`Tragi la sorți «${r.prize}» acum? Ruleta pornește pe stream (sursa «Tragerea la sorți»).`) &&
+    return ask(`Tragi la sorți «${r.prize}» acum? Ruleta pornește pe stream (sursa «Tragerea la sorți»).`) &&
       call('mod_raffle_draw', { p_id: r.id }, 'Câștigătorul a fost ales. Ruleta merge pe stream.');
   },
   raffleReplay: (el) => call('mod_raffle_replay', { p_draw: Number(el.dataset.id) }, 'Tragerea se vede din nou pe stream.'),
@@ -2039,23 +2069,23 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   },
   spDelete: async (el) => {
     const x = S.sponsors.find((y) => y.id === Number(el.dataset.id));
-    if (!x || !confirm(`Ștergi sponsorul «${x.name}»? Dispare de pe site și de pe overlay.`)) return;
+    if (!x || !ask(`Ștergi sponsorul «${x.name}»? Dispare de pe site și de pe overlay.`)) return;
     await call('mod_sponsor_delete', { p_id: x.id }, 'Sponsor șters.');
     S.spEdit = null;
   },
   spMove: (el) => call('mod_sponsor_move', { p_id: Number(el.dataset.id), p_dir: Number(el.dataset.dir) }, 'Ordinea s-a schimbat.'),
-  testStart: () => confirm(`Pornești modul test pentru ${num('testHours') || 3} ore? Tot site-ul, /mod și overlay-ul trec pe date de probă; la oprire totul revine exact cum e acum.`) &&
+  testStart: () => ask(`Pornești modul test pentru ${num('testHours') || 3} ore? Tot site-ul, /mod și overlay-ul trec pe date de probă; la oprire totul revine exact cum e acum.`) &&
     call('mod_test', { p_action: 'start', p: { hours: num('testHours') || 3 } }, 'Testul a pornit. Comenzile sunt în banda galbenă de sus.'),
-  testStop: () => confirm('Oprești testul? Tot ce s-a făcut în test se șterge și site-ul revine la normal.') &&
+  testStop: () => ask('Oprești testul? Tot ce s-a făcut în test se șterge și site-ul revine la normal.') &&
     call('mod_test', { p_action: 'stop' }, 'Testul s-a oprit. Site-ul e din nou cel real.'),
-  testRedo: () => confirm('Iei testul de la capăt? Datele de test se șterg, testul merge în continuare.') &&
+  testRedo: () => ask('Iei testul de la capăt? Datele de test se șterg, testul merge în continuare.') &&
     call('mod_test', { p_action: 'redo' }, 'De la capăt: totul e ca la pornirea testului.'),
   // Starts the test marathon (any moderator may during a test) and puts Iceman «on Twitch».
   testGoLive: async (el) => {
     await call('mod_start_timer', { p_hours: Number(el.dataset.h) || 24, p_scheduled_end: S.timer?.scheduled_end ?? null }, 'Maratonul de test a pornit: site-ul arată LIVE, donațiile adaugă timp.');
     if (!S.timer?.stream_online) await call('mod_test', { p_action: 'stream', p: { on: true } }, 'Maratonul de test a pornit: site-ul arată LIVE, donațiile adaugă timp.');
   },
-  testEnd: () => confirm('Închei maratonul de test? Vezi ecranul de final; «De la capăt» îl aduce înapoi.') &&
+  testEnd: () => ask('Închei maratonul de test? Vezi ecranul de final; «De la capăt» îl aduce înapoi.') &&
     call('mod_end_timer', {}, 'Maratonul de test s-a încheiat.'),
   testSponsors: () => call('mod_test_sponsors', {}, 'Sponsori de test pe site și pe overlay (1 principal, 5 parteneri, 4 susținători).'),
   testClock: async (el) => {
@@ -2083,7 +2113,7 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     return call('mod_test', { p_action: a, p: JSON.parse(el.dataset.p || '{}') }, el.dataset.ok || 'Gata.');
   },
   copyOvp: (el) => { const v = val(`ovp${el.dataset.i}`); void navigator.clipboard?.writeText(v).then(() => say('Link copiat.')); },
-  sceneClear: () => confirm('Scoți fotografia de fundal? Scena rămâne transparentă.') && call('mod_scene_set', { p_background: null }, 'Fotografia a fost scoasă.'),
+  sceneClear: () => ask('Scoți fotografia de fundal? Scena rămâne transparentă.') && call('mod_scene_set', { p_background: null }, 'Fotografia a fost scoasă.'),
   copyOv: (el) => { const v = val(`ov${el.dataset.i}`); void navigator.clipboard?.writeText(v).then(() => say('Link copiat. Pune-l în OBS ca Browser Source, 1920×1080.')); },
   goalDel: (el) => { editGoals().splice(Number(el.dataset.i), 1); render(); },
   goalCancel: () => { S.goalsDraft = null; render(); },
@@ -2108,7 +2138,7 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   linesCancel: () => { S.linesDraft = null; render(); },
   chatToggle: (el) => {
     const on = (el as HTMLInputElement).checked;
-    if (on && !confirm('Pornești replicile în chatul Twitch, din contul lui Iceman?')) { (el as HTMLInputElement).checked = false; return; }
+    if (on && !ask('Pornești replicile în chatul Twitch, din contul lui Iceman?')) { (el as HTMLInputElement).checked = false; return; }
     return call('mod_set_chat_echo', { p_on: on }, on ? 'Replicile apar și în chatul Twitch.' : 'Replicile nu mai apar în chat.');
   },
   noteSet: () => val('nowNote').trim() && call('mod_set_note', { p_note: val('nowNote'), p_minutes: Number(val('nowMin')) || 30 }, 'Nota apare pe site.'),
@@ -2137,9 +2167,9 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     return call('mod_plan_add', { p_kind: kind, p_at: fromLocal(val('planAt')), p_minutes: kind === 'freeze' ? null : num('planMin') || null,
       p_until: kind === 'freeze' ? fromLocal(val('planUntil')) : null, p_sponsor: val('planSponsor') }, `${planKind[kind] ?? 'Programul'}: programat.`);
   },
-  planDel: (el) => confirm('Ștergi din program?') && call('mod_plan_del', { p_id: Number(el.dataset.id) }, 'Șters din program.'),
+  planDel: (el) => ask('Ștergi din program?') && call('mod_plan_del', { p_id: Number(el.dataset.id) }, 'Șters din program.'),
   hookSave: () => val('hookUrl').trim() ? call('mod_autopilot_set', { p: { discordWebhook: val('hookUrl').trim() } }, 'Webhook salvat. Apasă «Trimite un test».') : say('Lipește întâi linkul webhook-ului.', true),
-  hookClear: () => confirm('Oprești alertele în Discord?') && call('mod_autopilot_set', { p: { discordWebhook: '' } }, 'Alertele sunt oprite.'),
+  hookClear: () => ask('Oprești alertele în Discord?') && call('mod_autopilot_set', { p: { discordWebhook: '' } }, 'Alertele sunt oprite.'),
   hookTest: () => call('mod_alert_test', {}, 'Mesaj de test trimis. Verifică pe Discord.'),
   check: (el) => call('mod_checklist_set', { p_key: el.dataset.key, p_done: (el as HTMLInputElement).checked }, (el as HTMLInputElement).checked ? 'Bifat.' : 'Debifat.'),
   ruleSave: (el) => {
@@ -2148,9 +2178,9 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     const rule = !k ? null : def?.[2] ? { t: k, [def[2]]: n } : { t: k };
     return call('mod_bingo_rule', { p_id: id, p_rule: rule }, rule ? 'Regula e salvată: se bifează singur.' : 'Regula a fost scoasă.');
   },
-  approveAll: () => confirm(`Aprobi toate cele ${S.suggestions.length} propuneri? Intră în lista de provocări.`) && call('mod_review_all', { p_approve: true }, 'Toate au fost aprobate.'),
-  rejectAll: () => confirm(`Respingi toate cele ${S.suggestions.length} propuneri?`) && call('mod_review_all', { p_approve: false }, 'Toate au fost respinse.'),
-  unmod: (el) => confirm(`Scoți moderatorul ${el.dataset.login}?`) && call('mod_set_moderator', { p_login: el.dataset.login, p_on: false }, 'Moderator scos.'),
+  approveAll: () => ask(`Aprobi toate cele ${S.suggestions.length} propuneri? Intră în lista de provocări.`) && call('mod_review_all', { p_approve: true }, 'Toate au fost aprobate.'),
+  rejectAll: () => ask(`Respingi toate cele ${S.suggestions.length} propuneri?`) && call('mod_review_all', { p_approve: false }, 'Toate au fost respinse.'),
+  unmod: (el) => ask(`Scoți moderatorul ${el.dataset.login}?`) && call('mod_set_moderator', { p_login: el.dataset.login, p_on: false }, 'Moderator scos.'),
 };
 
 // One request per click: a double click on «+10 min» must not add 20 minutes.
