@@ -425,6 +425,7 @@ async function load() {
     S.lines = site.lines; S.smallDonation = site.smallDonation;
     S.chat = demoApi.rpc('mod_chat_status', {}) as typeof S.chat;
     if (draftStale()) autoDraft();
+    landOnce();
     return render();
   }
   const { data: { session } } = await db.auth.getSession();
@@ -505,7 +506,16 @@ async function load() {
   S.raffles = (raffles.data as Raffle[]) ?? [];
   S.mods = (mods.data ?? []) as any;
   if (draftStale()) autoDraft();
+  landOnce();
   render();
+}
+// The streamer lands on his own task list (owner, 25 Nov 2026), unless a link names a page.
+let landed = false;
+function landOnce() {
+  if (landed || !S.me) return;
+  landed = true;
+  const me = S.me.login?.toLowerCase(), b = S.status?.broadcaster_login?.trim().toLowerCase();
+  if (!location.hash && me && b && me === b) { S.view = 'de-facut'; S.page = 'streamer'; }
 }
 
 
@@ -713,7 +723,7 @@ const GROUPS: { id: string; name: string; title: string; lead: string; items: [s
   // Everything only the broadcaster's login can do, in one place (owner, 25 Nov 2026). Moderators see it
   // greyed out (the database refuses them too); during «Mod test» everyone may.
   { id: 'streamer', name: 'STREAMER', title: 'Streamer', lead: '',
-    items: [['cronometru', 'Start'], ['prelungire', 'Prelungește'], ['zona', 'Încheiere']] },
+    items: [['de-facut', 'De făcut'], ['cronometru', 'Start'], ['prelungire', 'Prelungește'], ['zona', 'Încheiere']] },
 ];
 /** Cards shown together with a menu item (an anchor of a bundled card opens its item). */
 const BUNDLE: Record<string, string[]> = { vot: ['vot', 'provocari', 'propuneri', 'pilot'], cronometru: ['streamer', 'cronometru'] };
@@ -750,6 +760,7 @@ function waiting(id: string): { n: number; warn?: boolean } {
     case 'tombola': return { n: S.raffles.filter((r) => !r.ended_at && r.reward_error && r.reward_error !== 'test').length };
     case 'bingo': return { n: S.bingo?.status.winners.length && !S.bingo.status.draws.length ? S.bingo.status.winners.length : 0 };
     case 'cronometru': return { n: S.status && !S.status.broadcaster_connected ? 1 : 0, warn: true };
+    case 'de-facut': return { n: streamerTasks().length };
     case 'checklist': return { n: CHECK.filter((c) => !checkState(c).done).length, warn: true };
     default: return { n: 0 };
   }
@@ -1444,6 +1455,35 @@ function todoHtml(): string {
   </section>`;
 }
 
+// «De făcut» for the streamer (owner, 25 Nov 2026: «he does not have time to cycle through the
+// entire console»): one list of what viewers paid for or won, oldest first per kind, each with
+// its own button. Moderators see it too.
+type STask = { kind: string; cls: string; t: string; d: string; act: string };
+function streamerTasks(): STask[] {
+  const out: STask[] = [];
+  const raised = Number(S.stats?.raised ?? 0);
+  for (const q of S.tasks?.queue ?? []) out.push({ kind: 'PLĂTIT', cls: 'ok', t: `${euroTxt(q.price)} · ${q.title}`, d: `${q.name} · ${hmRo(new Date(q.at).toISOString())}`,
+    act: `<button class="btn-primary" data-act="taskDone" data-id="${q.id}">Făcută</button>` });
+  for (const c of S.scheduled) out.push({ kind: 'VOT', cls: 'white', t: c.title, d: c.scheduled_for ? `A câștigat votul · ${c.scheduled_for}` : 'A câștigat votul',
+    act: `<input class="field" type="url" id="clip-${c.id}" data-clip="${c.id}" placeholder="Link clip" aria-label="Link clip: ${esc(c.title)}"><button class="btn-primary" data-act="done" data-id="${c.id}">Făcută</button>` });
+  S.goals.forEach((g, i) => {
+    if (raised >= g.threshold && !g.done_at) out.push({ kind: 'MILESTONE', cls: 'white', t: g.title, d: `${fmtInt(g.threshold)} € strânși`,
+      act: `<input class="field" type="url" id="goalclip-${i}" placeholder="Link clip" aria-label="Link clip: ${esc(g.title)}"><button class="btn-primary" data-act="goalQuick" data-i="${i}">Făcut</button>` });
+  });
+  const bw = S.bingo?.status.winners.length ?? 0;
+  if (bw && !S.bingo?.status.draws.length && !bingoPicksOpen()) out.push({ kind: 'BINGO', cls: 'ok', t: `${bw} cu bingo`, d: 'Tragerea la sorți', act: '<button class="btn-primary" data-act="bingoDraw">Trage la sorți</button>' });
+  for (const r of S.raffles) if (!r.ended_at && r.entries_closed_at && !r.draws.length) out.push({ kind: 'TOMBOLĂ', cls: 'ok', t: r.prize, d: `Înscrieri închise · ${fmtInt(r.pool)} pe listă`,
+    act: `<button class="btn-primary" data-act="raffleDraw" data-id="${r.id}"${r.pool ? '' : ' disabled'}>Trage la sorți</button>` });
+  for (const p of S.due.due) out.push({ kind: 'PREMIU', cls: 'off', t: `${p.login} · ${p.prize ?? ''}`, d: `${KIND_WHERE[p.kind]} ${when(p.at)}`,
+    act: `<button class="btn-ghost" data-act="given" data-kind="${p.kind}" data-id="${p.id}">Dat</button>` });
+  return out;
+}
+function streamerTasksHtml(): string {
+  const list = streamerTasks();
+  return `<section class="card wide flush" id="de-facut"><h2>De făcut${list.length ? ` · ${list.length}` : ''}</h2>
+    ${list.length ? list.map((x) => `<div class="ib st-row"><span class="pill ${x.cls} ib-tag">${x.kind}</span><span class="ib-t"><b>${esc(x.t)}</b><small>${esc(x.d)}</small></span><span class="ib-a st-a">${x.act}</span></div>`).join('') : '<p class="muted flush-p">Nimic de făcut.</p>'}
+  </section>`;
+}
 
 // ---- Milestones: state, when, clip ----
 function milestonesHtml(): string {
@@ -1640,6 +1680,7 @@ function render() {
 
   setNav();
   const sec: Record<string, () => string> = {
+    'de-facut': () => streamerTasksHtml(),
     'pilot': () => {
       const A = S.auto ?? {};
       return `
@@ -2172,6 +2213,15 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   },
   raffleReplay: (el) => call('mod_raffle_replay', { p_draw: Number(el.dataset.id) }, 'Pe stream din nou.'),
   goalAdd: () => { editGoals().push({ title: '', threshold: '', sponsor: '', done: false, clip: '', when: '' }); render(); },
+  // Milestone done from «De făcut»: the saved list with this one done, with its pasted link.
+  goalQuick: (el) => {
+    const i = Number(el.dataset.i);
+    const clip = (document.getElementById(`goalclip-${i}`) as HTMLInputElement | null)?.value.trim() ?? '';
+    if (!clip) { say('Lipește linkul clipului.', true); return; }
+    if (!/^https:\/\//.test(clip) && !(demo && clip === '#')) { say('Linkul începe cu https://', true); return; }
+    const list = S.goals.map((g, k) => ({ title: g.title, threshold: g.threshold, sponsor: g.sponsor ?? '', done: k === i ? true : !!g.done_at, clip: k === i ? clip : (g.clip_url ?? ''), when: g.scheduled_for ?? '' }));
+    return call('mod_set_goals', { p_goals: list }, 'Făcut.');
+  },
   goalDone: (el) => {
     const g = editGoals()[Number(el.dataset.i)];
     g.done = !g.done;
