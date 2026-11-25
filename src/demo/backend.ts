@@ -752,7 +752,7 @@ export class DemoBackend {
     return this.mutate((s) => {
       const now = Date.now();
       if (s.rounds.some((r) => now < r.closesAt)) fail('round_already_open');
-      if (challengeIds.length < 2) fail('need_two_challenges');
+      if (challengeIds.length !== 5 || new Set(challengeIds).size !== 5) fail('round_needs_five');
       const number = Math.max(0, ...s.rounds.map((r) => r.number)) + 1;
       const round: DemoRound = { id: ++s.seq, number, opensAt: now, closesAt: now + minutes * MIN, winnerId: null, items: challengeIds.map((challengeId) => ({ challengeId, votes: 0 })) };
       s.rounds.push(round);
@@ -1299,6 +1299,7 @@ export class DemoBackend {
         if (!r || r.closesAt <= Date.now() || r.winnerId !== null) fail('round_closed');
         const R = r!;
         const old = Number(a.p_challenge), nid = Number(a.p_new), act = String(a.p_action);
+        if (act === 'add' || act === 'remove') fail('round_needs_five');   // a round always has exactly 5
         const ch = (id: number) => s.challenges.find((c) => c.id === id);
         if ((act === 'remove' || act === 'replace') && !R.items.some((x) => x.challengeId === old)) fail('not_in_round');
         if ((act === 'add' || act === 'replace') && !(ch(nid)?.status === 'pool' && ch(nid)?.votable)) fail('challenge_unavailable');
