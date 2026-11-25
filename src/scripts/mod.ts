@@ -1316,7 +1316,7 @@ function tombolaHtml(): string {
   const P = S.rafflePreview;
   const form = `<div class="fgrid">
       <label class="inline" style="flex:1 1 260px">Premiul<input class="field" id="rfPrize" maxlength="120" placeholder="ex: Căști de gaming"></label>
-      <label class="inline" style="flex:1 1 200px">Premiul e de la<input class="field" id="rfSponsor" list="sponsorNames" maxlength="60" placeholder="sponsor (opțional)"></label>
+      <label class="inline" style="flex:1 1 200px">Premiul e de la<input class="field" id="rfSponsor" maxlength="60" placeholder="ex: Iceman sau un sponsor (opțional)" autocomplete="off"></label>
       ${raffleRuleFields('rf', 'all', 5, false)}
       <button class="btn-primary" data-act="raffleAdd">Adaugă tombola</button>
     </div>
@@ -1328,7 +1328,7 @@ function tombolaHtml(): string {
     return `<li class="rf-item" style="display:block">
       <div class="fgrid">
         <label class="inline" style="flex:1 1 260px">Premiul<input class="field" id="rf${r.id}Prize" maxlength="120" value="${esc(r.prize)}"></label>
-        <label class="inline" style="flex:1 1 200px">Premiul e de la<input class="field" id="rf${r.id}Sponsor" list="sponsorNames" maxlength="60" value="${esc(r.sponsor ?? '')}" placeholder="sponsor (opțional)"></label>
+        <label class="inline" style="flex:1 1 200px">Premiul e de la<input class="field" id="rf${r.id}Sponsor" maxlength="60" value="${esc(r.sponsor ?? '')}" placeholder="ex: Iceman sau un sponsor (opțional)" autocomplete="off"></label>
         ${raffleRuleFields(`rf${r.id}`, r.rule, r.min_hours, drawn, r.points_cost ?? null, !!r.on_twitch || (r.entries ?? 0) > 0)}
         <button class="btn-ghost" data-act="raffleSave" data-id="${r.id}">Salvează</button>
       </div>
@@ -1758,7 +1758,7 @@ function render() {
         <label class="inline">Se deschide la<input class="field" type="datetime-local" id="bingoOpenAt" value="${toLocal(B.opens_at)}"></label>
         <label class="inline">Se închide la<input class="field" type="datetime-local" id="bingoClose" value="${toLocal(B.closes_at)}"></label>
         <label class="inline" style="flex:1 1 220px">Premiul<input class="field" id="bingoPrize" value="${esc(B.prize)}" maxlength="120"></label>
-        <label class="inline" style="flex:1 1 180px">Premiul e de la<input class="field" id="bingoPrizeSponsor" list="sponsorNames" value="${esc(B.prize_sponsor ?? '')}" maxlength="60" placeholder="sponsor (opțional)"></label>
+        <label class="inline" style="flex:1 1 180px">Premiul e de la<input class="field" id="bingoPrizeSponsor" value="${esc(B.prize_sponsor ?? '')}" maxlength="60" placeholder="ex: Iceman sau un sponsor (opțional)" autocomplete="off"></label>
         <button class="btn-ghost" data-act="bingoSettings">Salvează</button>
       </div>
     </section>`;
@@ -1770,7 +1770,7 @@ function render() {
         <span class="d-no">${i + 1}</span>
         <input class="field" data-wheel="short_label" data-i="${i}" value="${esc(p.short_label)}" maxlength="16" aria-label="Pe roată, felia ${i + 1}" style="flex:0 1 130px;min-width:0">
         <input class="field" data-wheel="full_label" data-i="${i}" value="${esc(p.full_label)}" maxlength="80" aria-label="Premiul, felia ${i + 1}" style="flex:1 1 200px;min-width:0">
-        <input class="field" data-wheel="sponsor" data-i="${i}" value="${esc(p.sponsor)}" list="sponsorNames" maxlength="60" placeholder="de la (sponsor)" aria-label="Sponsorul, felia ${i + 1}" style="flex:0 1 170px;min-width:0">
+        <input class="field" data-wheel="sponsor" data-i="${i}" value="${esc(p.sponsor)}" maxlength="60" placeholder="de la (ex: Iceman)" autocomplete="off" aria-label="Sponsorul, felia ${i + 1}" style="flex:0 1 170px;min-width:0">
         <label class="opt opt-s"><input type="checkbox" data-wheel="is_win" data-i="${i}" ${p.is_win ? 'checked' : ''}> câștig</label>
         <label class="opt opt-s">șansa<input class="field" type="number" min="0" max="9999" data-wheel="weight" data-i="${i}" value="${esc(p.weight)}" style="width:80px"></label>
       </li>`).join('')}</ul>
