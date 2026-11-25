@@ -71,7 +71,7 @@ export interface DemoState {
   sceneBg?: string | null;
   /** /mod autopilot settings, the plan, Discord alerts and the shared checklist (demo: nothing runs or is sent). */
   autopilot?: {
-    autoStart: boolean; startHours: number; voteOn: boolean; voteAt: string; voteMinutes: number; hasWebhook: boolean;
+    autoStart: boolean; startHours: number; voteOn: boolean; voteAt: string; voteMinutes: number; voteLevel?: string; hasWebhook: boolean;
     plan: { id: number; kind: string; at: number; minutes: number | null; until: number | null; sponsor: string | null; by: string }[];
     checklist: Record<string, { by: string; at: number }>;
   };
@@ -753,6 +753,7 @@ export class DemoBackend {
       const now = Date.now();
       if (s.rounds.some((r) => now < r.closesAt)) fail('round_already_open');
       if (challengeIds.length !== 5 || new Set(challengeIds).size !== 5) fail('round_needs_five');
+      if (!(minutes >= 10 && minutes <= 2880)) fail('bad_round_length');
       const number = Math.max(0, ...s.rounds.map((r) => r.number)) + 1;
       const round: DemoRound = { id: ++s.seq, number, opensAt: now, closesAt: now + minutes * MIN, winnerId: null, items: challengeIds.map((challengeId) => ({ challengeId, votes: 0 })) };
       s.rounds.push(round);
@@ -1171,7 +1172,7 @@ export class DemoBackend {
   }
 
   private autopilotOf(s: DemoState) {
-    s.autopilot ??= { autoStart: false, startHours: 24, voteOn: false, voteAt: '20:00', voteMinutes: 60, hasWebhook: false, plan: [], checklist: {} };
+    s.autopilot ??= { autoStart: false, startHours: 24, voteOn: false, voteAt: '20:00', voteMinutes: 1440, voteLevel: 'mediu', hasWebhook: false, plan: [], checklist: {} };
     return s.autopilot;
   }
 
@@ -1179,7 +1180,7 @@ export class DemoBackend {
   autopilot() {
     const ap = this.autopilotOf(this.load());
     return {
-      autoStart: ap.autoStart, startHours: ap.startHours, voteOn: ap.voteOn, voteAt: ap.voteAt, voteMinutes: ap.voteMinutes, lastVoteDay: null,
+      autoStart: ap.autoStart, startHours: ap.startHours, voteOn: ap.voteOn, voteAt: ap.voteAt, voteMinutes: ap.voteMinutes, voteLevel: ap.voteLevel ?? 'mediu', lastVoteDay: null,
       hasWebhook: ap.hasWebhook, updatedAt: null, updatedBy: null,
       plan: ap.plan.filter((x) => x.at > Date.now() - 2 * 86_400_000).map((x) => ({ id: x.id, kind: x.kind, at: new Date(x.at).toISOString(), minutes: x.minutes,
         until: x.until ? new Date(x.until).toISOString() : null, sponsor: x.sponsor, by: x.by, done: x.at <= Date.now() ? new Date(x.at).toISOString() : null, result: x.at <= Date.now() ? 'done' : null })),
@@ -1385,7 +1386,9 @@ export class DemoBackend {
           ap.hasWebhook = !!hook;
         }
         if (p.voteAt !== undefined && !/^([01]\d|2[0-3]):[0-5]\d$/.test(String(p.voteAt))) fail('bad_autopilot');
-        if (p.voteMinutes !== undefined && !(Number(p.voteMinutes) >= 10 && Number(p.voteMinutes) <= 720)) fail('bad_autopilot');
+        if (p.voteMinutes !== undefined && !(Number(p.voteMinutes) >= 10 && Number(p.voteMinutes) <= 2880)) fail('bad_autopilot');
+        if (p.voteLevel !== undefined && !['ușor', 'mediu', 'greu'].includes(String(p.voteLevel))) fail('bad_autopilot');
+        if (p.voteLevel !== undefined) ap.voteLevel = String(p.voteLevel);
         for (const k of ['autoStart', 'voteOn'] as const) if (p[k] !== undefined) ap[k] = !!p[k];
         if (p.voteAt !== undefined) ap.voteAt = String(p.voteAt);
         if (p.voteMinutes !== undefined) ap.voteMinutes = Number(p.voteMinutes);

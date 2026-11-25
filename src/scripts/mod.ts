@@ -44,6 +44,7 @@ const errors: Record<string, string> = {
   timer_not_live: 'Cronometrul nu e pornit.',
   round_already_open: 'Există deja o rundă deschisă. Închide-o mai întâi.',
   need_two_challenges: 'O rundă are mereu exact 5 provocări.',
+  bad_round_length: 'O rundă ține între 1 și 48 de ore.',
   round_needs_five: 'O rundă are mereu exact 5 provocări: schimbă una cu alta, nu adăuga și nu scoate.',
   bad_goals: 'Fiecare milestone are nevoie de text și de o sumă în euro (număr întreg, peste 0).',
   bad_items: 'Bingo: între 5 și 60 de evenimente, fiecare cu un text de cel mult 80 de caractere.',
@@ -99,7 +100,7 @@ const errors: Record<string, string> = {
   not_eur: 'Se adună doar donațiile în euro.',
   bad_webhook: 'Linkul nu e un webhook de Discord. Îl copiezi din Discord: Setările serverului → Integrări → Webhook-uri.',
   no_webhook: 'Pune întâi linkul webhook-ului de Discord.',
-  bad_autopilot: 'Verifică ora (HH:MM), minutele rundei (10–720) și orele de la start.',
+  bad_autopilot: 'Verifică ora (HH:MM), cât durează runda (1–48 de ore), nivelul și orele de la start.',
   plan_in_past: 'Alege o oră din viitor.',
   bad_until: 'Înghețul trebuie să se termine după ce începe.',
   bad_plan: 'Verifică ce ai completat: minute între 1 și 60 la cod, între 1 și 720 la Ora dublă.',
@@ -290,7 +291,9 @@ let S: {
   spEdit: number | 'new' | null;
   /** «Runda de vot»: the entry being swapped in the open round. */
   rSwap: number | null;
-} = { rSwap: null, test: null, tasks: null, tasksDraft: null, sceneBg: null, sponsors: [], spEdit: null, auto: null, view: 'rapid', liveTab: 'timp', page: 'acum', chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], due: { due: [], given: [] }, raffles: [], rafflePreview: null, mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, bingoSize: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
+  /** The level picked for a round opened by hand (null = the auto round's level). */
+  voteLevel: string | null;
+} = { rSwap: null, voteLevel: null, test: null, tasks: null, tasksDraft: null, sceneBg: null, sponsors: [], spEdit: null, auto: null, view: 'rapid', liveTab: 'timp', page: 'acum', chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], due: { due: [], given: [] }, raffles: [], rafflePreview: null, mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, bingoSize: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
 /** Bingo phase (as private.bingo_phase): moderators open and close it; no ticks until the close (owner, 24 Nov). */
 const bingoPhase = (): 'soon' | 'open' | 'closed' => {
   const B = S.bingo;
@@ -342,28 +345,33 @@ function newChallengeRow(to: 'round' | 'draft') {
     ? (S.round?.items ?? []).map((x, i) => `<option value="${x.challenge_id}">${i + 1} · ${esc(x.title)}</option>`).join('')
     : S.draft.map((id, i) => `<option value="${i}"${i === S.draft.length - 1 ? ' selected' : ''}>${i + 1} · ${esc(S.pool.find((c) => c.id === id)?.title ?? '')}</option>`).join('');
   return `<div class="row"><label class="inline" style="flex:1 1 320px">Provocare nouă<input class="field" id="newCh_${to}" maxlength="140" placeholder="ex: Cântă imnul cu accent de pirat"></label>
-    <label class="inline">Nivel<select class="field" id="newChLvl_${to}"><option value="ușor">Ușor</option><option value="mediu" selected>Mediu</option><option value="greu">Greu</option></select></label>
+    ${to === 'round' ? '<label class="inline">Nivel<select class="field" id="newChLvl_round"><option value="ușor">Ușor</option><option value="mediu" selected>Mediu</option><option value="greu">Greu</option></select></label>' : ''}
     <label class="inline" style="flex:1 1 220px">În locul<select class="field" id="newChFor_${to}">${places}</select></label>
     <button class="btn-ghost" data-act="newChallenge" data-to="${to}">Pune în rundă</button></div>`;
 }
 const ROUND_SIZE = 5;
+// Rounds by level (owner, 25 Nov 2026): 5 challenges of ONE level, picked on /mod; the auto round
+// has its own level in «Votul automat». Different categories first, then any of that level.
+const LEVELS: [string, string, string][] = [['ușor', 'Ușor', 'ușoare'], ['mediu', 'Mediu', 'medii'], ['greu', 'Greu', 'grele']];
+const draftLevel = () => S.voteLevel ?? S.auto?.voteLevel ?? 'mediu';
+const levelPlural = (l: string) => LEVELS.find(([k]) => k === l)?.[2] ?? l;
 function autoDraft() {
+  const lv = draftLevel();
   const pick: number[] = [];
   const used = new Set<string>();
-  const shuffled = [...S.pool].sort(() => Math.random() - 0.5);
-  for (const [level, n] of [['ușor', 2], ['mediu', 2], ['greu', 1]] as const) {
-    for (const c of shuffled) {
-      if (pick.filter((id) => S.pool.find((p) => p.id === id)?.level === level).length >= n) break;
-      if (c.level === level && !used.has(c.category) && !pick.includes(c.id)) { pick.push(c.id); used.add(c.category); }
-    }
-  }
-  // Too few of a level (there are few hard ones): top up to 5, new categories first (as the auto round does).
-  for (const c of [...shuffled].sort((a, b) => Number(used.has(a.category)) - Number(used.has(b.category)))) {
+  const shuffled = S.pool.filter((c) => c.level === lv).sort(() => Math.random() - 0.5);
+  for (const c of shuffled) {
     if (pick.length >= ROUND_SIZE) break;
-    if (!pick.includes(c.id)) { pick.push(c.id); used.add(c.category); }
+    if (!used.has(c.category)) { pick.push(c.id); used.add(c.category); }
+  }
+  for (const c of shuffled) {
+    if (pick.length >= ROUND_SIZE) break;
+    if (!pick.includes(c.id)) pick.push(c.id);
   }
   S.draft = pick;
 }
+/** The draft is remade when one of its challenges was used or isn't of the picked level any more. */
+const draftStale = () => !S.draft.length || S.draft.some((id) => S.pool.find((p) => p.id === id)?.level !== draftLevel());
 
 async function load() {
   if (demoApi) {
@@ -375,7 +383,7 @@ async function load() {
     S.now = site.now; S.test = null; S.tasks = site.tasks ?? null; S.sceneBg = site.scene?.bg ?? null;
     S.lines = site.lines; S.smallDonation = site.smallDonation;
     S.chat = demoApi.rpc('mod_chat_status', {}) as typeof S.chat;
-    if (!S.draft.length || S.draft.some((id) => !S.pool.find((p) => p.id === id))) autoDraft();
+    if (draftStale()) autoDraft();
     return render();
   }
   const { data: { session } } = await db.auth.getSession();
@@ -455,7 +463,7 @@ async function load() {
   S.due = (due.data as typeof S.due) ?? { due: [], given: [] };
   S.raffles = (raffles.data as Raffle[]) ?? [];
   S.mods = (mods.data ?? []) as any;
-  if (!S.draft.length || S.draft.some((id) => !S.pool.find((p) => p.id === id))) autoDraft();
+  if (draftStale()) autoDraft();
   render();
 }
 
@@ -1292,6 +1300,7 @@ function todoHtml(): string {
   const due = S.due.due;
   for (const p of due.slice(0, 3)) items.push({ tag: 'PREMIU', cls: 'ok', t: `${p.login} · ${p.prize ?? ''}`, d: `${KIND_WHERE[p.kind]} ${when(p.at)}`, btn: `<button class="btn-primary" data-act="given" data-kind="${p.kind}" data-id="${p.id}">Am dat premiul</button>` });
   if (due.length > 3) items.push({ tag: 'PREMII', cls: 'ok', t: `Încă ${due.length - 3} premii de dat`, d: '', btn: '<a class="btn btn-ghost" href="#premii">Vezi toate</a>' });
+  for (const c of S.scheduled) items.push({ tag: 'PROVOCARE', cls: 'white', t: c.title, d: `A câștigat votul${c.scheduled_for ? ` · ${c.scheduled_for}` : ''}. După ce o face streamerul: linkul clipului și «Făcută».`, btn: '<a class="btn btn-ghost" href="#provocari">Marchează făcută</a>' });
   S.goals.forEach((g, i) => { if (raised >= g.threshold && !g.done_at) items.push({ tag: 'MILESTONE', cls: 'white', t: `${pad(i + 1)} · ${g.title}`, d: 'Deblocat. Când s-a făcut live, pune linkul clipului.', btn: '<a class="btn btn-ghost" href="#milestones">Marchează făcut</a>' }); });
   const lg = lineGroups.filter((g) => !lineInfo(g.id).ok).length;
   if (lg) items.push({ tag: 'REPLICI', cls: 'warn', t: `${lg} ${lg === 1 ? 'grup are' : 'grupuri au'} sub ${MIN_LINES} replici`, d: `Balonul folosește «${FALLBACK_LINE}» până le completați.`, btn: '<a class="btn btn-ghost" href="#replici">Completează</a>' });
@@ -1488,7 +1497,7 @@ function render() {
   const st = S.status;
   const roundOpen = S.round && Date.parse(S.round.closes_at) > now;
   const totalVotes = S.round?.items.reduce((a, x) => a + x.votes, 0) ?? 0;
-  const poolOptions = (sel: number) => S.pool.map((c) =>
+  const poolOptions = (sel: number, level?: string) => S.pool.filter((c) => !level || c.level === level || c.id === sel).map((c) =>
     `<option value="${c.id}" ${c.id === sel ? 'selected' : ''}>${esc(c.level)} · ${esc(c.title)}</option>`).join('');
 
   setNav();
@@ -1498,10 +1507,11 @@ function render() {
       return `
     <section class="card wide" id="pilot">
       <h2>Votul automat</h2>
-      <div class="opt-row"><label class="opt"><input type="checkbox" class="sw" id="apVoteOn" ${A.voteOn ? 'checked' : ''}><span class="opt-t">O rundă de vot pe zi, deschisă singură</span></label>${tip('Se deschide singură când Iceman e live după ora aleasă. Voi doar dați veto.')}</div>
+      <div class="opt-row"><label class="opt"><input type="checkbox" class="sw" id="apVoteOn" ${A.voteOn ? 'checked' : ''}><span class="opt-t">O rundă de vot pe zi, deschisă singură</span></label>${tip('Se deschide singură când streamerul e live după ora aleasă, cu 5 provocări din nivelul ales, și ține cât ați ales (de obicei 24 de ore). Voi doar dați veto.\nDacă nu mai sunt 5 provocări libere din nivelul ales, runda nu se deschide și vine mesaj pe Discord.')}</div>
       <div class="row">
         <label class="inline">După ora (România)<input class="field" type="time" id="apVoteAt" value="${esc(A.voteAt ?? '20:00')}"></label>
-        <label class="inline">Cât durează (minute)<input class="field" type="number" inputmode="numeric" id="apVoteMin" min="10" max="720" value="${esc(A.voteMinutes ?? 60)}"></label>
+        <label class="inline">Nivelul<select class="field" id="apVoteLevel">${LEVELS.map(([k, l]) => `<option value="${k}"${(A.voteLevel ?? 'mediu') === k ? ' selected' : ''}>${l} (${S.pool.filter((c) => c.level === k).length} libere)</option>`).join('')}</select></label>
+        <label class="inline">Cât durează (ore)<input class="field" type="number" inputmode="numeric" id="apVoteHours" min="1" max="48" value="${esc(Math.round((A.voteMinutes ?? 1440) / 60))}"></label>
       </div>
       ${A.lastVoteDay ? `<p class="hint">Ultima rundă automată: ${esc(A.lastVoteDay)}.</p>` : ''}
       <div class="row"><button class="btn-primary" data-act="autoSave">Salvează</button>${A.updatedBy ? `<span class="hint">Ultima schimbare: ${esc(A.updatedBy)}, ${when(A.updatedAt)}</span>` : ''}</div>
@@ -1701,26 +1711,27 @@ function render() {
       ${!roundOpen && S.auto?.voteOn ? `<p style="margin:14px 0 0"><span class="pill ok">Vot automat</span> Următoarea rundă se deschide singură${S.auto.lastVoteDay === new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Bucharest' }) ? ' mâine' : ' azi'}, după ${esc(S.auto.voteAt)}, când Iceman e live.</p>` : ''}
       ${!roundOpen ? `
         <details class="more"${S.auto?.voteOn ? '' : ' open'} style="margin-top:14px"><summary>Deschide o rundă acum, de mână</summary>
-        ${S.draft.map((id, i) => `<div class="row d-row"><span class="d-no">${i + 1}</span><select class="field" data-draft="${i}" aria-label="Provocarea ${i + 1}">${poolOptions(id)}</select></div>`).join('')}
-        ${S.draft.length < ROUND_SIZE ? `<p class="callout bad">Mai sunt doar ${S.draft.length} provocări libere în listă; o rundă are nevoie de ${ROUND_SIZE}. Scrieți provocări noi mai jos sau aprobați propuneri.</p>` : ''}
+        <div class="row lv-row" role="group" aria-label="Nivelul rundei"><span class="lv-label">Nivelul rundei</span>${LEVELS.map(([k, l]) => `<button type="button" class="btn-ghost lv-btn${draftLevel() === k ? ' on' : ''}" aria-pressed="${draftLevel() === k}" data-act="voteLevel" data-l="${k}">${l} <span class="lv-n">${S.pool.filter((c) => c.level === k).length}</span></button>`).join('')}${tip('Alegeți nivelul: runda are 5 provocări doar din nivelul ăsta, din categorii diferite când se poate.\nNumărul de pe buton: câte provocări libere mai sunt din nivelul respectiv.\n«Alege altele» trage alte 5 din același nivel.')}</div>
+        ${S.draft.map((id, i) => `<div class="row d-row"><span class="d-no">${i + 1}</span><select class="field" data-draft="${i}" aria-label="Provocarea ${i + 1}">${poolOptions(id, draftLevel())}</select></div>`).join('')}
+        ${S.draft.length < ROUND_SIZE ? `<p class="callout bad">${S.draft.length === 1 ? `Mai e doar o provocare ${draftLevel() === 'ușor' ? 'ușoară' : draftLevel() === 'greu' ? 'grea' : 'medie'} liberă` : S.draft.length ? `Mai sunt doar ${S.draft.length} provocări ${levelPlural(draftLevel())} libere` : `Nu mai e nicio provocare ${draftLevel() === 'ușor' ? 'ușoară' : draftLevel() === 'greu' ? 'grea' : 'medie'} liberă`}; o rundă are nevoie de ${ROUND_SIZE}. Alegeți alt nivel, scrieți provocări noi mai jos sau aprobați propuneri.</p>` : ''}
         ${newChallengeRow('draft')}
         <div class="row">
-          <button class="btn-ghost" data-act="reroll">Alege altele</button>${tip('O rundă are mereu exact 5 provocări: 2 ușoare, 2 medii și 1 grea, din categorii diferite. Când nu sunt destule de un nivel, se completează cu altele.\nSchimbă orice provocare din listă; «Alege altele» trage altă listă.')}
-          <label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="roundMin" value="60"></label>
+          <button class="btn-ghost" data-act="reroll">Alege altele</button>
+          <label class="inline">Cât durează (ore)<input class="field" type="number" inputmode="numeric" id="roundHours" value="24" min="1" max="48"></label>
           <button class="btn-primary" data-act="openRound">Deschide runda</button>
         </div></details>` : ''}
     </section>`,
     'provocari': () => `
     <section class="card wide" id="provocari">
-      <h2>Provocări câștigătoare</h2>
+      <h2>Provocări câștigătoare ${tip('Câștigătoarea fiecărei runde ajunge aici și în «De făcut acum» de pe Stream acum.\nStreamerul o face pe stream; apoi lipiți linkul clipului și apăsați «Făcută». Fără link, cât streamerul e live, clipul se face singur din ultimele 30 de secunde.\n«Când» apare pe site, ca spectatorii să știe când o vadă.')}</h2>
       ${S.scheduled.length ? `<ul class="list">${S.scheduled.map((c) => `<li>
         <span class="grow">${esc(c.title)}</span>
         <span class="pair"><input class="field" data-when="${c.id}" value="${esc(c.scheduled_for ?? '')}" placeholder="ex: Diseară, 22:00" aria-label="Când">
         <button class="btn-ghost" data-act="setWhen" data-id="${c.id}">Salvează</button></span>
-        <span class="pair"><input class="field" type="url" data-clip="${c.id}" placeholder="Link clip (opțional)" aria-label="Link clip">
+        <span class="pair"><input class="field" type="url" data-clip="${c.id}" placeholder="Link clip (Twitch, YouTube)" aria-label="Link clip">
         <button class="btn-primary" data-act="done" data-id="${c.id}">Făcută</button>
         <button class="btn-ghost" data-act="veto" data-id="${c.id}">Veto</button></span></li>`).join('')}</ul>`
-        : '<p class="muted" style="margin-top:0">Nimic programat.</p>'}
+        : '<p class="empty">Nicio provocare câștigătoare de făcut.</p>'}
     </section>`,
     'propuneri': () => `
     <section class="card wide" id="propuneri">
@@ -1940,7 +1951,8 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     return call('mod_end_timer', {}, 'Subathonul s-a încheiat.');
   },
   closeRound: (el) => call('mod_close_round', { p_round: Number(el.dataset.id) }, 'Runda s-a închis.'),
-  reroll: () => { autoDraft(); render(); },
+  reroll: () => { autoDraft(); resetTyped = true; render(); },
+  voteLevel: (el) => { S.voteLevel = el.dataset.l ?? null; autoDraft(); resetTyped = true; render(); },
   newChallenge: async (el) => {
     const to = el.dataset.to as 'round' | 'draft';
     const title = val(`newCh_${to}`).trim();
@@ -1950,7 +1962,7 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     const slot = Math.max(0, Math.min(Number(val('newChFor_draft')) || 0, S.draft.length - 1));
     if (to === 'round' && !old) return;
     if (old?.votes && !confirm(`Provocarea nouă ia locul «${old.title}». Cele ${old.votes} voturi ale ei se pierd; cei care au votat pot vota din nou. Continui?`)) return;
-    const id = Number(await call('mod_challenge_add', { p_title: title, p_level: val(`newChLvl_${to}`) }, 'Provocare adăugată.'));
+    const id = Number(await call('mod_challenge_add', { p_title: title, p_level: to === 'draft' ? draftLevel() : val('newChLvl_round') }, 'Provocare adăugată.'));
     if (!id) return;
     if (to === 'round' && S.round && old) {
       await call('mod_round_edit', { p_round: S.round.id, p_action: 'replace', p_challenge: old.challenge_id, p_new: id }, 'Provocarea nouă e în rundă.');
@@ -1972,7 +1984,9 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     const ids = [...document.querySelectorAll<HTMLSelectElement>('[data-draft]')].map((s) => Number(s.value));
     if (ids.length !== ROUND_SIZE) { say(`O rundă are nevoie de exact ${ROUND_SIZE} provocări.`, true); return; }
     if (new Set(ids).size !== ids.length) { say('Ai ales aceeași provocare de două ori.', true); return; }
-    return call('mod_open_round', { p_challenges: ids, p_minutes: num('roundMin') || 60 }, 'Runda e deschisă.');
+    const hours = Number(val('roundHours')) || 24;
+    if (hours < 1 || hours > 48) { say('O rundă ține între 1 și 48 de ore.', true); return; }
+    return call('mod_open_round', { p_challenges: ids, p_minutes: Math.round(hours * 60) }, 'Runda e deschisă.');
   },
   setWhen: (el) => call('mod_set_challenge', { p_id: Number(el.dataset.id), p_status: 'scheduled', p_scheduled_for: (document.querySelector<HTMLInputElement>(`[data-when="${el.dataset.id}"]`)?.value ?? '') || null }, 'Salvat.'),
   done: async (el) => {
@@ -2110,7 +2124,8 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   mod: () => val('newMod').trim() && call('mod_set_moderator', { p_login: val('newMod'), p_on: true }, 'Moderator adăugat.'),
   skipDone: (el) => call('mod_skipped_done', { p_id: el.dataset.id }, 'Gata.'),
   autoSave: () => call('mod_autopilot_set', { p: {
-    voteOn: (document.getElementById('apVoteOn') as HTMLInputElement)?.checked ?? false, voteAt: val('apVoteAt') || '20:00', voteMinutes: num('apVoteMin') || 60,
+    voteOn: (document.getElementById('apVoteOn') as HTMLInputElement)?.checked ?? false, voteAt: val('apVoteAt') || '20:00',
+    voteMinutes: Math.round((num('apVoteHours') || 24) * 60), voteLevel: val('apVoteLevel') || 'mediu',
   } }, 'Votul automat a fost salvat.'),
   // STREAMER → Start: auto start and the hours on the clock at the start (only these keys; the rest stays).
   startSave: () => call('mod_autopilot_set', { p: {

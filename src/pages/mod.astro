@@ -146,6 +146,13 @@ const favicon = await getImage({ src: emote, format: 'png', width: 64 });
       @media (prefers-reduced-motion: reduce) { .ng.opening .ng-items, .ng.opening .ng-items a, .ng.opening .ng-chev, .ng.opening .ng-head { animation: none; } .ng-chev { transition: none; } }
       .mnav[hidden] { display: none; }
       label.inline[hidden] { display: none; }
+      /* Vote round level (Ușor / Mediu / Greu): one pressed at a time. */
+      .lv-row { align-items: center; gap: 8px; margin-top: 4px; }
+      .lv-label { font-size: 13px; color: var(--tx2); margin-right: 4px; }
+      .lv-btn .lv-n { margin-left: 6px; font-size: 12px; color: var(--tx3); font-style: normal; }
+      .lv-btn.on { background: rgba(63, 208, 255, .14); color: #FFF; box-shadow: inset 0 0 0 1px #3FD0FF; }
+      .lv-btn.on .lv-n { color: #8FE4FF; }
+      @media (max-width: 640px) { .lv-label { flex-basis: 100%; } .lv-btn { flex: 1 1 0; min-width: 0; padding-left: 8px; padding-right: 8px; } }
       .mnav[hidden] + .mmain { grid-column: 1 / -1; max-width: 720px; }
       .ng { background: #06080C; border: 1px solid #161B26; }
       .ng.on { background: #090D14; border-color: #2A3F5A; }
