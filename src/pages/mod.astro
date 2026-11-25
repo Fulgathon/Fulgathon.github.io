@@ -617,8 +617,22 @@ const favicon = await getImage({ src: emote, format: 'png', width: 64 });
       .ext-now strong { color: var(--tx); font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px; font-variant-numeric: tabular-nums; }
       .ext .hint { margin: 0; }
       .scene-img { display: block; width: 100%; max-width: 480px; aspect-ratio: 16 / 9; object-fit: cover; border: 1px solid var(--ln3); }
-      .test-strip { padding: 14px 16px; background: linear-gradient(180deg, #1C1708, #141005); border: 1px solid #F2C14E; box-shadow: inset 3px 0 0 #F2C14E; }
-      .ts-rows { gap: 8px; margin-top: 12px; }
+      /* Mod test (owner, 25 Nov): one slim line; the fake events open in «Simulare». */
+      .test-strip { margin: 12px 0 4px; padding: 6px 8px 6px 12px; background: linear-gradient(180deg, #1C1708, #141005); border: 1px solid #F2C14E; box-shadow: inset 3px 0 0 #F2C14E; }
+      .test-strip.open { padding-bottom: 12px; }
+      .ts-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+      .ts-what { flex: 1 1 220px; min-width: 0; color: #E8DDB8; font-size: 14px; }
+      .ts-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+      .ts-btns .btn-s { min-height: 44px; }
+      .ts-rows { gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(242, 193, 78, .3); }
+      /* SIMULARE inside a card: fake viewers right next to the real buttons, only during a test. */
+      .sim-box { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 12px 0 0; padding: 8px 10px; border: 1px dashed #F2C14E; background: rgba(242, 193, 78, .06); }
+      .sim-box .btn-ghost { min-height: 44px; }
+      .sim-tag { padding: 1px 7px; background: #F2C14E; color: #1A1300; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-style: italic; font-size: 13px; letter-spacing: .1em; }
+      .sim-box .ts-note { color: #E8DDB8; font-size: 14px; }
+      /* A (?) at the end of a wrapped row: keep its hidden text inside the row, not past the page edge. */
+      .ts-row, .ts-line, .sim-box { position: relative; }
+      .ts-row .sr-only, .ts-line .sr-only, .sim-box .sr-only { left: 0; top: 0; }
       .r-swap { padding: 14px; background: var(--bg2); }
       .msg { background: #0F1620; border-width: 1px; box-shadow: 0 16px 40px rgba(0, 0, 0, .6); }
       .dlg { border-width: 1px; box-shadow: 0 24px 60px rgba(0, 0, 0, .7); }

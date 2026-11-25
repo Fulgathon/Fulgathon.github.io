@@ -102,7 +102,8 @@ const errors: Record<string, string> = {
   test_crowd_full: 'Sunt deja 500 de spectatori de test.',
   raffle_none_on_stream: 'Nicio tombolă pe stream. Apasă «Pune pe stream» la una în PREMII → Tombole.',
   raffle_not_points: 'Tombola de pe stream nu e cu puncte de canal: pe listă intră singuri spectatorii care respectă regula.',
-  raffle_entries_closed: 'Înscrierile la tombola de pe stream sunt închise.',
+  raffle_entries_closed: 'Înscrierile la tombola asta sunt închise.',
+  raffle_missing: 'Tombola nu mai există. Reîncarcă pagina.',
   bad_test_amount: 'Sumă nevalidă.',
   test_backup_missing: 'Copia de siguranță lipsește. Nu opri nimic, scrie-i lui barsmin.',
   not_eur: 'Se adună doar donațiile în euro.',
@@ -984,6 +985,11 @@ function dashHtml(t: Record<string, any>, live: boolean, remaining: number, now:
 function testBtn(a: string, label: string, p: Record<string, unknown> = {}, ok = 'Gata.') {
   return `<button class="btn-ghost" data-act="testDo" data-a="${a}" data-p='${esc(JSON.stringify(p))}' data-ok="${esc(ok)}">${esc(label)}</button>`;
 }
+// Owner, 25 Nov 2026: «instead of clogging the header… behave like a simulation, I can do the real
+// thing in the console». During a test every /mod page works for real (on test data); the strip is one
+// slim line, the general fake events sit in its «Simulare» drawer (closed by default), and each card
+// that needs fake viewers gets its own SIMULARE box right next to the real buttons (simBox).
+let simOpen = false;
 function testStripHtml(): string {
   const T = S.test;
   if (!T) return '';
@@ -997,54 +1003,47 @@ function testStripHtml(): string {
     : st === 'ended'
       ? `<span class="pill-s">ÎNCHEIAT</span>${tip('«De la capăt» îl aduce înapoi la start.')}`
       : `<button class="btn-primary" data-act="testGoLive" data-h="${hrs}">Pornește maratonul de test (${hrs} h)</button>${tip('Până atunci site-ul arată «Începe curând», iar donațiile umplu doar «Strâns», fără timp (ca în realitate).')}`;
-  return `<section class="test-strip" aria-label="Mod test">
-    <p class="ts-head"><span class="ts-tag">TEST</span><strong>Mod test</strong><span>pornit de ${esc(T.by ?? 'un moderator')} · se oprește singur la ${hmRo(T.until)}</span>${tip('Tot ce se schimbă acum, și pe /mod, se șterge la oprire.\nPregătirea reală (sponsori, premii, provocări) o faci după test.')}</p>
-    <div class="ts-rows">
-      <div class="ts-row"><span>Maraton</span>${marathon}</div>
-      <div class="ts-row"><span>Twitch</span>${testBtn('sub', 'Sub', {}, 'Sub de test.')}${testBtn('sub', 'Sub Tier 3', { tier: '3000' }, 'Sub Tier 3 de test.')}${testBtn('gift', '10 subs cadou', { n: 10 }, '10 subs cadou de test.')}${testBtn('bits', '400 biți', { n: 400 }, '400 de biți de test.')}${testBtn('stream', online ? 'Iceman iese de pe Twitch' : 'Iceman intră pe Twitch', { on: !online }, online ? 'Iceman apare offline pe Twitch: timpul privit nu se mai numără.' : 'Iceman apare live pe Twitch: se numără timpul privit, votul automat merge.')}</div>
-      <div class="ts-row"><span>Donații</span>${testBtn('donation', '5 €', { n: 5 }, 'Donație de test, 5 €.')}${testBtn('donation', '50 €', { n: 50 }, 'Donație de test, 50 €.')}${testBtn('donation', '250 €', { n: 250 }, 'Donație de test, 250 €.')}</div>
-      <div class="ts-row"><span>Spectatori</span>${crowdBtn('crowd', '+25 de test', 25, '25 de spectatori de test: privesc, votează, aleg bingo.')}${crowdBtn('crowd', '+100 de test', 100, '100 de spectatori de test: privesc, votează, aleg bingo.')}${crowdBtn('act', 'Cei de test votează și aleg bingo', 0, '')}${tip('Spectatorii de test votează doar în runda deschisă și aleg bingo doar cât e deschis. Butonul ăsta îi pune pe cei deja adăugați să voteze în runda de acum și să aleagă o linie. Cel mult 500 de spectatori de test.')}${testBtn('me_sub', sub ? 'Eu: neabonat' : 'Eu: abonat', { on: !sub }, sub ? 'Pe site apari neabonat.' : 'Pe site apari abonat.')}${testBtn('me_watch', 'Eu: +2 h privit', { minutes: 120 }, 'Ai 2 ore privite azi: roata e deblocată.')}</div>
-      <div class="ts-row"><span>Ceas</span>${clockTestHtml()}</div>
-      <div class="ts-row"><span>Tombolă</span>${raffleTestHtml()}</div>
-      <div class="ts-row"><span>Alegeri</span>${(S.tasks?.menu ?? []).map((m) => testBtn('donation', `${euroTxt(m.price)} · ${m.title}`, { n: m.price }, `Donație de test ${euroTxt(m.price)}: «${m.title}» e în coadă (Donează și alegi).`)).join('') || '<span class="ts-note">Lista e goală: completeaz-o în ACTIVITĂȚI → Donează și alegi.</span>'}${st === 'upcoming' ? tip('Primul buton pornește și maratonul de test.') : ''}</div>
-      <div class="ts-row"><span>Sponsori</span><button class="btn-ghost" data-act="testSponsors">Sponsori de test (10)</button>${tip('Mărci inventate, cu logo, pe site și pe overlay. La oprire revin sponsorii reali.')}</div>
-      <div class="ts-row"><span>Testul</span>${testBtn('extend', '+1 oră', {}, 'Testul merge încă o oră.')}<button class="btn-ghost" data-act="testRedo">De la capăt</button><button class="btn-primary" data-act="testStop">Oprește testul</button></div>
-    </div>
+  const drawer = simOpen ? `<div class="ts-rows" id="simDrawer">
+      <div class="ts-row"><span>Maraton</span>${marathon}${testBtn('stream', online ? 'Streamerul iese de pe Twitch' : 'Streamerul intră pe Twitch', { on: !online }, online ? 'Streamerul apare offline pe Twitch: timpul privit nu se mai numără.' : 'Streamerul apare live pe Twitch: se numără timpul privit, votul automat merge.')}</div>
+      <div class="ts-row"><span>Twitch</span>${testBtn('sub', 'Sub', {}, 'Sub de test.')}${testBtn('sub', 'Sub Tier 3', { tier: '3000' }, 'Sub Tier 3 de test.')}${testBtn('gift', '10 subs cadou', { n: 10 }, '10 subs cadou de test.')}${testBtn('bits', '400 biți', { n: 400 }, '400 de biți de test.')}</div>
+      <div class="ts-row"><span>Donații</span>${testBtn('donation', '5 €', { n: 5 }, 'Donație de test, 5 €.')}${testBtn('donation', '50 €', { n: 50 }, 'Donație de test, 50 €.')}${testBtn('donation', '250 €', { n: 250 }, 'Donație de test, 250 €.')}${tip('Primul sub sau prima donație pornește și maratonul de test.')}</div>
+      <div class="ts-row"><span>Spectatori</span>${crowdBtn('crowd', '+25 de test', 25, '25 de spectatori de test: privesc, votează, aleg bingo.')}${crowdBtn('crowd', '+100 de test', 100, '100 de spectatori de test: privesc, votează, aleg bingo.')}${tip('Spectatori falși, cu timp privit, 7 din 10 abonați. Cel mult 500.\nVotul, bingo și tombolele au butoane de simulare chiar în paginile lor.')}</div>
+      <div class="ts-row"><span>Eu pe site</span>${testBtn('me_sub', sub ? 'Eu: neabonat' : 'Eu: abonat', { on: !sub }, sub ? 'Pe site apari neabonat.' : 'Pe site apari abonat.')}${testBtn('me_watch', 'Eu: +2 h privit', { minutes: 120 }, 'Ai 2 ore privite azi: roata e deblocată.')}</div>
+    </div>` : '';
+  return `<section class="test-strip${simOpen ? ' open' : ''}" aria-label="Mod test">
+    <div class="ts-line"><span class="ts-tag">TEST</span><span class="ts-what">Mod test: totul e de probă și se șterge la oprire · până la ${hmRo(T.until)}</span>${tip(`Pornit de ${T.by ?? 'un moderator'}. Toată consola merge ca pe bune: adaugi tombole, deschizi runde, tragi la sorți, bifezi.\nUnde ai nevoie de spectatori, cardul are o casetă SIMULARE.\nChatul Twitch nu primește mesaje, clipurile nu se fac, alertele Discord au «TEST».`)}
+      <span class="ts-btns"><button class="btn-ghost btn-s" data-act="simToggle" aria-expanded="${simOpen}" aria-controls="simDrawer">Simulare ${simOpen ? '▴' : '▾'}</button>${testBtn('extend', '+1 oră', {}, 'Testul merge încă o oră.').replace('btn-ghost', 'btn-ghost btn-s')}<button class="btn-ghost btn-s" data-act="testRedo">De la capăt</button><button class="btn-primary btn-s" data-act="testStop">Oprește testul</button></span></div>
+    ${drawer}
   </section>`;
 }
-// The Spectatori buttons (migration 20261222100000): new fake viewers, or the ones already there act.
+// A SIMULARE box inside a card, only during a test.
+const simBox = (inner: string, help = '') => (S.test ? `<div class="sim-box"><span class="sim-tag">SIMULARE</span>${inner}${help ? tip(help) : ''}</div>` : '');
+// Fake viewers (migration 20261222100000): new ones, or the ones already there act.
 function crowdBtn(a: string, label: string, n: number, ok: string) {
   return `<button class="btn-ghost" data-act="testCrowd" data-a="${a}" data-n="${n}" data-ok="${esc(ok)}">${esc(label)}</button>`;
 }
-// «Tombolă» in the test strip: fake viewers enter the points raffle on stream, as if with channel
-// points (in a test the real Twitch entries are refused). «Intră câte unul» sends one every 3 s for a
-// minute, the pace the OBS piece polls at, so each one drops in on its own, like on the day.
-let trickle = 0;
-function raffleTestHtml(): string {
-  const r = S.raffles.find((x) => x.on_stream && !x.ended_at);
-  if (!r) return '<span class="ts-note">Nicio tombolă pe stream: adaug-o în PREMII → Tombole.</span>';
-  if (r.rule !== 'points') return `<span class="ts-note">Pe stream: ${esc(r.prize)}. Pe listă sunt spectatorii de test care respectă regula; adaugă-i din Spectatori.</span>`;
-  if (r.entries_closed_at) return `<span class="ts-note">Înscrierile la ${esc(r.prize)} sunt închise.</span>`;
-  return `<button class="btn-ghost" data-act="testEnter" data-n="25">+25 intră cu puncte</button>${trickle
+// Fake channel point entries for one raffle (in a test the real Twitch entries are refused).
+// «Intră câte unul» sends one every 3 s for a minute, the pace the OBS piece polls at, so each one
+// drops in on its own, like on the day.
+let trickle = 0, trickleFor = 0;
+function raffleSimHtml(r: Raffle): string {
+  if (!S.test || r.ended_at) return '';
+  if (r.rule !== 'points') {
+    return r.entries_closed_at ? '' : simBox(crowdBtn('crowd', '+25 spectatori de test', 25, '25 de spectatori de test: cei care respectă regula sunt pe listă.'),
+      'La regula asta lista se face singură: spectatorii de test care o respectă sunt pe ea (7 din 10 sunt abonați, au între 30 de minute și 7 ore privite).');
+  }
+  if (r.entries_closed_at) return '';
+  const going = trickle > 0 && trickleFor === r.id;
+  const enter = (n: number) => `<button class="btn-ghost" data-act="testEnter" data-id="${r.id}" data-n="${n}">+${n} intră cu puncte</button>`;
+  return simBox(`${enter(1)}${enter(10)}${enter(25)}${going
     ? `<button class="btn-ghost" data-act="testTrickleStop">Oprește (${trickle} rămași)</button>`
-    : '<button class="btn-ghost" data-act="testTrickle">Intră câte unul (1 min)</button>'}${tip(`Spectatori de test intră la ${r.prize} ca și cum ar fi dat puncte de canal. Pe overlay îi vezi căzând ca fulgii; cei noi apar mari în mijloc. Pe Twitch nu se schimbă nimic.`)}`;
-}
-
-// «Ceas» in the test strip: freeze and Ora dublă (plain or sponsored) on the test marathon.
-function clockTestHtml(): string {
-  const t = S.timer ?? {};
-  const now = Date.now();
-  const frozen = !!t.paused_until && Date.parse(t.paused_until) > now;
-  const dbl = !!t.double_from && !!t.double_until && Date.parse(t.double_from) <= now && Date.parse(t.double_until) > now;
-  const main = S.sponsors.find((x: any) => x.tier === 'main')?.name ?? '';
-  const b = (a: string, label: string) => `<button class="btn-ghost" data-act="testClock" data-a="${a}">${esc(label)}</button>`;
-  return (frozen ? b('unfreeze', 'Dezgheață') : b('freeze', 'Îngheață 5 min'))
-    + (dbl ? b('nodouble', 'Oprește Ora dublă') : b('double', 'Ora dublă 10 min') + (main ? b('doubleSp', `Ora dublă de la ${main}`) : ''));
+    : `<button class="btn-ghost" data-act="testTrickle" data-id="${r.id}"${trickle ? ' disabled' : ''}>Intră câte unul (1 min)</button>`}`,
+    `Spectatori de test intră ca și cum ar fi dat puncte de canal. Pe overlay îi vezi căzând ca fulgii; cei noi apar mari în mijloc. Pe Twitch nu se schimbă nimic.`);
 }
 function testCardHtml(): string {
   const upcoming = (S.timer?.status ?? 'upcoming') === 'upcoming';
   const body = S.test
-    ? `<p style="margin:0">Testul merge până la <strong>${hmRo(S.test.until)}</strong>. Comenzile sunt în banda galbenă de sus, pe orice pagină.</p>
+    ? `<p style="margin:0">Testul merge până la <strong>${hmRo(S.test.until)}</strong>. Toată consola merge ca pe bune; unde e nevoie de spectatori, cardul are o casetă <strong>SIMULARE</strong>. Restul (subs, donații, spectatori) e în <strong>Simulare</strong>, în banda de sus.</p>
        <div class="row"><button class="btn-primary" data-act="testStop">Oprește testul</button></div>`
     : !upcoming
       ? '<p class="muted" style="margin:0">Doar înainte de start: maratonul real a pornit.</p>'
@@ -1107,6 +1106,7 @@ function tasksHtml(): string {
       <button class="btn-primary" data-act="taskDone" data-id="${q.id}">Făcută</button></li>`).join('');
   return `<section class="card wide" id="sarcini">
     <h2>Donează și alegi ${tip('O donație de exact suma din listă (în euro, cât maratonul e LIVE) pune sarcina în coadă, cu numele donatorului. Alte sume adaugă doar timp.\nBifați «Făcută» când Iceman a făcut-o.')}${T?.pending ? `<span class="h2-note">${T.pending} de făcut</span>` : ''}</h2>
+    ${simBox(list.map((m) => testBtn('donation', `Donație ${euroTxt(m.price)} · ${m.title}`, { n: m.price }, `Donație de test ${euroTxt(m.price)}: ${m.title} e în coadă.`)).join('') || '<span class="ts-note">Lista e goală: completați-o mai jos.</span>', 'O donație de test de exact suma din listă, cu un nume de test. Prima pornește și maratonul de test.')}
     ${queue.length ? `<ul class="list">${rows}</ul>${T && T.pending > queue.length ? `<p class="muted">+${T.pending - queue.length} mai vechi după acestea.</p>` : ''}` : '<p class="empty">Nimic de făcut acum.</p>'}
     <h3 class="h3s">Lista de pe overlay ${tip('Câte una pe rând: suma, o bară verticală, apoi sarcina. De exemplu «10 | Alege un campion».\nCel mult 8, fiecare cu altă sumă.')}</h3>
     <textarea class="field" id="tasksList" rows="6" aria-label="Lista: câte una pe rând, suma | sarcina" placeholder="10 | Alege un campion" style="width:100%">${esc(draft)}</textarea>
@@ -1155,6 +1155,7 @@ function sponsorsHtml(): string {
   const editing = S.spEdit === 'new' ? {} as any : list.find((x) => x.id === S.spEdit);
   return `<section class="card wide" id="sponsori">
     <div class="card-head"><h2>Sponsori ${tip('Apar pe site (sub titlu, la ofertă și în peretele de parteneri) și pe overlay (linia partenerului). Se actualizează în câteva secunde.')}</h2><button class="btn-primary btn-s" data-act="spNew">+ Adaugă sponsor</button></div>
+    ${simBox('<button class="btn-ghost" data-act="testSponsors">Sponsori de test (10)</button>', 'Mărci inventate, cu logo, pe site și pe overlay. Le puteți edita ca pe cele reale. La oprire revin sponsorii reali.')}
     ${S.spEdit !== null && editing ? spFormHtml(editing) : ''}
     ${groups}
   </section>`;
@@ -1362,6 +1363,7 @@ function tombolaHtml(): string {
       ${raffleTicks(`rf${r.id}`, r)}
       <p class="hint" style="margin:8px 0 0">${esc(ruleLabel(r.rule, r.min_hours))}${raffleTickNote(r)} · pot câștiga acum <strong>${fmtInt(r.pool)}</strong>${r.created_by ? ` · adăugată de ${esc(r.created_by)}` : ''}${drawn ? ' · regula nu se mai schimbă după prima tragere' : ''}</p>
       ${r.rule === 'points' ? rewardState(r) : ''}
+      ${raffleSimHtml(r)}
       ${drawn ? `<p style="margin:10px 0 0">Câștigători: ${r.draws.map((d) => `<strong>${esc(d.login)}</strong> <span class="muted">(${when(d.drawn_at)}${d.given_at ? ', dat' : ''})</span>`).join(' · ')}</p>` : ''}
       <div class="row">
         <button class="btn-primary" data-act="raffleDraw" data-id="${r.id}"${r.pool ? '' : ' disabled'}>${drawn ? 'Trage încă un câștigător' : 'Trage la sorți'}</button>
@@ -1754,6 +1756,7 @@ function render() {
       return `<section class="card wide" id="bingo">
       <h2>Bingo</h2>
       ${bingoNowHtml()}
+      ${open ? simBox(crowdBtn('act', 'Spectatorii de test aleg o linie', 0, '') + crowdBtn('crowd', '+25 spectatori de test', 25, '25 de spectatori de test: fiecare a ales o linie.'), 'Fiecare spectator de test care n-a ales încă alege o linie la întâmplare. După închidere bifați evenimentele ca pe bune și trageți la sorți.') : ''}
       <h3 class="h3s">Cartonașul · ${open ? 'bifele vin după închidere' : 'bifează când se întâmplă'} ${tip('Scrieți voi evenimentele, în ordine, rând cu rând. Alegeți mărimea: 3 × 3 (9 evenimente), 4 × 4 (16) sau 5 × 5 (25). Spectatorii aleg o linie: un rând, o coloană sau o diagonală.\nDupă ce a ales cineva o linie, evenimentele se mai pot doar redenumi: nu se mai mută, nu se scot și mărimea rămâne.')}</h3>
       ${(() => {
         const n = bingoN(), rows = bingoRows(), locked = (B.status.players ?? 0) > 0;
@@ -1798,6 +1801,7 @@ function render() {
     'roata-premii': () => `
     <section class="card wide" id="roata-premii">
       <h2>Premiile roții ${tip('8 felii. Textul de pe roată are cel mult 16 caractere.\nCu șansa 0, felia nu iese niciodată.')}</h2>
+      ${simBox(testBtn('me_sub', S.me?.is_subscriber ? 'Eu: neabonat' : 'Eu: abonat', { on: !S.me?.is_subscriber }, S.me?.is_subscriber ? 'Pe site apari neabonat.' : 'Pe site apari abonat.') + testBtn('me_watch', 'Eu: +2 h privit', { minutes: 120 }, 'Ai 2 ore privite azi: roata e deblocată.'), 'Ca să învârți roata pe site: abonat și 2 ore privite azi. Premiul câștigat apare în PREMII → De dat.')}
       <ul class="list">${wheelRows().map((p, i) => `<li>
         <span class="d-no">${i + 1}</span>
         <input class="field" data-wheel="short_label" data-i="${i}" value="${esc(p.short_label)}" maxlength="16" aria-label="Pe roată, felia ${i + 1}" style="flex:0 1 130px;min-width:0">
@@ -1830,6 +1834,7 @@ function render() {
         <ul class="list r-list">${S.round.items.map((x) => `<li><span class="grow">${esc(x.title)}${S.round!.winner_id === x.challenge_id ? ' <span class="pill ok">câștigă</span>' : ''}</span><strong>${x.votes}</strong><span class="muted r-pct">${totalVotes ? Math.round((x.votes / totalVotes) * 100) : 0}%</span>${roundOpen ? `<span class="pair"><button class="btn-ghost" data-act="rSwap" data-id="${x.challenge_id}" aria-expanded="${S.rSwap === x.challenge_id}">Schimbă</button></span>` : ''}
           ${roundOpen && S.rSwap === x.challenge_id ? `<div class="r-swap"><label class="inline" style="flex:1 1 320px">Înlocuiește cu<select class="field" id="rSwapSel">${poolOptions(0)}</select></label><button class="btn-primary" data-act="rSwapSave" data-id="${x.challenge_id}">Salvează</button><button class="btn-ghost" data-act="rSwapCancel">Anulează</button><span class="muted" style="flex-basis:100%">Voturile ei (${x.votes}) se pierd; cei care au votat pot vota din nou.</span></div>` : ''}</li>`).join('')}</ul>
         ${roundOpen ? `
+        ${simBox(crowdBtn('act', 'Spectatorii de test votează', 0, '') + crowdBtn('crowd', '+25 spectatori de test', 25, '25 de spectatori de test: abonații votează în runda asta.'), 'Spectatorii de test abonați votează câte o provocare la întâmplare, o singură dată pe rundă, ca pe site.')}
         ${newChallengeRow('round')}
         <div class="row"><button class="btn-primary" data-act="closeRound" data-id="${S.round.id}">Închide runda acum</button>${tip('Se închide singură la final și alege câștigătoarea.')}</div>` : ''}
       ` : '<p class="muted" style="margin-top:0">Nicio rundă încă.</p>'}
@@ -2183,7 +2188,7 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   },
   spMove: (el) => call('mod_sponsor_move', { p_id: Number(el.dataset.id), p_dir: Number(el.dataset.dir) }, 'Ordinea s-a schimbat.'),
   testStart: () => ask(`Pornești modul test pentru ${num('testHours') || 3} ore? Tot site-ul, /mod și overlay-ul trec pe date de probă; la oprire totul revine exact cum e acum.`) &&
-    call('mod_test', { p_action: 'start', p: { hours: num('testHours') || 3 } }, 'Testul a pornit. Comenzile sunt în banda galbenă de sus.'),
+    call('mod_test', { p_action: 'start', p: { hours: num('testHours') || 3 } }, 'Testul a pornit. Folosește consola ca pe bune; Simulare (sus) aduce subs, donații și spectatori.'),
   testStop: () => ask('Oprești testul? Tot ce s-a făcut în test se șterge și site-ul revine la normal.') &&
     call('mod_test', { p_action: 'stop' }, 'Testul s-a oprit. Site-ul e din nou cel real.'),
   testRedo: () => ask('Iei testul de la capăt? Datele de test se șterg, testul merge în continuare.') &&
@@ -2196,20 +2201,6 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   testEnd: () => ask('Închei maratonul de test? Vezi ecranul de final; «De la capăt» îl aduce înapoi.') &&
     call('mod_end_timer', {}, 'Maratonul de test s-a încheiat.'),
   testSponsors: () => call('mod_test_sponsors', {}, 'Sponsori de test pe site și pe overlay (1 principal, 5 parteneri, 4 susținători).'),
-  testClock: async (el) => {
-    const a = el.dataset.a;
-    // Freeze and Ora dublă act on the running clock: start the test marathon first if needed.
-    if ((S.timer?.status ?? 'upcoming') === 'upcoming') {
-      await call('mod_start_timer', { p_hours: Number(S.auto?.startHours) || 24, p_scheduled_end: S.timer?.scheduled_end ?? null }, 'Maratonul de test a pornit.');
-    }
-    const now = new Date().toISOString();
-    const main = S.sponsors.find((x: any) => x.tier === 'main')?.name ?? '';
-    if (a === 'freeze') return call('mod_freeze', { p_minutes: 5 }, 'Test: cronometrul e înghețat 5 minute.');
-    if (a === 'unfreeze') return call('mod_unfreeze', {}, 'Test: cronometrul merge din nou.');
-    if (a === 'double') return call('mod_double_hour', { p_from: now, p_minutes: 10, p_sponsor: '' }, 'Test: Ora dublă 10 minute.');
-    if (a === 'doubleSp') return call('mod_double_hour', { p_from: now, p_minutes: 10, p_sponsor: main }, `Test: Ora dublă de la ${main}, 10 minute.`);
-    if (a === 'nodouble') return call('mod_double_hour', { p_from: now, p_minutes: 0, p_sponsor: '' }, 'Test: Ora dublă s-a oprit.');
-  },
   // Subs, bits and donations only count while the (test) marathon runs, as for real. In a test that
   // is never what you want to check, so the first such button starts the test marathon by itself.
   testDo: async (el) => {
@@ -2226,15 +2217,15 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
       if (a === 'act') say(x && (x.voted || x.picked) ? `Au votat ${x.voted} și au ales bingo ${x.picked} dintre spectatorii de test.` : 'Nimic de făcut: niciun vot sau bingo deschis, ori au ales deja toți.');
     });
   },
-  testEnter: (el) => call('mod_test_crowd', { p_action: 'raffle_enter', p: { n: Number(el.dataset.n) || 25 } }, 'Spectatori de test au intrat cu puncte de canal.')
+  testEnter: (el) => call('mod_test_crowd', { p_action: 'raffle_enter', p: { n: Number(el.dataset.n) || 25, raffle: Number(el.dataset.id) } }, 'Spectatori de test au intrat cu puncte de canal.')
     .then((x: any) => say(`Au intrat ${x?.entered ?? 0}. Sunt ${x?.raffleEntries ?? 0} înscriși.`)),
-  testTrickle: async () => {
+  testTrickle: async (el) => {
     if (trickle) return;
-    trickle = 20;
+    trickle = 20; trickleFor = Number(el.dataset.id);
     render();
     while (trickle > 0) {
       try {
-        const x: any = await call('mod_test_crowd', { p_action: 'raffle_enter', p: { n: 1 } }, 'Un spectator de test a intrat.');
+        const x: any = await call('mod_test_crowd', { p_action: 'raffle_enter', p: { n: 1, raffle: trickleFor } }, 'Un spectator de test a intrat.');
         trickle--;
         if (trickle) say(`Au intrat ${x?.raffleEntries ?? 0}. Încă ${trickle}, câte unul la 3 secunde.`);
       } catch { trickle = 0; }
@@ -2244,6 +2235,7 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     render();
   },
   testTrickleStop: () => { trickle = 0; render(); say('Gata, nu mai intră nimeni.'); },
+  simToggle: () => { simOpen = !simOpen; render(); },
   copyOvp: (el) => { const v = val(`ovp${el.dataset.i}`); void navigator.clipboard?.writeText(v).then(() => say('Link copiat.')); },
   sceneClear: () => ask('Scoți fotografia de fundal? Scena rămâne transparentă.') && call('mod_scene_set', { p_background: null }, 'Fotografia a fost scoasă.'),
   copyOv: (el) => { const v = val(`ov${el.dataset.i}`); void navigator.clipboard?.writeText(v).then(() => say('Link copiat. Pune-l în OBS ca Browser Source, 1920×1080.')); },
