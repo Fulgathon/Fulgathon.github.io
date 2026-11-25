@@ -694,16 +694,6 @@ function planLine(x: any): string {
   return `<strong>${planKind[x.kind] ?? x.kind}</strong> · ${when(x.at)} · ${what}${x.sponsor ? ` · <span style="color:#E6C46A">${esc(x.sponsor)}</span>` : ''}`;
 }
 const mainSponsor = () => (S.sponsors.length ? (S.sponsors.find((x: any) => x.tier === 'main')?.name ?? '') : site.sponsor.name && !site.sponsor.name.startsWith('[') ? site.sponsor.name : '');
-/** A Twitch clip of the last ~30 s (make-clip), or null when it can't be made (offline, demo, no permission). */
-async function clipNow(): Promise<string | null> {
-  if (demoApi || S.test || !S.timer?.stream_online) return null;   // no real clips during a test
-  try {
-    const { data } = await db.functions.invoke('make-clip', { body: {} });
-    if (data?.url) return String(data.url);
-    if (data?.error === 'no_scope') say('Streamerul reconectează contul pentru clipuri.', true);
-  } catch { /* no clip; the moderator can paste one */ }
-  return null;
-}
 
 // The menu (owner, 25 Nov 2026: «make it make sense, so I know where everything is»). One home per thing,
 // grouped by what it is: what happens on stream now, what viewers play (each activity with all its
@@ -1853,12 +1843,12 @@ function render() {
     </section>`,
     'provocari': () => `
     <section class="card wide" id="provocari">
-      <h2>Provocări câștigătoare ${tip('Fără link, clipul se face singur din ultimele 30 s.')}</h2>
+      <h2>Provocări câștigătoare ${tip('Lipește linkul clipului, apoi Făcută.')}</h2>
       ${S.scheduled.length ? `<ul class="list">${S.scheduled.map((c) => `<li>
         <span class="grow">${esc(c.title)}</span>
-        <span class="pair"><input class="field" data-when="${c.id}" value="${esc(c.scheduled_for ?? '')}" placeholder="ex: Diseară, 22:00" aria-label="Când">
+        <span class="pair"><input class="field" id="when-${c.id}" data-when="${c.id}" value="${esc(c.scheduled_for ?? '')}" placeholder="ex: Diseară, 22:00" aria-label="Când">
         <button class="btn-ghost" data-act="setWhen" data-id="${c.id}">Salvează</button></span>
-        <span class="pair"><input class="field" type="url" data-clip="${c.id}" placeholder="Link clip (Twitch, YouTube)" aria-label="Link clip">
+        <span class="pair"><input class="field" type="url" id="clip-${c.id}" data-clip="${c.id}" placeholder="Link clip (Twitch, YouTube)" aria-label="Link clip">
         <button class="btn-primary" data-act="done" data-id="${c.id}">Făcută</button>
         <button class="btn-ghost" data-act="veto" data-id="${c.id}">Veto</button></span></li>`).join('')}</ul>`
         : '<p class="empty">Nimic de făcut.</p>'}
@@ -2118,11 +2108,11 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   },
   setWhen: (el) => call('mod_set_challenge', { p_id: Number(el.dataset.id), p_status: 'scheduled', p_scheduled_for: (document.querySelector<HTMLInputElement>(`[data-when="${el.dataset.id}"]`)?.value ?? '') || null }, 'Salvat.'),
   done: async (el) => {
-    let clip = (document.querySelector<HTMLInputElement>(`[data-clip="${el.dataset.id}"]`)?.value ?? '').trim();
-    if (clip && !/^https:\/\//.test(clip) && !(demo && clip === '#')) { say('Linkul începe cu https://', true); return; }
-    // No link typed: clip the last ~30 seconds on Twitch (only while Iceman is live).
-    if (!clip) clip = (await clipNow()) ?? '';
-    return call('mod_set_challenge', { p_id: Number(el.dataset.id), p_status: 'done', p_clip: clip || null }, clip ? 'Marcată ca făcută, cu clip.' : 'Marcată ca făcută.');
+    // Owner, 25 Nov 2026: clips are never made automatically; a person pastes the link.
+    const clip = (document.querySelector<HTMLInputElement>(`[data-clip="${el.dataset.id}"]`)?.value ?? '').trim();
+    if (!clip) { say('Lipește linkul clipului.', true); return; }
+    if (!/^https:\/\//.test(clip) && !(demo && clip === '#')) { say('Linkul începe cu https://', true); return; }
+    return call('mod_set_challenge', { p_id: Number(el.dataset.id), p_status: 'done', p_clip: clip }, 'Făcută.');
   },
   veto: (el) => ask('Veto pe provocarea asta?') && call('mod_set_challenge', { p_id: Number(el.dataset.id), p_status: 'vetoed' }, 'Veto.'),
   approve: (el) => call('mod_review_suggestion', { p_id: Number(el.dataset.id), p_approve: true }, 'Aprobată.'),
@@ -2161,13 +2151,9 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   },
   raffleReplay: (el) => call('mod_raffle_replay', { p_draw: Number(el.dataset.id) }, 'Pe stream din nou.'),
   goalAdd: () => { editGoals().push({ title: '', threshold: '', sponsor: '', done: false, clip: '', when: '' }); render(); },
-  goalDone: async (el) => {
+  goalDone: (el) => {
     const g = editGoals()[Number(el.dataset.i)];
     g.done = !g.done;
-    if (g.done && !g.clip) {
-      const url = await clipNow();
-      if (url) { g.clip = url; say('Clip făcut. Apasă Salvează.'); }
-    }
     render();
   },
   liveTab: (el) => { S.liveTab = (el.dataset.tab as typeof S.liveTab) || 'timp'; render(); app.querySelector<HTMLElement>(`[data-tab="${S.liveTab}"]`)?.focus(); },
@@ -2245,6 +2231,7 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     const list = goalRows().filter((g) => g.title.trim() || g.threshold !== '')
       .map((g) => ({ title: g.title.trim(), threshold: Number(g.threshold), sponsor: g.sponsor.trim(), done: g.done, clip: g.clip.trim(), when: g.when.trim() }));
     if (list.some((g) => g.clip && !/^https:\/\//.test(g.clip) && !(demo && g.clip === '#'))) { say('Linkul începe cu https://', true); return; }
+    if (list.some((g) => g.done && !g.clip)) { say('Lipește linkul clipului la milestone-ul făcut.', true); return; }
     await call('mod_set_goals', { p_goals: list }, 'Salvat.');
     S.goalsDraft = null;
   },
