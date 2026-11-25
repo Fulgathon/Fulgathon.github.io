@@ -169,6 +169,11 @@ const favicon = await getImage({ src: emote, format: 'png', width: 64 });
       .ng-items a.cur { border-left-color: var(--ice); background: rgba(63,208,255,.10); color: #FFFFFF; font-weight: 700; }
       .nb { min-width: 22px; padding: 0 6px; background: var(--ice); color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; text-align: center; }
       .nb.warn { background: #F2C14E; }
+      /* Red dot: something new needs a person (owner, 25 Nov). Pulses while unseen. */
+      .nb.red { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: #E5484D; color: #FFFFFF; line-height: 20px; box-shadow: 0 0 0 2px #050608; }
+      .nb.red.fresh { animation: nbPulse 1.6s ease-out infinite; }
+      @keyframes nbPulse { 0% { box-shadow: 0 0 0 2px #050608, 0 0 0 2px rgba(229,72,77,.7); } 70% { box-shadow: 0 0 0 2px #050608, 0 0 0 9px rgba(229,72,77,0); } 100% { box-shadow: 0 0 0 2px #050608, 0 0 0 9px rgba(229,72,77,0); } }
+      @media (prefers-reduced-motion: reduce) { .nb.red.fresh { animation: none; box-shadow: 0 0 0 2px #050608, 0 0 0 4px rgba(229,72,77,.45); } }
       .mmain { padding: 24px 28px 80px; min-width: 0; }
       .tag-ice { display: inline-block; padding: 2px 10px; transform: skewX(-12deg); background: var(--ice); color: #04101A; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px; }
       .card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; }

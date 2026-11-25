@@ -744,28 +744,49 @@ function waiting(id: string): { n: number; warn?: boolean } {
   switch (id) {
     case 'replici': return { n: lineGroups.filter((g) => !lineInfo(g.id).ok).length, warn: true };
     case 'milestones': return { n: S.goals.filter((g) => raised >= g.threshold && !g.done_at).length };
-    case 'vot': return { n: S.suggestions.length };
+    case 'vot': return { n: S.suggestions.length + S.scheduled.length };
     case 'premii': return { n: S.due.due.length };
     case 'sarcini': return { n: S.tasks?.pending ?? 0 };
+    case 'tombola': return { n: S.raffles.filter((r) => !r.ended_at && r.reward_error && r.reward_error !== 'test').length };
     case 'bingo': return { n: S.bingo?.status.winners.length && !S.bingo.status.draws.length ? S.bingo.status.winners.length : 0 };
     case 'cronometru': return { n: S.status && !S.status.broadcaster_connected ? 1 : 0, warn: true };
-    case 'checklist': return { n: CHECK.filter((c) => !checkState(c).done).length };
+    case 'checklist': return { n: CHECK.filter((c) => !checkState(c).done).length, warn: true };
     default: return { n: 0 };
   }
 }
 
+// Red dot (owner, 25 Nov 2026): anything new that needs a person (a challenge to do, a win to give,
+// a suggestion, a donation task…) shows a red dot with its count on its menu item and on the group.
+// Yellow stays for setup gaps (checklist, lines, streamer connection). A dot pulses while it holds
+// more than this browser last saw on that page; opening the page marks it seen.
+const SEEN_KEY = 'icemaraton-mod-seen-v1';
+const seen: Record<string, number> = (() => { try { return JSON.parse(localStorage.getItem(SEEN_KEY) ?? '{}') ?? {}; } catch { return {}; } })();
+function markSeen(id: string, n: number) {
+  if (seen[id] === n) return;
+  seen[id] = n;
+  try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)); } catch { /* private mode: no memory */ }
+}
+function dotHtml(n: number, warn: boolean, fresh: boolean, cls = '') {
+  if (!n) return '';
+  const label = warn ? `${n} de completat` : `${n} ${n === 1 ? 'nou' : 'noi'}`;
+  return `<span class="nb${warn ? ' warn' : ' red'}${fresh ? ' fresh' : ''}${cls}" aria-label="${label}">${n}</span>`;
+}
 function navHtml(): string {
   const cur = S.view;
+  // The page open now counts as seen.
+  if (S.me?.is_moderator) markSeen(cur, waiting(cur).n);
   return GROUPS.map((g) => {
     const on = g.id === S.page;
-    // Shown on a folded group's header: what waits inside it.
-    const ws = g.items.map(([id]) => waiting(id));
-    const sum = ws.reduce((a, w) => a + w.n, 0), warn = ws.some((w) => w.n && w.warn);
+    // Shown on a folded group's header: what waits inside it (red first, else yellow).
+    const ws = g.items.map(([id]) => ({ ...waiting(id), id }));
+    const red = ws.filter((w) => !w.warn), yellow = ws.filter((w) => w.warn);
+    const redN = red.reduce((a, w) => a + w.n, 0), fresh = red.some((w) => w.n > (seen[w.id] ?? 0));
+    const sum = redN || yellow.reduce((a, w) => a + w.n, 0), warn = !redN;
     return `<div class="ng${on ? ' on' : ''}">
-      <a class="ng-head" href="#${g.items[0][0]}" ${on ? 'aria-current="true"' : ''}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICONS[g.id]}"></path></svg><span>${esc(g.name)}</span>${sum ? `<span class="nb ng-sum${warn ? ' warn' : ''}" aria-label="${sum} de rezolvat">${sum}</span>` : ''}<svg class="ng-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      <a class="ng-head" href="#${g.items[0][0]}" ${on ? 'aria-current="true"' : ''}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICONS[g.id]}"></path></svg><span>${esc(g.name)}</span>${dotHtml(sum, warn, !warn && fresh, ' ng-sum')}<svg class="ng-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
       <div class="ng-items">${g.items.map(([id, label], i) => {
         const w = waiting(id);
-        return `<a href="#${id}" data-nav="${id}" style="--i:${i}"${id === cur ? ' class="cur" aria-current="location"' : ''}>${esc(label)}${w.n ? `<span class="nb${w.warn ? ' warn' : ''}">${w.n}</span>` : ''}</a>`;
+        return `<a href="#${id}" data-nav="${id}" style="--i:${i}"${id === cur ? ' class="cur" aria-current="location"' : ''}>${esc(label)}${dotHtml(w.n, !!w.warn, !w.warn && id !== cur && w.n > (seen[id] ?? 0))}</a>`;
       }).join('')}</div>
     </div>`;
   }).join('');
@@ -1898,7 +1919,7 @@ function render() {
   app.innerHTML = `${testStripHtml()}
   <datalist id="sponsorNames">${sponsorNames().map((n) => `<option value="${esc(n)}"></option>`).join('')}</datalist>
   <div class="crumb"><h1 tabindex="-1">${esc(label)}</h1><span>${esc(page.name)}</span></div>
-  <nav class="subnav" aria-label="${esc(page.name)}">${page.items.map(([i, l]) => `<a href="#${i}"${i === S.view ? ' class="cur" aria-current="page"' : ''}>${esc(l)}${(({ n, warn }) => (n ? `<span class="nb${warn ? ' warn' : ''}">${n}</span>` : ''))(waiting(i))}</a>`).join('')}</nav>
+  <nav class="subnav" aria-label="${esc(page.name)}">${page.items.map(([i, l]) => `<a href="#${i}"${i === S.view ? ' class="cur" aria-current="page"' : ''}>${esc(l)}${(({ n, warn }) => dotHtml(n, !!warn, !warn && i !== S.view && n > (seen[i] ?? 0)))(waiting(i))}</a>`).join('')}</nav>
   ${S.view === 'rapid' ? dashHtml(t, live, remaining, now) : `<div class="grid">${cards}</div>`}`;
   for (const [id, v] of typed) {
     const el = document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
