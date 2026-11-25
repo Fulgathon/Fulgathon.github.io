@@ -161,8 +161,8 @@ export function derive(s: State, d: SiteData) {
   const doubleSoon = d.doubleFrom !== null && d.doubleFrom > s.now;
   const doubleBy = d.doubleSponsor ? ` Oferită de ${d.doubleSponsor}.` : '';
   const doubleText = doubleNow
-    ? `acum, până la ${timeRo(d.doubleUntil!)}. Tot timpul adăugat valorează dublu.${doubleBy}`
-    : doubleSoon ? `${dayRo(d.doubleFrom!, s.now)} la ${timeRo(d.doubleFrom!)}. Tot timpul adăugat valorează dublu.${doubleBy}` : '';
+    ? `acum, până la ${timeRo(d.doubleUntil!)}.${doubleBy}`
+    : doubleSoon ? `${dayRo(d.doubleFrom!, s.now)} la ${timeRo(d.doubleFrom!)}.${doubleBy}` : '';
 
   const startText = d.startsAt !== null ? dateRo(d.startsAt) : '[DATA DE START]';
   const endDateText = d.scheduledEnd !== null ? dateRo(d.scheduledEnd) : site.endDate;
@@ -236,7 +236,7 @@ export function derive(s: State, d: SiteData) {
   const myTitle = myVote ? d.challenges.find((c) => c.id === myVote)?.title ?? '' : '';
   const voteHint = !roundOpen
     ? 'Așteaptă următoarea rundă de vot.'
-    : myVote ? 'Ai votat. Poți muta votul până se închide runda.' : 'Ai 1 vot în runda asta.';
+    : myVote ? 'Ai votat. Îl poți muta.' : 'Ai 1 vot în runda asta.';
   const vt = s.voteTab;
   const voteTabs = ([['open', 'Vot deschis'], ['next', 'Urmează'], ['done', 'Făcute']] as [VoteTab, string][]).map(([id, label]) => ({
     id, label, sel: vt === id,
@@ -260,8 +260,8 @@ export function derive(s: State, d: SiteData) {
     ? 'Roata e doar pentru abonați.'
     : s.spunToday ? 'Ai învârtit azi. Revino mâine.'
     : !wheelLive ? 'Roata se deschide odată cu maratonul.'
-    : watched >= NEED ? 'Ai stat 2 ore azi: rotirea ta te așteaptă.'
-    : `Mai ai ${count(NEED - watched, 'minut', 'minute')} de privit azi până la rotire.`;
+    : watched >= NEED ? 'Rotirea ta te așteaptă.'
+    : `Încă ${count(NEED - watched, 'minut', 'minute')} până la rotire.`;
   const prizes = d.prizes.map((p, i) => ({ short: p[0], color: p[2], rot: 'rotate(' + (i * 45 + 22.5 - 90) + 'deg)' }));
 
   // Toast
@@ -305,7 +305,7 @@ export function derive(s: State, d: SiteData) {
   const todayBig = T ? `+${duration(T.seconds)}` : '+0 min';
   const todayLine = T
     ? [count(T.people, 'om', 'oameni'), count(T.subs, 'sub', 'subs'), `${fmtInt(T.donated)} €`, ...(T.bits ? [count(T.bits, 'bit', 'biți')] : [])].join(' · ')
-    : 'Încă nimic azi. Primul sub al zilei deschide lista.';
+    : 'Încă nimic azi.';
   const recentFeed = d.ticker.filter((t) => t.time !== '—').slice(0, 6).map((t) => ({ ...t, agoText: t.at ? ago(t.at, s.now) : '' }));
 
   const loyalRows = d.loyal.map((l, i) => ({ rank: i + 1, name: l.name, hours: count(l.hours, 'oră', 'ore'), streak: l.streak,
@@ -386,16 +386,16 @@ export function derive(s: State, d: SiteData) {
     ? (closeText ? `Alegerile se închid pe ${closeText}.` : 'Alegerile sunt deschise.')
     : 'Alegerile s-au închis.';
   const bingoNote = bingoSoon
-    ? (openText ? `Alegerile se deschid pe ${openText}. Până atunci, uită-te pe cartonaș.` : 'Alegerile se deschid în curând, pe stream. Până atunci, uită-te pe cartonaș.')
+    ? (openText ? `Alegerile se deschid pe ${openText}.` : 'Alegerile se deschid în curând.')
     : bingoOpen
     ? (isOut ? 'Alege o linie și conectează-te ca s-o salvezi.'
-      : sameAsSaved ? 'Linia ta e salvată. O poți schimba până la închidere.'
-      : saved ? 'Ai schimbat linia. Salvează ca să rămână așa.'
+      : sameAsSaved ? 'Linie salvată. O poți schimba până la închidere.'
+      : saved ? 'Ai schimbat linia. Salvează.'
       : 'Alege o linie, apoi salvează.')
     : s.bingoWon && !isOut ? `Ai câștigat la tragerea la sorți: ${prize}!`
     : isOut ? 'Conectează-te cu Twitch ca să-ți vezi linia.'
-    : !saved ? 'Nu ai ales o linie înainte de închidere. Data viitoare!'
-    : isBingo ? `BINGO! Toate cele ${saved!.length} s-au întâmplat: ești pe lista de tragere la sorți pentru ${prize}.`
+    : !saved ? 'Nu ai ales o linie.'
+    : isBingo ? `BINGO! Ești la tragerea pentru ${prize}.`
     : `${hits} din ${saved.length} s-au întâmplat până acum.`;
   const bingoBtn = isOut ? 'Conectează-te ca să salvezi' : pick.length < lineLen ? 'Alege o linie' : sameAsSaved ? 'Linie salvată ✓' : 'Salvează linia';
   const bingoBtnClass = isOut ? 'btn-twitch' : pick.length === lineLen && !sameAsSaved ? 'btn-primary' : 'btn-ghost';
@@ -416,8 +416,8 @@ export function derive(s: State, d: SiteData) {
   // B-31 / V3 (a): the server adds time only while the timer is live, so outside it the calculator
   // says so instead of implying the time is added now.
   const calcNote = loading || live ? ''
-    : upcoming ? `Timpul se adaugă de la start${d.startsAt !== null ? `, pe ${dateRo(d.startsAt)}, la ${timeRo(d.startsAt)}` : ''}. Până atunci, donațiile se adună la Strâns și la milestone-uri.`
-    : 'Subathonul s-a încheiat: nu se mai adaugă timp.';
+    : upcoming ? `Timpul se adaugă de la start${d.startsAt !== null ? `, pe ${dateRo(d.startsAt)}, la ${timeRo(d.startsAt)}` : ''}.`
+    : 'Subathonul s-a încheiat.';
 
   // ---- Badges (the viewer's six, in order of difficulty) ----
   const held = new Set(s.loyalty?.badges ?? []);
@@ -533,7 +533,7 @@ export function derive(s: State, d: SiteData) {
 
   return {
     testMode: !!d.testMode,
-    testText: d.testMode ? `Date de probă, nimic nu e real. Site-ul revine la normal cel târziu la ${timeRo(d.testMode.until)}.` : '',
+    testText: d.testMode ? `Date de probă, până la ${timeRo(d.testMode.until)}.` : '',
     showSnow: s.showSnow,
     dd, hh, mm, ss, navClock: `${dd}:${hh}:${mm}:${ss}`, tickerTwice,
     isLive: live, pops: live ? d.pops : [],
@@ -541,13 +541,13 @@ export function derive(s: State, d: SiteData) {
     liveBg: live ? '#D5162B' : '#2A3445',
     timerLabel: loading ? (retrying ? 'Fără conexiune' : 'Se încarcă…') : live ? 'Timp rămas' : upcoming ? 'Începe în' : 'Timpul a expirat',
     isEnded: !loading && ended,
-    endedText: 'Maratonul s-a încheiat. Mulțumim tuturor celor care l-au ținut în viață!',
+    endedText: 'Maratonul s-a încheiat. Mulțumim!',
     timerLabelUp: loading ? (retrying ? 'REÎNCERCĂM' : 'SE ÎNCARCĂ') : live ? 'TIMP RĂMAS' : upcoming ? 'ÎNCEPE ÎN' : 'ÎNCHEIAT',
     endDateText,
     hasDouble: !ended && (doubleNow || doubleSoon), doubleText, doubleNow, doubleSponsor: d.doubleSponsor ?? '',
     isFrozen: live && d.pausedUntil !== null && d.pausedUntil > s.now,
     frozenText: live && d.pausedUntil !== null && d.pausedUntil > s.now
-      ? `până pe ${dateRo(d.pausedUntil)}, la ${timeRo(d.pausedUntil)}. Subs și donațiile adaugă timp în continuare.` : '',
+      ? `până pe ${dateRo(d.pausedUntil)}, la ${timeRo(d.pausedUntil)}.` : '',
     subsText: fmtInt(subs),
     nextGoalText: fmtInt(nextMark) + ' €',
     nextGoalTitle: d.goals[nextIdx]?.title ?? '',
@@ -586,7 +586,7 @@ export function derive(s: State, d: SiteData) {
     spinClass: isOut ? 'btn-twitch' : spins > 0 || spinning ? 'btn-red' : 'btn-ghost',
     hasResult,
     resultTitle: hasResult && res !== null ? (isLose ? 'Data viitoare!' : 'Ai câștigat: ' + (d.prizes[res]?.[1] ?? '')) : '',
-    resultNote: isLose ? 'Mâine ai o nouă rotire. Mai încearcă!' : 'Un moderator îți dă premiul pe stream în câteva minute.',
+    resultNote: isLose ? 'Revino mâine.' : 'Primești premiul pe stream.',
     recentWins: d.recentWins,
 
     // The open mobile menu sits under the toast, so the toast waits.
@@ -626,7 +626,7 @@ export function derive(s: State, d: SiteData) {
     togetherNext: tNext ? `Următorul: ${tNext.title} la ${fmtInt(tNext.hours)} h` : tGoals.length ? 'Toate obiectivele comunitare sunt deblocate!' : '',
     togetherGoals: tGoals.map((g) => ({ title: g.title, hours: fmtInt(g.hours) + ' h', done: g.done, current: g === tNext })),
     mineStats, mineBadges: (L?.badges ?? []).map((b) => badgeLabels[b] ?? b),
-    mineNote: !M ? '' : M.seconds > 0 ? 'Mulțumim! Fiecare minut adăugat ține maratonul în viață.' : 'Și timpul în chat contează: seria și insignele.',
+    mineNote: !M ? '' : M.seconds > 0 ? 'Mulțumim!' : '',
 
     codeLabel: s.copied ? 'Copiat ✓' : 'Copiază',
     codeStatus: s.copied ? 'Codul a fost copiat' : '',
@@ -674,7 +674,7 @@ export function derive(s: State, d: SiteData) {
     moreDaysPressed: bool(s.more.days), morePrizesPressed: bool(s.more.prizes),
     trackCols: `repeat(${Math.max(1, N)}, minmax(0, 1fr))`,
     track, trackFill: fillW.toFixed(2) + '%', trackLeft: (step / 2).toFixed(2) + '%', segs,
-    goalsHead: `Donațiile deblochează provocări. ${happenedCount} din ${N} făcute până acum.`,
+    goalsHead: `${happenedCount} din ${N} făcute.`,
     goalsPhone: `${happenedCount} din ${N} făcute${pending ? ` · ${pending.no} urmează live` : ''}`,
     goalsLast: N ? fmtInt(d.goals[N - 1].threshold) + ' €' : '',
     hasNextGoal: nextGoal !== null, allGoalsDone: N > 0 && nextGoal === null,

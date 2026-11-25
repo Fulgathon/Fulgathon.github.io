@@ -25,7 +25,7 @@ export const site = {
     code: 'ICEMAN10',
     offerUrl: '#',
     pitch:
-      'Partenerul principal al IceMaratonului. [Oferta sponsorului principal pentru comunitate, de exemplu 10% reducere cu codul de mai jos, pe toată durata subathonului.]',
+      '[Oferta sponsorului principal.]',
   },
   /**
    * The other two sponsor tiers (the main partner is `sponsor` above).

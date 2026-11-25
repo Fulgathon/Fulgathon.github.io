@@ -23,10 +23,10 @@ const shuffle = <T>(a: T[]) => { const b = a.slice(); for (let i = b.length - 1;
 const setHtml = (e: HTMLElement, html: string) => { if (e.dataset.html !== html) { e.dataset.html = html; e.innerHTML = html; } };
 const rewardTitle = (prize: string) => { const t = `Tombolă: ${prize.trim()}`; return t.length > 45 ? `${t.slice(0, 44).trimEnd()}…` : t; };
 const ruleLine = (r: RaffleStage) => r.rule === 'points'
-  ? `Intră cu puncte de canal pe Twitch: <b>${esc(rewardTitle(r.prize))}</b> · <b>${esc(new Intl.NumberFormat('ro-RO').format(r.cost ?? 0))}</b> puncte · o intrare de persoană`
-  : r.rule === 'subs' ? 'Intră automat <b>abonații</b> conectați pe icemanlucky.ro'
-  : r.rule === 'hours' ? `Intră automat cine a privit cel puțin <b>${esc(String(r.hours ?? '').replace('.', ','))} ore</b>`
-  : 'Intră automat toți cei conectați pe <b>icemanlucky.ro</b>';
+  ? `Puncte de canal: <b>${esc(rewardTitle(r.prize))}</b> · <b>${esc(new Intl.NumberFormat('ro-RO').format(r.cost ?? 0))}</b> puncte`
+  : r.rule === 'subs' ? 'Intră <b>abonații</b> de pe icemanlucky.ro'
+  : r.rule === 'hours' ? `Intră cine are <b>${esc(String(r.hours ?? '').replace('.', ','))} ore privite</b>`
+  : 'Intră toți de pe <b>icemanlucky.ro</b>';
 
 export function rafflePanel(el: HTMLElement, calm: boolean, sound: OverlaySound) {
   el.innerHTML = `<div class="rf-head"><span class="dr-tag">TOMBOLĂ</span><span class="rf-prize"></span><span class="rf-count"><b></b> <i></i></span></div>

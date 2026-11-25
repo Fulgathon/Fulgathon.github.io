@@ -229,18 +229,18 @@ const errors: Record<string, string> = {
   no_spins: 'Nu ai rotire acum. Mai stai puțin!',
   wheel_closed: 'Roata se deschide odată cu maratonul.',
   not_subscriber: 'Roata e doar pentru abonați.',
-  not_enough_watch: 'Ai nevoie de 2 ore de privit azi pentru rotire.',
+  not_enough_watch: 'Ai nevoie de 2 ore privite azi.',
   already_spun: 'Ai învârtit deja azi. Revino mâine!',
   bingo_closed: 'Alegerile pentru bingo s-au închis.',
   bingo_not_open: 'Bingo nu s-a deschis încă.',
-  bad_code: 'Codul nu e bun sau a expirat. Verifică literele de pe stream.',
+  bad_code: 'Cod greșit sau expirat.',
   already_claimed: 'Ai folosit deja codul ăsta.',
-  too_many_attempts: 'Prea multe încercări. Mai încearcă peste un minut.',
+  too_many_attempts: 'Prea multe încercări. Așteaptă un minut.',
   bad_pick: 'Alege o linie întreagă de pe cartonaș.',
-  not_a_line: 'Alege un rând, o coloană sau o diagonală întreagă.',
-  too_many: 'Ai trimis deja 3 propuneri. Mai încearcă peste câteva minute.',
-  duplicate: 'Cineva a propus deja asta. Încearcă altceva.',
-  blocked_text: 'Propunerea nu poate avea linkuri, numere de telefon sau cuvinte urâte.',
+  not_a_line: 'Alege o linie întreagă.',
+  too_many: 'Max. 3 propuneri. Revino mai târziu.',
+  duplicate: 'Deja propusă.',
+  blocked_text: 'Fără linkuri, numere sau cuvinte urâte.',
 };
 function info(eyebrow: string, text: string) {
   set({ toast: 'info', info: { eyebrow, text } });
@@ -384,10 +384,10 @@ function thankFor(e: Me['lastEvent']) {
   try { localStorage.setItem(MINE_KEY, String(e.id)); } catch { /* storage blocked */ }
   if (Date.now() - e.at > 15 * 60_000 || e.seconds <= 0) return;
   const t = duration(e.seconds);
-  const text = e.kind === 'gift' ? (e.quantity === 1 ? `Subul dăruit de tine a adăugat ${t} la cronometru.` : `Cele ${count(e.quantity, 'sub', 'subs')} dăruite de tine au adăugat ${t} la cronometru.`)
-    : e.kind === 'donation' ? `Donația ta de ${fmtInt(e.quantity)} € a adăugat ${t} la cronometru.`
-    : e.kind === 'bits' ? `Cei ${count(e.quantity, 'bit', 'biți')} ai tăi au adăugat ${t} la cronometru.`
-    : `Subul tău a adăugat ${t} la cronometru.`;
+  const text = e.kind === 'gift' ? (e.quantity === 1 ? `Subul tău dăruit: +${t}.` : `Cele ${count(e.quantity, 'sub', 'subs')} dăruite: +${t}.`)
+    : e.kind === 'donation' ? `Donația ta de ${fmtInt(e.quantity)} €: +${t}.`
+    : e.kind === 'bits' ? `Cei ${count(e.quantity, 'bit', 'biți')} tăi: +${t}.`
+    : `Subul tău: +${t}.`;
   moment('Mulțumim!', text);
 }
 
@@ -506,7 +506,7 @@ function openLoginModal() {
   back.innerHTML = `<div class="demo-modal-card" role="dialog" aria-modal="true" aria-labelledby="dm-title">
 <p class="demo-modal-eyebrow">Twitch · simulare</p>
 <h2 id="dm-title">Conectează-te cu Twitch</h2>
-<p>Pe site-ul real se deschide aici Twitch. Viewerul aprobă o singură dată, apoi site-ul verifică automat dacă e abonat.</p>
+<p>Demo: aici se deschide Twitch.</p>
 <div class="demo-modal-actions">
 <button type="button" class="btn-twitch" data-login="sub">Continuă ca abonat</button>
 <button type="button" class="btn-ghost" data-login="nonsub">Continuă fără abonament</button>
@@ -547,7 +547,7 @@ window.addEventListener('message', (e) => {
     const code = (brand.replace(/[^A-Za-z0-9]/g, '').slice(0, 8).toUpperCase() || 'BRAND') + '10';
     const texts: Record<string, string> = {
       name: brand, logo: brand.toUpperCase(), code,
-      pitch: `Partenerul principal al IceMaratonului. Oferta ${brand} pentru comunitate: reducere cu codul de mai jos, pe toată durata maratonului.`,
+      pitch: `Reducere ${brand} cu codul de mai jos.`,
     };
     all('[data-sponsor]').forEach((el) => { const t = texts[el.dataset.sponsor!]; if (t !== undefined && el.textContent !== t) el.textContent = t; });
   }
@@ -610,7 +610,7 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
     live?.logout().catch(fail);
   },
   becomeSub: () => {
-    if (demo) { demoApi?.setViewer('sub'); info('Abonament verificat', 'Ești abonat. Acum poți vota și propune provocări.'); return; }
+    if (demo) { demoApi?.setViewer('sub'); info('Abonament verificat', 'Ești abonat. Poți vota.'); return; }
     live?.checkSub().catch(fail);
   },
 
@@ -675,7 +675,7 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
     }
     if (!live) return;
     once('bingo', () => live!.saveBingo(pick))
-      ?.then(() => { set({ bingoSaved: pick }); info('Bingo', 'Linia ta e salvată. O poți schimba până la închidere.'); })
+      ?.then(() => { set({ bingoSaved: pick }); info('Bingo', 'Linie salvată.'); })
       .catch(fail);
   },
 

@@ -13,7 +13,7 @@ const title = (prize: string) => {
   const t = `Tombolă: ${prize.trim()}`;
   return t.length > 45 ? `${t.slice(0, 44).trimEnd()}…` : t;
 };
-const PROMPT = 'O singură intrare de persoană; dacă intri încă o dată, primești punctele înapoi. Câștigătorul e tras la sorți pe stream. Intrarea e gratuită: doar puncte de canal.';
+const PROMPT = 'O intrare de persoană. Câștigătorul se trage pe stream.';
 
 export async function raffleSync(db: Db): Promise<{ created: number; deleted: number; errors: string[] }> {
   const { data: plan, error } = await db.rpc('raffle_reward_plan');

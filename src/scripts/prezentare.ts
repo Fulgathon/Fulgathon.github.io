@@ -28,10 +28,10 @@ const currentRoundId = () => api.state.rounds.slice().sort((a, b) => b.number - 
 const guard = (fn: () => void) => () => { try { fn(); } catch (e) { flash(String((e as Error).message)); } };
 
 const errorText: Record<string, string> = {
-  round_closed: 'Runda e deja închisă. Deschide una nouă din pagina moderatorilor.',
+  round_closed: 'Runda e închisă.',
   timer_not_live: 'Cronometrul nu e pornit.',
   round_already_open: 'Există deja o rundă deschisă.',
-  no_bingo_winners: 'Nimeni nu are încă toate cele 5 bifate. Închide alegerile, alege o linie ca viewer și bifeaz-o.',
+  no_bingo_winners: 'Nimeni cu bingo încă.',
 };
 function flash(code: string) {
   const key = Object.keys(errorText).find((k) => code.includes(k));
@@ -54,16 +54,15 @@ function note(text: string) {
 const steps: Step[] = [
   {
     title: 'Bun venit la ICEMARATON', view: 'site', scroll: 'top',
-    body: () => `<p><strong>ICEMARATON</strong> e site-ul subathonului tău de Crăciun. E legat direct de Twitch și de TipeeeStream: fiecare donație, sub, sub cadou sau bit adaugă timp pe cronometru, iar viewerii votează provocări, învârt roata și urmăresc milestone-urile, totul live.</p>
-<p>${where()} e <strong>site-ul adevărat</strong>, care rulează acum pe date de test. Butoanele <strong>Twitch simulat</strong> de sus fac exact ce face Twitch în timpul streamului.</p>
-<p>Pornește simularea automată și lasă-l să meargă în fundal cât vorbim.</p>`,
+    body: () => `<p>Site-ul subathonului, legat de Twitch și TipeeeStream. Donațiile și subs adaugă timp.</p>
+<p>${where()}: site-ul real, pe date de test.</p>`,
     actions: [{ label: 'Pornește simularea automată', primary: true, run: () => setAuto(true) }],
   },
   {
     title: 'Cronometrul', view: 'site', scroll: 'top',
-    body: `<p>Fiecare susținere adaugă timp, instant, la toți viewerii:</p>
+    body: `<p>Ce adaugă timp:</p>
 <ul><li>Donație (TipeeeStream): <strong>+6 min pentru fiecare 1 €</strong></li><li>Tier 1 / Prime: <strong>+6 min</strong> · Tier 2: <strong>+12 min</strong> · Tier 3: <strong>+18 min</strong></li><li>Fiecare sub cadou: <strong>+6 min</strong> · 400 de biți: <strong>+4 min</strong></li></ul>
-<p>Sus rulează banda cu ultimele susțineri, iar peste tabelă urcă etichetele «+timp». Când cronometrul ajunge la zero, subathonul se termină singur.</p>`,
+<p>La zero, subathonul se termină.</p>`,
     actions: [
       { label: 'Donație 10 €', primary: true, run: () => api.recordEvent('donation', 'darius_ro', null, 10, 'EUR') },
       { label: 'Sub Tier 1', run: () => api.recordEvent('sub', 'alexx_ro', '1000') },
@@ -74,9 +73,8 @@ const steps: Step[] = [
   },
   {
     title: 'Ora dublă și înghețarea', view: 'site', scroll: 'top',
-    body: `<p><strong>Ora dublă</strong>: moderatorii o pornesc (sau o programează) și tot timpul adăugat valorează dublu. Apare și pe site, sub cronometru.</p>
-<p><strong>Îngheți timpul</strong> e un premiu de pe roată: cronometrul stă pe loc 5 minute.</p>
-<p>Încearcă: pornește Ora dublă, apoi dă un sub Tier 3. Primește +36:00 în loc de +18:00.</p>`,
+    body: `<p><strong>Ora dublă</strong>: timpul adăugat × 2.</p>
+<p><strong>Înghețat</strong>: cronometrul stă pe loc.</p>`,
     actions: [
       { label: 'Pornește Ora dublă', primary: true, run: () => api.doubleHour(Date.now(), 60) },
       { label: 'Sub Tier 3', run: () => api.recordEvent('sub', 'gabi_supp', '3000') },
@@ -86,8 +84,7 @@ const steps: Step[] = [
   },
   {
     title: 'Milestone Maraton', view: 'site', scroll: 'top',
-    body: `<p>Provocările pe care le alegi tu, deblocate de <strong>suma donațiilor</strong> (în euro). Când totalul atinge suma unui milestone, pe site apare anunțul <strong>«Milestone deblocat»</strong>, iar milestone-ul se bifează în listă.</p>
-<p>Lista o editezi oricând din pagina moderatorilor: textul provocării și suma. Bara de sub cronometru arată cât mai e până la următorul.</p>`,
+    body: `<p>Provocări deblocate de <strong>suma donațiilor</strong>. Lista se editează pe /mod.</p>`,
     actions: [
       { label: 'Donează până la milestone-ul următor', primary: true, run: () => {
         const raised = api.state.stats.raised;
@@ -100,9 +97,7 @@ const steps: Step[] = [
   },
   {
     title: 'Votul abonaților', view: 'site', scroll: 'vote',
-    body: `<p>Doar <strong>abonații</strong> votează: un vot pe rundă, pe care îl pot muta până se închide runda. Cine nu e conectat sau nu e abonat vede exact ce are de făcut.</p>
-<p>Rundele le deschid moderatorii, cu 5 provocări din lista de 128. Câștigătoarea apare la «Urmează», iar după ce o faci, la «Făcute», cu link spre clip.</p>
-<p>Încearcă: intră ca abonat și votează direct în site.</p>`,
+    body: `<p>Doar <strong>abonații</strong> votează. 5 provocări pe rundă, 24 de ore.</p>`,
     actions: [
       { label: 'Vezi ca vizitator', run: () => api.setViewer('out') },
       { label: 'Vezi ca abonat', primary: true, run: () => api.setViewer('sub') },
@@ -112,9 +107,7 @@ const steps: Step[] = [
   },
   {
     title: 'Roata lui Lucky', view: 'site', scroll: 'roata',
-    body: `<p>Roata e pentru <strong>abonați</strong>: cine stă <strong>cel puțin 2 ore</strong> pe stream într-o zi primește <strong>o rotire pe zi</strong>, până la finalul maratonului. Timpul se numără automat, după cine e în chat. Ziua se resetează la 00:00.</p>
-<p>Premiul îl alege serverul, roata doar îl arată, deci nu se poate trișa. Premiile câștigate ajung la moderatori, să le dea pe stream.</p>
-<p>Încearcă: intră ca abonat și apasă «Învârte roata» în site.</p>`,
+    body: `<p><strong>Abonați</strong>, 2 ore privite = o rotire pe zi. Premiul îl alege serverul.</p>`,
     actions: [
       { label: 'Intră ca abonat', primary: true, run: () => api.setViewer('sub') },
       { label: '+30 min privit', run: () => api.watchHalfHour() },
@@ -122,9 +115,8 @@ const steps: Step[] = [
   },
   {
     title: 'Bingo și propuneri', view: 'site', scroll: 'joaca',
-    body: `<p><strong>Bingo-ul maratonului</strong> e un joc de predicții: cât timp e deschis (moderatorii îl deschid și îl închid pe stream), fiecare viewer conectat cu Twitch alege <strong>o linie</strong> de pe cartonaș (rând, coloană sau diagonală): lucrurile care crede că se vor întâmpla. Moderatorii aleg mărimea cartonașului (3 × 3, 4 × 4 sau 5 × 5) și scriu evenimentele pe /mod. Alegerea rămâne salvată pe contul lui.</p>
-<p>După ce alegerile se închid, moderatorii bifează pe /mod ce se întâmplă. Cine are toate cele 5 bifate intră pe lista de tragere la sorți pentru premiul cel mare; tragerea se face din pagina moderatorilor.</p>
-<p><strong>Propune o provocare</strong>: abonații trimit idei, iar moderatorii le aprobă cu un click.</p>`,
+    body: `<p><strong>Bingo</strong>: fiecare alege o linie. Linia completă intră la tragere.</p>
+<p><strong>Propuneri</strong>: abonații trimit idei, moderatorii aprobă.</p>`,
     actions: [
       { label: 'Intră ca viewer', primary: true, run: () => api.setViewer('nonsub') },
       { label: 'Închide alegerile', run: guard(() => api.bingoCloseNow()) },
@@ -135,7 +127,7 @@ const steps: Step[] = [
   },
   {
     title: 'Pe telefon', view: 'phone', scroll: 'top',
-    body: `<p>Cei mai mulți viewers intră de pe telefon, din chat sau din descriere. Totul merge și aici: meniul, cronometrul, votul, roata, bingo-ul.</p>`,
+    body: `<p>Totul merge și pe telefon.</p>`,
     actions: [
       { label: 'Sub Tier 1', run: () => api.recordEvent('sub', 'darius_ro', '1000') },
       { label: 'Mergi la vot', run: () => scrollSite('vote') },
@@ -144,16 +136,11 @@ const steps: Step[] = [
   },
   {
     title: 'Pagina moderatorilor', view: 'split',
-    body: () => `<p>Tu și moderatorii conduceți subathonul de pe <strong>/mod</strong>, cu contul de Twitch:</p>
-<ul><li>pornești cronometrul, adaugi sau scazi timp, îl îngheți</li><li>programezi Ora dublă</li><li>deschizi rundele de vot (pagina îți propune singură 2 ușoare, 2 medii, 1 grea) și le închizi</li><li>aprobi propunerile și bifezi premiile date</li><li>adaugi moderatori după numele de Twitch</li></ul>
-${compact.matches
-  ? '<p>Încearcă: apasă <strong>+10 min</strong> pe pagina moderatorilor, apoi treci la «Ce văd viewerii» și uită-te la cronometru.</p>'
-  : '<p>Încearcă: apasă <strong>+10 min</strong> în stânga și uită-te la cronometrul din dreapta.</p>'}`,
+    body: () => `<p>Totul se conduce de pe <strong>/mod</strong>: timp, vot, bingo, tombole, premii, sponsori.</p>`,
   },
   {
     title: 'Overlay-ul pe stream', view: 'overlay',
-    body: `<p>Pentru OBS: o <strong>bandă discretă în colț</strong>, cu cronometrul, milestone-ul următor și fiecare susținere nouă. Fundal transparent, nu acoperă jocul.</p>
-<p>Se poate muta în orice colț, mări sau micșora, sau lăsa doar cronometrul, din linkul din OBS.</p>`,
+    body: `<p>Piese pentru OBS, transparente.</p>`,
     actions: [
       { label: 'Sub Tier 3', primary: true, run: () => api.recordEvent('sub', 'Rares1337', '3000') },
       { label: '10 subs cadou', run: () => api.recordEvent('gift', 'vladutz97', '1000', 10) },
@@ -162,11 +149,10 @@ ${compact.matches
   },
   {
     title: 'Partenerii, peste tot', view: 'site', scroll: 'roata',
-    body: `<p>Sponsorii nu sunt doar un logo: apar în momentele care contează.</p>
-<ul><li><strong>Ora dublă oferită de …</strong>: pe site și pe stream, cu numele sponsorului.</li>
-<li><strong>Premii «de la …»</strong>: pe roată, la milestone-uri și la bingo, inclusiv la fiecare câștigător.</li>
-<li><strong>Codul secret</strong>: din /mod arăți un cod pe stream câteva minute; cine îl scrie pe site primește o rotire bonus. Oamenii urmăresc momentul sponsorului pentru că le aduce ceva.</li>
-<li><strong>Raport</strong>: click-uri, coduri copiate, revendicări, donații în orele lor. Îl copiezi din /mod și îl trimiți sponsorului.</li></ul>`,
+    body: `<ul><li><strong>Ora dublă oferită de …</strong></li>
+<li><strong>Premii de la …</strong></li>
+<li><strong>Codul secret</strong>: o rotire bonus.</li>
+<li><strong>Raport</strong> pe /mod.</li></ul>`,
     actions: [
       { label: 'Arată un cod secret', primary: true, run: () => { const c = api.codeShow('Sponsor Principal', 10); note('Pe stream: ' + c.code); } },
       { label: 'Revendică-l ca viewer', run: guard(() => { api.setViewer('nonsub'); const c = api.currentCode(); if (c) api.claimCode(c.code); scrollSite('roata'); }) },
@@ -175,8 +161,7 @@ ${compact.matches
   },
   {
     title: 'Ce urmează', view: 'final',
-    body: () => `<p>Tot ce ai văzut e construit și testat. Pentru pornire mai e un singur pas: legăm aplicația de contul tău de Twitch, în aproximativ 15 minute.</p>
-<p>${where()}: ce e gata, ce facem împreună și ce trebuie să hotărăști.</p>`,
+    body: () => `<p>${where()}: ce e gata și ce mai e de hotărât.</p>`,
   },
 ];
 

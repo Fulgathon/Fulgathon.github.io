@@ -70,12 +70,12 @@ export const calcOptions: { label: string; seconds: number; fun: string }[] = [
  * ships lines in his voice; a group with fewer than 5 lines uses FALLBACK_LINE.
  */
 export const lineGroups: { id: import('./types').LineGroup; name: string; when: string }[] = [
-  { id: 'sub', name: 'Sub (Tier 1 / Prime)', when: 'Un sub nou sau reînnoit, Tier 1 sau Prime.' },
-  { id: 'sub23', name: 'Sub Tier 2 / 3', when: 'Sub Tier 2 sau Tier 3.' },
-  { id: 'gift', name: 'Subs cadou', when: 'Cineva dăruiește unul sau mai multe subs.' },
-  { id: 'donSmall', name: 'Donație mică', when: 'Donație sub pragul de donație mare.' },
-  { id: 'donBig', name: 'Donație mare', when: 'Donație de la prag în sus.' },
-  { id: 'bits', name: 'Biți', when: 'Orice cheer cu biți.' },
+  { id: 'sub', name: 'Sub (Tier 1 / Prime)', when: 'Nou sau reînnoit.' },
+  { id: 'sub23', name: 'Sub Tier 2 / 3', when: 'Tier 2 sau 3.' },
+  { id: 'gift', name: 'Subs cadou', when: 'Unul sau mai multe.' },
+  { id: 'donSmall', name: 'Donație mică', when: 'Sub prag.' },
+  { id: 'donBig', name: 'Donație mare', when: 'De la prag în sus.' },
+  { id: 'bits', name: 'Biți', when: 'Orice cheer.' },
 ];
 export const MIN_LINES = 5;
 export const MAX_LINE = 70;
@@ -90,12 +90,12 @@ export const badgeIcons = {
   bolt: 'M13 2L4 14h7l-1 8 9-12h-7z',
 };
 export const badgeDefs: { id: string; label: string; tier: BadgeTier; icon: keyof typeof badgeIcons; how: string }[] = [
-  { id: 'og', label: 'Ziua 1 OG', tier: 'bronze', icon: 'star', how: 'Fii în chat în prima zi a maratonului, 20 decembrie.' },
-  { id: 'h10', label: '10 ore', tier: 'bronze', icon: 'clock', how: 'Strânge 10 ore în chat, adunate pe tot maratonul.' },
-  { id: 'night', label: 'Tura de noapte', tier: 'silver', icon: 'moon', how: 'Stai în total o oră în chat între 00:00 și 06:00.' },
-  { id: 'streak7', label: 'Serie de 7 zile', tier: 'gold', icon: 'bolt', how: '7 zile la rând cu cel puțin 30 de minute în chat sau un check-in cu puncte de canal.' },
-  { id: 'h50', label: '50 de ore', tier: 'plat', icon: 'clock', how: 'Strânge 50 de ore în chat, adunate pe tot maratonul.' },
-  { id: 'h100', label: '100 de ore', tier: 'prism', icon: 'clock', how: 'Strânge 100 de ore în chat, adunate pe tot maratonul.' },
+  { id: 'og', label: 'Ziua 1 OG', tier: 'bronze', icon: 'star', how: 'În chat pe 20 decembrie.' },
+  { id: 'h10', label: '10 ore', tier: 'bronze', icon: 'clock', how: '10 ore în chat.' },
+  { id: 'night', label: 'Tura de noapte', tier: 'silver', icon: 'moon', how: 'O oră în chat între 00:00 și 06:00.' },
+  { id: 'streak7', label: 'Serie de 7 zile', tier: 'gold', icon: 'bolt', how: '7 zile la rând, min. 30 min în chat sau check-in.' },
+  { id: 'h50', label: '50 de ore', tier: 'plat', icon: 'clock', how: '50 de ore în chat.' },
+  { id: 'h100', label: '100 de ore', tier: 'prism', icon: 'clock', how: '100 de ore în chat.' },
 ];
 /** [accent, tint, text] per tier. Platinum is teal-green; prism uses the gradient below. */
 export const tierColors: Record<BadgeTier, [string, string, string]> = {
@@ -124,11 +124,11 @@ export const adventTree = ['12-24', '12-25'];
     w × h = the Browser Source size that fits the piece at ?scale=1 (measured in ?demo). */
 // «Momentele», «Ninsoarea» and «Ore împreună» were deleted (owner, 24 Nov); an old ?part= link for them loads an empty page.
 export const overlayPieces: { id: string; label: string; what: string; w: number; h: number; key?: boolean }[] = [
-  { id: 'timer', label: 'Cronometrul', what: 'Timpul rămas, «+timp», înghețat, Ora dublă și icemanlucky.ro.', w: 340, h: 130 },
+  { id: 'timer', label: 'Cronometrul', what: 'Timpul rămas.', w: 340, h: 130 },
   { id: 'goal', label: 'Următorul milestone', what: 'Ce urmează și cât mai e.', w: 430, h: 180 },
-  { id: 'bubble', label: 'Balonul lui Iceman', what: 'Doar balonul cu replica, lângă capul lui pe cameră. Coada în dreapta: &tail=right.', w: 340, h: 200 },
-  { id: 'vote', label: 'Votul live', what: 'Doar cât e deschis votul.', w: 400, h: 330 },
-  { id: 'code', label: 'Codul secret', what: 'Doar când arătați un cod. Link privat.', w: 460, h: 170, key: true },
+  { id: 'bubble', label: 'Balonul', what: 'Replica, lângă cameră. &tail=right: coada în dreapta.', w: 340, h: 200 },
+  { id: 'vote', label: 'Votul live', what: 'Cât e deschis votul.', w: 400, h: 330 },
+  { id: 'code', label: 'Codul secret', what: 'Când arătați un cod. Link privat.', w: 460, h: 170, key: true },
   { id: 'promo', label: 'Linia partenerului', what: 'Partenerul, la 10 minute.', w: 520, h: 60 },
-  { id: 'draw', label: 'Tragerea la sorți', what: 'Tombola de pe stream (numele care intră, roata, 3·2·1, câștigătorul, care rămâne până la «Încheie tombola») și tragerea la bingo. Transparentă când nu e nicio tombolă pe stream. Are sunet: în OBS bifează «Control audio via OBS» ca să-i reglezi volumul.', w: 960, h: 540 },
+  { id: 'draw', label: 'Tragerea la sorți', what: 'Tombola și bingo. Are sunet.', w: 960, h: 540 },
 ];

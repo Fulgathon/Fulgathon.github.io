@@ -240,7 +240,7 @@ function mine(v: Vals): string {
 
 /** «INTRĂ ACUM»: the newest 4 events, the newest one sliding in. */
 function heroRecent(v: Vals): string {
-  if (!v.hasHeroRecent) return `<p class="hero-empty">Aici apar, pe loc, subs, gift-urile și donațiile.</p>`;
+  if (!v.hasHeroRecent) return `<p class="hero-empty">Încă nimic.</p>`;
   return v.heroRecent.map((e) => `<div class="ev${e.fresh ? ' ev-in' : ''}" style="background: ${e.bg}; border-color: ${e.border}; opacity: ${e.op}">
 <strong>${esc(e.time)}</strong><span><strong>${esc(e.user)}</strong> <span style="color: #AEB8C7">${esc(e.what)}</span></span></div>`).join('');
 }
@@ -333,14 +333,14 @@ function legendPanel(title: string, ic: keyof typeof ICONS, rows: Vals['legendsD
 }
 function legends(v: Vals): string {
   return [
-    legendPanel('Donatori', 'star', v.legendsDon, '€', 'Locul 1 e liber. Prima donație face o legendă.'),
-    legendPanel('Subs dăruite', 'gift', v.legendsGifts, 'subs', 'Locul 1 e liber. Primul gift face o legendă.'),
-    legendPanel('Biți', 'flake', v.legendsBits, '', 'Locul 1 e liber. Primii biți fac o legendă.'),
+    legendPanel('Donatori', 'star', v.legendsDon, '€', 'Locul 1 e liber.'),
+    legendPanel('Subs dăruite', 'gift', v.legendsGifts, 'subs', 'Locul 1 e liber.'),
+    legendPanel('Biți', 'flake', v.legendsBits, '', 'Locul 1 e liber.'),
   ].join('');
 }
 
 function todayFeed(v: Vals): string {
-  if (!v.hasRecent) return emptyRow('Aici apare, pe loc, fiecare sub, gift, donație și bit de azi.');
+  if (!v.hasRecent) return emptyRow('Încă nimic azi.');
   return v.recentFeed.map((t, i) => `<li class="${i >= 3 ? 'more-row' : ''}"><strong class="ft">${esc(t.time)}</strong><span class="fw"><strong>${esc(t.user)}</strong> <span style="color: #AEB8C7">${esc(t.what)}</span></span><span class="fa">${esc(t.agoText)}</span></li>`).join('');
 }
 
@@ -380,7 +380,7 @@ function segs(v: Vals): string {
 
 const PLAY = '<svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z" fill="#3FD0FF"></path></svg>';
 function clips(v: Vals): string {
-  if (!v.hasClips) return `<p class="clip-empty">Când o provocare se face live, clipul ei apare aici.</p>`;
+  if (!v.hasClips) return `<p class="clip-empty">Încă niciun clip.</p>`;
   return v.clips.map((c) => `<a class="clip${c.more ? ' clip-more' : ''}" href="${esc(safeUrl(c.clip) ?? '#')}" aria-label="Vezi clipul: ${esc(c.no)} ${esc(c.title)}">
 <span class="thumb"><span class="thumb-no">✓ ${esc(c.no)}</span><span class="play">${PLAY}</span></span>
 <span class="clip-text"><span class="clip-title"><span class="clip-no">${esc(c.no)}</span>${esc(c.title)}</span><span class="clip-when">${esc([c.when, `deblocat la ${c.amount}`].filter(Boolean).join(' · '))}</span></span>

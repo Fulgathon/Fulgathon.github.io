@@ -33,20 +33,19 @@ const small = `font-family: ${cond}; font-weight: 800; font-size: 13px; letter-s
           <span class="big-num" data-text="mineHead">{v.mineHead}</span>
           <span data-text="mineLine" style="font-size: 14px; color: #AEB8C7">{v.mineLine}</span>
         </div>
-        <p style={`margin: 16px 0 8px; ${small}`}>Insignele tale · <span data-text="myBadgesCount">{v.myBadgesCount}</span> <span class="hide-sm" style="font-family: Barlow, sans-serif; font-weight: 400; letter-spacing: 0; text-transform: none; color: #7D8899">· treci cu mouse-ul peste una ca să vezi cum o obții</span></p>
+        <p style={`margin: 16px 0 8px; ${small}`}>Insignele tale · <span data-text="myBadgesCount">{v.myBadgesCount}</span></p>
         <div class="badges-row" data-region="myBadges" set:html={views.myBadges(v)} />
         <div class="tip-panel" data-toggle="on:tipOn" aria-live="polite">
           <p data-text="tipLabel" style={`margin: 0; font-family: ${cond}; font-weight: 800; font-size: 15px; color: #8FE4FF`}>{v.tipLabel}</p>
           <p style="margin: 2px 0 0; font-size: 13px; line-height: 1.35; color: #E6EBF1"><strong style="color: #8C97A8">Cum o obții:</strong> <span data-text="tipHow">{v.tipHow}</span></p>
           <p data-text="tipWho" style="margin: 4px 0 0; font-size: 12px; color: #8C97A8">{v.tipWho}</p>
         </div>
-        <p class="show-sm" style="margin: 6px 0 0; font-size: 12px; color: #7D8899">Atinge o insignă ca să vezi cum o obții.</p>
         <p {...iff('isIn')} data-text="mineNote" style="margin: 12px 0 0; font-size: 13px; color: #AEB8C7">{v.mineNote}</p>
       </div>
     </div>
 
     <!-- Row 2: legends -->
-    <h3 style={`margin: var(--gap-group) 0 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: clamp(26px, 2.4cqi, 34px); text-transform: uppercase`}>Legende <span class="h3-meta"><span class="h3-dot" aria-hidden="true">· </span>top 5, totaluri adunate pe tot maratonul</span></h3>
+    <h3 style={`margin: var(--gap-group) 0 0; font-family: ${cond}; font-weight: 900; font-style: italic; font-size: clamp(26px, 2.4cqi, 34px); text-transform: uppercase`}>Legende <span class="h3-meta"><span class="h3-dot" aria-hidden="true">· </span>top 5</span></h3>
     <div class="legends" data-region="legends" set:html={views.legends(v)} />
     <p class="lg-dots">Se dau cu degetul: Donatori · Subs dăruite · Biți</p>
 
@@ -57,9 +56,9 @@ const small = `font-family: ${cond}; font-weight: 800; font-size: 13px; letter-s
           <h3 class="h3">Fidelii</h3>
           <span style={`font-family: ${cond}; font-weight: 800; font-size: 16px; letter-spacing: 0.08em; color: #8C97A8`}>ORE ÎN CHAT</span>
         </div>
-        <p style="margin: 2px 0 0; font-size: 14px; color: #8C97A8">O zi se numără de la 30 de minute sau un check-in.</p>
+        <p style="margin: 2px 0 0; font-size: 14px; color: #8C97A8">O zi = 30 de minute sau un check-in.</p>
         <ol class="rows ly" aria-label="Fidelii" data-region="loyal" set:html={views.loyal(v)} />
-        <p style="margin: 12px 0 0; font-size: 13px; color: #AEB8C7"><strong style="color: var(--ice)">Check-in:</strong> recompensa «Check-in ICEMARATON» pe Twitch îți ține seria.</p>
+        <p style="margin: 12px 0 0; font-size: 13px; color: #AEB8C7"><strong style="color: var(--ice)">Check-in:</strong> «Check-in ICEMARATON» pe Twitch îți ține seria.</p>
       </div>
     </div>
   </div>

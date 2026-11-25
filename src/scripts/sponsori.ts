@@ -64,16 +64,16 @@ function prepare() {
 const steps: Step[] = [
   {
     title: 'ICEMARATON, pe scurt', view: 'site', scroll: 'top',
-    body: () => `<p><strong>ICEMARATON</strong> e subathonul de Crăciun al lui <strong>Icemanlucky</strong> pe Twitch: un stream care nu se oprește cât timp comunitatea adaugă timp. Fiecare donație și fiecare sub prelungesc cronometrul.</p>
+    body: () => `<p><strong>ICEMARATON</strong>: subathonul de Crăciun al lui <strong>Icemanlucky</strong> pe Twitch.</p>
 <ul>${pitch.audience.map((a) => `<li><strong>${esc(a.value)}</strong> ${esc(a.label)}</li>`).join('')}</ul>
-<p>Lângă stream există un site interactiv: vot pe provocări, roata cu premii, bingo, milestone-uri. ${compact.matches ? 'Mai jos' : 'În dreapta'} e chiar site-ul, cu ${b()} ca partener.</p>
-<p class="hint-brand">Scrieți numele brandului ${compact.matches ? 'în câmpul de sus' : 'sus, în dreapta'} (<strong>Brandul vostru</strong>) și îl vedeți peste tot: pe site, pe stream și în raport. Linkul din bara de adrese îl păstrează.</p>`,
+<p>${compact.matches ? 'Mai jos' : 'În dreapta'}: site-ul, cu ${b()} ca partener.</p>
+<p class="hint-brand">Scrieți brandul ${compact.matches ? 'sus' : 'sus, în dreapta'}.</p>`,
     actions: [{ label: 'Vezi brandul pe site', primary: true, run: () => scrollSite('parteneri') }],
   },
   {
     title: () => `${B()}, în prim-plan`, view: 'site', scroll: 'top',
-    body: () => `<p>Partenerul principal stă <strong>chiar sub numele maratonului</strong>: «ICEMARATON · prezentat de ${esc(B())}», primul lucru pe care îl vede oricine intră pe site.</p>
-<p>Lipită de cronometru, locul la care se uită toată lumea, e <strong>oferta voastră</strong>: codul de reducere (cu buton de copiere) și linkul. Imediat după vin toți partenerii, primul link din meniul site-ului.</p>`,
+    body: () => `<p><strong>Sub numele maratonului</strong>: prezentat de ${esc(B())}.</p>
+<p><strong>Lângă cronometru</strong>: oferta, codul și linkul.</p>`,
     actions: [
       { label: 'Sub titlu', primary: true, run: () => scrollSite('top') },
       { label: 'Oferta, sub cronometru', run: () => scrollSite('oferta') },
@@ -82,8 +82,7 @@ const steps: Step[] = [
   },
   {
     title: () => `Ora dublă oferită de ${B()}`, view: 'stream', focus: 'double',
-    body: () => `<p><strong>Ora dublă</strong> e cea mai intensă oră a zilei: tot timpul adăugat valorează dublu, așa că atunci vin cele mai multe donații.</p>
-<p>Ora poartă numele vostru: pe site, pe stream («ORA DUBLĂ ×2 · oferită de ${esc(B())}») și în ce spune Iceman.</p>`,
+    body: () => `<p><strong>Ora dublă</strong>: timpul × 2, cele mai multe donații. Poartă numele vostru, pe site și pe stream.</p>`,
     actions: [
       { label: 'Pornește Ora dublă', primary: true, run: () => { api.doubleHour(Date.now(), 60, B()); overlay(); say(`ORA DUBLĂ! MERSI, ${B().toUpperCase()}!`); } },
       { label: 'O donație de 20 €', run: () => { api.recordEvent('donation', 'darius_ro', null, 20, 'EUR'); say('MERSI, DARIUS_RO!'); } },
@@ -92,14 +91,13 @@ const steps: Step[] = [
   },
   {
     title: () => `Câștigătorii, «de la ${B()}»`, view: 'stream', focus: 'wins',
-    body: () => `<p>Premiile de pe roată poartă numele vostru. De fiecare dată când cineva câștigă, pe stream apare: «<em>vladutz97 a câștigat căștile de la ${esc(B())}</em>».</p>
-<p>Roata se învârte de zeci de ori pe zi, deci numele vostru apare legat de un moment bun, din nou și din nou.</p>`,
+    body: () => `<p>La fiecare câștig, pe stream: «<em>vladutz97 a câștigat căștile de la ${esc(B())}</em>».</p>`,
     actions: [{ label: 'Simulează un câștigător', primary: true, run: () => { api.fakeWin(); say('FELICITĂRI!'); } }],
     enter: () => { api.codeEnd(); overlay(); },
   },
   {
     title: () => `Premiile de la ${B()}, pe site`, view: 'site', scroll: 'roata',
-    body: () => `<p>Pe site, aceleași premii apar «de la ${esc(B())}»: pe roată, la ultimele premii câștigate, la un milestone și la marele premiu de la bingo.</p>`,
+    body: () => `<p>Pe roată, la milestone-uri și la bingo: de la ${esc(B())}.</p>`,
     actions: [
       { label: 'Roata și câștigătorii', primary: true, run: () => scrollSite('roata') },
       { label: 'Milestone-ul vostru', run: () => scrollSite('goals') },
@@ -108,8 +106,7 @@ const steps: Step[] = [
   },
   {
     title: 'Codul secret', view: 'stream', focus: 'code',
-    body: () => `<p>Un joc care face oamenii să fie atenți la momentul vostru: când Iceman vă prezintă, pe stream apare un <strong>cod secret</strong> pentru câteva minute.</p>
-<p>Cine îl scrie pe site primește o <strong>rotire bonus</strong> la roată. Oamenii ascultă mesajul vostru pentru că le aduce ceva, și ajung pe site, unde e oferta voastră.</p>`,
+    body: () => `<p>Un <strong>cod secret</strong> pe stream, în momentul vostru. Cine îl scrie pe site primește o <strong>rotire bonus</strong>.</p>`,
     actions: [
       { label: 'Arată un cod pe stream', primary: true, run: () => { const c = api.codeShow(B(), 10); note('Pe stream: ' + c.code); say('SCRIEȚI CODUL PE SITE!'); } },
       { label: '50 de viewers îl revendică', run: () => { api.simulateClaims(50); note('+50 de revendicări'); say('50 DE ROTIRI BONUS!'); } },
@@ -118,21 +115,18 @@ const steps: Step[] = [
   },
   {
     title: 'Discret, dar constant', view: 'stream', focus: 'promo',
-    body: () => `<p>La fiecare 10 minute, overlay-ul arată 10 secunde «Partener: ${esc(B())} · codul vostru», doar când nu se întâmplă altceva.</p>
-<p>Restul timpului, numele vostru apare doar la momentele care contează.</p>`,
+    body: () => `<p>La 10 minute, 10 secunde: «Partener: ${esc(B())} · codul vostru».</p>`,
     actions: [{ label: 'Arată mențiunea', primary: true, run: () => { overlay(true); say(`MERSI, ${B().toUpperCase()}!`); } }],
     enter: () => { api.codeEnd(); overlay(); },
   },
   {
     title: 'Raportul vostru', view: 'report',
-    body: () => `<p>La final primiți un raport cu ce a adus parteneriatul: click-uri pe linkul vostru, coduri de reducere copiate, coduri secrete revendicate, donațiile din orele voastre și câți oameni erau pe stream atunci.</p>
-<p>Click-urile se numără fără date personale. ${compact.matches ? 'Mai jos' : 'În dreapta'} e un exemplu cu cifre din această demonstrație.</p>`,
+    body: () => `<p>La final: click-uri, coduri, donații în orele voastre. Fără date personale.</p>`,
     enter: () => renderReport(),
   },
   {
     title: 'Pachete', view: 'packages',
-    body: () => `<p>Trei feluri de a fi alături de ICEMARATON, plus câteva idei speciale pe care le construim împreună.</p>
-<p>Premiile se dau mereu prin tragere gratuită: nu vindem șanse, ca totul să rămână corect pentru comunitate.</p>`,
+    body: () => `<p>Trei pachete. Premiile se dau prin tragere gratuită.</p>`,
     enter: () => renderPackages(),
   },
 ];
@@ -143,14 +137,14 @@ const contact = site.contactEmail.startsWith('[') ? '' : site.contactEmail;
 const talk = { pkg: pitch.packages[0].name, name: '', msg: '' };
 if (contact) steps.push({
   title: 'Hai să vorbim', view: 'packages',
-  body: () => `<p>V-a convins? Lăsați-ne câteva rânduri și vă răspundem cu detaliile, pe ${b()}. Plata se face pe factură, după ce stabilim împreună ce vă trebuie.</p>
+  body: () => `<p>Scrieți-ne. Plata pe factură.</p>
 <form class="talk" id="talk" novalidate>
   <label>Brandul<input class="field" id="talkBrand" maxlength="40" autocomplete="organization" value="${esc(brand.trim())}" placeholder="Numele brandului"></label>
   <label>Pachetul<select class="field" id="talkPkg">${[...pitch.packages.map((p) => p.name), 'Altceva / nu știm încă'].map((n) => `<option${n === talk.pkg ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
   <label>Numele vostru<input class="field" id="talkName" maxlength="60" autocomplete="name" value="${esc(talk.name)}"></label>
   <label>Câteva rânduri (opțional)<textarea class="field" id="talkMsg" rows="3" maxlength="600" placeholder="ex: ne interesează Ora dublă în weekend">${esc(talk.msg)}</textarea></label>
   <button type="submit" class="act primary">Trimite</button>
-  <p class="talk-note">Se deschide aplicația voastră de email, cu mesajul completat. Nu s-a deschis nimic? Scrieți-ne la <a href="mailto:${esc(contact)}">${esc(contact)}</a>.</p>
+  <p class="talk-note">Se deschide emailul. Sau scrieți la <a href="mailto:${esc(contact)}">${esc(contact)}</a>.</p>
 </form>`,
   enter: () => renderPackages(),
 });
@@ -176,7 +170,7 @@ function renderReport() {
   const fmt = (n: number | null | undefined) => (n === null || n === undefined ? '—' : n.toLocaleString('ro-RO'));
   document.getElementById('report')!.innerHTML = `
 <section class="card ice" style="grid-column: 1 / -1"><span class="tag">EXEMPLU</span><h2 style="margin-top:10px">Raport ICEMARATON · ${esc(B())}</h2>
-<p style="margin:0;color:#AEB8C7">Cifre din demonstrație. Raportul real se face din datele maratonului și îl primiți la final.</p></section>
+<p style="margin:0;color:#AEB8C7">Cifre de exemplu.</p></section>
 <div class="metrics">
   <div class="metric"><b>${fmt(x?.clicks)}</b><span>click-uri pe linkul vostru</span></div>
   <div class="metric"><b>${fmt(x?.code_copies)}</b><span>coduri de reducere copiate</span></div>
