@@ -617,9 +617,11 @@ function checkDraw() {
   if (!dr || !show.has('draw') || brb || !(dr.shownAt > drawSeen)) return;
   drawSeen = dr.shownAt;
   if (Date.now() - dr.shownAt > 90_000) return;
-  playDraw(dr.name, dr.entrants, data.bingo.prize, data.bingo.prizeSponsor ?? null, dr.total);
+  // A raffle draw (PREMII → Tombole) carries its own prize; a bingo draw uses the bingo prize.
+  if (dr.kind === 'tombola') playDraw(dr.name, dr.entrants, dr.prize ?? '', dr.sponsor ?? null, dr.total, 'tombola');
+  else playDraw(dr.name, dr.entrants, data.bingo.prize, data.bingo.prizeSponsor ?? null, dr.total);
 }
-function playDraw(winner: string, entrants: string[], prize: string, sponsor: string | null, total = entrants.length) {
+function playDraw(winner: string, entrants: string[], prize: string, sponsor: string | null, total = entrants.length, kind: 'bingo' | 'tombola' = 'bingo') {
   const el = $('.ov-draw');
   window.clearTimeout(drawShowTimer);
   const names = entrants.length ? entrants : [winner];
@@ -641,7 +643,11 @@ function playDraw(winner: string, entrants: string[], prize: string, sponsor: st
   const after = rest.length ? rest : names;
   seq.push(winner, after[0], after[1 % after.length]);
   const prizeTxt = prize && !prize.startsWith('[') ? prize : 'premiul cel mare';
-  el.innerHTML = `<div class="dr-head"><span class="dr-tag">BINGO · TRAGEREA LA SORȚI</span><span class="dr-meta"><b>${esc(count(Math.max(total, names.length), 'jucător', 'jucători'))}</b> cu toate cele 5</span></div>
+  const n = Math.max(total, names.length);
+  const head = kind === 'tombola'
+    ? `<span class="dr-tag">TOMBOLĂ · TRAGEREA LA SORȚI</span><span class="dr-meta"><b>${esc(count(n, 'participant', 'participanți'))}</b></span>`
+    : `<span class="dr-tag">BINGO · TRAGEREA LA SORȚI</span><span class="dr-meta"><b>${esc(count(n, 'jucător', 'jucători'))}</b> cu linia completă</span>`;
+  el.innerHTML = `<div class="dr-head">${head}</div>
     <div class="dr-reel"><ul class="dr-list">${seq.map((n, i) => `<li${i === at ? ' class="win"' : ''}>${esc(n)}</li>`).join('')}</ul><div class="dr-frame"></div><div class="dr-burst"></div><div class="dr-shards">${Array.from({ length: 12 }, (_, i) => `<i style="--a:${i * 30}deg"></i>`).join('')}</div></div>
     <div class="dr-foot"><span class="dr-won">CÂȘTIGĂTOR</span><span class="dr-prize">${esc(prizeTxt)}${sponsor ? ` <span class="spon">· de la ${esc(sponsor)}</span>` : ''}</span></div>`;
   const list = el.querySelector<HTMLElement>('.dr-list')!;

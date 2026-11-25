@@ -39,6 +39,10 @@ interface DemoChallenge {
 }
 interface DemoRound { id: number; number: number; opensAt: number; closesAt: number; winnerId: number | null; items: { challengeId: number; votes: number }[] }
 interface DemoSpin { id: number; user: string; prize: number; at: number; fulfilled: boolean }
+interface DemoRaffle {
+  id: number; prize: string; sponsor: string | null; rule: 'all' | 'subs' | 'hours'; minHours: number | null; by: string; at: number;
+  draws: { id: number; name: string; at: number; by: string; given: number | null; total: number }[];
+}
 interface DemoSuggestion { id: number; body: string; user: string; at: number; status: 'pending' | 'approved' | 'rejected' }
 
 export interface DemoState {
@@ -105,14 +109,25 @@ export interface DemoState {
     others: { user: string; items: number[] }[];
     draws: string[];
     /** The latest draw as the overlay plays it. */
-    drawShow?: { id: number; name: string; at: number; shownAt: number; entrants: string[]; total: number } | null;
+    drawShow?: { id: number; name: string; at: number; shownAt: number; entrants: string[]; total: number; kind?: 'bingo' | 'tombola'; prize?: string; sponsor?: string | null } | null;
+    /** Bingo winners whose prize was handed out (PREMII → De dat). */
+    given?: string[];
   };
+  /** Tombole (same rules as public.raffles / raffle_draws). */
+  raffles?: DemoRaffle[];
 }
 
 /** Same as the seeded `rates` table: seconds for every `per` units. */
 const RATES = { tier1: [360, 1], tier2: [720, 1], tier3: [1080, 1], gift: [360, 1], bits: [240, 400], donation: [360, 1] } as const;
 const WHEEL_MINUTES = 120;
 const today = () => new Date().toLocaleDateString('sv-SE');
+/** A raffle rule as private.raffle_rule_ok() checks it. */
+function raffleRule(rule: unknown, hours: unknown): { rule: 'all' | 'subs' | 'hours'; minHours: number | null } {
+  if (rule !== 'all' && rule !== 'subs' && rule !== 'hours') fail('bad_raffle');
+  const h = rule === 'hours' ? Number(hours) : null;
+  if (rule === 'hours' && (!h || h <= 0 || h > 2000)) fail('bad_raffle_hours');
+  return { rule: rule as 'all' | 'subs' | 'hours', minHours: h };
+}
 /** Bingo phase, as private.bingo_phase() in the database. */
 const bingoOpensAt = (s: DemoState) => (s.bingo.opensAt === undefined ? 0 : s.bingo.opensAt);
 function bingoPhase(s: DemoState): 'soon' | 'open' | 'closed' {
@@ -593,9 +608,78 @@ export class DemoBackend {
       const all = this.bingoWinners(s);
       const others = all.filter((u) => u !== won).sort(() => Math.random() - 0.5).slice(0, 299);
       s.bingo.draws.unshift(won);
-      s.bingo.drawShow = { id: Date.now(), name: won, at: Date.now(), shownAt: Date.now(), entrants: [...others, won].sort(() => Math.random() - 0.5), total: all.length };
+      s.bingo.drawShow = { id: Date.now(), name: won, at: Date.now(), shownAt: Date.now(), entrants: [...others, won].sort(() => Math.random() - 0.5), total: all.length, kind: 'bingo' };
       return won;
     });
+  }
+
+  // ---- Tombole and «Premii de dat» (same rules as migration 20261216100000) ----------
+  /** Who is on a raffle's list: the simulated players (viewer_…) and the demo viewer when logged in. */
+  private rafflePool(s: DemoState, rule: { rule: string; minHours: number | null }): string[] {
+    const people = [...new Set([...(s.viewer.state !== 'out' ? [s.viewer.name] : []), ...s.bingo.others.map((o) => o.user)])];
+    // Stable sample facts per name: every 3rd is a subscriber, hours watched 0–39.
+    const h = (n: string) => [...n].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
+    const isSub = (n: string) => (n === s.viewer.name ? s.viewer.state === 'sub' : h(n) % 3 === 0);
+    const hours = (n: string) => (n === s.viewer.name ? 23 : h(n) % 40);
+    return people.filter((n) => rule.rule === 'all' || (rule.rule === 'subs' && isSub(n)) || (rule.rule === 'hours' && hours(n) >= (rule.minHours ?? 1)));
+  }
+  private raffleReel(s: DemoState, r: DemoRaffle, won: string): string[] {
+    const others = this.rafflePool(s, r).filter((n) => n !== won).sort(() => Math.random() - 0.5).slice(0, 299);
+    return [...others, won].sort(() => Math.random() - 0.5);
+  }
+  rafflesFor(s: DemoState) {
+    const iso = (ms: number | null) => (ms ? new Date(ms).toISOString() : null);
+    return [...(s.raffles ?? [])].sort((a, b) => b.id - a.id).map((r) => ({
+      id: r.id, prize: r.prize, sponsor: r.sponsor, rule: r.rule, min_hours: r.minHours, created_by: r.by, created_at: iso(r.at),
+      pool: this.rafflePool(s, r).filter((n) => !r.draws.some((d) => d.name === n)).length,
+      draws: r.draws.map((d) => ({ id: d.id, login: d.name, drawn_at: iso(d.at), drawn_by: d.by, given_at: iso(d.given), total: d.total })),
+    }));
+  }
+  raffleSave(id: number | null, prize: string, sponsor: string | null, ruleIn: unknown, hoursIn: unknown) {
+    return this.mutate((s) => {
+      if (!prize.trim() || prize.trim().length > 120) fail('bad_raffle_prize');
+      const r = raffleRule(ruleIn, hoursIn);
+      const list = (s.raffles ??= []);
+      if (id === null) {
+        const nid = Math.max(0, ...list.map((x) => x.id)) + 1;
+        list.push({ id: nid, prize: prize.trim(), sponsor: sponsor?.trim() || null, rule: r.rule, minHours: r.minHours, by: this.asMod ? 'modi' : 'icemanlucky', at: Date.now(), draws: [] });
+        return nid;
+      }
+      const cur = list.find((x) => x.id === id);
+      if (!cur) return fail('no_raffle');
+      if ((cur.rule !== r.rule || cur.minHours !== r.minHours) && cur.draws.length) fail('raffle_drawn');
+      Object.assign(cur, { prize: prize.trim(), sponsor: sponsor?.trim() || null, rule: r.rule, minHours: r.minHours });
+      return id;
+    });
+  }
+  raffleDraw(id: number): string {
+    return this.mutate((s) => {
+      const r = (s.raffles ?? []).find((x) => x.id === id);
+      if (!r) return fail('no_raffle');
+      const all = this.rafflePool(s, r);
+      const left = all.filter((n) => !r.draws.some((d) => d.name === n));
+      if (!left.length) return fail('raffle_empty');
+      const won = pick(left);
+      const did = Math.max(0, ...(s.raffles ?? []).flatMap((x) => x.draws.map((d) => d.id))) + 1;
+      r.draws.push({ id: did, name: won, at: Date.now(), by: this.asMod ? 'modi' : 'icemanlucky', given: null, total: all.length });
+      s.bingo.drawShow = { id: did, name: won, at: Date.now(), shownAt: Date.now(), entrants: this.raffleReel(s, r, won), total: all.length, kind: 'tombola', prize: r.prize, sponsor: r.sponsor };
+      return won;
+    });
+  }
+  prizesDue(s: DemoState) {
+    const iso = (ms: number) => new Date(ms).toISOString();
+    const due: { kind: string; id: number; login: string; prize: string; sponsor: string | null; at: string }[] = [
+      ...s.spins.filter((x) => !x.fulfilled && s.prizes[x.prize]?.isWin).map((x) => ({ kind: 'roata', id: x.id, login: x.user, prize: s.prizes[x.prize]?.win ?? '', sponsor: s.prizes[x.prize]?.sponsor ?? null, at: iso(x.at) })),
+      ...s.bingo.draws.map((login, i) => ({ login, i })).filter((d) => !(s.bingo.given ?? []).includes(d.login))
+        .map((d) => ({ kind: 'bingo', id: d.i, login: d.login, prize: s.bingo.prize, sponsor: s.bingo.prizeSponsor ?? null, at: iso(Date.now()) })),
+      ...(s.raffles ?? []).flatMap((r) => r.draws.filter((d) => !d.given).map((d) => ({ kind: 'tombola', id: d.id, login: d.name, prize: r.prize, sponsor: r.sponsor, at: iso(d.at) }))),
+    ];
+    const given = [
+      ...s.spins.filter((x) => x.fulfilled && s.prizes[x.prize]?.isWin).map((x) => ({ kind: 'roata', login: x.user, prize: s.prizes[x.prize]?.win ?? '', given_at: iso(x.at) })),
+      ...(s.bingo.given ?? []).map((login) => ({ kind: 'bingo', login, prize: s.bingo.prize, given_at: iso(Date.now()) })),
+      ...(s.raffles ?? []).flatMap((r) => r.draws.filter((d) => d.given).map((d) => ({ kind: 'tombola', login: d.name, prize: r.prize, given_at: iso(d.given!), by: d.by }))),
+    ].sort((a, b) => b.given_at.localeCompare(a.given_at)).slice(0, 15);
+    return { due: due.sort((a, b) => a.at.localeCompare(b.at)), given };
   }
 
   doubleHour(from: number, minutes: number, sponsor: string | null = null) {
@@ -879,6 +963,10 @@ export class DemoBackend {
       })(),
       bingoSaved: s.viewer.state === 'out' ? null : s.bingo.pick,
       bingoWon: s.viewer.state !== 'out' && s.bingo.draws.includes(s.viewer.name),
+      raffleWon: s.viewer.state === 'out' ? null : (() => {
+        const won = (s.raffles ?? []).flatMap((r) => r.draws.filter((d) => d.name === s.viewer.name && Date.now() - d.at < 7 * DAY).map((d) => ({ id: d.id, prize: r.prize, sponsor: r.sponsor, at: d.at })));
+        return won.sort((a, b) => b.id - a.id)[0] ?? null;
+      })(),
       myVote: r && s.myVotes[r.id] !== undefined ? String(s.myVotes[r.id]) : null,
       // Sample contribution and loyalty for the demo viewer.
       mine: { seconds: 5400, subs: 1, gifts: 5, bits: 0, donated: 20 },
@@ -975,8 +1063,10 @@ export class DemoBackend {
         .map((c) => ({ title: c.title, when: start && c.doneAt ? `ZIUA ${Math.max(1, Math.floor((c.doneAt - start) / DAY) + 1)}` : '', clip: c.clip })),
       prizes: s.prizes.map((p, i) => [p.short, p.full, prizeColors[i] ?? '#F2F5FA', p.sponsor] as Prize),
       losePrize: s.prizes.findIndex((p) => !p.isWin),
-      recentWins: [...s.spins].filter((x) => s.prizes[x.prize]?.isWin).sort((a, b) => b.at - a.at).slice(0, 4)
-        .map((x) => ({ user: x.user, prize: s.prizes[x.prize]?.win ?? '', ago: ago(x.at, now), sponsor: s.prizes[x.prize]?.sponsor ?? null })),
+      recentWins: [
+        ...s.spins.filter((x) => s.prizes[x.prize]?.isWin).map((x) => ({ user: x.user, prize: s.prizes[x.prize]?.win ?? '', at: x.at, sponsor: s.prizes[x.prize]?.sponsor ?? null })),
+        ...(s.raffles ?? []).flatMap((r) => r.draws.map((d) => ({ user: d.name, prize: r.prize, at: d.at, sponsor: r.sponsor }))),
+      ].sort((a, b) => b.at - a.at).slice(0, 4).map((x) => ({ user: x.user, prize: x.prize, ago: ago(x.at, now), sponsor: x.sponsor })),
       doubleSponsor: s.timer.doubleSponsor,
       ...this.community(s, now),
       lines: s.lines ?? {},
@@ -1127,6 +1217,8 @@ export class DemoBackend {
       overlayKey: 'demo',
       report: this.sponsorReport(),
       mods: s.mods.map((login) => ({ login, display_name: login === 'icemanlucky' ? 'Icemanlucky' : null })),
+      due: this.prizesDue(s),
+      raffles: this.rafflesFor(s),
       bingo: {
         opens_at: iso(bingoOpensAt(s)), closes_at: iso(s.bingo.closesAt), prize: s.bingo.prize, prize_sponsor: s.bingo.prizeSponsor ?? null,
         items: s.bingo.items.map((it) => ({ id: it.id, label: it.label, happened_at: it.happened ? 'yes' : null, auto_rule: it.rule ?? null })),
@@ -1178,6 +1270,29 @@ export class DemoBackend {
       case 'mod_bingo_close': return this.bingoCloseNow();
       case 'mod_bingo_replay': return this.bingoReplay();
       case 'mod_bingo_draw': return this.bingoDraw();
+      case 'mod_raffles': return this.rafflesFor(this.load());
+      case 'mod_raffle_count': return this.rafflePool(this.load(), raffleRule(a.p_rule, a.p_min_hours)).length;
+      case 'mod_raffle_save': return this.raffleSave(a.p_id == null ? null : Number(a.p_id), String(a.p_prize ?? ''), a.p_sponsor ?? null, a.p_rule, a.p_min_hours);
+      case 'mod_raffle_delete': return this.mutate((s) => {
+        const r = (s.raffles ?? []).find((x) => x.id === Number(a.p_id));
+        if (r?.draws.length) fail('raffle_drawn');
+        s.raffles = (s.raffles ?? []).filter((x) => x.id !== Number(a.p_id));
+      });
+      case 'mod_raffle_draw': return this.raffleDraw(Number(a.p_id));
+      case 'mod_raffle_replay': return this.mutate((s) => {
+        const r = (s.raffles ?? []).find((x) => x.draws.some((d) => d.id === Number(a.p_draw)));
+        const d = r?.draws.find((x) => x.id === Number(a.p_draw));
+        if (!r || !d) return fail('no_raffle_draw');
+        s.bingo.drawShow = { id: d.id, name: d.name, at: d.at, shownAt: Date.now(), entrants: this.raffleReel(s, r, d.name), total: d.total, kind: 'tombola', prize: r.prize, sponsor: r.sponsor };
+      });
+      case 'mod_prizes_due': return this.prizesDue(this.load());
+      case 'mod_prize_given': return this.mutate((s) => {
+        const id = Number(a.p_id);
+        if (a.p_kind === 'roata') { const sp = s.spins.find((x) => x.id === id); if (sp) sp.fulfilled = true; }
+        else if (a.p_kind === 'bingo') { const login = s.bingo.draws[id]; if (login) s.bingo.given = [...new Set([...(s.bingo.given ?? []), login])]; }
+        else if (a.p_kind === 'tombola') { for (const r of s.raffles ?? []) for (const d of r.draws) if (d.id === id && !d.given) d.given = Date.now(); }
+        else fail('bad_prize_kind');
+      });
       case 'mod_autopilot': return this.autopilot();
       case 'mod_round_edit': return this.mutate((s) => {
         const r = s.rounds.find((x) => x.id === Number(a.p_round));

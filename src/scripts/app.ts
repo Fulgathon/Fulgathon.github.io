@@ -418,6 +418,14 @@ function applyMe(me: Me | null) {
     watchedToday: me.watchedToday, bonusSpins: me.bonusSpins,
   });
   thankFor(me.lastEvent);
+  raffleNotice(me.raffleWon);
+}
+// A raffle win (PREMII → Tombole on /mod): «Ai câștigat» once per win on this browser.
+function raffleNotice(w: { id: number; prize: string; sponsor: string | null } | null | undefined) {
+  if (!w) return;
+  const key = `ice.raffle.${w.id}`;
+  try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch { /* no storage: show it anyway */ }
+  moment('Ai câștigat la tombolă', `${w.prize}${w.sponsor ? ` de la ${w.sponsor}` : ''}!`);
 }
 
 async function startLive() {
@@ -455,6 +463,7 @@ function demoSync(first = false) {
     watchedToday: me.watchedToday, bonusSpins: me.bonusSpins,
     ...(state.spinning ? {} : { spins: me.spins, spunToday: me.spunToday }),
   };
+  raffleNotice(me.raffleWon);
   const unlocked = data.status === 'live' && (first ? reachedGoals(data) > 0 : reachedGoals(data) > before);
   set(unlocked ? { ...patch, toast: 'goal' } : patch);
   checkLegends(data);

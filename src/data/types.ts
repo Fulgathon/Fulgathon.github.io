@@ -38,7 +38,8 @@ export interface Bingo {
   /** Everyone drawn so far (public names), oldest first. */
   winners?: { id: number; name: string; at: number }[];
   /** The latest draw for the overlay reel: entries at the time, the winner, when to play it. */
-  draw?: { id: number; name: string; at: number; shownAt: number; entrants: string[]; total: number } | null;
+  /** kind: 'bingo' or 'tombola' (a raffle drawn on /mod → PREMII → Tombole); prize/sponsor are the raffle's. */
+  draw?: { id: number; name: string; at: number; shownAt: number; entrants: string[]; total: number; kind?: 'bingo' | 'tombola'; prize?: string; sponsor?: string | null } | null;
 }
 
 /** What one viewer added in total (my_state). */

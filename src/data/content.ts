@@ -130,5 +130,5 @@ export const overlayPieces: { id: string; label: string; what: string; w: number
   { id: 'vote', label: 'Votul live', what: 'Doar cât e deschis votul.', w: 400, h: 330 },
   { id: 'code', label: 'Codul secret', what: 'Doar când arătați un cod. Link privat.', w: 460, h: 170, key: true },
   { id: 'promo', label: 'Linia partenerului', what: 'Partenerul, la 10 minute.', w: 520, h: 60 },
-  { id: 'draw', label: 'Tragerea la bingo', what: 'Invizibil până trageți la sorți câștigătorul de bingo pe /mod.', w: 960, h: 540 },
+  { id: 'draw', label: 'Tragerea la sorți', what: 'Invizibil până trageți la sorți pe /mod: câștigătorul de bingo sau al unei tombole.', w: 960, h: 540 },
 ];

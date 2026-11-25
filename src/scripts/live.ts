@@ -27,6 +27,8 @@ export interface Me {
   bingoSaved: number[] | null;
   /** Drawn as a bingo winner. */
   bingoWon: boolean;
+  /** The latest raffle this viewer won (last 7 days), for «Ai câștigat». */
+  raffleWon: { id: number; prize: string; sponsor: string | null } | null;
   /** Bonus spins from secret codes (included in `spins`). */
   bonusSpins: number;
   /** false when the viewer chose not to appear by name in public. */
@@ -256,7 +258,8 @@ export class Live {
         opensAt: ms(g.opensAt), closesAt: ms(g.closesAt),
         winners: Array.isArray(g.winners) ? g.winners.map((w: Json) => ({ id: Number(w.id), name: String(w.name ?? ''), at: Date.parse(w.at) })) : [],
         draw: g.draw ? { id: Number(g.draw.id), name: String(g.draw.name ?? ''), at: Date.parse(g.draw.at), shownAt: Date.parse(g.draw.shownAt),
-          entrants: Array.isArray(g.draw.entrants) ? g.draw.entrants.map(String) : [], total: Number(g.draw.total) || 0 } : null,
+          entrants: Array.isArray(g.draw.entrants) ? g.draw.entrants.map(String) : [], total: Number(g.draw.total) || 0,
+          kind: g.draw.kind === 'tombola' ? 'tombola' : 'bingo', prize: g.draw.prize ?? undefined, sponsor: g.draw.sponsor ?? null } : null,
         prize: g.prize ?? '', prizeSponsor: g.prizeSponsor ?? null, players: g.players ?? 0,
         items: (g.items ?? []).map((i: Json) => ({ id: i.id, label: i.label, happened: !!i.happened })),
       };
@@ -350,6 +353,7 @@ export class Live {
       myVote: m.myVote != null ? String(m.myVote) : null,
       bingoSaved: Array.isArray(m.bingo) ? m.bingo.map(Number) : null,
       bingoWon: !!m.bingoWon,
+      raffleWon: m.raffleWon ? { id: Number(m.raffleWon.id), prize: String(m.raffleWon.prize ?? ''), sponsor: m.raffleWon.sponsor ?? null } : null,
       bonusSpins: m.bonusSpins ?? 0,
       isPublic: m.public !== false,
       mine: {

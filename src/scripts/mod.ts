@@ -64,6 +64,14 @@ const errors: Record<string, string> = {
   only_broadcaster: 'Doar streamerul poate porni, prelungi sau încheia subathonul.',
   extend_not_later: 'Finalul nou trebuie să fie după finalul programat de acum.',
   extend_too_far: 'Se poate prelungi cel mult un an de acum.',
+  bad_raffle: 'Alege cine intră în tombolă.',
+  bad_raffle_hours: 'Scrie câte ore trebuie să fi privit (de exemplu 5).',
+  bad_raffle_prize: 'Scrie premiul (cel mult 120 de caractere).',
+  raffle_drawn: 'S-a tras deja la sorți: regula nu se mai schimbă și tombola nu se mai poate șterge. Premiul se poate redenumi.',
+  raffle_empty: 'Nu mai e nimeni pe listă care să nu fi câștigat deja.',
+  no_raffle: 'Tombola nu mai există. Reîncarcă pagina.',
+  no_raffle_draw: 'Tragerea nu mai există. Reîncarcă pagina.',
+  bad_prize_kind: 'Premiul nu a fost recunoscut. Reîncarcă pagina.',
   round_full: 'O rundă are cel mult 8 provocări.',
   challenge_unavailable: 'Provocarea nu mai e disponibilă (e deja în rundă sau a fost folosită).',
   challenge_exists: 'Provocarea există deja în listă.',
@@ -214,6 +222,9 @@ const toLocal = (iso: string | null) => {
 };
 
 // ---- State ----
+interface DueItem { kind: 'roata' | 'bingo' | 'tombola'; id: number; login: string; prize: string | null; sponsor: string | null; at: string }
+interface Raffle { id: number; prize: string; sponsor: string | null; rule: 'all' | 'subs' | 'hours'; min_hours: number | null; created_by: string | null; created_at: string; pool: number;
+  draws: { id: number; login: string; drawn_at: string; drawn_by: string | null; given_at: string | null; total: number | null }[] }
 interface Challenge { id: number; title: string; level: string; category: string; status: string; scheduled_for: string | null }
 let S: {
   me: { login: string; is_moderator: boolean; is_subscriber?: boolean } | null;
@@ -224,7 +235,11 @@ let S: {
   pool: Challenge[];
   scheduled: Challenge[];
   suggestions: { id: number; body: string; created_at: string; viewers: { login: string; display_name: string } | null }[];
-  prizes: { id: number; user_login: string; created_at: string; prizes: { win_label: string; is_win: boolean } | null }[];
+  /** «Premii de dat»: every win not handed out yet (wheel, bingo, raffle) and the last ones handed out. */
+  due: { due: DueItem[]; given: { kind: string; login: string; prize: string; given_at: string; by?: string }[] };
+  /** Tombole (mod_raffles) and the live count for the new-raffle form. */
+  raffles: Raffle[];
+  rafflePreview: { key: string; n: number | null } | null;
   mods: { login: string; display_name: string | null }[];
   draft: number[];
   goals: { title: string; threshold: number; unlocked_at: string | null; sponsor?: string | null; done_at?: string | null; clip_url?: string | null; scheduled_for?: string | null }[];
@@ -255,7 +270,7 @@ let S: {
   linesDraft: Partial<Record<LineGroup, string>> | null;
   /** Twitch-chat echo: the switch, and whether Iceman's token may write in chat (null = not available yet). */
   chat: { on: boolean; canWrite: boolean; connected: boolean; lastAt: string | null } | null;
-  /** Which group page is open (azi, program, pregatire, setari). */
+  /** Which menu group is open (acum, activitati, premii, sponsori, setari, streamer). */
   page: string;
   /** mod_autopilot(): auto start, vote autopilot, the plan, Discord alerts, the shared checklist. */
   auto: any;
@@ -274,7 +289,7 @@ let S: {
   spEdit: number | 'new' | null;
   /** «Runda de vot»: the entry being swapped in the open round. */
   rSwap: number | null;
-} = { rSwap: null, test: null, tasks: null, tasksDraft: null, sceneBg: null, sponsors: [], spEdit: null, auto: null, view: 'rapid', liveTab: 'timp', page: 'azi', chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], prizes: [], mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, bingoSize: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
+} = { rSwap: null, test: null, tasks: null, tasksDraft: null, sceneBg: null, sponsors: [], spEdit: null, auto: null, view: 'rapid', liveTab: 'timp', page: 'acum', chat: null, lines: {}, smallDonation: 10, linesDraft: null, health: null, now: null, me: null, status: null, timer: null, stats: null, round: null, pool: [], scheduled: [], suggestions: [], due: { due: [], given: [] }, raffles: [], rafflePreview: null, mods: [], draft: [], goals: [], goalsDraft: null, bingo: null, bingoDraft: null, bingoSize: null, wheel: [], wheelDraft: null, codes: [], overlayKey: null, report: null };
 /** Bingo phase (as private.bingo_phase): moderators open and close it; no ticks until the close (owner, 24 Nov). */
 const bingoPhase = (): 'soon' | 'open' | 'closed' => {
   const B = S.bingo;
@@ -364,7 +379,7 @@ async function load() {
   }
   const anyDb = db as any;
   // Everything /mod shows, requested at once (one round trip instead of a chain of ten).
-  const [meRes, [status, timer, stats, rounds, pool, scheduled, suggestions, prizes, mods, goals], [wheel, codes, okey, report], health, auto, sponsors, psRes, chat, [bItems, bSet, bStatus]] = await Promise.all([
+  const [meRes, [status, timer, stats, rounds, pool, scheduled, suggestions, due, mods, goals], [wheel, codes, okey, report, raffles], health, auto, sponsors, psRes, chat, [bItems, bSet, bStatus]] = await Promise.all([
     knownMod ? meQuery : Promise.resolve(null),
     Promise.all([
     db.rpc('mod_status'),
@@ -374,13 +389,13 @@ async function load() {
     db.from('challenges').select('id, title, level, category, status, scheduled_for').eq('status', 'pool').eq('votable', true).order('id'),
     db.from('challenges').select('id, title, level, category, status, scheduled_for').eq('status', 'scheduled').order('id'),
     db.from('suggestions').select('id, body, created_at, viewers(login, display_name)').eq('status', 'pending').order('created_at'),
-    db.from('spins').select('id, user_login, created_at, prizes(win_label, is_win)').is('fulfilled_at', null).order('created_at'),
+    anyDb.rpc('mod_prizes_due'),
     db.from('viewers').select('login, display_name').eq('is_moderator', true).order('login'),
     db.from('goals').select('title, threshold, unlocked_at, sponsor, done_at, clip_url, scheduled_for').order('position'),
     ]),
     Promise.all([
       db.from('prizes').select('short_label, full_label, win_label, sponsor, is_win, weight').order('position'),
-      db.rpc('mod_codes'), db.rpc('mod_overlay_key'), db.rpc('mod_sponsor_report'),
+      db.rpc('mod_codes'), db.rpc('mod_overlay_key'), db.rpc('mod_sponsor_report'), anyDb.rpc('mod_raffles'),
     ]),
     anyDb.rpc('mod_health'), anyDb.rpc('mod_autopilot'), anyDb.rpc('mod_sponsors'),
     anyDb.rpc('public_state', { p_have: {} }), anyDb.rpc('mod_chat_status'),
@@ -425,7 +440,8 @@ async function load() {
   S.pool = (pool.data ?? []) as Challenge[];
   S.scheduled = (scheduled.data ?? []) as Challenge[];
   S.suggestions = (suggestions.data ?? []) as any;
-  S.prizes = ((prizes.data ?? []) as any[]).filter((p) => p.prizes?.is_win);
+  S.due = (due.data as typeof S.due) ?? { due: [], given: [] };
+  S.raffles = (raffles.data as Raffle[]) ?? [];
   S.mods = (mods.data ?? []) as any;
   if (!S.draft.length || S.draft.some((id) => !S.pool.find((p) => p.id === id))) autoDraft();
   render();
@@ -559,9 +575,10 @@ function healthHtml(h: any): string {
 
 // ---- Layout: grouped by job (status bar on top, prism menu on the left) ----
 const ICONS: Record<string, string> = {
-  azi: 'M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8',
-  program: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 7v5l3 3',
-  pregatire: 'M9 4h10v16H5V8zM9 4v4H5M8 13l2 2 4-4',
+  acum: 'M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8',
+  activitati: 'M6 12h4M8 10v4M15 13h.01M18 11h.01M7 6h10a4 4 0 0 1 4 4v5a3 3 0 0 1-5.4 1.8L14.5 15h-5l-1.1 1.8A3 3 0 0 1 3 15v-5a4 4 0 0 1 4-4z',
+  premii: 'M3 8h18v4H3zM5 12v9h14v-9M12 8v13M12 8C10.5 4 6 4 6 6.5S9 8 12 8c3 0 6 0 6-1.5S13.5 4 12 8',
+  sponsori: 'M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z',
   setari: 'M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1',
   streamer: 'M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z',
 };
@@ -627,24 +644,30 @@ async function clipNow(): Promise<string | null> {
   return null;
 }
 
+// The menu (owner, 25 Nov 2026: «make it make sense, so I know where everything is»). One home per thing,
+// grouped by what it is: what happens on stream now, what viewers play (each activity with all its
+// options), what they can win, who sponsors it, the internal settings, and what only the streamer does.
+// Generic words only (owner: /mod becomes a template).
 const GROUPS: { id: string; name: string; title: string; lead: string; items: [string, string][] }[] = [
-  { id: 'azi', name: 'AZI', title: 'Azi', lead: 'Ce cere un om acum.',
-    items: [['rapid', 'Stream acum'], ['vot', 'Vot'], ['sarcini', 'Donează și alegi'], ['bingo-bife', 'Bingo'], ['propuneri', 'Propuneri și premii']] },
-  { id: 'program', name: 'PROGRAM', title: 'Program automat', lead: 'Se setează o dată, merg singure.',
-    items: [['pilot', 'Automat'], ['plan', 'Program']] },
-  { id: 'pregatire', name: 'PREGĂTIRE', title: 'Pregătire', lead: 'O singură dată, înainte de 20 decembrie.',
-    items: [['checklist', 'Checklist'], ['replici', 'Replici'], ['milestones', 'Milestones'], ['roata-premii', 'Roata'], ['bingo', 'Bingo'], ['sponsori', 'Sponsori']] },
-  { id: 'setari', name: 'SETĂRI', title: 'Setări', lead: 'Folosite rar.',
-    items: [['test', 'Mod test'], ['moderatori', 'Moderatori'], ['overlay-piese', 'Overlay OBS'], ['raport', 'Raport sponsori']] },
-  // Everything only the broadcaster's login can do, in one place (owner, 25 Nov 2026). Generic words only
-  // (owner: /mod becomes a template; no channel names in it). Moderators see it
+  { id: 'acum', name: 'ACUM', title: 'Acum', lead: 'Ce se întâmplă pe stream și ce urmează.',
+    items: [['rapid', 'Stream acum'], ['plan', 'Programate']] },
+  { id: 'activitati', name: 'ACTIVITĂȚI', title: 'Activități', lead: 'Ce joacă spectatorii. Fiecare cu toate setările ei.',
+    items: [['vot', 'Vot'], ['roata-premii', 'Roata'], ['bingo', 'Bingo'], ['sarcini', 'Donează și alegi'], ['milestones', 'Milestones']] },
+  { id: 'premii', name: 'PREMII', title: 'Premii', lead: 'Tot ce pot câștiga spectatorii.',
+    items: [['premii', 'De dat'], ['tombola', 'Tombole'], ['unde', 'Unde se câștigă']] },
+  { id: 'sponsori', name: 'SPONSORI', title: 'Sponsori', lead: 'Cine susține subathonul.',
+    items: [['sponsori', 'Sponsori'], ['raport', 'Raport']] },
+  { id: 'setari', name: 'SETĂRI', title: 'Setări', lead: 'Pregătire și lucruri interne.',
+    items: [['checklist', 'Checklist'], ['replici', 'Replici'], ['overlay-piese', 'Overlay OBS'], ['alerte', 'Alerte Discord'], ['moderatori', 'Moderatori'], ['test', 'Mod test']] },
+  // Everything only the broadcaster's login can do, in one place (owner, 25 Nov 2026). Moderators see it
   // greyed out (the database refuses them too); during «Mod test» everyone may.
   { id: 'streamer', name: 'STREAMER', title: 'Streamer', lead: 'Doar contul streamerului apasă aici.',
     items: [['cronometru', 'Start'], ['prelungire', 'Prelungește'], ['zona', 'Încheiere']] },
 ];
-/** Cards shown together with a menu item, and old anchors that now live inside another card. */
-const BUNDLE: Record<string, string[]> = { vot: ['vot', 'provocari'], propuneri: ['propuneri', 'premii'], pilot: ['pilot', 'alerte'], cronometru: ['streamer', 'cronometru'] };
-const ALIAS: Record<string, string> = { parteneri: 'sponsori', provocari: 'vot', premii: 'propuneri', alerte: 'pilot', stare: 'cronometru', inghetare: 'rapid', 'ora-dubla': 'rapid', acum: 'rapid', cod: 'rapid', overlay: 'overlay-piese' };
+/** Cards shown together with a menu item (an anchor of a bundled card opens its item). */
+const BUNDLE: Record<string, string[]> = { vot: ['vot', 'provocari', 'propuneri', 'pilot'], cronometru: ['streamer', 'cronometru'] };
+/** Old anchors (links in the guide, bookmarks) and the page they open now. */
+const ALIAS: Record<string, string> = { parteneri: 'sponsori', 'bingo-bife': 'bingo', roata: 'roata-premii', tombole: 'tombola', stare: 'cronometru', inghetare: 'rapid', 'ora-dubla': 'rapid', acum: 'rapid', cod: 'rapid', overlay: 'overlay-piese', azi: 'rapid', program: 'plan', pregatire: 'checklist' };
 /** Only Iceman (the broadcaster login) starts and ends the marathon; the database enforces it too. */
 // During «Mod test» every moderator may (the database allows it too: it all goes back).
 const isStreamer = () => !!S.test || (!!S.me && !!S.status?.broadcaster_login && S.me.login.toLowerCase() === S.status.broadcaster_login.trim().toLowerCase());
@@ -659,7 +682,9 @@ function viewOf(raw: string): string | null {
 }
 const groupOf = (raw: string) => {
   const id = ALIAS[raw] ?? raw;
-  return id === 'todo' || id === 'sanatate' ? GROUPS[0] : GROUPS.find((g) => g.id === id || g.items.some(([i]) => i === id));
+  if (['todo', 'sanatate', 'control', 'urmeaza'].includes(id)) return GROUPS[0];
+  const v = viewOf(id);
+  return GROUPS.find((g) => g.items.some(([i]) => i === v)) ?? GROUPS.find((g) => g.id === id);
 };
 
 /** How many things wait on each menu item (badges). */
@@ -668,7 +693,8 @@ function waiting(id: string): { n: number; warn?: boolean } {
   switch (id) {
     case 'replici': return { n: lineGroups.filter((g) => !lineInfo(g.id).ok).length, warn: true };
     case 'milestones': return { n: S.goals.filter((g) => raised >= g.threshold && !g.done_at).length };
-    case 'propuneri': return { n: S.suggestions.length + S.prizes.length };
+    case 'vot': return { n: S.suggestions.length };
+    case 'premii': return { n: S.due.due.length };
     case 'sarcini': return { n: S.tasks?.pending ?? 0 };
     case 'bingo': return { n: S.bingo?.status.winners.length && !S.bingo.status.draws.length ? S.bingo.status.winners.length : 0 };
     case 'cronometru': return { n: S.status && !S.status.broadcaster_connected ? 1 : 0, warn: true };
@@ -863,7 +889,7 @@ function dashHtml(t: Record<string, any>, live: boolean, remaining: number, now:
         <button class="btn-ghost" data-act="add" data-min="10">+10 min</button><button class="btn-ghost" data-act="add" data-min="-5">−5 min</button></div>
       <div class="row"><label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="addMin" placeholder="ex: 15"></label><button class="btn-primary" data-act="addCustom">Adaugă</button>${tip(TIME_BY_HAND)}</div>`,
     freeze: !live ? needsLive : `<div class="row"><label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="freezeMin" value="10"></label>
-        <button class="btn-primary" data-act="freeze">Îngheață</button>${frozen ? '<button class="btn-ghost" data-act="unfreeze">Dezgheață</button>' : ''}${tip('Subs și donațiile adaugă timp și cât e înghețat.\nPentru 20–25 decembrie: PROGRAM → Program.')}</div>
+        <button class="btn-primary" data-act="freeze">Îngheață</button>${frozen ? '<button class="btn-ghost" data-act="unfreeze">Dezgheață</button>' : ''}${tip('Subs și donațiile adaugă timp și cât e înghețat.\nPentru 20–25 decembrie: ACUM → Programate.')}</div>
       `,
     double: !live ? needsLive : `<div class="row"><label class="inline">Minute<input class="field" type="number" inputmode="numeric" id="dblMin" value="60"></label>
         <label class="inline" style="flex:1 1 200px">Oferită de<input class="field" id="dblSponsor" list="sponsorNames" placeholder="opțional"></label>
@@ -919,7 +945,7 @@ function testStripHtml(): string {
       <div class="ts-row"><span>Donații</span>${testBtn('donation', '5 €', { n: 5 }, 'Donație de test, 5 €.')}${testBtn('donation', '50 €', { n: 50 }, 'Donație de test, 50 €.')}${testBtn('donation', '250 €', { n: 250 }, 'Donație de test, 250 €.')}</div>
       <div class="ts-row"><span>Spectatori</span>${testBtn('crowd', '+25 de test', { n: 25 }, '25 de spectatori de test: privesc, votează, aleg bingo.')}${testBtn('me_sub', sub ? 'Eu: neabonat' : 'Eu: abonat', { on: !sub }, sub ? 'Pe site apari neabonat.' : 'Pe site apari abonat.')}${testBtn('me_watch', 'Eu: +2 h privit', { minutes: 120 }, 'Ai 2 ore privite azi: roata e deblocată.')}</div>
       <div class="ts-row"><span>Ceas</span>${clockTestHtml()}</div>
-      <div class="ts-row"><span>Alegeri</span>${(S.tasks?.menu ?? []).map((m) => testBtn('donation', `${euroTxt(m.price)} · ${m.title}`, { n: m.price }, `Donație de test ${euroTxt(m.price)}: «${m.title}» e în coadă (Donează și alegi).`)).join('') || '<span class="ts-note">Lista e goală: completeaz-o în AZI → Donează și alegi.</span>'}${st === 'upcoming' ? tip('Primul buton pornește și maratonul de test.') : ''}</div>
+      <div class="ts-row"><span>Alegeri</span>${(S.tasks?.menu ?? []).map((m) => testBtn('donation', `${euroTxt(m.price)} · ${m.title}`, { n: m.price }, `Donație de test ${euroTxt(m.price)}: «${m.title}» e în coadă (Donează și alegi).`)).join('') || '<span class="ts-note">Lista e goală: completeaz-o în ACTIVITĂȚI → Donează și alegi.</span>'}${st === 'upcoming' ? tip('Primul buton pornește și maratonul de test.') : ''}</div>
       <div class="ts-row"><span>Sponsori</span><button class="btn-ghost" data-act="testSponsors">Sponsori de test (10)</button>${tip('Mărci inventate, cu logo, pe site și pe overlay. La oprire revin sponsorii reali.')}</div>
       <div class="ts-row"><span>Testul</span>${testBtn('extend', '+1 oră', {}, 'Testul merge încă o oră.')}<button class="btn-ghost" data-act="testRedo">De la capăt</button><button class="btn-primary" data-act="testStop">Oprește testul</button></div>
     </div>
@@ -1164,6 +1190,84 @@ function spPayload(id: string) {
   };
 }
 
+// ---- PREMII: one list of wins, raffles, and where viewers can win (owner, 25 Nov 2026) ----
+const KIND_NAME: Record<string, string> = { roata: 'Roata', bingo: 'Bingo', tombola: 'Tombolă' };
+const KIND_WHERE: Record<string, string> = { roata: 'Câștigat la roată', bingo: 'Câștigat la bingo', tombola: 'Câștigat la tombolă' };
+const kindPill = (k: string) => `<span class="pill ${k === 'roata' ? 'ok' : k === 'bingo' ? 'white' : 'off'}">${KIND_NAME[k] ?? esc(k)}</span>`;
+function dueRow(p: DueItem): string {
+  return `<li>${kindPill(p.kind)}<span class="grow"><strong>${esc(p.login)}</strong> · ${esc(p.prize ?? '')}${p.sponsor ? ` <span class="muted">de la ${esc(p.sponsor)}</span>` : ''}<br><span class="muted">${KIND_WHERE[p.kind]} ${when(p.at)}</span></span>
+    <button class="btn-primary" data-act="given" data-kind="${p.kind}" data-id="${p.id}">Dat</button></li>`;
+}
+const fmtHours = (h: number | null) => (h === null ? '' : String(h).replace('.', ','));
+function ruleLabel(rule: string, h: number | null): string {
+  const n = Number(h), de = Number.isInteger(n) && (n % 100 === 0 || n % 100 >= 20) ? 'de ' : '';
+  return rule === 'subs' ? 'Abonații conectați pe site' : rule === 'hours' ? `Cine a privit cel puțin ${fmtHours(h)} ${n === 1 ? 'oră' : de + 'ore'}` : 'Toți cei conectați pe site cu Twitch';
+}
+const RAFFLE_HELP = 'Intrarea e mereu gratuită: lista se face singură după regula aleasă, spectatorii nu fac nimic. Donațiile nu dau șanse în plus.\nModeratorii și streamerul nu sunt pe listă.\n«Trage la sorți»: serverul alege câștigătorul, apoi sursa OBS «Tragerea la sorți» arată ruleta cu numele de pe listă. Câștigătorul vede «Ai câștigat» pe site și intră în PREMII → De dat.\nCine a câștigat o dată nu mai poate ieși la aceeași tombolă.';
+function raffleRuleFields(prefix: string, rule: string, hours: number | null, locked: boolean): string {
+  return `<label class="inline">Cine intră<select class="field" id="${prefix}Rule" data-raffle-rule="${prefix}"${locked ? ' disabled' : ''}>
+      <option value="all"${rule === 'all' ? ' selected' : ''}>Toți cei conectați pe site cu Twitch</option>
+      <option value="subs"${rule === 'subs' ? ' selected' : ''}>Doar abonații conectați pe site</option>
+      <option value="hours"${rule === 'hours' ? ' selected' : ''}>Cine a privit cel puțin … ore</option></select></label>
+    <label class="inline rf-hours"${rule === 'hours' ? '' : ' hidden'}>Ore privite (în total)<input class="field" type="number" inputmode="decimal" id="${prefix}Hours" data-raffle-rule="${prefix}" min="0.5" max="2000" step="0.5" value="${esc(hours ?? 5)}"${locked ? ' disabled' : ''}></label>`;
+}
+function tombolaHtml(): string {
+  const P = S.rafflePreview;
+  const form = `<div class="fgrid">
+      <label class="inline" style="flex:1 1 260px">Premiul<input class="field" id="rfPrize" maxlength="120" placeholder="ex: Căști de gaming"></label>
+      <label class="inline" style="flex:1 1 200px">Premiul e de la<input class="field" id="rfSponsor" list="sponsorNames" maxlength="60" placeholder="sponsor (opțional)"></label>
+      ${raffleRuleFields('rf', 'all', 5, false)}
+      <button class="btn-primary" data-act="raffleAdd">Adaugă tombola</button>
+    </div>
+    <p class="hint" id="rfCount">${P && P.key.startsWith('rf:') && P.n !== null ? `Pe listă acum: <strong>${fmtInt(P.n)}</strong>` : 'Pe listă acum: se numără…'}</p>`;
+  const rows = S.raffles.map((r) => {
+    const drawn = r.draws.length > 0;
+    const last = r.draws[r.draws.length - 1];
+    return `<li class="rf-item" style="display:block">
+      <div class="fgrid">
+        <label class="inline" style="flex:1 1 260px">Premiul<input class="field" id="rf${r.id}Prize" maxlength="120" value="${esc(r.prize)}"></label>
+        <label class="inline" style="flex:1 1 200px">Premiul e de la<input class="field" id="rf${r.id}Sponsor" list="sponsorNames" maxlength="60" value="${esc(r.sponsor ?? '')}" placeholder="sponsor (opțional)"></label>
+        ${raffleRuleFields(`rf${r.id}`, r.rule, r.min_hours, drawn)}
+        <button class="btn-ghost" data-act="raffleSave" data-id="${r.id}">Salvează</button>
+      </div>
+      <p class="hint" style="margin:8px 0 0">${esc(ruleLabel(r.rule, r.min_hours))} · pe listă acum <strong>${fmtInt(r.pool)}</strong>${drawn ? ' care n-au câștigat încă' : ''}${r.created_by ? ` · adăugată de ${esc(r.created_by)}` : ''}${drawn ? ' · regula nu se mai schimbă după prima tragere' : ''}</p>
+      ${drawn ? `<p style="margin:10px 0 0">Câștigători: ${r.draws.map((d) => `<strong>${esc(d.login)}</strong> <span class="muted">(${when(d.drawn_at)}${d.given_at ? ', dat' : ''})</span>`).join(' · ')}</p>` : ''}
+      <div class="row">
+        <button class="btn-primary" data-act="raffleDraw" data-id="${r.id}"${r.pool ? '' : ' disabled'}>${drawn ? 'Trage încă un câștigător' : 'Trage la sorți'}</button>
+        ${last ? `<button class="btn-ghost" data-act="raffleReplay" data-id="${last.id}">Arată din nou pe stream</button>` : `<button class="btn-ghost btn-danger" data-act="raffleDel" data-id="${r.id}">Șterge</button>`}
+      </div></li>`;
+  }).join('');
+  return `<section class="card wide" id="tombola">
+    <h2>Tombole ${tip(RAFFLE_HELP)}</h2>
+    <p class="lead">Un premiu, cine intră pe listă, apoi «Trage la sorți» pe stream.</p>
+    <h3 class="h3s">Tombolă nouă</h3>
+    ${form}
+    <h3 class="h3s">Tombolele (${S.raffles.length})</h3>
+    ${rows ? `<ul class="list">${rows}</ul>` : '<p class="empty">Nicio tombolă încă.</p>'}
+  </section>`;
+}
+function undeHtml(): string {
+  const arrow = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>';
+  const panel = (title: string, href: string, how: string, body: string) => `<div class="panel">
+      <div class="card-head" style="margin:0 0 8px"><strong style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-style:italic;font-size:24px;line-height:1;text-transform:uppercase">${title}</strong><a class="btn btn-link" href="#${href}">Setează${arrow}</a></div>
+      <p class="muted" style="margin:0 0 10px">${how}</p>${body}</div>`;
+  const wins = S.wheel.filter((p) => p.is_win);
+  const wheel = wins.length ? `<ul class="list">${wins.map((p) => `<li><span class="grow">${esc(p.full_label)}${p.sponsor ? ` <span class="muted">de la ${esc(p.sponsor)}</span>` : ''}</span><span class="muted">șansa ${esc(p.weight)}</span></li>`).join('')}</ul>` : '<p class="empty">Nicio felie cu premiu.</p>';
+  const B = S.bingo;
+  const bprize = B?.prize && !B.prize.startsWith('[') ? B.prize : '';
+  const bingo = bprize ? `<p style="margin:0"><strong>${esc(bprize)}</strong>${B?.prize_sponsor ? ` <span class="muted">de la ${esc(B.prize_sponsor)}</span>` : ''}</p>` : '<p class="callout bad" style="margin:0">Premiul de bingo nu e scris încă.</p>';
+  const raffles = S.raffles.length ? `<ul class="list">${S.raffles.map((r) => `<li><span class="grow">${esc(r.prize)}${r.sponsor ? ` <span class="muted">de la ${esc(r.sponsor)}</span>` : ''}<br><span class="muted">${esc(ruleLabel(r.rule, r.min_hours))}</span></span>${r.draws.length ? `<span class="pill ok">${r.draws.length === 1 ? 'tras' : `${r.draws.length} trageri`}</span>` : '<span class="pill off">netras</span>'}</li>`).join('')}</ul>` : '<p class="empty">Nicio tombolă încă.</p>';
+  return `<section class="card wide" id="unde">
+    <h2>Unde se câștigă ${tip('Tot ce pot câștiga spectatorii, din ce ați scris voi. «Setează» duce la pagina fiecăruia.\nCâștigătorii de peste tot ajung în PREMII → De dat.')}</h2>
+    <div class="panels">
+      ${panel('Roata', 'roata-premii', 'Abonații: o rotire pe zi după 2 ore privite, plus rotiri din codurile secrete.', wheel)}
+      ${panel('Bingo', 'bingo', 'Cine are toată linia bifată intră la tragerea la sorți.', bingo)}
+      ${panel('Tombole', 'tombola', 'Lista se face singură după regula fiecărei tombole. Intrarea e gratuită.', raffles)}
+      ${panel('Coduri secrete', 'rapid', 'Un cod arătat pe stream dă o rotire în plus la roată celor care îl scriu la timp.', `<p style="margin:0" class="muted">${S.codes.length ? `${S.codes.length} ${S.codes.length === 1 ? 'cod arătat' : 'coduri arătate'} până acum.` : 'Niciun cod arătat încă.'}</p>`)}
+    </div>
+  </section>`;
+}
+
 /** «De făcut acum»: what needs a moderator, from data /mod already has. */
 function todoHtml(): string {
   const raised = Number(S.stats?.raised ?? 0);
@@ -1173,12 +1277,13 @@ function todoHtml(): string {
   for (const d of (S.health?.skipped ?? []) as { id: string; user: string; amount: number; currency: string; at: string }[]) {
     items.push({ tag: 'DONAȚIE', cls: 'warn', t: `${d.user} · ${d.amount} ${d.currency}`, d: `Nu e în euro: nu a adăugat timp (${when(d.at)}). Adăugați minutele de mână, dacă vreți.`, btn: `<button class="btn-ghost" data-act="skipDone" data-id="${esc(d.id)}">Am rezolvat</button>` });
   }
-  for (const p of S.prizes.slice(0, 3)) items.push({ tag: 'PREMIU', cls: 'ok', t: `${p.user_login} · ${p.prizes?.win_label ?? ''}`, d: `Câștigat pe roată ${when(p.created_at)}`, btn: `<button class="btn-primary" data-act="fulfil" data-id="${p.id}">Am dat premiul</button>` });
-  if (S.prizes.length > 3) items.push({ tag: 'PREMII', cls: 'ok', t: `Încă ${S.prizes.length - 3} premii de dat`, d: '', btn: '<a class="btn btn-ghost" href="#premii">Vezi toate</a>' });
+  const due = S.due.due;
+  for (const p of due.slice(0, 3)) items.push({ tag: 'PREMIU', cls: 'ok', t: `${p.login} · ${p.prize ?? ''}`, d: `${KIND_WHERE[p.kind]} ${when(p.at)}`, btn: `<button class="btn-primary" data-act="given" data-kind="${p.kind}" data-id="${p.id}">Am dat premiul</button>` });
+  if (due.length > 3) items.push({ tag: 'PREMII', cls: 'ok', t: `Încă ${due.length - 3} premii de dat`, d: '', btn: '<a class="btn btn-ghost" href="#premii">Vezi toate</a>' });
   S.goals.forEach((g, i) => { if (raised >= g.threshold && !g.done_at) items.push({ tag: 'MILESTONE', cls: 'white', t: `${pad(i + 1)} · ${g.title}`, d: 'Deblocat. Când s-a făcut live, pune linkul clipului.', btn: '<a class="btn btn-ghost" href="#milestones">Marchează făcut</a>' }); });
   const lg = lineGroups.filter((g) => !lineInfo(g.id).ok).length;
   if (lg) items.push({ tag: 'REPLICI', cls: 'warn', t: `${lg} ${lg === 1 ? 'grup are' : 'grupuri au'} sub ${MIN_LINES} replici`, d: `Balonul folosește «${FALLBACK_LINE}» până le completați.`, btn: '<a class="btn btn-ghost" href="#replici">Completează</a>' });
-  if (S.suggestions.length) items.push({ tag: 'PROPUNERI', cls: 'off', t: `${S.suggestions.length} ${S.suggestions.length === 1 ? 'propunere nouă' : 'propuneri noi'} de la abonați`, d: '', btn: '<a class="btn btn-ghost" href="#propuneri">Vezi propunerile</a>' });
+  if (S.suggestions.length) items.push({ tag: 'PROPUNERI', cls: 'off', t: `${S.suggestions.length} ${S.suggestions.length === 1 ? 'propunere nouă' : 'propuneri noi'} de la abonați`, d: '', btn: '<a class="btn btn-ghost" href="#vot">Vezi propunerile</a>' });
   const bw = S.bingo?.status.winners.length ?? 0;
   if (bw && !S.bingo?.status.draws.length) items.push({ tag: 'BINGO', cls: 'ok', t: `${bw} cu bingo, gata de tragere`, d: '', btn: '<a class="btn btn-ghost" href="#bingo">Trage la sorți</a>' });
   return `<section class="card flush" id="todo"><h2>De făcut acum${items.length ? ` · ${items.length}` : ''}</h2>
@@ -1312,6 +1417,30 @@ app.addEventListener('change', (e) => {
   t.blur();   // the page waits for a focused field; the new card should show at once
   render();
 });
+// Tombole: the hours field shows only for «Cine a privit…»; the new-raffle form counts its list as you pick.
+let rfTimer = 0;
+async function raffleCount() {
+  const rule = val('rfRule');
+  if (!rule) return;
+  const hours = rule === 'hours' ? Number(val('rfHours')) || null : null;
+  const key = `rf:${rule}:${hours ?? ''}`;
+  const out = () => { const el = document.getElementById('rfCount'); if (el && S.rafflePreview?.key === key) el.innerHTML = S.rafflePreview.n === null ? 'Pe listă acum: —' : `Pe listă acum: <strong>${fmtInt(S.rafflePreview.n)}</strong>`; };
+  if (S.rafflePreview?.key === key) return out();
+  S.rafflePreview = { key, n: null };
+  try {
+    const n = demoApi ? demoApi.rpc('mod_raffle_count', { p_rule: rule, p_min_hours: hours }) : (await (db as any).rpc('mod_raffle_count', { p_rule: rule, p_min_hours: hours })).data;
+    if (S.rafflePreview?.key === key) S.rafflePreview.n = typeof n === 'number' ? n : null;
+  } catch { /* stays «—» */ }
+  out();
+}
+function raffleRuleChanged(t: HTMLElement) {
+  const prefix = t.dataset.raffleRule!;
+  const hrs = document.getElementById(`${prefix}Hours`)?.closest('label');
+  if (hrs) hrs.hidden = val(`${prefix}Rule`) !== 'hours';
+  if (prefix === 'rf') { clearTimeout(rfTimer); rfTimer = window.setTimeout(() => void raffleCount(), 250); }
+}
+app.addEventListener('change', (e) => { const t = e.target as HTMLElement; if (t.dataset?.raffleRule) raffleRuleChanged(t); });
+app.addEventListener('input', (e) => { const t = e.target as HTMLElement; if (t.dataset?.raffleRule) raffleRuleChanged(t); });
 app.addEventListener('change', (e) => { const t = e.target as HTMLInputElement; if (t.id === 'sp_file' && t.files?.[0]) void spUpload(t.files[0]).finally(() => { t.value = ''; }); });
 app.addEventListener('change', (e) => { const t = e.target as HTMLInputElement; if (t.id === 'scene_file' && t.files?.[0]) void sceneUpload(t.files[0]).catch(() => {}).finally(() => { t.value = ''; }); });
 window.addEventListener('beforeunload', (e) => {
@@ -1363,7 +1492,6 @@ function render() {
         <label class="inline">Cât durează (minute)<input class="field" type="number" inputmode="numeric" id="apVoteMin" min="10" max="720" value="${esc(A.voteMinutes ?? 60)}"></label>
       </div>
       ${A.lastVoteDay ? `<p class="hint">Ultima rundă automată: ${esc(A.lastVoteDay)}.</p>` : ''}
-      <p class="callout" style="margin:16px 0 0">Pornirea automată a maratonului e acum la <a href="#cronometru">STREAMER → Start</a>.</p>
       <div class="row"><button class="btn-primary" data-act="autoSave">Salvează</button>${A.updatedBy ? `<span class="hint">Ultima schimbare: ${esc(A.updatedBy)}, ${when(A.updatedAt)}</span>` : ''}</div>
     </section>`;
     },
@@ -1373,7 +1501,7 @@ function render() {
       const res = (r: string) => (r === 'done' ? '<span class="pill ok">făcut</span>' : r === 'missed' ? '<span class="pill warn">ratat</span>' : `<span class="pill bad">${esc(r)}</span>`);
       return `
     <section class="card wide" id="plan">
-      <h2>Program ${tip('Ora dublă, codurile secrete și înghețurile pornesc singure la ora lor, cât timp cronometrul merge.')}</h2>
+      <h2>Programate ${tip('Ora dublă, codurile secrete și înghețurile pornesc singure la ora lor, cât timp cronometrul merge.')}</h2>
       <div class="fgrid plan-form">
         <label class="inline">Ce<select class="field" id="planKind"><option value="double" selected>Ora dublă</option><option value="code">Cod secret</option><option value="freeze">Îngheț</option></select></label>
         <label class="inline">Când<input class="field" type="datetime-local" id="planAt"></label>
@@ -1411,20 +1539,6 @@ function render() {
           <span class="grow"${st.done ? ' style="color:#8C97A8"' : ''}>${esc(c.label)}${st.by ? `<br><span class="muted">bifat de ${esc(st.by)}, ${when(st.at ?? null)}</span>` : ''}</span></label>
           ${c.card ? `<a class="btn btn-link" href="#${c.card}">Deschide<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a>` : ''}</li>`;
       }).join('')}</ul>
-    </section>`;
-    },
-    'bingo-bife': () => {
-      const B = S.bingo;
-      if (!B || !B.items.length) return '';
-      if (B.status.draws.length) return `<section class="card wide" id="bingo-bife"><h2>Bingo</h2><p class="muted" style="margin-top:0">Tragerea s-a făcut: ${B.status.draws.map((d) => `<strong style="color:#F2F5FA">${esc(d.login)}</strong>`).join(', ')}.</p></section>`;
-      if (bingoPicksOpen()) return `<section class="card wide" id="bingo-bife"><h2>Bingo</h2>${bingoNowHtml()}</section>`;
-      return `
-    <section class="card wide" id="bingo-bife">
-      <div class="card-head"><h2>Bife de bingo ${tip('Bifați ce se vede pe stream. Cele cu regulă «automat» se bifează singure.')}</h2><span class="head-stat"><strong>${B.items.filter((i) => i.happened_at).length} din ${B.items.length}</strong> s-au întâmplat</span></div>
-      ${B.status.winners.length ? `<p class="callout"><strong>${B.status.winners.length} cu bingo</strong>: trageți la sorți din PREGĂTIRE → Bingo.</p>` : ''}
-      <ul class="list">${B.items.map((i) => `<li>
-        ${tickBtn(i.id, !!i.happened_at)}
-        <span class="grow">${esc(i.label)}${i.auto_rule ? `<br><span class="muted">${esc(ruleText(i.auto_rule))}</span>` : ''}</span></li>`).join('')}</ul>
     </section>`;
     },
     'streamer': () => `
@@ -1493,14 +1607,6 @@ function render() {
       return `<section class="card wide" id="bingo">
       <h2>Bingo</h2>
       ${bingoNowHtml()}
-      <h3 class="h3s">Ore și premiu ${tip('Opțional: cu orele planificate, bingo se deschide și se închide singur.')}</h3>
-      <div class="fgrid">
-        <label class="inline">Se deschide la<input class="field" type="datetime-local" id="bingoOpenAt" value="${toLocal(B.opens_at)}"></label>
-        <label class="inline">Se închide la<input class="field" type="datetime-local" id="bingoClose" value="${toLocal(B.closes_at)}"></label>
-        <label class="inline" style="flex:1 1 220px">Premiul<input class="field" id="bingoPrize" value="${esc(B.prize)}" maxlength="120"></label>
-        <label class="inline" style="flex:1 1 180px">Premiul e de la<input class="field" id="bingoPrizeSponsor" list="sponsorNames" value="${esc(B.prize_sponsor ?? '')}" maxlength="60" placeholder="sponsor (opțional)"></label>
-        <button class="btn-ghost" data-act="bingoSettings">Salvează</button>
-      </div>
       <h3 class="h3s">Cartonașul · ${open ? 'bifele vin după închidere' : 'bifează când se întâmplă'} ${tip('Scrieți voi evenimentele, în ordine, rând cu rând. Alegeți mărimea: 3 × 3 (9 evenimente), 4 × 4 (16) sau 5 × 5 (25). Spectatorii aleg o linie: un rând, o coloană sau o diagonală.\nDupă ce a ales cineva o linie, evenimentele se mai pot doar redenumi: nu se mai mută, nu se scot și mărimea rămâne.')}</h3>
       ${(() => {
         const n = bingoN(), rows = bingoRows(), locked = (B.status.players ?? 0) > 0;
@@ -1528,10 +1634,18 @@ function render() {
         <button class="btn-primary" data-act="bingoSaveList">Salvează cartonașul</button>
         ${S.bingoDraft ? '<button class="btn-ghost" data-act="bingoCancel">Renunță</button><span class="muted">Modificări nesalvate</span>' : ''}
       </div>
-      <h3 class="h3s">Tragerea la sorți ${tip('Pe stream se vede în sursa OBS «Tragerea la bingo»: o ruletă cu toți cei cu bingo, care se oprește pe câștigător.\nCâștigătorul e ales de server înainte de animație.')}</h3>
+      <h3 class="h3s">Tragerea la sorți ${tip('Pe stream se vede în sursa OBS «Tragerea la sorți»: o ruletă cu toți cei cu bingo, care se oprește pe câștigător.\nCâștigătorul e ales de server înainte de animație și intră în PREMII → De dat.')}</h3>
       <p class="muted" style="margin:0">${B.status.winners.length ? `${B.status.winners.length} cu bingo: ${B.status.winners.map((w) => esc(w.login)).join(', ')}` : 'Nimeni nu are încă toată linia bifată.'}</p>
       <div class="row"><button class="btn-primary" data-act="bingoDraw" ${B.status.winners.length && !bingoPicksOpen() ? '' : 'disabled'}>Trage la sorți</button>${B.status.draws.length ? '<button class="btn-ghost" data-act="bingoReplay">Arată din nou pe stream</button>' : ''}</div>
       ${B.status.draws.length ? `<p style="margin:10px 0 0">Extrași: ${B.status.draws.map((d) => `<strong>${esc(d.login)}</strong>${d.drawn_at ? ` <span class="muted">(${when(d.drawn_at)})</span>` : ''}`).join(' · ')}</p>` : ''}
+      <h3 class="h3s">Ore și premiu ${tip('Opțional: cu orele planificate, bingo se deschide și se închide singur.')}</h3>
+      <div class="fgrid">
+        <label class="inline">Se deschide la<input class="field" type="datetime-local" id="bingoOpenAt" value="${toLocal(B.opens_at)}"></label>
+        <label class="inline">Se închide la<input class="field" type="datetime-local" id="bingoClose" value="${toLocal(B.closes_at)}"></label>
+        <label class="inline" style="flex:1 1 220px">Premiul<input class="field" id="bingoPrize" value="${esc(B.prize)}" maxlength="120"></label>
+        <label class="inline" style="flex:1 1 180px">Premiul e de la<input class="field" id="bingoPrizeSponsor" list="sponsorNames" value="${esc(B.prize_sponsor ?? '')}" maxlength="60" placeholder="sponsor (opțional)"></label>
+        <button class="btn-ghost" data-act="bingoSettings">Salvează</button>
+      </div>
     </section>`;
     })() : ''}`,
     'roata-premii': () => `
@@ -1599,7 +1713,7 @@ function render() {
         : '<p class="muted" style="margin-top:0">Nimic programat.</p>'}
     </section>`,
     'propuneri': () => `
-    <section class="card" id="propuneri">
+    <section class="card wide" id="propuneri">
       <h2>Propuneri (${S.suggestions.length}) ${tip('Spam-ul, linkurile și dublurile sunt refuzate automat.')}</h2>
       ${S.suggestions.length > 1 ? '<div class="row"><button class="btn-primary" data-act="approveAll">Aprobă tot</button><button class="btn-ghost" data-act="rejectAll">Respinge tot</button></div>' : ''}
       ${S.suggestions.length ? `<ul class="list">${S.suggestions.map((s) => `<li class="acts-row">
@@ -1608,14 +1722,17 @@ function render() {
         <button class="btn-ghost" data-act="reject" data-id="${s.id}">Respinge</button></li>`).join('')}</ul>`
         : '<p class="muted" style="margin-top:0">Nicio propunere nouă.</p>'}
     </section>`,
-    'premii': () => `
-    <section class="card" id="premii">
-      <h2>Premii de dat (${S.prizes.length})</h2>
-      ${S.prizes.length ? `<ul class="list">${S.prizes.map((p) => `<li>
-        <span class="grow"><strong>${esc(p.user_login)}</strong> · ${esc(p.prizes?.win_label ?? '')}<br><span class="muted">${when(p.created_at)}</span></span>
-        <button class="btn-primary" data-act="fulfil" data-id="${p.id}">Dat</button></li>`).join('')}</ul>`
-        : '<p class="muted" style="margin-top:0">Toate premiile au fost date.</p>'}
-    </section>`,
+    'premii': () => {
+      const D = S.due;
+      return `
+    <section class="card wide" id="premii">
+      <div class="card-head"><h2>Premii de dat ${tip('Toți câștigătorii, din toate locurile: roata, bingo și tombolele, cel mai vechi primul.\nApăsați «Dat» după ce câștigătorul a primit premiul.')}</h2><span class="head-stat"><strong>${D.due.length}</strong> de dat</span></div>
+      ${D.due.length ? `<ul class="list">${D.due.map(dueRow).join('')}</ul>` : '<p class="empty">Toate premiile au fost date.</p>'}
+      ${D.given.length ? `<details class="more" style="margin-top:14px"><summary>Date recent (${D.given.length})</summary><ul class="list">${D.given.map((g) => `<li>${kindPill(g.kind)}<span class="grow"><strong>${esc(g.login)}</strong> · ${esc(g.prize ?? '')}<br><span class="muted">dat ${when(g.given_at)}${g.by ? `, de ${esc(g.by)}` : ''}</span></span></li>`).join('')}</ul></details>` : ''}
+    </section>`;
+    },
+    'tombola': () => tombolaHtml(),
+    'unde': () => undeHtml(),
     'moderatori': () => `
     <section class="card wide" id="moderatori">
       <h2>Moderatori ${tip('Merge și înainte ca persoana să se fi conectat pe site.')}</h2>
@@ -1669,6 +1786,12 @@ function afterRender() {
     if (again) tipShow(again); else tipHide();
   }
   if (!S.me?.is_moderator) return;
+  // Tombole: a live refresh keeps a typed rule (typedValues); show the hours field to match it.
+  app.querySelectorAll<HTMLSelectElement>('select[data-raffle-rule]').forEach((el) => {
+    const hrs = document.getElementById(`${el.dataset.raffleRule}Hours`)?.closest('label');
+    if (hrs) hrs.hidden = el.value !== 'hours';
+  });
+  if (document.getElementById('rfRule')) void raffleCount();
   const firstDraw = shownView === '';
   const pageChanged = shownView !== S.view;
   shownView = S.view;
@@ -1862,7 +1985,24 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   veto: (el) => confirm('Veto pe provocarea asta?') && call('mod_set_challenge', { p_id: Number(el.dataset.id), p_status: 'vetoed' }, 'Veto.'),
   approve: (el) => call('mod_review_suggestion', { p_id: Number(el.dataset.id), p_approve: true }, 'Aprobată: e acum în lista de provocări.'),
   reject: (el) => call('mod_review_suggestion', { p_id: Number(el.dataset.id), p_approve: false }, 'Respinsă.'),
-  fulfil: (el) => call('mod_fulfil_spin', { p_id: Number(el.dataset.id) }, 'Premiu marcat ca dat.'),
+  given: (el) => call('mod_prize_given', { p_kind: el.dataset.kind, p_id: Number(el.dataset.id) }, 'Premiu marcat ca dat.'),
+  raffleAdd: () => {
+    const rule = val('rfRule');
+    if (!val('rfPrize').trim()) return say('Scrie premiul.', true);
+    return call('mod_raffle_save', { p_id: null, p_prize: val('rfPrize'), p_sponsor: val('rfSponsor'), p_rule: rule, p_min_hours: rule === 'hours' ? Number(val('rfHours')) || null : null }, 'Tombola a fost adăugată.');
+  },
+  raffleSave: (el) => {
+    const id = el.dataset.id!, rule = val(`rf${id}Rule`);
+    return call('mod_raffle_save', { p_id: Number(id), p_prize: val(`rf${id}Prize`), p_sponsor: val(`rf${id}Sponsor`), p_rule: rule, p_min_hours: rule === 'hours' ? Number(val(`rf${id}Hours`)) || null : null }, 'Tombola a fost salvată.');
+  },
+  raffleDel: (el) => confirm('Ștergi tombola?') && call('mod_raffle_delete', { p_id: Number(el.dataset.id) }, 'Tombola a fost ștearsă.'),
+  raffleDraw: (el) => {
+    const r = S.raffles.find((x) => x.id === Number(el.dataset.id));
+    if (!r) return;
+    return confirm(`Tragi la sorți «${r.prize}» acum? Ruleta pornește pe stream (sursa «Tragerea la sorți»).`) &&
+      call('mod_raffle_draw', { p_id: r.id }, 'Câștigătorul a fost ales. Ruleta merge pe stream.');
+  },
+  raffleReplay: (el) => call('mod_raffle_replay', { p_draw: Number(el.dataset.id) }, 'Tragerea se vede din nou pe stream.'),
   goalAdd: () => { editGoals().push({ title: '', threshold: '', sponsor: '', done: false, clip: '', when: '' }); render(); },
   goalDone: async (el) => {
     const g = editGoals()[Number(el.dataset.i)];
