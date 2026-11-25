@@ -42,6 +42,20 @@ export interface Bingo {
   draw?: { id: number; name: string; at: number; shownAt: number; entrants: string[]; total: number; kind?: 'bingo' | 'tombola'; prize?: string; sponsor?: string | null } | null;
 }
 
+/** The raffle on stream (part 'raffle', OBS piece «Tragerea la sorți»; migration 20261221100000). */
+export interface RaffleStage {
+  id: number; prize: string; sponsor: string | null; rule: 'all' | 'subs' | 'hours' | 'points'; hours: number | null; cost: number | null;
+  /** open: entries open · closed: waiting for the draw · drawn: a winner is on screen */
+  phase: 'open' | 'closed' | 'drawn';
+  count: number;
+  /** Points raffles: the newest entrants (newest first). */
+  entries: { name: string; at: number }[];
+  /** Automatic lists: a sample of names from the list. */
+  sample: string[];
+  winners: string[];
+  draw: { id: number; name: string; at: number; shownAt: number; entrants: string[]; total: number } | null;
+}
+
 /** What one viewer added in total (my_state). */
 export interface Mine { seconds: number; subs: number; gifts: number; bits: number; donated: number }
 /** One viewer's hours, daily streak and badges from chat presence. */
@@ -88,6 +102,8 @@ export interface Sponsor {
 }
 
 export interface SiteData {
+  /** The raffle on stream, for the OBS piece (null when none). */
+  raffle?: RaffleStage | null;
   /** false until the first answer from the backend (the page then says it's loading, not «starts soon»). */
   loaded?: boolean;
   status: Status;

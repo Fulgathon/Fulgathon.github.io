@@ -20,6 +20,8 @@ import { derive, initialState } from '../lib/derive';
 import { LineBag, fillLine, groupFor, varsFor } from '../lib/lines';
 import { FALLBACK_LINE } from '../data/content';
 import { count, fmtInt } from '../lib/format';
+import { rafflePanel } from './overlay-raffle';
+import { overlaySound } from './overlay-sound';
 
 const params = new URLSearchParams(location.search);
 const calm = params.has('calm') || matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -657,7 +659,8 @@ function playDraw(winner: string, entrants: string[], prize: string, sponsor: st
   el.classList.remove('won');
   void el.offsetWidth;
   el.classList.add('show');
-  const finish = () => { if (run !== drawRun) return; list.style.transform = `translateY(${-endPx}px)`; rows.forEach((r) => r.classList.remove('at')); el.classList.add('won'); };
+  let landed = false;
+  const finish = () => { if (run !== drawRun || landed) return; landed = true; list.style.transform = `translateY(${-endPx}px)`; rows.forEach((r) => r.classList.remove('at')); el.classList.add('won'); drawSound.win(); };
   if (calm) finish();
   else {
     // Driven frame by frame (not a CSS transition) for the long tail; the name in the middle row
@@ -665,6 +668,7 @@ function playDraw(winner: string, entrants: string[], prize: string, sponsor: st
     list.style.transition = 'none';
     list.style.transform = 'translateY(0)';
     const startAt = performance.now() + 1200;
+    window.setTimeout(() => { if (run === drawRun) drawSound.whoosh(); }, 1200);
     const start = at - 2 - DRAW_ROWS;   // top row at t=0 (the middle row is always top + 2); ends at at - 2
     let lit = -1;
     const step = (now: number) => {
@@ -673,7 +677,7 @@ function playDraw(winner: string, entrants: string[], prize: string, sponsor: st
       const y = (start + (1 - Math.pow(1 - t, DRAW_EASE)) * DRAW_ROWS) * DRAW_ROW;
       list.style.transform = `translateY(${-y}px)`;
       const mid = Math.round(y / DRAW_ROW) + 2;
-      if (mid !== lit) { rows[lit]?.classList.remove('at'); rows[mid]?.classList.add('at'); lit = mid; }
+      if (mid !== lit) { rows[lit]?.classList.remove('at'); rows[mid]?.classList.add('at'); if (lit >= 0 && t > 0) drawSound.tick(t); lit = mid; }
       if (t < 1) requestAnimationFrame(step); else finish();
     };
     list.style.transform = `translateY(${-start * DRAW_ROW}px)`;
@@ -684,7 +688,12 @@ function playDraw(winner: string, entrants: string[], prize: string, sponsor: st
   drawShowTimer = window.setTimeout(() => { if (run === drawRun) el.classList.remove('show', 'won'); }, (calm ? 0 : 1200 + DRAW_SPIN) + 22_000);
 }
 
+// The raffle on stream (part 'raffle'): its own solid panel under the bingo draw.
+// Draw sounds (countdown, spin clicks, win chime); &sound=0 turns them off, &vol=0–1 sets the level.
+const drawSound = overlaySound(show.has('draw') && params.get('sound') !== '0', params.has('vol') ? Number(params.get('vol')) : 0.8);
+const raffleView = show.has('draw') && !brb ? rafflePanel($('.ov-raffle'), calm, drawSound) : null;
 function onData(first: boolean) {
+  raffleView?.update(data.raffle ?? null);
   checkDraw();
   compare(data);
   rehearsalEvents(data);
@@ -700,6 +709,7 @@ if (params.has('demo')) {
     const sync = () => {
       const t = api.state.overlayTest;
       if (t && t.n > lastTest) { lastTest = t.n; if (Date.now() - t.at < 60_000) runTest(t.kind); }
+      api.raffleDemoTick();   // demo: sample viewers keep entering the raffle on stream
       data = api.toSiteData();
       const cc = api.currentCode();
       showCode(cc ? { code: cc.code, sponsor: cc.sponsor, expires_at: new Date(cc.expiresAt).toISOString() } : null);
@@ -711,7 +721,7 @@ if (params.has('demo')) {
     sync();
     // ?demo&part=draw: a sample draw on load and every 40 s, to place and preview it in OBS.
     if (piece === 'draw') {
-      const sample = () => { if (!data.bingo.draw || Date.now() - data.bingo.draw.shownAt > 60_000) playDraw(DEMO_DRAW[2], demoEntrants(40), data.bingo.prize, data.bingo.prizeSponsor ?? null); };
+      const sample = () => { if (!data.raffle && (!data.bingo.draw || Date.now() - data.bingo.draw.shownAt > 60_000)) playDraw(DEMO_DRAW[2], demoEntrants(40), data.bingo.prize, data.bingo.prizeSponsor ?? null); };
       window.setTimeout(sample, 800);
       window.setInterval(sample, 40_000);
     }

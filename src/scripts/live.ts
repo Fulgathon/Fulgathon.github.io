@@ -265,6 +265,18 @@ export class Live {
       };
     }
 
+    if (has('raffle')) {
+      const r = P.raffle;
+      patch.raffle = r ? {
+        id: Number(r.id), prize: String(r.prize ?? ''), sponsor: r.sponsor ?? null, rule: r.rule, hours: r.hours == null ? null : Number(r.hours), cost: r.cost == null ? null : Number(r.cost),
+        phase: r.phase === 'drawn' ? 'drawn' : r.phase === 'closed' ? 'closed' : 'open', count: Number(r.count) || 0,
+        entries: Array.isArray(r.entries) ? r.entries.map((e: Json) => ({ name: String(e.name ?? ''), at: Date.parse(e.at) })) : [],
+        sample: Array.isArray(r.sample) ? r.sample.map(String) : [],
+        winners: Array.isArray(r.winners) ? r.winners.map(String) : [],
+        draw: r.draw ? { id: Number(r.draw.id), name: String(r.draw.name ?? ''), at: Date.parse(r.draw.at), shownAt: Date.parse(r.draw.shownAt),
+          entrants: Array.isArray(r.draw.entrants) ? r.draw.entrants.map(String) : [], total: Number(r.draw.total) || 0 } : null,
+      } : null;
+    }
     if (has('today') && P.today) {
       const t = P.today;
       patch.today = { seconds: Number(t.seconds) || 0, people: Number(t.people) || 0, subs: Number(t.subs) || 0, donated: Number(t.donated) || 0, bits: Number(t.bits) || 0, events: Number(t.events) || 0 };

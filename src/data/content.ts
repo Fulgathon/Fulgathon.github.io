@@ -130,5 +130,5 @@ export const overlayPieces: { id: string; label: string; what: string; w: number
   { id: 'vote', label: 'Votul live', what: 'Doar cât e deschis votul.', w: 400, h: 330 },
   { id: 'code', label: 'Codul secret', what: 'Doar când arătați un cod. Link privat.', w: 460, h: 170, key: true },
   { id: 'promo', label: 'Linia partenerului', what: 'Partenerul, la 10 minute.', w: 520, h: 60 },
-  { id: 'draw', label: 'Tragerea la sorți', what: 'Invizibil până trageți la sorți pe /mod: câștigătorul de bingo sau al unei tombole.', w: 960, h: 540 },
+  { id: 'draw', label: 'Tragerea la sorți', what: 'Tombola de pe stream (numele care intră, roata, 3·2·1, câștigătorul, care rămâne până la «Încheie tombola») și tragerea la bingo. Transparentă când nu e nicio tombolă pe stream. Are sunet: în OBS bifează «Control audio via OBS» ca să-i reglezi volumul.', w: 960, h: 540 },
 ];

@@ -45,7 +45,9 @@ interface DemoRaffle {
   pointsCost?: number | null; entries?: string[]; entriesClosed?: number | null;
   /** The three ticks (migration 20261219100000). */
   includeMods?: boolean; allowPast?: boolean; allowRepeat?: boolean;
-  draws: { id: number; name: string; at: number; by: string; given: number | null; total: number }[];
+  draws: { id: number; name: string; at: number; by: string; given: number | null; total: number; entrants?: string[]; shownAt?: number }[];
+  /** On stream (one at a time) and ended (migration 20261221100000); when each entrant redeemed. */
+  onStream?: boolean; ended?: number | null; entryAt?: Record<string, number>;
 }
 interface DemoSuggestion { id: number; body: string; user: string; at: number; status: 'pending' | 'approved' | 'rejected' }
 
@@ -647,10 +649,11 @@ export class DemoBackend {
   }
   rafflesFor(s: DemoState) {
     const iso = (ms: number | null) => (ms ? new Date(ms).toISOString() : null);
-    return [...(s.raffles ?? [])].sort((a, b) => b.id - a.id).map((r) => ({
+    return [...(s.raffles ?? [])].sort((a, b) => Number(!!a.ended) - Number(!!b.ended) || b.id - a.id).map((r) => ({
       id: r.id, prize: r.prize, sponsor: r.sponsor, rule: r.rule, min_hours: r.minHours, created_by: r.by, created_at: iso(r.at),
       include_mods: !!r.includeMods, allow_past_winners: r.allowPast !== false, allow_repeat: !!r.allowRepeat,
       points_cost: r.pointsCost ?? null, entries_closed_at: iso(r.entriesClosed ?? null), on_twitch: r.rule === 'points' && !r.entriesClosed, reward_error: null, entries: (r.entries ?? []).length,
+      on_stream: !!r.onStream, ended_at: iso(r.ended ?? null),
       pool: this.raffleCanWin(s, r).length,
       draws: r.draws.map((d) => ({ id: d.id, login: d.name, drawn_at: iso(d.at), drawn_by: d.by, given_at: iso(d.given), total: d.total })),
     }));
@@ -665,12 +668,17 @@ export class DemoBackend {
       if (id === null) {
         const nid = Math.max(0, ...list.map((x) => x.id)) + 1;
         // Demo: a points raffle starts with sample viewers who already redeemed.
-        const entries = r.rule === 'points' ? s.bingo.others.map((o) => o.user).filter((_, i) => i % 9 === 0).slice(0, 80) : [];
-        list.push({ id: nid, prize: prize.trim(), sponsor: sponsor?.trim() || null, rule: r.rule, minHours: r.minHours, pointsCost: cost, entries, entriesClosed: null, ...ticks, by: this.asMod ? 'modi' : 'icemanlucky', at: Date.now(), draws: [] });
+        // Demo: a points raffle starts with a few sample viewers who already redeemed; more come in live (raffleDemoTick).
+        const entries = r.rule === 'points' ? s.bingo.others.map((o) => o.user).filter((_, i) => i % 9 === 0).slice(0, 12) : [];
+        const t0 = Date.now() - entries.length * 4000;
+        list.push({ id: nid, prize: prize.trim(), sponsor: sponsor?.trim() || null, rule: r.rule, minHours: r.minHours, pointsCost: cost, entries, entriesClosed: null,
+          entryAt: Object.fromEntries(entries.map((n, i) => [n, t0 + i * 4000])), onStream: !list.some((x) => x.onStream), ended: null,
+          ...ticks, by: this.asMod ? 'modi' : 'icemanlucky', at: Date.now(), draws: [] });
         return nid;
       }
       const cur = list.find((x) => x.id === id);
       if (!cur) return fail('no_raffle');
+      if (cur.ended) fail('raffle_ended');
       if ((cur.rule !== r.rule || cur.minHours !== r.minHours || (cur.pointsCost ?? null) !== cost) && cur.draws.length) fail('raffle_drawn');
       if (cur.rule === 'points' && r.rule === 'points' && cur.pointsCost !== cost && (cur.entries ?? []).length) fail('raffle_cost_locked');
       if (cur.rule === 'points' && r.rule !== 'points' && (cur.entries ?? []).length) fail('raffle_has_entries');
@@ -682,17 +690,50 @@ export class DemoBackend {
     return this.mutate((s) => {
       const r = (s.raffles ?? []).find((x) => x.id === id);
       if (!r) return fail('no_raffle');
-      if (r.rule === 'points' && !r.entriesClosed) r.entriesClosed = Date.now();   // the first draw closes entries
+      if (r.ended) fail('raffle_ended');
+      if (!r.entriesClosed) r.entriesClosed = Date.now();   // the first draw closes entries
       const all = this.rafflePool(s, r);
       const left = this.raffleCanWin(s, r);
       if (!left.length) return fail('raffle_empty');
       const won = pick(left);
       const did = Math.max(0, ...(s.raffles ?? []).flatMap((x) => x.draws.map((d) => d.id))) + 1;
-      r.draws.push({ id: did, name: won, at: Date.now(), by: this.asMod ? 'modi' : 'icemanlucky', given: null, total: all.length });
-      s.bingo.drawShow = { id: did, name: won, at: Date.now(), shownAt: Date.now(), entrants: this.raffleReel(s, r, won), total: all.length, kind: 'tombola', prize: r.prize, sponsor: r.sponsor };
+      r.draws.push({ id: did, name: won, at: Date.now(), by: this.asMod ? 'modi' : 'icemanlucky', given: null, total: all.length, entrants: this.raffleReel(s, r, won), shownAt: Date.now() });
       return won;
     });
   }
+  /** Part 'raffle' (as private.raffle_part): the raffle on stream for the OBS piece. */
+  raffleStage(s: DemoState): import('../data/types').RaffleStage | null {
+    const r = (s.raffles ?? []).find((x) => x.onStream && !x.ended);
+    if (!r) return null;
+    const last = r.draws[r.draws.length - 1];
+    const pool = this.rafflePool(s, r);
+    return {
+      id: r.id, prize: r.prize, sponsor: r.sponsor, rule: r.rule, hours: r.minHours, cost: r.pointsCost ?? null,
+      phase: last ? 'drawn' : r.entriesClosed ? 'closed' : 'open', count: pool.length,
+      entries: r.rule === 'points' ? pool.map((name) => ({ name, at: r.entryAt?.[name] ?? r.at })).sort((a, b) => b.at - a.at).slice(0, 150) : [],
+      sample: r.rule === 'points' ? [] : [...pool].sort(() => Math.random() - 0.5).slice(0, 80),
+      winners: r.draws.map((d) => d.name),
+      draw: last ? { id: last.id, name: last.name, at: last.at, shownAt: last.shownAt ?? last.at, entrants: last.entrants ?? [last.name], total: last.total } : null,
+    };
+  }
+  /** Demo only: while a points raffle on stream is open, another sample viewer redeems every ~3 s. */
+  raffleDemoTick() {
+    const s = this.load();
+    const r = (s.raffles ?? []).find((x) => x.onStream && !x.ended && x.rule === 'points' && !x.entriesClosed);
+    if (!r) return;
+    const last = Math.max(0, ...Object.values(r.entryAt ?? {}));
+    if (Date.now() - last < 2600 + Math.random() * 1800) return;
+    this.mutate((m) => {
+      const x = (m.raffles ?? []).find((y) => y.id === r.id);
+      if (!x || x.entriesClosed) return;
+      const taken = new Set(x.entries ?? []);
+      const next = m.bingo.others.map((o) => o.user).find((u) => !taken.has(u) && Math.random() < 0.08);
+      if (!next) return;
+      (x.entries ??= []).push(next);
+      (x.entryAt ??= {})[next] = Date.now();
+    });
+  }
+
   prizesDue(s: DemoState) {
     const iso = (ms: number) => new Date(ms).toISOString();
     const due: { kind: string; id: number; login: string; prize: string; sponsor: string | null; at: string }[] = [
@@ -1115,6 +1156,7 @@ export class DemoBackend {
         players: s.bingo.others.length + (s.bingo.pick ? 1 : 0),
         items: s.bingo.items.map((it) => ({ ...it })),
       },
+      raffle: this.raffleStage(s),
       boards: { donations: board('donations', 'donation'), gifts: board('gifts', 'gift'), bits: board('bits', 'bits'), hours: board('hours') },
     };
   }
@@ -1305,7 +1347,7 @@ export class DemoBackend {
       case 'mod_raffle_entries': return this.mutate((s) => {
         const r = (s.raffles ?? []).find((x) => x.id === Number(a.p_id));
         if (!r) return fail('no_raffle');
-        if (r.rule !== 'points') fail('not_points_raffle');
+        if (r.ended) fail('raffle_ended');
         if (a.p_open) { if (r.draws.length) fail('raffle_drawn'); r.entriesClosed = null; } else r.entriesClosed ??= Date.now();
       });
       case 'mod_raffle_delete': return this.mutate((s) => {
@@ -1318,7 +1360,20 @@ export class DemoBackend {
         const r = (s.raffles ?? []).find((x) => x.draws.some((d) => d.id === Number(a.p_draw)));
         const d = r?.draws.find((x) => x.id === Number(a.p_draw));
         if (!r || !d) return fail('no_raffle_draw');
-        s.bingo.drawShow = { id: d.id, name: d.name, at: d.at, shownAt: Date.now(), entrants: this.raffleReel(s, r, d.name), total: d.total, kind: 'tombola', prize: r.prize, sponsor: r.sponsor };
+        d.shownAt = Date.now();
+        d.entrants ??= this.raffleReel(s, r, d.name);
+      });
+      case 'mod_raffle_stream': return this.mutate((s) => {
+        const r = (s.raffles ?? []).find((x) => x.id === Number(a.p_id));
+        if (!r) return fail('no_raffle');
+        if (a.p_on && r.ended) fail('raffle_ended');
+        (s.raffles ?? []).forEach((x) => { if (x.id !== r.id) x.onStream = false; });
+        r.onStream = !!a.p_on;
+      });
+      case 'mod_raffle_end': return this.mutate((s) => {
+        const r = (s.raffles ?? []).find((x) => x.id === Number(a.p_id));
+        if (!r) return fail('no_raffle');
+        r.ended ??= Date.now(); r.onStream = false; r.entriesClosed ??= Date.now();
       });
       case 'mod_prizes_due': return this.prizesDue(this.load());
       case 'mod_prize_given': return this.mutate((s) => {
