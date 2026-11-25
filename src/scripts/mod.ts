@@ -255,6 +255,7 @@ const toLocal = (iso: string | null) => {
 // ---- State ----
 interface DueItem { kind: 'roata' | 'bingo' | 'tombola'; id: number; login: string; prize: string | null; sponsor: string | null; at: string }
 interface Raffle { id: number; prize: string; sponsor: string | null; rule: 'all' | 'subs' | 'hours'; min_hours: number | null; created_by: string | null; created_at: string; pool: number;
+  include_mods?: boolean; allow_past_winners?: boolean; allow_repeat?: boolean;
   draws: { id: number; login: string; drawn_at: string; drawn_by: string | null; given_at: string | null; total: number | null }[] }
 interface Challenge { id: number; title: string; level: string; category: string; status: string; scheduled_for: string | null }
 let S: {
@@ -1252,7 +1253,19 @@ function ruleLabel(rule: string, h: number | null): string {
   const n = Number(h), de = Number.isInteger(n) && (n % 100 === 0 || n % 100 >= 20) ? 'de ' : '';
   return rule === 'subs' ? 'Abonații conectați pe site' : rule === 'hours' ? `Cine a privit cel puțin ${fmtHours(h)} ${n === 1 ? 'oră' : de + 'ore'}` : 'Toți cei conectați pe site cu Twitch';
 }
-const RAFFLE_HELP = 'Intrarea e mereu gratuită: lista se face singură după regula aleasă, spectatorii nu fac nimic. Donațiile nu dau șanse în plus.\nModeratorii și streamerul nu sunt pe listă.\n«Trage la sorți»: serverul alege câștigătorul, apoi sursa OBS «Tragerea la sorți» arată ruleta cu numele de pe listă. Câștigătorul vede «Ai câștigat» pe site și intră în PREMII → De dat.\nCine a câștigat o dată nu mai poate ieși la aceeași tombolă.';
+const RAFFLE_HELP = 'Intrarea e mereu gratuită: lista se face singură după regula aleasă, spectatorii nu fac nimic. Donațiile nu dau șanse în plus.\nStreamerul nu e niciodată pe listă. Cu bifele alegeți dacă intră și moderatorii, dacă intră cei care au câștigat deja la alte tombole și dacă același om poate câștiga de mai multe ori la aceeași tombolă. Bifele se pot schimba oricând și contează la următoarea tragere.\n«Trage la sorți»: serverul alege câștigătorul, apoi sursa OBS «Tragerea la sorți» arată ruleta cu numele de pe listă. Câștigătorul vede «Ai câștigat» pe site și intră în PREMII → De dat.';
+/** The three raffle ticks (owner, 25 Nov 2026: «ticks for full control»). */
+function raffleTicks(prefix: string, r?: Raffle): string {
+  const sw = (key: string, on: boolean, text: string) => `<label class="opt"><input type="checkbox" class="sw" id="${prefix}${key}" data-raffle-rule="${prefix}"${on ? ' checked' : ''}><span class="opt-t">${text}</span></label>`;
+  return `<div class="rf-ticks">
+      ${sw('Mods', !!r?.include_mods, 'Moderatorii intră și ei')}
+      ${sw('Past', r ? r.allow_past_winners !== false : true, 'Intră și cei care au câștigat la alte tombole')}
+      ${sw('Repeat', !!r?.allow_repeat, 'Același om poate câștiga din nou la tombola asta')}
+    </div>`;
+}
+const isOn = (id: string) => (document.getElementById(id) as HTMLInputElement | null)?.checked ?? false;
+const raffleTickArgs = (prefix: string) => ({ p_include_mods: isOn(`${prefix}Mods`), p_allow_past: isOn(`${prefix}Past`), p_allow_repeat: isOn(`${prefix}Repeat`) });
+const raffleTickNote = (r: Raffle) => [r.include_mods ? 'cu moderatori' : '', r.allow_past_winners === false ? 'fără câștigătorii altor tombole' : '', r.allow_repeat ? 'se poate câștiga de mai multe ori' : ''].filter(Boolean).map((x) => ` · ${x}`).join('');
 function raffleRuleFields(prefix: string, rule: string, hours: number | null, locked: boolean): string {
   return `<label class="inline">Cine intră<select class="field" id="${prefix}Rule" data-raffle-rule="${prefix}"${locked ? ' disabled' : ''}>
       <option value="all"${rule === 'all' ? ' selected' : ''}>Toți cei conectați pe site cu Twitch</option>
@@ -1268,6 +1281,7 @@ function tombolaHtml(): string {
       ${raffleRuleFields('rf', 'all', 5, false)}
       <button class="btn-primary" data-act="raffleAdd">Adaugă tombola</button>
     </div>
+    ${raffleTicks('rf')}
     <p class="hint" id="rfCount">${P && P.key.startsWith('rf:') && P.n !== null ? `Pe listă acum: <strong>${fmtInt(P.n)}</strong>` : 'Pe listă acum: se numără…'}</p>`;
   const rows = S.raffles.map((r) => {
     const drawn = r.draws.length > 0;
@@ -1279,7 +1293,8 @@ function tombolaHtml(): string {
         ${raffleRuleFields(`rf${r.id}`, r.rule, r.min_hours, drawn)}
         <button class="btn-ghost" data-act="raffleSave" data-id="${r.id}">Salvează</button>
       </div>
-      <p class="hint" style="margin:8px 0 0">${esc(ruleLabel(r.rule, r.min_hours))} · pe listă acum <strong>${fmtInt(r.pool)}</strong>${drawn ? ' care n-au câștigat încă' : ''}${r.created_by ? ` · adăugată de ${esc(r.created_by)}` : ''}${drawn ? ' · regula nu se mai schimbă după prima tragere' : ''}</p>
+      ${raffleTicks(`rf${r.id}`, r)}
+      <p class="hint" style="margin:8px 0 0">${esc(ruleLabel(r.rule, r.min_hours))}${raffleTickNote(r)} · pot câștiga acum <strong>${fmtInt(r.pool)}</strong>${r.created_by ? ` · adăugată de ${esc(r.created_by)}` : ''}${drawn ? ' · regula nu se mai schimbă după prima tragere' : ''}</p>
       ${drawn ? `<p style="margin:10px 0 0">Câștigători: ${r.draws.map((d) => `<strong>${esc(d.login)}</strong> <span class="muted">(${when(d.drawn_at)}${d.given_at ? ', dat' : ''})</span>`).join(' · ')}</p>` : ''}
       <div class="row">
         <button class="btn-primary" data-act="raffleDraw" data-id="${r.id}"${r.pool ? '' : ' disabled'}>${drawn ? 'Trage încă un câștigător' : 'Trage la sorți'}</button>
@@ -1473,12 +1488,14 @@ async function raffleCount() {
   const rule = val('rfRule');
   if (!rule) return;
   const hours = rule === 'hours' ? Number(val('rfHours')) || null : null;
-  const key = `rf:${rule}:${hours ?? ''}`;
+  const mods = isOn('rfMods'), past = isOn('rfPast');
+  const key = `rf:${rule}:${hours ?? ''}:${mods}:${past}`;
   const out = () => { const el = document.getElementById('rfCount'); if (el && S.rafflePreview?.key === key) el.innerHTML = S.rafflePreview.n === null ? 'Pe listă acum: —' : `Pe listă acum: <strong>${fmtInt(S.rafflePreview.n)}</strong>`; };
   if (S.rafflePreview?.key === key) return out();
   S.rafflePreview = { key, n: null };
   try {
-    const n = demoApi ? demoApi.rpc('mod_raffle_count', { p_rule: rule, p_min_hours: hours }) : (await (db as any).rpc('mod_raffle_count', { p_rule: rule, p_min_hours: hours })).data;
+    const args = { p_rule: rule, p_min_hours: hours, p_include_mods: mods, p_allow_past: past };
+    const n = demoApi ? demoApi.rpc('mod_raffle_count', args) : (await (db as any).rpc('mod_raffle_count', args)).data;
     if (S.rafflePreview?.key === key) S.rafflePreview.n = typeof n === 'number' ? n : null;
   } catch { /* stays «—» */ }
   out();
@@ -2033,11 +2050,11 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
   raffleAdd: () => {
     const rule = val('rfRule');
     if (!val('rfPrize').trim()) return say('Scrie premiul.', true);
-    return call('mod_raffle_save', { p_id: null, p_prize: val('rfPrize'), p_sponsor: val('rfSponsor'), p_rule: rule, p_min_hours: rule === 'hours' ? Number(val('rfHours')) || null : null }, 'Tombola a fost adăugată.');
+    return call('mod_raffle_save', { p_id: null, p_prize: val('rfPrize'), p_sponsor: val('rfSponsor'), p_rule: rule, p_min_hours: rule === 'hours' ? Number(val('rfHours')) || null : null, ...raffleTickArgs('rf') }, 'Tombola a fost adăugată.');
   },
   raffleSave: (el) => {
     const id = el.dataset.id!, rule = val(`rf${id}Rule`);
-    return call('mod_raffle_save', { p_id: Number(id), p_prize: val(`rf${id}Prize`), p_sponsor: val(`rf${id}Sponsor`), p_rule: rule, p_min_hours: rule === 'hours' ? Number(val(`rf${id}Hours`)) || null : null }, 'Tombola a fost salvată.');
+    return call('mod_raffle_save', { p_id: Number(id), p_prize: val(`rf${id}Prize`), p_sponsor: val(`rf${id}Sponsor`), p_rule: rule, p_min_hours: rule === 'hours' ? Number(val(`rf${id}Hours`)) || null : null, ...raffleTickArgs(`rf${id}`) }, 'Tombola a fost salvată.');
   },
   raffleDel: (el) => ask('Ștergi tombola?') && call('mod_raffle_delete', { p_id: Number(el.dataset.id) }, 'Tombola a fost ștearsă.'),
   raffleDraw: (el) => {
