@@ -183,6 +183,9 @@ function moment(eyebrow: string, text: string) {
 }
 
 function set(patch: Partial<State>) {
+  // Another message (e.g. a milestone) arriving while a moment is open doesn't wipe it: the moment
+  // waits and comes back when that one closes («Ai câștigat la tombolă» was lost on page load).
+  if (patch.toast && patch.toast !== 'info' && state.toast === 'info' && state.info) pendingMoments.unshift(state.info);
   state = { ...state, ...patch };
   if (!state.toast && pendingMoments.length) state = { ...state, toast: 'info', info: pendingMoments.shift()! };
   render();
