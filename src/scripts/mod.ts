@@ -100,6 +100,9 @@ const errors: Record<string, string> = {
   test_too_close: 'E prea aproape de start: testul trebuie să se termine cu 30 de minute înainte.',
   test_off: 'Testul nu mai merge (s-a oprit sau a expirat).',
   test_crowd_full: 'Sunt deja 500 de spectatori de test.',
+  raffle_none_on_stream: 'Nicio tombolă pe stream. Apasă «Pune pe stream» la una în PREMII → Tombole.',
+  raffle_not_points: 'Tombola de pe stream nu e cu puncte de canal: pe listă intră singuri spectatorii care respectă regula.',
+  raffle_entries_closed: 'Înscrierile la tombola de pe stream sunt închise.',
   bad_test_amount: 'Sumă nevalidă.',
   test_backup_missing: 'Copia de siguranță lipsește. Nu opri nimic, scrie-i lui barsmin.',
   not_eur: 'Se adună doar donațiile în euro.',
@@ -1000,14 +1003,33 @@ function testStripHtml(): string {
       <div class="ts-row"><span>Maraton</span>${marathon}</div>
       <div class="ts-row"><span>Twitch</span>${testBtn('sub', 'Sub', {}, 'Sub de test.')}${testBtn('sub', 'Sub Tier 3', { tier: '3000' }, 'Sub Tier 3 de test.')}${testBtn('gift', '10 subs cadou', { n: 10 }, '10 subs cadou de test.')}${testBtn('bits', '400 biți', { n: 400 }, '400 de biți de test.')}${testBtn('stream', online ? 'Iceman iese de pe Twitch' : 'Iceman intră pe Twitch', { on: !online }, online ? 'Iceman apare offline pe Twitch: timpul privit nu se mai numără.' : 'Iceman apare live pe Twitch: se numără timpul privit, votul automat merge.')}</div>
       <div class="ts-row"><span>Donații</span>${testBtn('donation', '5 €', { n: 5 }, 'Donație de test, 5 €.')}${testBtn('donation', '50 €', { n: 50 }, 'Donație de test, 50 €.')}${testBtn('donation', '250 €', { n: 250 }, 'Donație de test, 250 €.')}</div>
-      <div class="ts-row"><span>Spectatori</span>${testBtn('crowd', '+25 de test', { n: 25 }, '25 de spectatori de test: privesc, votează, aleg bingo.')}${testBtn('me_sub', sub ? 'Eu: neabonat' : 'Eu: abonat', { on: !sub }, sub ? 'Pe site apari neabonat.' : 'Pe site apari abonat.')}${testBtn('me_watch', 'Eu: +2 h privit', { minutes: 120 }, 'Ai 2 ore privite azi: roata e deblocată.')}</div>
+      <div class="ts-row"><span>Spectatori</span>${crowdBtn('crowd', '+25 de test', 25, '25 de spectatori de test: privesc, votează, aleg bingo.')}${crowdBtn('crowd', '+100 de test', 100, '100 de spectatori de test: privesc, votează, aleg bingo.')}${crowdBtn('act', 'Cei de test votează și aleg bingo', 0, '')}${tip('Spectatorii de test votează doar în runda deschisă și aleg bingo doar cât e deschis. Butonul ăsta îi pune pe cei deja adăugați să voteze în runda de acum și să aleagă o linie. Cel mult 500 de spectatori de test.')}${testBtn('me_sub', sub ? 'Eu: neabonat' : 'Eu: abonat', { on: !sub }, sub ? 'Pe site apari neabonat.' : 'Pe site apari abonat.')}${testBtn('me_watch', 'Eu: +2 h privit', { minutes: 120 }, 'Ai 2 ore privite azi: roata e deblocată.')}</div>
       <div class="ts-row"><span>Ceas</span>${clockTestHtml()}</div>
+      <div class="ts-row"><span>Tombolă</span>${raffleTestHtml()}</div>
       <div class="ts-row"><span>Alegeri</span>${(S.tasks?.menu ?? []).map((m) => testBtn('donation', `${euroTxt(m.price)} · ${m.title}`, { n: m.price }, `Donație de test ${euroTxt(m.price)}: «${m.title}» e în coadă (Donează și alegi).`)).join('') || '<span class="ts-note">Lista e goală: completeaz-o în ACTIVITĂȚI → Donează și alegi.</span>'}${st === 'upcoming' ? tip('Primul buton pornește și maratonul de test.') : ''}</div>
       <div class="ts-row"><span>Sponsori</span><button class="btn-ghost" data-act="testSponsors">Sponsori de test (10)</button>${tip('Mărci inventate, cu logo, pe site și pe overlay. La oprire revin sponsorii reali.')}</div>
       <div class="ts-row"><span>Testul</span>${testBtn('extend', '+1 oră', {}, 'Testul merge încă o oră.')}<button class="btn-ghost" data-act="testRedo">De la capăt</button><button class="btn-primary" data-act="testStop">Oprește testul</button></div>
     </div>
   </section>`;
 }
+// The Spectatori buttons (migration 20261222100000): new fake viewers, or the ones already there act.
+function crowdBtn(a: string, label: string, n: number, ok: string) {
+  return `<button class="btn-ghost" data-act="testCrowd" data-a="${a}" data-n="${n}" data-ok="${esc(ok)}">${esc(label)}</button>`;
+}
+// «Tombolă» in the test strip: fake viewers enter the points raffle on stream, as if with channel
+// points (in a test the real Twitch entries are refused). «Intră câte unul» sends one every 3 s for a
+// minute, the pace the OBS piece polls at, so each one drops in on its own, like on the day.
+let trickle = 0;
+function raffleTestHtml(): string {
+  const r = S.raffles.find((x) => x.on_stream && !x.ended_at);
+  if (!r) return '<span class="ts-note">Nicio tombolă pe stream: adaug-o în PREMII → Tombole.</span>';
+  if (r.rule !== 'points') return `<span class="ts-note">Pe stream: ${esc(r.prize)}. Pe listă sunt spectatorii de test care respectă regula; adaugă-i din Spectatori.</span>`;
+  if (r.entries_closed_at) return `<span class="ts-note">Înscrierile la ${esc(r.prize)} sunt închise.</span>`;
+  return `<button class="btn-ghost" data-act="testEnter" data-n="25">+25 intră cu puncte</button>${trickle
+    ? `<button class="btn-ghost" data-act="testTrickleStop">Oprește (${trickle} rămași)</button>`
+    : '<button class="btn-ghost" data-act="testTrickle">Intră câte unul (1 min)</button>'}${tip(`Spectatori de test intră la ${r.prize} ca și cum ar fi dat puncte de canal. Pe overlay îi vezi căzând ca fulgii; cei noi apar mari în mijloc. Pe Twitch nu se schimbă nimic.`)}`;
+}
+
 // «Ceas» in the test strip: freeze and Ora dublă (plain or sponsored) on the test marathon.
 function clockTestHtml(): string {
   const t = S.timer ?? {};
@@ -2198,6 +2220,30 @@ const acts: Record<string, (el: HTMLElement) => unknown> = {
     }
     return call('mod_test', { p_action: a, p: JSON.parse(el.dataset.p || '{}') }, el.dataset.ok || 'Gata.');
   },
+  testCrowd: (el) => {
+    const a = el.dataset.a ?? 'crowd';
+    return call('mod_test_crowd', { p_action: a, p: { n: Number(el.dataset.n) || 25 } }, el.dataset.ok || 'Gata.').then((x: any) => {
+      if (a === 'act') say(x && (x.voted || x.picked) ? `Au votat ${x.voted} și au ales bingo ${x.picked} dintre spectatorii de test.` : 'Nimic de făcut: niciun vot sau bingo deschis, ori au ales deja toți.');
+    });
+  },
+  testEnter: (el) => call('mod_test_crowd', { p_action: 'raffle_enter', p: { n: Number(el.dataset.n) || 25 } }, 'Spectatori de test au intrat cu puncte de canal.')
+    .then((x: any) => say(`Au intrat ${x?.entered ?? 0}. Sunt ${x?.raffleEntries ?? 0} înscriși.`)),
+  testTrickle: async () => {
+    if (trickle) return;
+    trickle = 20;
+    render();
+    while (trickle > 0) {
+      try {
+        const x: any = await call('mod_test_crowd', { p_action: 'raffle_enter', p: { n: 1 } }, 'Un spectator de test a intrat.');
+        trickle--;
+        if (trickle) say(`Au intrat ${x?.raffleEntries ?? 0}. Încă ${trickle}, câte unul la 3 secunde.`);
+      } catch { trickle = 0; }
+      if (trickle) await new Promise((res) => setTimeout(res, 3000));
+    }
+    trickle = 0;
+    render();
+  },
+  testTrickleStop: () => { trickle = 0; render(); say('Gata, nu mai intră nimeni.'); },
   copyOvp: (el) => { const v = val(`ovp${el.dataset.i}`); void navigator.clipboard?.writeText(v).then(() => say('Link copiat.')); },
   sceneClear: () => ask('Scoți fotografia de fundal? Scena rămâne transparentă.') && call('mod_scene_set', { p_background: null }, 'Fotografia a fost scoasă.'),
   copyOv: (el) => { const v = val(`ov${el.dataset.i}`); void navigator.clipboard?.writeText(v).then(() => say('Link copiat. Pune-l în OBS ca Browser Source, 1920×1080.')); },

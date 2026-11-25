@@ -1422,6 +1422,7 @@ export class DemoBackend {
       // «Mod test» needs the real database; the demo is all sample data already.
       case 'mod_test': return fail('demo_test');
       case 'mod_test_sponsors': return fail('demo_test');
+      case 'mod_test_crowd': return fail('demo_test');
       case 'mod_scene_set': return this.mutate((s) => { s.sceneBg = (a.p_background as string | null) || null; });
       case 'mod_tasks_set': return this.mutate((s) => {
         const items = (a.p_items as { price: number | string; title: string }[]).map((x) => ({ price: Number(String(x.price).replace(',', '.')), title: String(x.title ?? '').trim() }));
